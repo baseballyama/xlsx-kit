@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §3 XML 層の続き：`src/xml/parser.ts` で `parseXml(bytes): XmlNode` を fast-xml-parser ベースで実装。Clark 形式 (`{ns}local`) への namespace 解決を行うこと。DOCTYPE / 外部実体は parse 前にバイト走査で拒否（OpenXmlSchemaError）。openpyxl の `xl/workbook.xml` を parse して expected な root.name と sheet child を確認するところまで。
+- **次のタスク**: フェーズ1 §3 XML 層の続き：`src/xml/serializer.ts` で `serializeXml(node): Uint8Array`。Clark 表記の `XmlNode` を逆変換し、`DEFAULT_PREFIXES` を優先しつつ未登録 NS は `ns0`/`ns1`... を auto。属性順は元 source の順番を尊重しなくてよい（決定的なら OK）。テキスト・属性のエスケープ（`& < > " '` のみ。XML control chars は別件）。`parseXml → serializeXml → parseXml` で同型 tree を確認。次々ターンで iterparse (saxes) と canonicalize helper。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -26,7 +26,7 @@
 
 - [~] §1 I/O 抽象（メモリ経路のみ完了：`XlsxSource` / `XlsxSink` / `BufferedSinkWriter` の interface、`OpenXmlError` 階層、Node の `fromBuffer` / `toBuffer`、ブラウザの `fromBlob` / `fromFile` / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`、30 tests pass。残：filesystem / Readable / Writable / Response 経路は §2 ZIP streaming と同時に）
 - [~] §2 ZIP 層（reader / writer メモリ経路完了：`fflate.unzipSync` の `openZip` + `fflate.zipSync` の `createZipWriter`。`empty.xlsx` の 11 エントリを writer に流して再 zip → 再 read で全 path・全 bytes が一致。STORE 圧縮の compress: false パス、duplicate / post-finalize / ReadableStream 入力は OpenXmlIoError。47 tests pass。残：streaming reader / streaming writer / ZIP64 read/write）
-- [~] §3 XML 層（namespaces / tree 完了：openpyxl の全 NS 定数 + ARC_* package paths + content-type 文字列 + chartex/c14-c16/x14-x16/threaded-comments の MS 拡張、`qname` / `parseQName` Clark 表記ヘルパ、`XmlNode` plain object + `el` / `elNs` / `findChild` / `findChildren` / `appendChild`、`DEFAULT_PREFIXES` を frozen マップで提供。68 tests pass。残：parser DOM / serializer DOM / iterparse SAX / 中規模フィクスチャでの round-trip）
+- [~] §3 XML 層（namespaces / tree / parser DOM 完了：fast-xml-parser 5.7 ベース `parseXml(bytes | string): XmlNode`、namespace stack で Clark 表記化、`xmlns:*` 宣言は attrs から落とす、`xml` prefix は固定 binding、未宣言 prefix は OpenXmlSchemaError、DOCTYPE / `<!ENTITY` は事前バイト走査で reject、混合内容も reject、`xl/workbook.xml` の root + 3 sheets が期待値どおり、`[Content_Types].xml` も parse OK。87 tests pass。残：serializer DOM / iterparse SAX / canonical compare helper / 大規模 round-trip）
 - [ ] §4 Schema 層（Schema 型 + `toTree`/`fromTree`）
 - [ ] §5 XmlStreamWriter
 - [ ] §6 packaging 層（manifest, relationships, doc properties）
@@ -56,3 +56,4 @@
 - pnpm 10 は esbuild 等の postinstall script を opt-in 必須。`package.json#pnpm.onlyBuiltDependencies = ["esbuild"]` に登録した。esbuild 以外を追加した時は同様に検討する。
 - `package.json#type: module` 下では tsup 既定の `.js` が ESM として扱われる。`exports` map と整合を取るため tsup は `outExtension: () => ({ js: '.mjs' })` で `.mjs` を強制出力。
 - Biome 2.4 では schema が 1.x/2.0 から変わり `files.ignore` / `organizeImports` 直下キーは廃止。`files.includes` の `!` プレフィックスと `assist.actions.source.organizeImports` を使う。新しいテンプレに移行する時は `pnpm exec biome migrate --write` が安全。
+- tsconfig の `noPropertyAccessFromIndexSignature: true` と Biome の `complexity/useLiteralKeys` は競合する（前者は bracket 必須、後者は dot へ書き換えたい）。Biome 側を `off` にして tsc を尊重。

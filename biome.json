@@ -18,7 +18,8 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "useLiteralKeys": "off"
       },
       "performance": {
         "noAccumulatingSpread": "warn"

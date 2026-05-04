@@ -84,5 +84,6 @@ export {
   XPROPS_NS,
   XSI_NS,
 } from './namespaces';
+export { parseXml } from './parser';
 export type { XmlNode } from './tree';
 export { appendChild, el, elNs, findChild, findChildren } from './tree';
