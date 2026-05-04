@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ3 (read / write 実装) [04-core-model.md フェーズ2 全 acceptance pass]
-- **次のタスク**: フェーズ3 §1 全体フロー。まず `docs/plan/05-read-write.md` を再読し、最小ステップ ―― `loadWorkbook(source, opts?): Promise<Workbook>` の **空 xlsx スケルトン読込** から始める。openpyxl genuine/empty.xlsx を `openZip` → `[Content_Types].xml` Manifest → workbook part 解決 → `xl/workbook.xml` の sheets リスト → `xl/worksheets/sheet1.xml` を SAX iterparse で空 Worksheet として復元、まで。styles / sharedStrings / theme / docProps の本格対応は次のターン以降。`src/public/load.ts` を新設して entry point を提供。
+- **次のタスク**: フェーズ3 §5 worksheet.xml read。loadWorkbook が現在は空 Worksheet を返すので、次は `xl/worksheets/sheet1.xml` の `<sheetData>` を SAX iterparse で読み、`<row>/<c>` を Cell に復元する。inlineStr / `t="n"|"s"|"b"|"e"|"str"|"inlineStr"` を網羅、`<f>` 数式 (normal/array/shared) は `setFormula`/`setArrayFormula`/`setSharedFormula` 経由で構築、`<v>` cachedValue。sharedStrings はまだ無いので `t="s"` のとき index→placeholder で許容、§3 と同時か直前に対応。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -53,7 +53,7 @@
 
 ### フェーズ3: read / write 実装 ([05-read-write.md](docs/plan/05-read-write.md))
 
-- [ ] §1 全体フロー (loadWorkbook → minimum skeleton から段階的に拡充)
+- [~] §1 全体フロー：loadWorkbook minimum skeleton 完了 (`src/public/load.ts`)。`openZip` → `[Content_Types].xml` Manifest → root rels の `officeDocument` rel から workbook part path 解決 → `xl/workbook.xml` の `<sheets>/<sheet>` を `parseSheetEntries` で `{ name, sheetId, rId, state }` に → `xl/_rels/workbook.xml.rels` を resolve して各 sheet の part path を確認 → 空 Worksheet を `wb.sheets` に push (sheetId は XML から保持)。`resolveRelTarget` は `/`-anchored / 相対 / `..` collapse をカバー。openpyxl genuine/empty.xlsx (3 sheets) で round-trip 確認、`Content_Types` 欠落 archive で reject。`src/index.ts` から `loadWorkbook` / `LoadOptions` を named export。`pnpm build` で dist/index.mjs 70.80 KB。734 tests pass。残：sheet content / styles / sharedStrings / theme / docProps / VBA。
 - [ ] §2 styles.xml read/write
 - [ ] §3 sharedStrings.xml read/write
 - [ ] §4 workbook.xml read/write (sheets / defined names / bookViews)
