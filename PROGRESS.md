@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts** 着手準備
-- **次のタスク**: フェーズ6 §5 ChartML フル実装の **stage-1**: 最小 BarChart モデル。`src/chart/{chart-space.ts, chart-base.ts, bar-chart.ts}` で `ChartSpace { lang?, plotArea }` / `BarChart { barDir: 'bar'|'col', grouping, series: BarSeries[], catAx?, valAx? }` / `BarSeries { idx, order, tx?, val: { ref, numCache?: number[] }, cat?: { ref, strCache? } }` を作る。`parseChartXml` / `chartToBytes` で `xl/charts/chartN.xml` 読み書き。drawing の chart content variant に `chart?: ChartContainer` を追加して saveWorkbook が chart 部品を emit + manifest Override (`drawingml.chart+xml`) + drawing-rels に chart rel 追加。worksheet ↔ drawing wiring の chart placeholder を実物に置き換え。
+- **次のタスク**: フェーズ6 §5 ChartML 拡充 — **LineChart** (`<c:lineChart>` + smooth / marker)、**PieChart** / **DoughnutChart** (`<c:pieChart>` / `<c:doughnutChart>` + holeSize)、**ScatterChart** (`<c:scatterChart>` + scatterStyle + xVal/yVal pair refs)、**AreaChart** を追加。各 chart kind を ChartKind discriminated union に組み込み、parser/writer を chart.ts / chart-xml.ts に増やす。続いて RadarChart / Surface3D / Bubble など。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -79,7 +79,7 @@
 - [~] §3 anchor + part-level scaffolding + **worksheet ↔ drawing wiring** 完了。`src/drawing/{anchor,drawing,drawing-xml}.ts` で DrawingAnchor (absolute/oneCell/twoCell)、Drawing { items[] }、parseDrawingXml/drawingToBytes (anchor document order 保持、chart rId 抽出)。`Worksheet.drawing?: Drawing` 追加、reader/writer に `loadDrawing` / `registerDrawing` callback、saveWorkbook で workbook-global drawingN counter + per-sheet rels の `${REL_NS}/drawing` rel + manifest `drawing+xml` Override + worksheet inline `<drawing r:id>`、loadWorkbook が逆方向に解決。9 + 4 = 13 tests。882 total。残：画像、ChartML フル実装 (BarChart 等 17+8 chartex 種)、cfvo/colors/3D 等 DrawingML primitive、Stage-1 chart placeholder の実物化。
 - [ ] §2 image / loadImage
 - [ ] §4 DrawingML primitives (colors / fill / line / effect / geometry / text / shape-properties)
-- [ ] §5 ChartML フル実装 (chartSpace / plotArea / 各 chart kind / series / data point / labels / trendline / errorBars / axes / legend / title / 3D)
+- [~] §5 ChartML stage-1 = **BarChart** 完了：`src/chart/{chart,chart-xml}.ts`。`ChartSpace { title?, legend?, plotArea, plotVisOnly?, dispBlanksAs? }` / `PlotArea { chart, catAx?, valAx? }` / `BarChart { kind: 'bar', barDir, grouping, series, axIds, varyColors?, gapWidth? }` / `BarSeries { idx, order, tx?, cat?: CategoryRef, val: NumericRef }`、`NumericRef { ref, cache?: number[], formatCode? }` / `CategoryRef { ref, cacheKind: 'num'|'str', cache? }`。`parseChartXml` / `chartToBytes` で `<c:chartSpace>/<c:chart>/<c:plotArea>/<c:barChart>` 構造を read/write、cat/val の numCache + strCache + formatCode を保持、title は `<c:rich><a:p><a:r><a:t>`、legend は `<c:legendPos val>`、catAx/valAx は axId/crossAx/position/delete/majorGridlines。`ChartReference.space?: ChartSpace` 追加で saveWorkbook が chartN.xml + drawing-rels emit (`{REL_NS}/chart` rel + manifest `drawingml.chart+xml` Override)、loadWorkbook が drawing-rels phase-2 で chart part 読み込み + 接続。5 tests (parse/serialize 単体 + 1 round-trip + multi-chart workbook-global chartN)。887 tests pass。残：LineChart / PieChart / ScatterChart / AreaChart / RadarChart / Surface / Bubble / Stock / 3D 系 / chartex 8 種 / data label / trendline / errorBars。
 - [ ] §6 chartex namespace の 8 種 (Sunburst / Treemap / Waterfall / Histogram / Pareto / Funnel / BoxWhisker / Map)
 - [ ] §7 受け入れ条件
 
