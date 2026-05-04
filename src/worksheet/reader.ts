@@ -23,6 +23,8 @@ import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import { parseRange } from './cell-range';
+import type { Pane, PaneState, PaneType, Selection, SheetView, SheetViewMode } from './views';
+import { makeSheetView } from './views';
 import { makeWorksheet, setCell, type Worksheet } from './worksheet';
 
 const WORKSHEET_TAG = `{${SHEET_MAIN_NS}}worksheet`;
@@ -35,6 +37,10 @@ const IS_TAG = `{${SHEET_MAIN_NS}}is`;
 const T_TAG = `{${SHEET_MAIN_NS}}t`;
 const MERGE_CELLS_TAG = `{${SHEET_MAIN_NS}}mergeCells`;
 const MERGE_CELL_TAG = `{${SHEET_MAIN_NS}}mergeCell`;
+const SHEET_VIEWS_TAG = `{${SHEET_MAIN_NS}}sheetViews`;
+const SHEET_VIEW_TAG = `{${SHEET_MAIN_NS}}sheetView`;
+const PANE_TAG = `{${SHEET_MAIN_NS}}pane`;
+const SELECTION_TAG = `{${SHEET_MAIN_NS}}selection`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -86,8 +92,99 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
       ws.mergedCells.push(parseRange(ref));
     }
   }
+
+  // <sheetViews> sits early in the worksheet but our load order doesn't
+  // matter — reading it after sheetData keeps the loops separable.
+  const sheetViewsEl = findChild(root, SHEET_VIEWS_TAG);
+  if (sheetViewsEl) {
+    for (const v of findChildren(sheetViewsEl, SHEET_VIEW_TAG)) {
+      ws.views.push(parseSheetView(v));
+    }
+  }
   return ws;
 }
+
+const PANE_TYPES: ReadonlyArray<PaneType> = ['bottomRight', 'topRight', 'bottomLeft', 'topLeft'];
+const PANE_STATES: ReadonlyArray<PaneState> = ['split', 'frozen', 'frozenSplit'];
+const SHEET_VIEW_MODES: ReadonlyArray<SheetViewMode> = ['normal', 'pageBreakPreview', 'pageLayout'];
+
+const parseFloatAttr = (raw: string | undefined): number | undefined => {
+  if (raw === undefined) return undefined;
+  const n = Number.parseFloat(raw);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+const parseIntegerAttr = (raw: string | undefined): number | undefined => {
+  if (raw === undefined) return undefined;
+  const n = Number.parseInt(raw, 10);
+  return Number.isInteger(n) ? n : undefined;
+};
+
+const parseBoolXmlAttr = (raw: string | undefined): boolean | undefined => {
+  if (raw === undefined) return undefined;
+  if (raw === '1' || raw === 'true') return true;
+  if (raw === '0' || raw === 'false') return false;
+  return undefined;
+};
+
+const parseSheetView = (node: XmlNode): SheetView => {
+  const opts: Partial<SheetView> = {
+    workbookViewId: parseIntegerAttr(node.attrs['workbookViewId']) ?? 0,
+  };
+  const tabSelected = parseBoolXmlAttr(node.attrs['tabSelected']);
+  if (tabSelected !== undefined) opts.tabSelected = tabSelected;
+  const showGridLines = parseBoolXmlAttr(node.attrs['showGridLines']);
+  if (showGridLines !== undefined) opts.showGridLines = showGridLines;
+  const showRowColHeaders = parseBoolXmlAttr(node.attrs['showRowColHeaders']);
+  if (showRowColHeaders !== undefined) opts.showRowColHeaders = showRowColHeaders;
+  const showFormulas = parseBoolXmlAttr(node.attrs['showFormulas']);
+  if (showFormulas !== undefined) opts.showFormulas = showFormulas;
+  const showZeros = parseBoolXmlAttr(node.attrs['showZeros']);
+  if (showZeros !== undefined) opts.showZeros = showZeros;
+  const rightToLeft = parseBoolXmlAttr(node.attrs['rightToLeft']);
+  if (rightToLeft !== undefined) opts.rightToLeft = rightToLeft;
+  const view = node.attrs['view'];
+  if (view !== undefined && (SHEET_VIEW_MODES as ReadonlyArray<string>).includes(view)) {
+    opts.view = view as SheetViewMode;
+  }
+  if (node.attrs['topLeftCell']) opts.topLeftCell = node.attrs['topLeftCell'];
+  const zoomScale = parseIntegerAttr(node.attrs['zoomScale']);
+  if (zoomScale !== undefined) opts.zoomScale = zoomScale;
+  const zoomScaleNormal = parseIntegerAttr(node.attrs['zoomScaleNormal']);
+  if (zoomScaleNormal !== undefined) opts.zoomScaleNormal = zoomScaleNormal;
+
+  const paneEl = findChild(node, PANE_TAG);
+  if (paneEl) opts.pane = parsePane(paneEl);
+  const selectionEl = findChild(node, SELECTION_TAG);
+  if (selectionEl) opts.selection = parseSelection(selectionEl);
+  return makeSheetView(opts);
+};
+
+const parsePane = (node: XmlNode): Pane => {
+  const stateRaw = node.attrs['state'];
+  const state: PaneState =
+    stateRaw && (PANE_STATES as ReadonlyArray<string>).includes(stateRaw) ? (stateRaw as PaneState) : 'split';
+  const pane: Pane = { state };
+  const xSplit = parseFloatAttr(node.attrs['xSplit']);
+  if (xSplit !== undefined) pane.xSplit = xSplit;
+  const ySplit = parseFloatAttr(node.attrs['ySplit']);
+  if (ySplit !== undefined) pane.ySplit = ySplit;
+  if (node.attrs['topLeftCell']) pane.topLeftCell = node.attrs['topLeftCell'];
+  const activePaneRaw = node.attrs['activePane'];
+  if (activePaneRaw && (PANE_TYPES as ReadonlyArray<string>).includes(activePaneRaw)) {
+    pane.activePane = activePaneRaw as PaneType;
+  }
+  return pane;
+};
+
+const parseSelection = (node: XmlNode): Selection => {
+  const sel: Selection = {};
+  const paneRaw = node.attrs['pane'];
+  if (paneRaw && (PANE_TYPES as ReadonlyArray<string>).includes(paneRaw)) sel.pane = paneRaw as PaneType;
+  if (node.attrs['activeCell']) sel.activeCell = node.attrs['activeCell'];
+  if (node.attrs['sqref']) sel.sqref = node.attrs['sqref'];
+  return sel;
+};
 
 const parseRowIndex = (rowNode: XmlNode): number => {
   const rAttr = rowNode.attrs['r'];

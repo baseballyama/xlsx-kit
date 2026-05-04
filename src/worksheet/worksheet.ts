@@ -11,6 +11,7 @@ import { type Cell, makeCell } from '../cell/cell';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
+import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
 
 export interface Worksheet {
   title: string;
@@ -29,6 +30,12 @@ export interface Worksheet {
    * without rebuilding any helper structures.
    */
   mergedCells: CellRange[];
+  /**
+   * Per-bookView display settings. Most workbooks have exactly one view.
+   * The list stays empty until something — read or API — populates it; a
+   * lone default view doesn't earn its keep on the wire.
+   */
+  views: SheetView[];
 }
 
 /** Build a Worksheet shell. */
@@ -41,6 +48,7 @@ export function makeWorksheet(title: string): Worksheet {
     rows: new Map(),
     _appendRowCursor: 0,
     mergedCells: [],
+    views: [],
   };
 }
 
@@ -245,4 +253,37 @@ export function isMergedCell(ws: Worksheet, row: number, col: number): boolean {
     if (rangeContainsCell(range, row, col)) return true;
   }
   return false;
+}
+
+// ---- views / freezePanes --------------------------------------------------
+
+/** Lazily get-or-create the primary SheetView so view-mutating helpers don't have to branch. */
+const ensurePrimaryView = (ws: Worksheet): SheetView => {
+  let view = ws.views[0];
+  if (!view) {
+    view = makeSheetView();
+    ws.views.push(view);
+  }
+  return view;
+};
+
+/**
+ * Freeze rows / columns above + left of `topLeftRef` ("B2" → 1 row + 1 col).
+ * Pass `undefined` to clear any existing freeze. Targets the workbook's
+ * primary SheetView (`ws.views[0]`); creates one if absent.
+ */
+export function setFreezePanes(ws: Worksheet, topLeftRef: string | undefined): void {
+  if (topLeftRef === undefined) {
+    if (ws.views[0]) delete ws.views[0].pane;
+    return;
+  }
+  const view = ensurePrimaryView(ws);
+  view.pane = makeFreezePane(topLeftRef);
+}
+
+/** Inverse of {@link setFreezePanes}; returns the top-left ref or undefined when no freeze is active. */
+export function getFreezePanes(ws: Worksheet): string | undefined {
+  const view = ws.views[0];
+  if (!view) return undefined;
+  return freezePaneRef(view);
 }

@@ -18,6 +18,7 @@ import type { SharedStringsTable } from '../workbook/shared-strings';
 import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { rangeToString } from './cell-range';
+import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
 
 export interface WorksheetWriteContext {
@@ -42,8 +43,9 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     XML_HEADER,
     `<worksheet xmlns="${SHEET_MAIN_NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`,
     serializeDimension(ws),
-    '<sheetData>',
   ];
+  if (ws.views.length > 0) parts.push(serializeSheetViews(ws.views));
+  parts.push('<sheetData>');
   // Iterate rows in numeric order so writer output is deterministic.
   const rowKeys = [...ws.rows.keys()].sort((a, b) => a - b);
   for (const rowIdx of rowKeys) {
@@ -205,4 +207,54 @@ const describeValue = (value: CellValue): string => {
     return kind ? `{ kind: "${kind}" }` : 'object';
   }
   return typeof value;
+};
+
+const xmlBoolAttr = (key: string, v: boolean | undefined): string =>
+  v === undefined ? '' : ` ${key}="${v ? '1' : '0'}"`;
+
+const serializeSheetViews = (views: ReadonlyArray<SheetView>): string => {
+  const parts: string[] = ['<sheetViews>'];
+  for (const v of views) parts.push(serializeSheetView(v));
+  parts.push('</sheetViews>');
+  return parts.join('');
+};
+
+const serializeSheetView = (v: SheetView): string => {
+  let attrs = '';
+  attrs += xmlBoolAttr('tabSelected', v.tabSelected);
+  attrs += xmlBoolAttr('showGridLines', v.showGridLines);
+  attrs += xmlBoolAttr('showRowColHeaders', v.showRowColHeaders);
+  attrs += xmlBoolAttr('showFormulas', v.showFormulas);
+  attrs += xmlBoolAttr('showZeros', v.showZeros);
+  attrs += xmlBoolAttr('rightToLeft', v.rightToLeft);
+  if (v.view) attrs += ` view="${v.view}"`;
+  if (v.topLeftCell) attrs += ` topLeftCell="${escapeXmlAttr(v.topLeftCell)}"`;
+  if (v.zoomScale !== undefined) attrs += ` zoomScale="${v.zoomScale}"`;
+  if (v.zoomScaleNormal !== undefined) attrs += ` zoomScaleNormal="${v.zoomScaleNormal}"`;
+  attrs += ` workbookViewId="${v.workbookViewId}"`;
+
+  const inner: string[] = [];
+  if (v.pane) inner.push(serializePane(v.pane));
+  if (v.selection) inner.push(serializeSelection(v.selection));
+
+  if (inner.length === 0) return `<sheetView${attrs}/>`;
+  return `<sheetView${attrs}>${inner.join('')}</sheetView>`;
+};
+
+const serializePane = (p: Pane): string => {
+  let attrs = '';
+  if (p.xSplit !== undefined) attrs += ` xSplit="${p.xSplit}"`;
+  if (p.ySplit !== undefined) attrs += ` ySplit="${p.ySplit}"`;
+  if (p.topLeftCell) attrs += ` topLeftCell="${escapeXmlAttr(p.topLeftCell)}"`;
+  if (p.activePane) attrs += ` activePane="${p.activePane}"`;
+  attrs += ` state="${p.state}"`;
+  return `<pane${attrs}/>`;
+};
+
+const serializeSelection = (s: Selection): string => {
+  let attrs = '';
+  if (s.pane) attrs += ` pane="${s.pane}"`;
+  if (s.activeCell) attrs += ` activeCell="${escapeXmlAttr(s.activeCell)}"`;
+  if (s.sqref) attrs += ` sqref="${escapeXmlAttr(s.sqref)}"`;
+  return `<selection${attrs}/>`;
 };
