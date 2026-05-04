@@ -18,6 +18,7 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
 import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
+import type { AutoFilter } from './auto-filter';
 import { multiCellRangeToString, rangeToString } from './cell-range';
 import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
@@ -86,6 +87,8 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     parts.push('</row>');
   }
   parts.push('</sheetData>');
+  // Excel's element order: autoFilter sits between sheetData and mergeCells.
+  if (ws.autoFilter) parts.push(serializeAutoFilter(ws.autoFilter));
   if (ws.mergedCells.length > 0) {
     parts.push(`<mergeCells count="${ws.mergedCells.length}">`);
     for (const range of ws.mergedCells) {
@@ -317,6 +320,27 @@ const serializeColumnDimension = (dim: ColumnDimension): string => {
   if (dim.outlineLevel !== undefined) attrs += ` outlineLevel="${dim.outlineLevel}"`;
   if (dim.collapsed) attrs += ' collapsed="1"';
   return `<col${attrs}/>`;
+};
+
+const serializeAutoFilter = (filter: AutoFilter): string => {
+  const refAttr = ` ref="${escapeXmlAttr(filter.ref)}"`;
+  if (filter.filterColumns.length === 0) return `<autoFilter${refAttr}/>`;
+  const parts: string[] = [`<autoFilter${refAttr}>`];
+  for (const fc of filter.filterColumns) {
+    parts.push(`<filterColumn colId="${fc.colId}">`);
+    let filtersAttrs = '';
+    if (fc.blank !== undefined) filtersAttrs += ` blank="${fc.blank ? '1' : '0'}"`;
+    if (fc.values.length === 0) {
+      parts.push(`<filters${filtersAttrs}/>`);
+    } else {
+      parts.push(`<filters${filtersAttrs}>`);
+      for (const v of fc.values) parts.push(`<filter val="${escapeXmlAttr(v)}"/>`);
+      parts.push('</filters>');
+    }
+    parts.push('</filterColumn>');
+  }
+  parts.push('</autoFilter>');
+  return parts.join('');
 };
 
 const serializeDataValidations = (dvs: ReadonlyArray<DataValidation>): string => {

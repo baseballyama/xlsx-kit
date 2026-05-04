@@ -24,6 +24,7 @@ import { ERROR_CODES } from '../utils/inference';
 import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
+import type { AutoFilter, FilterColumn } from './auto-filter';
 import { parseMultiCellRange, parseRange } from './cell-range';
 import type {
   DataValidation,
@@ -63,6 +64,10 @@ const DATA_VALIDATIONS_TAG = `{${SHEET_MAIN_NS}}dataValidations`;
 const DATA_VALIDATION_TAG = `{${SHEET_MAIN_NS}}dataValidation`;
 const FORMULA1_TAG = `{${SHEET_MAIN_NS}}formula1`;
 const FORMULA2_TAG = `{${SHEET_MAIN_NS}}formula2`;
+const AUTOFILTER_TAG = `{${SHEET_MAIN_NS}}autoFilter`;
+const FILTER_COLUMN_TAG = `{${SHEET_MAIN_NS}}filterColumn`;
+const FILTERS_TAG = `{${SHEET_MAIN_NS}}filters`;
+const FILTER_TAG = `{${SHEET_MAIN_NS}}filter`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -161,6 +166,13 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     for (const d of findChildren(dvWrap, DATA_VALIDATION_TAG)) {
       ws.dataValidations.push(parseDataValidation(d));
     }
+  }
+
+  // <autoFilter ref="..."> with optional <filterColumn> children.
+  const autoFilterEl = findChild(root, AUTOFILTER_TAG);
+  if (autoFilterEl) {
+    const filter = parseAutoFilter(autoFilterEl);
+    if (filter) ws.autoFilter = filter;
   }
   return ws;
 }
@@ -536,6 +548,29 @@ const parseDataValidation = (node: XmlNode): DataValidation => {
   const f2 = findChild(node, FORMULA2_TAG);
   if (f2?.text !== undefined) opts.formula2 = f2.text;
   return makeDataValidation(opts);
+};
+
+const parseAutoFilter = (node: XmlNode): AutoFilter | undefined => {
+  const ref = node.attrs['ref'];
+  if (!ref) return undefined;
+  const filterColumns: FilterColumn[] = [];
+  for (const fc of findChildren(node, FILTER_COLUMN_TAG)) {
+    const colIdRaw = fc.attrs['colId'];
+    const colId = colIdRaw !== undefined ? Number.parseInt(colIdRaw, 10) : -1;
+    if (!Number.isInteger(colId) || colId < 0) continue;
+    const filtersEl = findChild(fc, FILTERS_TAG);
+    if (!filtersEl) continue;
+    const values: string[] = [];
+    for (const f of findChildren(filtersEl, FILTER_TAG)) {
+      const v = f.attrs['val'];
+      if (v !== undefined) values.push(v);
+    }
+    const blank = parseBoolXmlAttr(filtersEl.attrs['blank']);
+    const fc2: FilterColumn = { kind: 'filters', colId, values };
+    if (blank !== undefined) fc2.blank = blank;
+    filterColumns.push(fc2);
+  }
+  return { ref, filterColumns };
 };
 
 const parseHyperlink = (node: XmlNode, rels: Relationships | undefined): Hyperlink => {

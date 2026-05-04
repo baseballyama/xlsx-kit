@@ -10,6 +10,7 @@ import type { CellValue } from '../cell/cell';
 import { type Cell, makeCell } from '../cell/cell';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import type { AutoFilter } from './auto-filter';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
@@ -55,6 +56,8 @@ export interface Worksheet {
   hyperlinks: Hyperlink[];
   /** Data validation entries. */
   dataValidations: DataValidation[];
+  /** AutoFilter — at most one per sheet. Excel reuses the `_xlnm._FilterDatabase` defined name. */
+  autoFilter?: AutoFilter;
 }
 
 /** Build a Worksheet shell. */
@@ -430,4 +433,20 @@ export function removeDataValidations(ws: Worksheet, predicate: (dv: DataValidat
   const before = ws.dataValidations.length;
   ws.dataValidations = ws.dataValidations.filter((dv) => !predicate(dv));
   return before - ws.dataValidations.length;
+}
+
+// ---- autoFilter ----------------------------------------------------------
+
+/** Set or replace the worksheet's AutoFilter. Pass `undefined` to clear. */
+export function setAutoFilter(ws: Worksheet, filter: AutoFilter | undefined): void {
+  if (filter === undefined) {
+    delete ws.autoFilter;
+    return;
+  }
+  ws.autoFilter = filter;
+}
+
+/** Read the current AutoFilter, if any. */
+export function getAutoFilter(ws: Worksheet): AutoFilter | undefined {
+  return ws.autoFilter;
 }
