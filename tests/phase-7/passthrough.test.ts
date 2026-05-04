@@ -174,3 +174,72 @@ describe('Comment VML is not captured as pass-through', () => {
     expect(wb2.passthrough).toBeUndefined();
   });
 });
+
+describe('Modern Excel parts pass-through', () => {
+  it(
+    'round-trips externalLinks / richData / threadedComments / timelines / workbookCache verbatim',
+    async () => {
+      const wb = createWorkbook();
+      addWorksheet(wb, 'Sheet1');
+      wb.passthrough = new Map();
+      wb.passthroughContentTypes = new Map();
+
+      const cases: Array<{ path: string; ct: string }> = [
+        // External workbook links — formula refs to other workbooks.
+        {
+          path: 'xl/externalLinks/externalLink1.xml',
+          ct: 'application/vnd.openxmlformats-officedocument.spreadsheetml.externalLink+xml',
+        },
+        {
+          path: 'xl/externalLinks/_rels/externalLink1.xml.rels',
+          ct: 'application/vnd.openxmlformats-package.relationships+xml',
+        },
+        // Rich data types (Excel 365 stocks / geography).
+        {
+          path: 'xl/richData/rdRichValueTypes.xml',
+          ct: 'application/vnd.ms-excel.rdrichvaluetypes+xml',
+        },
+        {
+          path: 'xl/richData/rdRichValue.xml',
+          ct: 'application/vnd.ms-excel.rdrichvalue+xml',
+        },
+        // Modern threaded comments (separate from legacy comments).
+        {
+          path: 'xl/threadedComments/threadedComment1.xml',
+          ct: 'application/vnd.ms-excel.threadedcomments+xml',
+        },
+        // Pivot timeline filter.
+        {
+          path: 'xl/timelineCaches/timelineCache1.xml',
+          ct: 'application/vnd.ms-excel.timelineCacheDefinition+xml',
+        },
+        {
+          path: 'xl/timelines/timeline1.xml',
+          ct: 'application/vnd.ms-excel.Timeline+xml',
+        },
+        // Power Query metadata.
+        {
+          path: 'xl/workbookCache/cache.xml',
+          ct: 'application/xml',
+        },
+      ];
+      for (let i = 0; i < cases.length; i++) {
+        const c = cases[i];
+        if (!c) continue;
+        wb.passthrough.set(c.path, new Uint8Array([0xab, i]));
+        wb.passthroughContentTypes.set(c.path, c.ct);
+      }
+
+      const bytes = await workbookToBytes(wb);
+      const wb2 = await loadWorkbook(fromBuffer(bytes));
+
+      for (const c of cases) {
+        expect(wb2.passthrough?.get(c.path), `byte mismatch on ${c.path}`).toEqual(
+          wb.passthrough.get(c.path),
+        );
+        expect(wb2.passthroughContentTypes?.get(c.path), `ct mismatch on ${c.path}`).toBe(c.ct);
+      }
+      expect(wb2.passthrough?.size).toBe(cases.length);
+    },
+  );
+});
