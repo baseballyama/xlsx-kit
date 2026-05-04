@@ -6,9 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §3 styles 続き：`NumberFormat`。openpyxl `styles/numbers.py` の `BUILTIN_FORMATS` (id 0〜163 のうち openpyxl が登録してる固定エントリ) を const オブジェクトでコピー、`BUILTIN_FORMATS_REVERSE` の逆引き、`builtinFormatCode(id)` / `builtinFormatId(code)`、`isDateFormat(code)` / `isTimedeltaFormat(code)` の正規表現ヒューリスティクス、`NumberFormat = { numFmtId: number; formatCode: string }`。custom format id は >= 164 を確保（pool 採番は phase 2 §3.4 の Stylesheet で実装）。続けて Font（schema に `nested` element kind 追加）。
-- **ブランチ**: `main`（直接 commit 運用、squash 不要）
-- **ブランチ**: `main`（直接 commit 運用、squash 不要）
+- **次のタスク**: フェーズ2 §3 styles 最後の値オブジェクト：`Font`。openpyxl の Font は `<font><sz val="11"/><b/><color theme="1"/>...</font>` の "nested-with-val-attr" パターンなので、Schema layer に **`nested` ElementDef 種別を追加**：`<tagname val="value"/>` の attribute 経由で primitive を運ぶ形。`<b/>` / `<i/>` 等の bool-empty は既存 `empty` kind を使う。Font のフィールドは name / size / bold / italic / underline / strike / color / family / charset / scheme / vertAlign / outline / shadow / condense / extend。`makeFont` + FontSchema + DEFAULT_FONT (Calibri 11)。round-trip テスト。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -40,7 +38,7 @@
 ### フェーズ2: コアモデル ([04-core-model.md](docs/plan/04-core-model.md))
 
 - [ ] §2 Cell (CellValue 型, makeCell, getCoordinate, bindValue, RichText, MergedCell)
-- [~] §3 Style (Color + Side + Border + Fill + Alignment + Protection 完了：Alignment は HORIZONTAL_ALIGNMENTS 8 種 / VERTICAL_ALIGNMENTS 5 種 enum、textRotation は 0..180 ∪ {255} を `makeAlignment` で enforce (schema は loose な 0..255)、indent 0..255 / relativeIndent ±255 / readingOrder ≥0 のレンジ検証付き、`DEFAULT_ALIGNMENT`。Protection は locked / hidden の 2 bool だけ、`makeProtection` + `DEFAULT_PROTECTION = { locked:true, hidden:false }`。両方とも attrs-only schema で round-trip 完了。357 tests pass。残：NumberFormat / Font)
+- [~] §3 Style (Color + Side + Border + Fill + Alignment + Protection + NumberFormat 完了：NumberFormat は openpyxl `BUILTIN_FORMATS` 36 entries (id 0–22 / 37–49 のスパース) をフルコピー、`BUILTIN_FORMATS_MAX_SIZE = 164`、`builtinFormatCode(id)` / `builtinFormatId(code)` / `isBuiltinFormat(code)`、`isDateFormat` / `isTimedeltaFormat` / `classifyDateFormat` (date/time/datetime/undefined) を openpyxl 互換の正規表現ヒューリスティクスで実装。`makeNumberFormat({ numFmtId, formatCode })` + Schema (numFmt 要素)。FORMAT_GENERAL / FORMAT_TEXT / FORMAT_NUMBER / FORMAT_PERCENTAGE / FORMAT_DATE_DATETIME 等の named export。399 tests pass。残：Font)
 - [ ] §3.4 Stylesheet (プール + dedup + StyleArray index)
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
 - [ ] §3.7 Built-in NamedStyles
