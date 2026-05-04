@@ -362,6 +362,13 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       target: 'theme/theme1.xml',
     });
   }
+  if (wb.vbaProject) {
+    wbRels.rels.push({
+      id: `rId${wbRels.rels.length + 1}`,
+      type: `${REL_NS}/vbaProject`,
+      target: 'vbaProject.bin',
+    });
+  }
 
   // ---- 3. workbook.xml ----------------------------------------------------
   const workbookXml = serializeWorkbookXml(
@@ -435,6 +442,15 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   if (wb.appProperties) await writer.addEntry(ARC_APP, extendedPropsToBytes(wb.appProperties));
   if (wb.customProperties) await writer.addEntry(ARC_CUSTOM, customPropsToBytes(wb.customProperties));
 
+  // ---- 5d. VBA project + signature (when present) -------------------------
+  if (wb.vbaProject) await writer.addEntry('xl/vbaProject.bin', wb.vbaProject);
+  if (wb.vbaSignature) await writer.addEntry('xl/vbaProjectSignature.bin', wb.vbaSignature);
+
+  // ---- 5e. Pass-through bytes (pivot / activeX / customXml / etc.) -------
+  if (wb.passthrough) {
+    for (const [path, bytes] of wb.passthrough) await writer.addEntry(path, bytes);
+  }
+
   // ---- 6. root rels -------------------------------------------------------
   const rootRels: Relationships = { rels: [] };
   rootRels.rels.push({
@@ -469,7 +485,11 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   const manifest = makeManifest();
   addDefault(manifest, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
   addDefault(manifest, 'xml', 'application/xml');
-  addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
+  // VBA-bearing workbooks promote the workbook content type to xlsm.
+  const workbookContentType = wb.vbaProject
+    ? 'application/vnd.ms-excel.sheet.macroEnabled.main+xml'
+    : XLSX_TYPE;
+  addOverride(manifest, `/${ARC_WORKBOOK}`, workbookContentType);
   for (const e of sheetEmits) {
     addOverride(manifest, `/${e.archivePath}`, e.contentType);
   }
@@ -495,6 +515,15 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   for (const us of userShapeEmits) {
     addOverride(manifest, `/xl/drawings/chartDrawing${us.id}.xml`, DRAWING_TYPE);
+  }
+  if (wb.vbaProject) {
+    addDefault(manifest, 'bin', 'application/vnd.ms-office.vbaProject');
+  }
+  if (wb.passthrough) {
+    for (const path of wb.passthrough.keys()) {
+      const ct = wb.passthroughContentTypes?.get(path);
+      if (ct !== undefined) addOverride(manifest, `/${path}`, ct);
+    }
   }
   // Each unique image extension gets a Default entry (`<Default Extension="png" ContentType="image/png"/>`).
   for (const ext of imageExts) {

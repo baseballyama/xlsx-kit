@@ -49,6 +49,28 @@ export interface Workbook {
    * The theme XML is large and seldom edited by writers; we just shuttle it.
    */
   themeXml?: Uint8Array;
+  /**
+   * `xl/vbaProject.bin` payload (macro-enabled workbooks). Round-tripped
+   * byte-identical when present; the writer also promotes the workbook
+   * Override to `vnd.ms-excel.sheet.macroEnabled.main+xml`.
+   */
+  vbaProject?: Uint8Array;
+  /** `xl/vbaProjectSignature.bin` payload, when the macros are signed. */
+  vbaSignature?: Uint8Array;
+  /**
+   * Pass-through bytes for parts we don't model (pivot tables, ActiveX
+   * controls, OLE embeddings, customUI ribbons, customXml items …).
+   * Keys are archive-relative paths; values are the raw bytes the loader
+   * pulled out of the zip and the writer pushes back in unchanged.
+   */
+  passthrough?: Map<string, Uint8Array>;
+  /**
+   * Override content type per pass-through path. Excel uses these in
+   * `[Content_Types].xml` so manifest validation stays intact across
+   * round-trips. Paths without an explicit override fall back to the
+   * archive Default extension.
+   */
+  passthroughContentTypes?: Map<string, string>;
 }
 
 /** Build an empty Workbook ready to host worksheets. */
@@ -187,6 +209,16 @@ export function setActiveSheet(wb: Workbook, title: string): void {
 export function getActiveSheet(wb: Workbook): Worksheet | undefined {
   const ref = wb.sheets[wb.activeSheetIndex];
   return ref?.kind === 'worksheet' ? ref.sheet : undefined;
+}
+
+/** Read-only view onto the customXml/* pass-through parts. */
+export function listCustomXmlParts(wb: Workbook): Array<{ path: string; content: Uint8Array }> {
+  if (!wb.passthrough) return [];
+  const out: Array<{ path: string; content: Uint8Array }> = [];
+  for (const [path, content] of wb.passthrough) {
+    if (path.startsWith('customXml/')) out.push({ path, content });
+  }
+  return out;
 }
 
 /**

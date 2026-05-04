@@ -7,7 +7,17 @@
 
 import { unzipSync } from 'fflate';
 import type { XlsxSource } from '../io/source';
-import { OpenXmlIoError } from '../utils/exceptions';
+import { OpenXmlIoError, OpenXmlNotImplementedError } from '../utils/exceptions';
+
+const CFB_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+const isCfbCompoundDocument = (bytes: Uint8Array): boolean => {
+  if (bytes.length < CFB_MAGIC.length) return false;
+  for (let i = 0; i < CFB_MAGIC.length; i++) {
+    if (bytes[i] !== CFB_MAGIC[i]) return false;
+  }
+  return true;
+};
 
 export interface ZipArchive {
   /** Sorted list of all entry paths in the archive. */
@@ -33,6 +43,17 @@ export async function openZip(source: XlsxSource): Promise<ZipArchive> {
     bytes = await source.toBytes();
   } catch (cause) {
     throw new OpenXmlIoError('openZip: failed to read source bytes', { cause });
+  }
+
+  // Encrypted xlsx files (Excel 2007+ password protection) wrap the real
+  // package inside an OLE Compound File Binary container with the magic
+  // signature `D0 CF 11 E0 A1 B1 1A E1`. Detect that early and surface a
+  // clear "decrypt first" error rather than letting fflate fail with a
+  // generic invalid-zip message.
+  if (isCfbCompoundDocument(bytes)) {
+    throw new OpenXmlNotImplementedError(
+      'Encrypted xlsx is not supported. Decrypt with msoffcrypto-tool first.',
+    );
   }
 
   let entries: Record<string, Uint8Array> | undefined;

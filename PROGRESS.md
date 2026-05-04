@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts 全部完了**
-- **次のタスク**: **フェーズ6 完了** (実装 §2-§8 すべて完了 + §10 acceptance test 通過)。残るのは Excel 365 / LibreOffice / Google Sheets / WPS での視覚同等性手動 QA (pixelmatch) — これは人手介入が必要。次は **フェーズ7 (pivot tables / VBA passthrough)** または **phase 4 streaming** (perf bench で必要性を裏付けてから) へ着手。
+- **次のタスク**: **フェーズ7 passthrough 完了** (encrypted detection / vbaProject / customXml / activeX / ctrlProps / embeddings / customUI / pivotCache / pivotTables を全部 round-trip)。残：openpyxl `pivot/tests/data/` 大規模 round-trip (実 fixture 検証)、Excel 365 でマクロ署名警告が壊れない確認 (人手 QA)、phase 4 streaming (perf bench 必要)。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -84,6 +84,16 @@
 - [x] §7 Chartsheet 完了 (上記)。
 - [x] §10 受け入れ条件 (chart 25 種 round-trip 統合) 完了。`tests/phase-6/chart-25-kinds-acceptance.test.ts` で 16 legacy `c:` (Bar/Line/Area/Pie/Doughnut/Scatter/Radar/Bubble/Stock/Surface/OfPie/Bar3D/Line3D/Pie3D/Area3D/Surface3D) + 8 chartex `cx:` (Sunburst/Treemap/Waterfall/Histogram/Pareto/Funnel/BoxWhisker/RegionMap) を **同一 workbook の 1 シート上に配置** → workbookToBytes → loadWorkbook → kind / 主要属性 (smooth / grouping / scatterStyle / radarStyle / bubble3D / hiLowLines / wireframe / ofPieType / shape / gapDepth / layoutPr.{waterfall,binning,parentLabel,visibility,region}) を全件検証。混在 (legacy + chartex) workbook の rId 衝突なし + manifest に両 content type が並ぶことも確認。catalogue size assertion (16 + 8 = 24)。4 acceptance tests, 1042 tests pass。残：Excel 365 / LibreOffice / Google Sheets / WPS での視覚 QA (pixelmatch) は人手介入。
 - [x] §8 UserShapes (chartDrawing) 完了。`src/chart/user-shapes.ts` に `ChartDrawing { shapes: UserShapeAnchor[] }` + UserShapeAnchor 2 variant (relSize / absSize) + UserShapeContent 2 variant (shape / picture) + ChartRelativeMarker (0..1) + ChartDrawingShape (id / name / descr / hidden / txBox / spPr / txBody) + ChartDrawingPicture (id / embedRId / spPr) + factories。`src/chart/user-shapes-xml.ts` に parseUserShapesXml / serializeUserShapes / userShapesToBytes (CHART_DRAWING_NS=`cdr:` namespace + 共有の DRAWING_NS=`a:`)。`ChartSpace.userShapes?: ChartDrawing` slot を追加、chart-xml.ts に `<c:userShapes r:id>` の emit (serializeChartSpace の opts.userShapesRId 経由) と `findUserShapesRId(bytes)` を追加。saveWorkbook が chart.userShapes 設定時に `xl/drawings/chartDrawingN.xml` + per-chart rels (`xl/charts/_rels/chartN.xml.rels` の chartUserShapes rel) + manifest Override (drawing+xml) を allocate、loadWorkbook が chart bytes から userShapes rId を sniff して per-chart rels を解決して parseUserShapesXml を呼ぶ。5 round-trip tests (relSizeAnchor with text-box shape / absSizeAnchor with EMU ext / picture shape with embed rId / xmlns 出力 / workbook 統合 round-trip)。1038 tests pass。残：§10 受け入れ条件 — chart 25 種すべての round-trip 統合テスト + Excel 視覚同等性手動 QA (pixelmatch)。
+
+### フェーズ7: pivot / VBA / passthrough ([09-pivot-vba.md](docs/plan/09-pivot-vba.md))
+
+- [x] §1 全体方針 (passthrough vs construction): construction API は提供せず、openpyxl が壊さない xlsx を openxml-js も壊さない range で実装。
+- [x] §2 pivot table passthrough: `xl/pivotCache/pivotCacheDefinitionN.xml` / `pivotCacheRecordsN.xml` / `xl/pivotTables/pivotTableN.xml` を全部 bytes 保存して書き戻し (Workbook.passthrough Map)。schema 経由の編集 API は将来へ deferred。
+- [x] §3 VBA / ActiveX / OLE passthrough: `xl/vbaProject.bin` (`Workbook.vbaProject`) / `xl/vbaProjectSignature.bin` (`Workbook.vbaSignature`) は専用 slot、`xl/activeX/*` / `xl/embeddings/*` / `xl/ctrlProps/*` / `customUI/*` / `xl/drawings/*.vml` (control VML、`vmlDrawingN.vml` は除く) は passthrough Map。VBA 含む保存時は Override を `application/vnd.ms-excel.sheet.macroEnabled.main+xml` に昇格 + `bin` Default + workbook-rels に `${REL_NS}/vbaProject` 追加。
+- [x] §4 暗号化検出: openZip 入口で OLE Compound File Binary magic (`D0 CF 11 E0 A1 B1 1A E1`) を検出 → `OpenXmlNotImplementedError('Encrypted xlsx is not supported. Decrypt with msoffcrypto-tool first.')`。
+- [x] §5 customXml passthrough + `listCustomXmlParts(wb)` 公開ヘルパ。
+- [x] §6 content type 推論: 各 passthrough エントリは `Workbook.passthroughContentTypes: Map<path, content-type>` に保持し manifest Override に書き戻し。
+- 7 passthrough tests (encrypted detection / vbaProject byte-identical + xlsm 昇格 / vbaSignature / customXml + listCustomXmlParts / activeX+ctrlProps+embeddings+customUI / pivotCache+pivotTables / comment VML が誤キャプチャされない)。1049 tests pass。残：実 xlsm fixture (openpyxl `tests/data/reader/vba+comments.xlsm` 等) との byte-identical round-trip、Excel 365 マクロ署名警告手動 QA。
 
 ## 1 ターンの流れ
 

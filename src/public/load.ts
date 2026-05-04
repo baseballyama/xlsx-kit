@@ -188,7 +188,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   if (!archive.has(ARC_CONTENT_TYPES)) {
     throw new OpenXmlSchemaError(`loadWorkbook: missing "${ARC_CONTENT_TYPES}"`);
   }
-  manifestFromBytes(archive.read(ARC_CONTENT_TYPES));
+  const manifest = manifestFromBytes(archive.read(ARC_CONTENT_TYPES));
 
   // 2. Root rels → resolve the office-document relationship to the workbook part path.
   if (!archive.has(ARC_ROOT_RELS)) {
@@ -423,5 +423,69 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
     wb.sheets.push(ref);
   }
+
+  // Pass-through: capture parts we don't model (VBA / pivot / activeX /
+  // OLE / customUI / customXml / etc.) so re-saving doesn't drop them.
+  capturePassthrough(archive, manifest, wb);
   return wb;
+}
+
+const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
+  'xl/activeX/',
+  'xl/ctrlProps/',
+  'xl/embeddings/',
+  'xl/pivotCache/',
+  'xl/pivotTables/',
+  'customUI/',
+  'customXml/',
+];
+
+const isControlVml = (path: string): boolean => {
+  // Control VML drawings live next to chart drawings under xl/drawings/.
+  // Comment VML (vmlDrawingN.vml) is regenerated from comments and must
+  // NOT be captured as passthrough.
+  if (!path.startsWith('xl/drawings/')) return false;
+  if (!path.endsWith('.vml')) return false;
+  return !path.includes('/vmlDrawing');
+};
+
+const isPassthroughPath = (path: string): boolean => {
+  if (PASSTHROUGH_PREFIXES.some((p) => path.startsWith(p))) return true;
+  return isControlVml(path);
+};
+
+/**
+ * Walk the archive after the modeled parts are loaded and capture any
+ * remaining content into `wb.passthrough`. The dedicated VBA project
+ * binaries land on their own slots so the writer can promote the
+ * workbook content type to xlsm.
+ */
+function capturePassthrough(
+  archive: ZipArchive,
+  manifest: import('../packaging/manifest').Manifest,
+  wb: Workbook,
+): void {
+  const overrides = new Map<string, string>();
+  for (const o of manifest.overrides) {
+    // Manifest paths are package-absolute (`/xl/...`); strip the leading slash.
+    overrides.set(o.partName.replace(/^\//, ''), o.contentType);
+  }
+  for (const path of archive.list()) {
+    if (path === 'xl/vbaProject.bin') {
+      wb.vbaProject = archive.read(path);
+      continue;
+    }
+    if (path === 'xl/vbaProjectSignature.bin') {
+      wb.vbaSignature = archive.read(path);
+      continue;
+    }
+    if (!isPassthroughPath(path)) continue;
+    if (!wb.passthrough) wb.passthrough = new Map();
+    wb.passthrough.set(path, archive.read(path));
+    const ct = overrides.get(path);
+    if (ct !== undefined) {
+      if (!wb.passthroughContentTypes) wb.passthroughContentTypes = new Map();
+      wb.passthroughContentTypes.set(path, ct);
+    }
+  }
 }
