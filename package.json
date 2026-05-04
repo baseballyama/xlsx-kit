@@ -1,0 +1,40 @@
+{
+  "name": "openxml-js",
+  "version": "0.0.0",
+  "description": "TypeScript port of openpyxl: read/write Excel xlsx in Node and the browser.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Yuichiro Yamashita",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.18"
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsup",
+    "size": "size-limit",
+    "doc:api": "typedoc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@10.25.0"
+}
