@@ -158,12 +158,12 @@ CI で size-limit を必須通過とする。
 
 Biome で一本化：
 
-`biome.json`:
+`biome.json`（Biome 2.4 schema）:
 ```jsonc
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": { "ignore": ["dist", "reference"] },
+  "files": { "includes": ["**", "!**/dist", "!**/reference", "!**/node_modules", "!**/coverage"] },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
   "linter": {
     "enabled": true,
@@ -175,10 +175,12 @@ Biome で一本化：
       "suspicious": { "noClassAssign": "error" }
     }
   },
-  "organizeImports": { "enabled": true },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "all" } }
 }
 ```
+
+> Biome 2.x は 1.x からスキーマが変わっており、`files.ignore` → `files.includes`（`!` プレフィックス）、`organizeImports` → `assist.actions.source.organizeImports`。テンプレを書き換えるときは `pnpm exec biome migrate --write` で自動移行できる。
 
 加えて、**`class` キーワード使用禁止のカスタムルール**を Biome カスタムプラグイン（または ESLint 併用）で実装する。例外：`Error` 派生のみ許可。
 
