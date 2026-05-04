@@ -14,6 +14,8 @@
 // docProps / theme / VBA / drawings / charts are reserved for later
 // iterations — load tolerates their absence.
 
+import type { Drawing } from '../drawing/drawing';
+import { drawingToBytes } from '../drawing/drawing-xml';
 import type { XlsxSink } from '../io/sink';
 import { corePropsToBytes } from '../packaging/core';
 import { customPropsToBytes } from '../packaging/custom';
@@ -64,6 +66,8 @@ const COMMENTS_REL = `${REL_NS}/comments`;
 const VML_DRAWING_REL = `${REL_NS}/vmlDrawing`;
 const COMMENTS_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml';
 const VML_DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.vmlDrawing';
+const DRAWING_REL = `${REL_NS}/drawing`;
+const DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.drawing+xml';
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -104,6 +108,9 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   const commentEmits: CommentEmit[] = [];
   let nextCommentsId = 1;
+  // Drawings: workbook-global drawingN counter for xl/drawings/drawingN.xml.
+  const drawingEmits: Array<{ id: number; bytes: Uint8Array }> = [];
+  let nextDrawingId = 1;
   wb.sheets.forEach((ref, i) => {
     const target = `worksheets/sheet${i + 1}.xml`;
     const sheetRels = makeRelationships();
@@ -142,11 +149,23 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       });
       return { vmlRelId };
     };
+    const registerDrawing = (drawing: Drawing): { rId: string } => {
+      const id = nextDrawingId++;
+      const rId = `rId${sheetRels.rels.length + 1}`;
+      sheetRels.rels.push({
+        id: rId,
+        type: DRAWING_REL,
+        target: `../drawings/drawing${id}.xml`,
+      });
+      drawingEmits.push({ id, bytes: drawingToBytes(drawing) });
+      return { rId };
+    };
     const bytes = worksheetToBytes(ref.sheet, {
       sharedStrings: sst,
       rels: sheetRels,
       registerTable,
       registerComments,
+      registerDrawing,
     });
     const emit: SheetEmit = { id: `rId${i + 1}`, target, bytes };
     if (sheetRels.rels.length > 0) emit.rels = sheetRels;
@@ -210,6 +229,11 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   for (const c of commentEmits) {
     await writer.addEntry(`xl/comments${c.id}.xml`, c.commentsBytes);
     await writer.addEntry(`xl/drawings/vmlDrawing${c.id}.vml`, c.vmlBytes);
+  }
+
+  // ---- 4d. drawings ------------------------------------------------------
+  for (const d of drawingEmits) {
+    await writer.addEntry(`xl/drawings/drawing${d.id}.xml`, d.bytes);
   }
 
   // ---- 5. styles.xml + sharedStrings.xml (if any) -------------------------
@@ -278,6 +302,9 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   for (const c of commentEmits) {
     addOverride(manifest, `/xl/comments${c.id}.xml`, COMMENTS_TYPE);
+  }
+  for (const d of drawingEmits) {
+    addOverride(manifest, `/xl/drawings/drawing${d.id}.xml`, DRAWING_TYPE);
   }
   if (wb.properties) addOverride(manifest, `/${ARC_CORE}`, CORE_PROPS_TYPE);
   if (wb.appProperties) addOverride(manifest, `/${ARC_APP}`, EXT_PROPS_TYPE);

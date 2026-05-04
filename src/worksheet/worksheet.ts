@@ -8,6 +8,7 @@
 
 import type { CellValue } from '../cell/cell';
 import { type Cell, makeCell } from '../cell/cell';
+import type { Drawing } from '../drawing/drawing';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { AutoFilter } from './auto-filter';
@@ -68,6 +69,13 @@ export interface Worksheet {
   legacyComments: LegacyComment[];
   /** Conditional formatting blocks. */
   conditionalFormatting: ConditionalFormatting[];
+  /**
+   * Spreadsheet drawing — at most one per worksheet. Hosts charts /
+   * pictures / shapes. Persisted as `xl/drawings/drawingN.xml` plus a
+   * worksheet-rels entry; on the wire the worksheet body emits
+   * `<drawing r:id>`.
+   */
+  drawing?: Drawing;
 }
 
 /** Build a Worksheet shell. */

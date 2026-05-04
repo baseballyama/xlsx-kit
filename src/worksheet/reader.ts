@@ -15,6 +15,7 @@ import {
   setFormula,
   setSharedFormula,
 } from '../cell/cell';
+import type { Drawing } from '../drawing/drawing';
 import { translateFormula } from '../formula/translate';
 import type { Relationships } from '../packaging/relationships';
 import { findById } from '../packaging/relationships';
@@ -83,6 +84,7 @@ const TABLE_PART_TAG = `{${SHEET_MAIN_NS}}tablePart`;
 const CONDITIONAL_FORMATTING_TAG = `{${SHEET_MAIN_NS}}conditionalFormatting`;
 const CF_RULE_TAG = `{${SHEET_MAIN_NS}}cfRule`;
 const FORMULA_TAG = `{${SHEET_MAIN_NS}}formula`;
+const DRAWING_TAG = `{${SHEET_MAIN_NS}}drawing`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -98,6 +100,11 @@ export interface WorksheetReadContext {
    * `ws.legacyComments`.
    */
   loadComments?: (relId: string) => ReadonlyArray<LegacyComment> | undefined;
+  /**
+   * Loader for the worksheet's drawing part. Called once when the
+   * worksheet inline carries `<drawing r:id="...">`.
+   */
+  loadDrawing?: (relId: string) => Drawing | undefined;
 }
 
 /** Per-worksheet state for shared-formula expansion. */
@@ -229,6 +236,16 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
         const list = ctx.loadComments(rel.id);
         if (list) ws.legacyComments.push(...list);
       }
+    }
+  }
+
+  // <drawing r:id="rIdN"/> — at most one per sheet. Resolve via loadDrawing.
+  const drawingEl = findChild(root, DRAWING_TAG);
+  if (drawingEl && ctx.loadDrawing) {
+    const rId = drawingEl.attrs[`{${REL_NS}}id`];
+    if (rId) {
+      const d = ctx.loadDrawing(rId);
+      if (d) ws.drawing = d;
     }
   }
   return ws;

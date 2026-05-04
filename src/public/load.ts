@@ -10,6 +10,7 @@
 // `genuine/empty.xlsx` fixture (3 empty sheets) and to give the rest of
 // phase 3 a stable scaffolding to layer onto.
 
+import { parseDrawingXml } from '../drawing/drawing-xml';
 import type { XlsxSource } from '../io/source';
 import { corePropsFromBytes } from '../packaging/core';
 import { customPropsFromBytes } from '../packaging/custom';
@@ -315,11 +316,21 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
           return parseCommentsXml(archive.read(cPath));
         }
       : undefined;
+    const loadDrawing = sheetRels
+      ? (relId: string) => {
+          const dRel = sheetRels.rels.find((r) => r.id === relId);
+          if (!dRel) return undefined;
+          const dPath = resolveRelTarget(sheetPath, dRel.target);
+          if (!archive.has(dPath)) return undefined;
+          return parseDrawingXml(archive.read(dPath));
+        }
+      : undefined;
     const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, {
       sharedStrings: sst,
       ...(sheetRels ? { rels: sheetRels } : {}),
       ...(loadTable ? { loadTable } : {}),
       ...(loadComments ? { loadComments } : {}),
+      ...(loadDrawing ? { loadDrawing } : {}),
     });
     const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
     wb.sheets.push(ref);

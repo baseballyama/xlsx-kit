@@ -53,6 +53,14 @@ export interface WorksheetWriteContext {
    * carries any comments.
    */
   registerComments?: (comments: ReadonlyArray<import('./comments').LegacyComment>) => { vmlRelId: string };
+  /**
+   * Drawing allocator. saveWorkbook emits xl/drawings/drawingN.xml under
+   * a workbook-global counter, registers a `${REL_NS}/drawing` rel on
+   * the worksheet rels, and returns the worksheet-rels rId — splatted
+   * into `<drawing r:id>` by the writer. Called once when ws.drawing is
+   * set.
+   */
+  registerDrawing?: (drawing: import('../drawing/drawing').Drawing) => { rId: string };
 }
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
@@ -120,6 +128,10 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   }
   if (ws.hyperlinks.length > 0) {
     parts.push(serializeHyperlinks(ws.hyperlinks, ctx.rels));
+  }
+  if (ws.drawing && ctx.registerDrawing) {
+    const { rId } = ctx.registerDrawing(ws.drawing);
+    parts.push(`<drawing r:id="${escapeXmlAttr(rId)}"/>`);
   }
   if (ws.legacyComments.length > 0 && ctx.registerComments) {
     const { vmlRelId } = ctx.registerComments(ws.legacyComments);
