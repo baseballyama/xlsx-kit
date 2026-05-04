@@ -5,8 +5,8 @@
 
 ## カレント
 
-- **フェーズ**: フェーズ1（基盤層）に着手
-- **次のタスク**: フェーズ1 §1 (`XlsxSource` / `XlsxSink` interface + Node ヘルパ + ブラウザヘルパ) の最小実装。型から先、実装は Buffer / Uint8Array / Blob のメモリ経路だけ。ストリーム経路は §2 ZIP 実装と同時に。
+- **フェーズ**: フェーズ1（基盤層）
+- **次のタスク**: フェーズ1 §2 ZIP 層（`fflate` ベースの reader / writer）。`src/zip/reader.ts` の `openZip(source): { list, read, readAsync, close }` から着手し、フィクスチャ（`reference/openpyxl/openpyxl/tests/data/genuine/empty.xlsx`）でメモリ展開の往復が成立することまで。streaming は §1 IO の Readable/Writable 経路と組み合わせる次々ターン。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -24,7 +24,7 @@
 
 ### フェーズ1: 基盤層（[03-foundations.md](docs/plan/03-foundations.md)）
 
-- [ ] §1 I/O 抽象（`XlsxSource` / `XlsxSink`、Node ヘルパ、ブラウザヘルパ）
+- [~] §1 I/O 抽象（メモリ経路のみ完了：`XlsxSource` / `XlsxSink` / `BufferedSinkWriter` の interface、`OpenXmlError` 階層、Node の `fromBuffer` / `toBuffer`、ブラウザの `fromBlob` / `fromFile` / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`、30 tests pass。残：filesystem / Readable / Writable / Response 経路は §2 ZIP streaming と同時に）
 - [ ] §2 ZIP 層（fflate ベース reader/writer、ストリーミング）
 - [ ] §3 XML 層（fast-xml-parser DOM + saxes SAX + namespace 定数）
 - [ ] §4 Schema 層（Schema 型 + `toTree`/`fromTree`）
