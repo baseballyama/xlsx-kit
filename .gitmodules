@@ -1,0 +1,4 @@
+[submodule "reference/openpyxl"]
+	path = reference/openpyxl
+	url = https://github.com/quintagroup/openpyxl.git
+	branch = master
