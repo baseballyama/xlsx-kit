@@ -12,6 +12,16 @@ import {
   VALUED_COLOR_MOD_KINDS,
   VALUELESS_COLOR_MOD_KINDS,
 } from './colors';
+import type {
+  Effect,
+  EffectContainer,
+  EffectList,
+  EffectsRef,
+  FillBlendMode,
+  PresetShadowName,
+  ShadowAlign,
+} from './effect';
+import { PRESET_SHADOW_NAMES } from './effect';
 import type { Blip, BlipEffect, Fill, GradientLineDir, GradientStop, RelativeRect, TileFill, TileFlip } from './fill';
 import type {
   AdjPoint2D,
@@ -881,6 +891,271 @@ export const serializeGeometry = (g: Geometry): string => {
   return parts.join('');
 };
 
+// ---- Effects ---------------------------------------------------------------
+
+const VALID_BLEND: ReadonlyArray<string> = ['over', 'mult', 'screen', 'darken', 'lighten'];
+const VALID_SHADOW_ALIGN: ReadonlyArray<string> = ['tl', 't', 'tr', 'l', 'ctr', 'r', 'bl', 'b', 'br'];
+const PRESET_SHADOW_SET: ReadonlySet<string> = new Set(PRESET_SHADOW_NAMES);
+
+const EFFECT_LEAF_NAMES = new Set([
+  'blur',
+  'fillOverlay',
+  'glow',
+  'innerShdw',
+  'outerShdw',
+  'prstShdw',
+  'reflection',
+  'softEdge',
+]);
+
+const parseEffectLeaf = (el: XmlNode): Effect | undefined => {
+  const local = el.name.split('}').pop() ?? el.name;
+  switch (local) {
+    case 'blur': {
+      const rad = intAttr(el, 'rad') ?? 0;
+      const grow = boolAttr(el, 'grow');
+      return { kind: 'blur', rad, ...(grow !== undefined ? { grow } : {}) };
+    }
+    case 'fillOverlay': {
+      const blendRaw = el.attrs['blend'];
+      const blend: FillBlendMode = VALID_BLEND.includes(blendRaw ?? '') ? (blendRaw as FillBlendMode) : 'over';
+      const fill = parseFill(el);
+      if (!fill) return undefined;
+      return { kind: 'fillOverlay', blend, fill };
+    }
+    case 'glow': {
+      const rad = intAttr(el, 'rad') ?? 0;
+      const color = parseDmlColor(el);
+      if (!color) return undefined;
+      return { kind: 'glow', rad, color };
+    }
+    case 'innerShdw': {
+      const color = parseDmlColor(el);
+      if (!color) return undefined;
+      const blurRad = intAttr(el, 'blurRad');
+      const dist = intAttr(el, 'dist');
+      const dir = intAttr(el, 'dir');
+      return {
+        kind: 'innerShdw',
+        color,
+        ...(blurRad !== undefined ? { blurRad } : {}),
+        ...(dist !== undefined ? { dist } : {}),
+        ...(dir !== undefined ? { dir } : {}),
+      };
+    }
+    case 'outerShdw': {
+      const color = parseDmlColor(el);
+      if (!color) return undefined;
+      const blurRad = intAttr(el, 'blurRad');
+      const dist = intAttr(el, 'dist');
+      const dir = intAttr(el, 'dir');
+      const sx = intAttr(el, 'sx');
+      const sy = intAttr(el, 'sy');
+      const kx = intAttr(el, 'kx');
+      const ky = intAttr(el, 'ky');
+      const algnRaw = el.attrs['algn'];
+      const algn: ShadowAlign | undefined =
+        algnRaw && VALID_SHADOW_ALIGN.includes(algnRaw) ? (algnRaw as ShadowAlign) : undefined;
+      const rotWithShape = boolAttr(el, 'rotWithShape');
+      return {
+        kind: 'outerShdw',
+        color,
+        ...(blurRad !== undefined ? { blurRad } : {}),
+        ...(dist !== undefined ? { dist } : {}),
+        ...(dir !== undefined ? { dir } : {}),
+        ...(sx !== undefined ? { sx } : {}),
+        ...(sy !== undefined ? { sy } : {}),
+        ...(kx !== undefined ? { kx } : {}),
+        ...(ky !== undefined ? { ky } : {}),
+        ...(algn ? { algn } : {}),
+        ...(rotWithShape !== undefined ? { rotWithShape } : {}),
+      };
+    }
+    case 'prstShdw': {
+      const color = parseDmlColor(el);
+      if (!color) return undefined;
+      const prstRaw = el.attrs['prst'];
+      if (!prstRaw || !PRESET_SHADOW_SET.has(prstRaw)) return undefined;
+      const dist = intAttr(el, 'dist');
+      const dir = intAttr(el, 'dir');
+      return {
+        kind: 'prstShdw',
+        prst: prstRaw as PresetShadowName,
+        color,
+        ...(dist !== undefined ? { dist } : {}),
+        ...(dir !== undefined ? { dir } : {}),
+      };
+    }
+    case 'reflection': {
+      const blurRad = intAttr(el, 'blurRad');
+      const stA = intAttr(el, 'stA');
+      const stPos = intAttr(el, 'stPos');
+      const endA = intAttr(el, 'endA');
+      const endPos = intAttr(el, 'endPos');
+      const dist = intAttr(el, 'dist');
+      const dir = intAttr(el, 'dir');
+      const fadeDir = intAttr(el, 'fadeDir');
+      const sx = intAttr(el, 'sx');
+      const sy = intAttr(el, 'sy');
+      const kx = intAttr(el, 'kx');
+      const ky = intAttr(el, 'ky');
+      const algnRaw = el.attrs['algn'];
+      const algn: ShadowAlign | undefined =
+        algnRaw && VALID_SHADOW_ALIGN.includes(algnRaw) ? (algnRaw as ShadowAlign) : undefined;
+      const rotWithShape = boolAttr(el, 'rotWithShape');
+      return {
+        kind: 'reflection',
+        ...(blurRad !== undefined ? { blurRad } : {}),
+        ...(stA !== undefined ? { stA } : {}),
+        ...(stPos !== undefined ? { stPos } : {}),
+        ...(endA !== undefined ? { endA } : {}),
+        ...(endPos !== undefined ? { endPos } : {}),
+        ...(dist !== undefined ? { dist } : {}),
+        ...(dir !== undefined ? { dir } : {}),
+        ...(fadeDir !== undefined ? { fadeDir } : {}),
+        ...(sx !== undefined ? { sx } : {}),
+        ...(sy !== undefined ? { sy } : {}),
+        ...(kx !== undefined ? { kx } : {}),
+        ...(ky !== undefined ? { ky } : {}),
+        ...(algn ? { algn } : {}),
+        ...(rotWithShape !== undefined ? { rotWithShape } : {}),
+      };
+    }
+    case 'softEdge':
+      return { kind: 'softEdge', rad: intAttr(el, 'rad') ?? 0 };
+    default:
+      return undefined;
+  }
+};
+
+const parseEffectContainerChildren = (parent: XmlNode): Array<Effect | EffectContainer> => {
+  const out: Array<Effect | EffectContainer> = [];
+  for (const c of parent.children) {
+    if (typeof c === 'string') continue;
+    const local = c.name.split('}').pop() ?? c.name;
+    if (local === 'cont') {
+      out.push(parseEffectContainer(c));
+    } else if (EFFECT_LEAF_NAMES.has(local)) {
+      const leaf = parseEffectLeaf(c);
+      if (leaf) out.push(leaf);
+    }
+  }
+  return out;
+};
+
+const parseEffectContainer = (el: XmlNode): EffectContainer => {
+  const typeRaw = el.attrs['type'];
+  const type: 'tree' | 'sib' = typeRaw === 'tree' ? 'tree' : 'sib';
+  const name = el.attrs['name'];
+  return {
+    type,
+    ...(name !== undefined ? { name } : {}),
+    children: parseEffectContainerChildren(el),
+  };
+};
+
+const parseEffectList = (el: XmlNode): EffectList => {
+  const list: Effect[] = [];
+  for (const c of el.children) {
+    if (typeof c === 'string') continue;
+    const leaf = parseEffectLeaf(c);
+    if (leaf) list.push(leaf);
+  }
+  return { list };
+};
+
+export const parseEffects = (parent: XmlNode): EffectsRef | undefined => {
+  const lstEl = findChild(parent, A('effectLst'));
+  if (lstEl) return { kind: 'lst', list: parseEffectList(lstEl) };
+  const dagEl = findChild(parent, A('effectDag'));
+  if (dagEl) return { kind: 'dag', children: parseEffectContainerChildren(dagEl) };
+  return undefined;
+};
+
+const serializeEffectLeaf = (e: Effect): string => {
+  switch (e.kind) {
+    case 'blur': {
+      const grow = e.grow !== undefined ? ` grow="${e.grow ? '1' : '0'}"` : '';
+      return `<a:blur rad="${e.rad}"${grow}/>`;
+    }
+    case 'fillOverlay':
+      return `<a:fillOverlay blend="${e.blend}">${serializeFill(e.fill)}</a:fillOverlay>`;
+    case 'glow':
+      return `<a:glow rad="${e.rad}">${serializeDmlColor(e.color)}</a:glow>`;
+    case 'innerShdw': {
+      const a: string[] = [];
+      if (e.blurRad !== undefined) a.push(`blurRad="${e.blurRad}"`);
+      if (e.dist !== undefined) a.push(`dist="${e.dist}"`);
+      if (e.dir !== undefined) a.push(`dir="${e.dir}"`);
+      return `<a:innerShdw${a.length > 0 ? ` ${a.join(' ')}` : ''}>${serializeDmlColor(e.color)}</a:innerShdw>`;
+    }
+    case 'outerShdw': {
+      const a: string[] = [];
+      if (e.blurRad !== undefined) a.push(`blurRad="${e.blurRad}"`);
+      if (e.dist !== undefined) a.push(`dist="${e.dist}"`);
+      if (e.dir !== undefined) a.push(`dir="${e.dir}"`);
+      if (e.sx !== undefined) a.push(`sx="${e.sx}"`);
+      if (e.sy !== undefined) a.push(`sy="${e.sy}"`);
+      if (e.kx !== undefined) a.push(`kx="${e.kx}"`);
+      if (e.ky !== undefined) a.push(`ky="${e.ky}"`);
+      if (e.algn) a.push(`algn="${e.algn}"`);
+      if (e.rotWithShape !== undefined) a.push(`rotWithShape="${e.rotWithShape ? '1' : '0'}"`);
+      return `<a:outerShdw${a.length > 0 ? ` ${a.join(' ')}` : ''}>${serializeDmlColor(e.color)}</a:outerShdw>`;
+    }
+    case 'prstShdw': {
+      const a: string[] = [`prst="${e.prst}"`];
+      if (e.dist !== undefined) a.push(`dist="${e.dist}"`);
+      if (e.dir !== undefined) a.push(`dir="${e.dir}"`);
+      return `<a:prstShdw ${a.join(' ')}>${serializeDmlColor(e.color)}</a:prstShdw>`;
+    }
+    case 'reflection': {
+      const a: string[] = [];
+      if (e.blurRad !== undefined) a.push(`blurRad="${e.blurRad}"`);
+      if (e.stA !== undefined) a.push(`stA="${e.stA}"`);
+      if (e.stPos !== undefined) a.push(`stPos="${e.stPos}"`);
+      if (e.endA !== undefined) a.push(`endA="${e.endA}"`);
+      if (e.endPos !== undefined) a.push(`endPos="${e.endPos}"`);
+      if (e.dist !== undefined) a.push(`dist="${e.dist}"`);
+      if (e.dir !== undefined) a.push(`dir="${e.dir}"`);
+      if (e.fadeDir !== undefined) a.push(`fadeDir="${e.fadeDir}"`);
+      if (e.sx !== undefined) a.push(`sx="${e.sx}"`);
+      if (e.sy !== undefined) a.push(`sy="${e.sy}"`);
+      if (e.kx !== undefined) a.push(`kx="${e.kx}"`);
+      if (e.ky !== undefined) a.push(`ky="${e.ky}"`);
+      if (e.algn) a.push(`algn="${e.algn}"`);
+      if (e.rotWithShape !== undefined) a.push(`rotWithShape="${e.rotWithShape ? '1' : '0'}"`);
+      return `<a:reflection${a.length > 0 ? ` ${a.join(' ')}` : ''}/>`;
+    }
+    case 'softEdge':
+      return `<a:softEdge rad="${e.rad}"/>`;
+  }
+};
+
+const serializeEffectContainer = (c: EffectContainer): string => {
+  const a: string[] = [`type="${c.type}"`];
+  if (c.name !== undefined) a.push(`name="${escapeAttr(c.name)}"`);
+  const inner = c.children
+    .map((child) =>
+      'kind' in child ? serializeEffectLeaf(child as Effect) : serializeEffectContainer(child as EffectContainer),
+    )
+    .join('');
+  return `<a:cont ${a.join(' ')}>${inner}</a:cont>`;
+};
+
+export const serializeEffects = (e: EffectsRef): string => {
+  if (e.kind === 'lst') {
+    if (e.list.list.length === 0) return '<a:effectLst/>';
+    return `<a:effectLst>${e.list.list.map(serializeEffectLeaf).join('')}</a:effectLst>`;
+  }
+  if (e.children.length === 0) return '<a:effectDag/>';
+  const inner = e.children
+    .map((child) =>
+      'kind' in child ? serializeEffectLeaf(child as Effect) : serializeEffectContainer(child as EffectContainer),
+    )
+    .join('');
+  return `<a:effectDag>${inner}</a:effectDag>`;
+};
+
 // ---- ShapeProperties -------------------------------------------------------
 
 const VALID_BWMODE: ReadonlyArray<string> = [
@@ -957,6 +1232,8 @@ export const parseShapeProperties = (el: XmlNode): ShapeProperties => {
   if (fill) out.fill = fill;
   const ln = findChild(el, A('ln'));
   if (ln) out.ln = parseLine(ln);
+  const effects = parseEffects(el);
+  if (effects) out.effects = effects;
   return out;
 };
 
@@ -969,6 +1246,7 @@ export const serializeShapeProperties = (sp: ShapeProperties, wrapperTag = 'c:sp
   if (sp.geometry) parts.push(serializeGeometry(sp.geometry));
   if (sp.fill) parts.push(serializeFill(sp.fill));
   if (sp.ln) parts.push(serializeLine(sp.ln));
+  if (sp.effects) parts.push(serializeEffects(sp.effects));
   parts.push(`</${wrapperTag}>`);
   return parts.join('');
 };
