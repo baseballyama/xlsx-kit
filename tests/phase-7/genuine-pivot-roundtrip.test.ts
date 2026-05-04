@@ -74,4 +74,50 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     const wb2 = await loadWorkbook(fromBuffer(bytes));
     expect(wb2.sheets.map((s) => s.sheet.title)).toEqual(['ptsheet', 'raw']);
   });
+
+  it('preserves <pivotCaches> in workbook.xml + matching workbook-rels entry', async () => {
+    const original = readFileSync(FIXTURE);
+    const wb = await loadWorkbook(fromBuffer(original));
+    const bytes = await workbookToBytes(wb);
+
+    const { unzipSync } = await import('fflate');
+    const entries = unzipSync(bytes);
+    const wbXml = new TextDecoder().decode(entries['xl/workbook.xml']);
+    const wbRels = new TextDecoder().decode(entries['xl/_rels/workbook.xml.rels']);
+
+    // The <pivotCaches><pivotCache cacheId="68" r:id="..."/> survives.
+    const pivotCacheMatch = wbXml.match(/<pivotCache[^/]*cacheId="68"[^/]*r:id="(rId\d+)"\s*\/>/);
+    expect(pivotCacheMatch, `workbook.xml should keep <pivotCache>: ${wbXml}`).not.toBeNull();
+    const pivotRId = pivotCacheMatch?.[1];
+    expect(pivotRId).toBeDefined();
+
+    // …and the matching workbook-rels entry uses the same Id and points
+    // at the captured pivotCacheDefinition1.xml part.
+    const relPattern = new RegExp(
+      `<Relationship[^/]*Id="${pivotRId}"[^/]*Type="[^"]*pivotCacheDefinition"[^/]*Target="pivotCache/pivotCacheDefinition1\\.xml"\\s*/>`,
+    );
+    expect(wbRels).toMatch(relPattern);
+  });
+
+  it('preserves the workbook-extras (fileVersion / workbookPr / bookViews / calcPr / extLst)', async () => {
+    const original = readFileSync(FIXTURE);
+    const wb = await loadWorkbook(fromBuffer(original));
+    const bytes = await workbookToBytes(wb);
+
+    const { unzipSync } = await import('fflate');
+    const entries = unzipSync(bytes);
+    const wbXml = new TextDecoder().decode(entries['xl/workbook.xml']);
+
+    // The before-sheets and after-sheets extras both round-trip, so Excel
+    // sees the same workbook-level metadata it emitted.
+    expect(wbXml).toContain('<fileVersion');
+    expect(wbXml).toContain('<workbookPr');
+    expect(wbXml).toContain('<bookViews');
+    expect(wbXml).toContain('<workbookView');
+    expect(wbXml).toContain('<calcPr');
+    expect(wbXml).toContain('<extLst');
+    // pivotCaches lives in afterSheets — it's the actual point of this fixture.
+    expect(wbXml).toContain('<pivotCaches');
+    expect(wbXml).toContain('<pivotCache');
+  });
 });

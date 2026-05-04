@@ -35,6 +35,7 @@ import { commentsToBytes, placeholderVmlDrawing } from '../worksheet/comments-xm
 import type { TableDefinition } from '../worksheet/table';
 import { tableToBytes } from '../worksheet/table-xml';
 import { worksheetToBytes } from '../worksheet/writer';
+import { serializeXml as serializeXmlNode } from '../xml/serializer';
 import {
   ARC_APP,
   ARC_CONTENT_TYPES,
@@ -165,7 +166,33 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   // independently of one another).
   let nextWorksheetId = 1;
   let nextChartsheetId = 1;
-  wb.sheets.forEach((ref, i) => {
+  // Pre-claim every original rId so freshly allocated ones (sheets without
+  // a captured rId, plus modeled non-sheet rels) avoid collision with
+  // captured workbookRelsExtras and the modeled non-sheet original ids.
+  const claimedRIds = new Set<string>();
+  for (const ref of wb.sheets) {
+    if (ref.rId !== undefined) claimedRIds.add(ref.rId);
+  }
+  if (wb.workbookRelOriginalIds) {
+    for (const v of Object.values(wb.workbookRelOriginalIds)) {
+      if (typeof v === 'string') claimedRIds.add(v);
+    }
+  }
+  if (wb.workbookRelsExtras) {
+    for (const e of wb.workbookRelsExtras) claimedRIds.add(e.id);
+  }
+  let nextRIdCursor = 1;
+  const allocateRId = (): string => {
+    let id = `rId${nextRIdCursor}`;
+    while (claimedRIds.has(id)) {
+      nextRIdCursor++;
+      id = `rId${nextRIdCursor}`;
+    }
+    claimedRIds.add(id);
+    nextRIdCursor++;
+    return id;
+  };
+  wb.sheets.forEach((ref, _i) => {
     const isChartsheet = ref.kind === 'chartsheet';
     const target = isChartsheet ? `chartsheets/sheet${nextChartsheetId}.xml` : `worksheets/sheet${nextWorksheetId}.xml`;
     const archivePath = isChartsheet
@@ -321,8 +348,9 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       if (ref.sheet.drawing) drawingRId = registerDrawing(ref.sheet.drawing).rId;
       bytes = chartsheetToBytes(ref.sheet, drawingRId !== undefined ? { drawingRId } : {});
     }
+    const sheetRId = ref.rId ?? allocateRId();
     const emit: SheetEmit = {
-      id: `rId${i + 1}`,
+      id: sheetRId,
       target,
       bytes,
       relType: isChartsheet ? CHARTSHEET_REL : `${REL_NS}/worksheet`,
@@ -333,41 +361,48 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     sheetEmits.push(emit);
   });
 
-  // ---- 2. workbook rels -- sheets first, then sst (if any), then styles ---
-  // We pre-assigned rIds (rId1..rIdN) to the sheets so workbook.xml's <sheet
-  // r:id> matches. Build the rels list directly rather than going through
-  // appendRel (which auto-allocates ids).
+  // ---- 2. workbook rels -- sheets first, then sst (if any), then styles,
+  // then theme / vbaProject, then any captured workbookRelsExtras (e.g.
+  // pivotCacheDefinition rels referenced by `<pivotCaches>`).
+  // Modeled non-sheet rels prefer the rId captured at load time so any
+  // captured extras XML using that Id still resolves after the round-trip.
   const wbRels = makeRelationships();
   wbRels.rels = sheetEmits.map((e) => ({
     id: e.id,
     type: e.relType,
     target: e.target,
   }));
+  const orig = wb.workbookRelOriginalIds;
   if (sst.entries.length > 0) {
     wbRels.rels.push({
-      id: `rId${wbRels.rels.length + 1}`,
+      id: orig?.sharedStrings ?? allocateRId(),
       type: `${REL_NS}/sharedStrings`,
       target: 'sharedStrings.xml',
     });
   }
   wbRels.rels.push({
-    id: `rId${wbRels.rels.length + 1}`,
+    id: orig?.styles ?? allocateRId(),
     type: `${REL_NS}/styles`,
     target: 'styles.xml',
   });
   if (wb.themeXml) {
     wbRels.rels.push({
-      id: `rId${wbRels.rels.length + 1}`,
+      id: orig?.theme ?? allocateRId(),
       type: THEME_REL,
       target: 'theme/theme1.xml',
     });
   }
   if (wb.vbaProject) {
     wbRels.rels.push({
-      id: `rId${wbRels.rels.length + 1}`,
+      id: orig?.vbaProject ?? allocateRId(),
       type: `${REL_NS}/vbaProject`,
       target: 'vbaProject.bin',
     });
+  }
+  if (wb.workbookRelsExtras) {
+    for (const e of wb.workbookRelsExtras) {
+      wbRels.rels.push({ id: e.id, type: e.type, target: e.target });
+    }
   }
 
   // ---- 3. workbook.xml ----------------------------------------------------
@@ -546,8 +581,11 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   const parts: string[] = [
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     `<workbook xmlns="${SHEET_MAIN_NS}" xmlns:r="${REL_NS}">`,
-    '<sheets>',
   ];
+  if (wb.workbookXmlExtras?.beforeSheets) {
+    for (const node of wb.workbookXmlExtras.beforeSheets) parts.push(serializeChildNode(node));
+  }
+  parts.push('<sheets>');
   wb.sheets.forEach((ref, i) => {
     const stateAttr = ref.state === 'visible' ? '' : ` state="${ref.state}"`;
     const rId = sheetRIds[i] ?? `rId${i + 1}`;
@@ -565,6 +603,9 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     }
     parts.push('</definedNames>');
   }
+  if (wb.workbookXmlExtras?.afterSheets) {
+    for (const node of wb.workbookXmlExtras.afterSheets) parts.push(serializeChildNode(node));
+  }
   parts.push('</workbook>');
   return parts.join('');
 }
@@ -572,3 +613,15 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
 const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+/**
+ * Serialise an XmlNode child of `<workbook>` for inline injection back
+ * into the workbook XML stream. Reuses serializeXml then strips the
+ * declaration. Captured nodes carry Clark-notation names so namespace
+ * prefixes get reallocated by serializeXml — Excel tolerates the extra
+ * `xmlns="…"` declarations on each captured root.
+ */
+function serializeChildNode(node: import('../xml/tree').XmlNode): string {
+  const bytes = serializeXmlNode(node, { xmlDeclaration: false });
+  return new TextDecoder().decode(bytes);
+}

@@ -25,8 +25,8 @@ export type SheetState = 'visible' | 'hidden' | 'veryHidden';
  * the worksheet- vs chartsheet-specific data.
  */
 export type SheetRef =
-  | { kind: 'worksheet'; sheet: Worksheet; sheetId: number; state: SheetState }
-  | { kind: 'chartsheet'; sheet: Chartsheet; sheetId: number; state: SheetState };
+  | { kind: 'worksheet'; sheet: Worksheet; sheetId: number; state: SheetState; rId?: string }
+  | { kind: 'chartsheet'; sheet: Chartsheet; sheetId: number; state: SheetState; rId?: string };
 
 export interface Workbook {
   sheets: SheetRef[];
@@ -71,6 +71,35 @@ export interface Workbook {
    * archive Default extension.
    */
   passthroughContentTypes?: Map<string, string>;
+  /**
+   * Top-level `<workbook>` children that aren't `<sheets>` or
+   * `<definedNames>` (e.g. `<fileVersion>`, `<workbookPr>`,
+   * `<bookViews>`, `<calcPr>`, `<pivotCaches>`, `<extLst>`). Captured
+   * verbatim so re-saving keeps Excel-rendering fidelity for things we
+   * don't model. Split into the two halves the writer needs: anything
+   * before `<sheets>` is emitted ahead of the `<sheets>` element, the
+   * rest after `<definedNames>`.
+   */
+  workbookXmlExtras?: {
+    beforeSheets: import('../xml/tree').XmlNode[];
+    afterSheets: import('../xml/tree').XmlNode[];
+  };
+  /**
+   * Workbook-level rels that don't match a modeled type. Re-emitted with
+   * their original Id so captured `<pivotCaches r:id="…"/>` etc. still
+   * resolve after a round-trip.
+   */
+  workbookRelsExtras?: ReadonlyArray<{ id: string; type: string; target: string }>;
+  /**
+   * Original rIds for the modeled non-sheet workbook rels so a captured
+   * extras XML referencing one of them still resolves after re-save.
+   */
+  workbookRelOriginalIds?: {
+    sharedStrings?: string;
+    styles?: string;
+    theme?: string;
+    vbaProject?: string;
+  };
 }
 
 /** Build an empty Workbook ready to host worksheets. */

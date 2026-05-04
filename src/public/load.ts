@@ -409,6 +409,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
         sheet: chartsheet,
         sheetId: entry.sheetId,
         state: entry.state,
+        rId: entry.rId,
       };
       wb.sheets.push(ref);
       continue;
@@ -420,14 +421,87 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
       ...(loadComments ? { loadComments } : {}),
       ...(loadDrawing ? { loadDrawing } : {}),
     });
-    const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
+    const ref: SheetRef = {
+      kind: 'worksheet',
+      sheet: ws,
+      sheetId: entry.sheetId,
+      state: entry.state,
+      rId: entry.rId,
+    };
     wb.sheets.push(ref);
   }
+
+  captureWorkbookXmlExtras(wbRoot, wb);
+  captureWorkbookRelsExtras(wbRels, wb);
 
   // Pass-through: capture parts we don't model (VBA / pivot / activeX /
   // OLE / customUI / customXml / etc.) so re-saving doesn't drop them.
   capturePassthrough(archive, manifest, wb);
   return wb;
+}
+
+/**
+ * Walk top-level children of `<workbook>` and split anything that isn't
+ * `<sheets>` or `<definedNames>` into the before/after halves the writer
+ * inserts around the modeled elements. Order is preserved within each
+ * half so things like `<fileVersion>`, `<workbookPr>`, `<bookViews>`,
+ * `<calcPr>`, `<pivotCaches>`, `<extLst>` round-trip in document order.
+ */
+function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
+  const beforeSheets: XmlNode[] = [];
+  const afterSheets: XmlNode[] = [];
+  let seenSheets = false;
+  for (const child of wbRoot.children) {
+    if (child.name === SHEETS_TAG) {
+      seenSheets = true;
+      continue;
+    }
+    if (child.name === DEFINED_NAMES_TAG) continue;
+    if (seenSheets) afterSheets.push(child);
+    else beforeSheets.push(child);
+  }
+  if (beforeSheets.length > 0 || afterSheets.length > 0) {
+    wb.workbookXmlExtras = { beforeSheets, afterSheets };
+  }
+}
+
+/**
+ * Capture workbook-rels entries that don't match a modeled type so the
+ * writer can re-emit them with their original Id (and any captured
+ * `<pivotCaches r:id="…"/>` etc. still resolves after a round-trip).
+ * Modeled non-sheet rels (sst / styles / theme / vbaProject) keep their
+ * original Id via `wb.workbookRelOriginalIds` so the writer can prefer
+ * those over freshly allocated ones.
+ */
+function captureWorkbookRelsExtras(
+  wbRels: import('../packaging/relationships').Relationships,
+  wb: Workbook,
+): void {
+  const SHEET_RELS = new Set([`${REL_NS}/worksheet`, `${REL_NS}/chartsheet`]);
+  const original: NonNullable<Workbook['workbookRelOriginalIds']> = {};
+  const extras: Array<{ id: string; type: string; target: string }> = [];
+  for (const rel of wbRels.rels) {
+    if (SHEET_RELS.has(rel.type)) continue;
+    if (rel.type === `${REL_NS}/sharedStrings`) {
+      original.sharedStrings = rel.id;
+      continue;
+    }
+    if (rel.type === `${REL_NS}/styles`) {
+      original.styles = rel.id;
+      continue;
+    }
+    if (rel.type === `${REL_NS}/theme`) {
+      original.theme = rel.id;
+      continue;
+    }
+    if (rel.type === `${REL_NS}/vbaProject`) {
+      original.vbaProject = rel.id;
+      continue;
+    }
+    extras.push({ id: rel.id, type: rel.type, target: rel.target });
+  }
+  if (Object.keys(original).length > 0) wb.workbookRelOriginalIds = original;
+  if (extras.length > 0) wb.workbookRelsExtras = extras;
 }
 
 const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
