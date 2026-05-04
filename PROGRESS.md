@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts 全部完了**
-- **次のタスク**: **フェーズ7 passthrough 完了** (encrypted detection / vbaProject / customXml / activeX / ctrlProps / embeddings / customUI / pivotCache / pivotTables を全部 round-trip)。残：openpyxl `pivot/tests/data/` 大規模 round-trip (実 fixture 検証)、Excel 365 でマクロ署名警告が壊れない確認 (人手 QA)、phase 4 streaming (perf bench 必要)。
+- **次のタスク**: **フェーズ4 read-only streaming 完了** (loadWorkbookStream + ReadOnlyWorkbook + iterRows / iterValues SAX iter)。残：write-only streaming (createWriteOnlyWorkbook)、perf bench (100M cells / 1GB heap / 500k cells/s)、openpyxl 実 fixture round-trip (pivot/vba)、Excel 365 視覚 QA (人手)。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -66,7 +66,7 @@
 
 ### フェーズ4: streaming ([06-streaming.md](docs/plan/06-streaming.md))
 
-- [ ] (perf bench で必要性を裏付けてから着手)
+- [~] §2 read-only streaming 完了。`src/streaming/read-only.ts`: `loadWorkbookStream(source): ReadOnlyWorkbook` が zip + sharedStrings + styles + workbook.xml の **メタだけ** を eager parse、`openWorksheet(name)` で SAX iter (iterParse 経由) を返す。`iterRows(opts?: IterRowsOptions)` は `<sheetData>/<row>/<c>` 走査の generator で、`{minRow, maxRow, minCol, maxCol}` 範囲でフィルタ可能。`iterValues` は cell envelope を剥がした values-only 高速ルート。cell type は n/s/b/e/str/inlineStr 全対応 (sharedStrings index 解決込み)、styleId 保持。`close()` で zip ハンドルを解放。9 read-only tests (sheet metadata / unknown sheet エラー / 全行 iter / minRow+maxRow 範囲 / minCol+maxCol 範囲 / iterValues / 並行 2-sheet iter / sharedStrings 解決 / Stylesheet 公開)。1058 tests pass。残：write-only streaming (createWriteOnlyWorkbook)、100 万行 perf bench (1GB heap / 500k cells/s)、ReadOnlyCell.numberFormat getter 最適化、parallel buffered worksheet append。
 
 ### フェーズ5: rich features ([07-rich-features.md](docs/plan/07-rich-features.md))
 
