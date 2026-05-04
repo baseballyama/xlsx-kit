@@ -14,6 +14,9 @@ import {
   type BarChart,
   type BarDirection,
   type BarSeries,
+  type BubbleChart,
+  type BubbleSeries,
+  type BubbleSizeRepresents,
   type CategoryAxis,
   type CategoryRef,
   type ChartKind,
@@ -27,6 +30,8 @@ import {
   makeAreaChart,
   makeBarChart,
   makeBarSeries,
+  makeBubbleChart,
+  makeBubbleSeries,
   makeChartSpace,
   makeDoughnutChart,
   makeLineChart,
@@ -34,6 +39,8 @@ import {
   makeRadarChart,
   makeScatterChart,
   makeScatterSeries,
+  makeStockChart,
+  makeSurfaceChart,
   type NumericRef,
   type PieChart,
   type PlotArea,
@@ -42,6 +49,8 @@ import {
   type ScatterChart,
   type ScatterSeries,
   type ScatterStyle,
+  type StockChart,
+  type SurfaceChart,
   type ValueAxis,
 } from './chart';
 
@@ -86,6 +95,17 @@ const SCATTER_STYLE_TAG = `{${CHART_NS}}scatterStyle`;
 const RADAR_STYLE_TAG = `{${CHART_NS}}radarStyle`;
 const X_VAL_TAG = `{${CHART_NS}}xVal`;
 const Y_VAL_TAG = `{${CHART_NS}}yVal`;
+const BUBBLE_CHART_TAG = `{${CHART_NS}}bubbleChart`;
+const STOCK_CHART_TAG = `{${CHART_NS}}stockChart`;
+const SURFACE_CHART_TAG = `{${CHART_NS}}surfaceChart`;
+const BUBBLE_SIZE_TAG = `{${CHART_NS}}bubbleSize`;
+const BUBBLE_3D_TAG = `{${CHART_NS}}bubble3D`;
+const BUBBLE_SCALE_TAG = `{${CHART_NS}}bubbleScale`;
+const SHOW_NEG_BUBBLES_TAG = `{${CHART_NS}}showNegBubbles`;
+const SIZE_REPRESENTS_TAG = `{${CHART_NS}}sizeRepresents`;
+const HI_LOW_LINES_TAG = `{${CHART_NS}}hiLowLines`;
+const UP_DOWN_BARS_TAG = `{${CHART_NS}}upDownBars`;
+const WIREFRAME_TAG = `{${CHART_NS}}wireframe`;
 const AX_POS_TAG = `{${CHART_NS}}axPos`;
 const CROSS_AX_TAG = `{${CHART_NS}}crossAx`;
 const MAJOR_GRIDLINES_TAG = `{${CHART_NS}}majorGridlines`;
@@ -335,6 +355,76 @@ const parseRadarChart = (radarEl: XmlNode): RadarChart => {
   });
 };
 
+const parseBubbleSeries = (serEl: XmlNode): BubbleSeries | undefined => {
+  const idx = intVal(findChild(serEl, IDX_TAG));
+  const order = intVal(findChild(serEl, ORDER_TAG));
+  if (idx === undefined) return undefined;
+  const yVal = parseNumericRef(serEl, Y_VAL_TAG);
+  const bubbleSize = parseNumericRef(serEl, BUBBLE_SIZE_TAG);
+  if (!yVal || !bubbleSize) return undefined;
+  const xVal = parseNumericRef(serEl, X_VAL_TAG);
+  const bubble3D = boolVal(findChild(serEl, BUBBLE_3D_TAG));
+  const opts: Parameters<typeof makeBubbleSeries>[0] = { idx, yVal, bubbleSize };
+  if (order !== undefined) opts.order = order;
+  if (xVal) opts.xVal = xVal;
+  if (bubble3D !== undefined) opts.bubble3D = bubble3D;
+  return makeBubbleSeries(opts);
+};
+
+const parseBubbleChart = (bubbleEl: XmlNode): BubbleChart => {
+  const varyColors = boolVal(findChild(bubbleEl, VARY_COLORS_TAG));
+  const bubble3D = boolVal(findChild(bubbleEl, BUBBLE_3D_TAG));
+  const bubbleScale = intVal(findChild(bubbleEl, BUBBLE_SCALE_TAG));
+  const showNegBubbles = boolVal(findChild(bubbleEl, SHOW_NEG_BUBBLES_TAG));
+  const sizeRepresentsRaw = valAttr(findChild(bubbleEl, SIZE_REPRESENTS_TAG));
+  const sizeRepresents: BubbleSizeRepresents | undefined =
+    sizeRepresentsRaw === 'area' || sizeRepresentsRaw === 'w' ? sizeRepresentsRaw : undefined;
+  const series: BubbleSeries[] = [];
+  for (const ser of findChildren(bubbleEl, SER_TAG)) {
+    const s = parseBubbleSeries(ser);
+    if (s) series.push(s);
+  }
+  return makeBubbleChart({
+    series,
+    axIds: parseAxIds(bubbleEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+    ...(bubble3D !== undefined ? { bubble3D } : {}),
+    ...(bubbleScale !== undefined ? { bubbleScale } : {}),
+    ...(showNegBubbles !== undefined ? { showNegBubbles } : {}),
+    ...(sizeRepresents !== undefined ? { sizeRepresents } : {}),
+  });
+};
+
+const parseStockChart = (stockEl: XmlNode): StockChart => {
+  // hiLowLines / upDownBars are presence flags — Excel emits them with no
+  // attributes. We treat the element's existence as the signal.
+  const hiLowLines = findChild(stockEl, HI_LOW_LINES_TAG) !== undefined ? true : undefined;
+  const upDownBars = findChild(stockEl, UP_DOWN_BARS_TAG) !== undefined ? true : undefined;
+  return makeStockChart({
+    series: parseBarSeriesList(stockEl),
+    axIds: parseAxIds(stockEl),
+    ...(hiLowLines !== undefined ? { hiLowLines } : {}),
+    ...(upDownBars !== undefined ? { upDownBars } : {}),
+  });
+};
+
+const parseSurfaceChart = (surfaceEl: XmlNode): SurfaceChart => {
+  const wireframe = boolVal(findChild(surfaceEl, WIREFRAME_TAG));
+  // Surfaces have 3 axes; reuse parseAxIds for the first two and read the
+  // third explicitly.
+  const axIdNodes = findChildren(surfaceEl, AX_ID_TAG);
+  const axIds: [number, number, number] = [
+    intVal(axIdNodes[0]) ?? 1,
+    intVal(axIdNodes[1]) ?? 2,
+    intVal(axIdNodes[2]) ?? 3,
+  ];
+  return makeSurfaceChart({
+    series: parseBarSeriesList(surfaceEl),
+    axIds,
+    ...(wireframe !== undefined ? { wireframe } : {}),
+  });
+};
+
 const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
   const bar = findChild(plotAreaEl, BAR_CHART_TAG);
   if (bar) return parseBarChart(bar);
@@ -350,6 +440,12 @@ const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
   if (scatter) return parseScatterChart(scatter);
   const radar = findChild(plotAreaEl, RADAR_CHART_TAG);
   if (radar) return parseRadarChart(radar);
+  const bubble = findChild(plotAreaEl, BUBBLE_CHART_TAG);
+  if (bubble) return parseBubbleChart(bubble);
+  const stock = findChild(plotAreaEl, STOCK_CHART_TAG);
+  if (stock) return parseStockChart(stock);
+  const surface = findChild(plotAreaEl, SURFACE_CHART_TAG);
+  if (surface) return parseSurfaceChart(surface);
   throw new OpenXmlSchemaError('parseChartXml: no supported chart kind found inside <plotArea>');
 };
 
@@ -560,6 +656,59 @@ const serializeRadarChart = (chart: RadarChart): string => {
   return parts.join('');
 };
 
+const serializeBubbleSeries = (s: BubbleSeries): string => {
+  const parts: string[] = ['<c:ser>', `<c:idx val="${s.idx}"/>`, `<c:order val="${s.order}"/>`];
+  if (s.tx) {
+    if (s.tx.kind === 'literal') {
+      parts.push(`<c:tx><c:strRef><c:f></c:f>${serializeStrCache([s.tx.value])}</c:strRef></c:tx>`);
+    } else {
+      parts.push(`<c:tx><c:strRef><c:f>${escapeText(s.tx.ref)}</c:f></c:strRef></c:tx>`);
+    }
+  }
+  if (s.xVal) parts.push(serializeNumericRef('xVal', s.xVal));
+  parts.push(serializeNumericRef('yVal', s.yVal));
+  parts.push(serializeNumericRef('bubbleSize', s.bubbleSize));
+  if (s.bubble3D !== undefined) parts.push(`<c:bubble3D val="${s.bubble3D ? '1' : '0'}"/>`);
+  parts.push('</c:ser>');
+  return parts.join('');
+};
+
+const serializeBubbleChart = (chart: BubbleChart): string => {
+  const parts: string[] = ['<c:bubbleChart>'];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeBubbleSeries(s));
+  if (chart.bubble3D !== undefined) parts.push(`<c:bubble3D val="${chart.bubble3D ? '1' : '0'}"/>`);
+  if (chart.bubbleScale !== undefined) parts.push(`<c:bubbleScale val="${chart.bubbleScale}"/>`);
+  if (chart.showNegBubbles !== undefined) parts.push(`<c:showNegBubbles val="${chart.showNegBubbles ? '1' : '0'}"/>`);
+  if (chart.sizeRepresents !== undefined) parts.push(`<c:sizeRepresents val="${chart.sizeRepresents}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push('</c:bubbleChart>');
+  return parts.join('');
+};
+
+const serializeStockChart = (chart: StockChart): string => {
+  const parts: string[] = ['<c:stockChart>'];
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  if (chart.hiLowLines) parts.push('<c:hiLowLines/>');
+  if (chart.upDownBars) parts.push('<c:upDownBars><c:gapWidth val="150"/></c:upDownBars>');
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push('</c:stockChart>');
+  return parts.join('');
+};
+
+const serializeSurfaceChart = (chart: SurfaceChart): string => {
+  const parts: string[] = ['<c:surfaceChart>'];
+  if (chart.wireframe !== undefined) parts.push(`<c:wireframe val="${chart.wireframe ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[2]}"/>`);
+  parts.push('</c:surfaceChart>');
+  return parts.join('');
+};
+
 const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): string => {
   const parts: string[] = [
     `<c:${tag}>`,
@@ -604,6 +753,12 @@ const serializeChartKind = (chart: ChartKind): string => {
       return serializeScatterChart(chart);
     case 'radar':
       return serializeRadarChart(chart);
+    case 'bubble':
+      return serializeBubbleChart(chart);
+    case 'stock':
+      return serializeStockChart(chart);
+    case 'surface':
+      return serializeSurfaceChart(chart);
   }
 };
 

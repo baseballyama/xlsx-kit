@@ -136,8 +136,62 @@ export interface RadarChart {
   axIds: [number, number];
 }
 
-/** Discriminator union of all stage-1 chart kinds. */
-export type ChartKind = BarChart | LineChart | AreaChart | PieChart | DoughnutChart | ScatterChart | RadarChart;
+export interface BubbleSeries {
+  idx: number;
+  order: number;
+  tx?: BarSeries['tx'];
+  xVal?: NumericRef;
+  yVal: NumericRef;
+  /** Bubble size — required for a real bubble chart. */
+  bubbleSize: NumericRef;
+  /** Per-series 3-D toggle. */
+  bubble3D?: boolean;
+}
+
+export type BubbleSizeRepresents = 'area' | 'w';
+
+export interface BubbleChart {
+  kind: 'bubble';
+  varyColors?: boolean;
+  series: BubbleSeries[];
+  bubble3D?: boolean;
+  /** Bubble scale 0..300 %. Excel default is 100. */
+  bubbleScale?: number;
+  showNegBubbles?: boolean;
+  sizeRepresents?: BubbleSizeRepresents;
+  axIds: [number, number];
+}
+
+export interface StockChart {
+  kind: 'stock';
+  /** Up to 4 series — typically open / high / low / close. */
+  series: BarSeries[];
+  hiLowLines?: boolean;
+  upDownBars?: boolean;
+  axIds: [number, number];
+}
+
+export interface SurfaceChart {
+  kind: 'surface';
+  series: BarSeries[];
+  /** Wireframe (line-only) when true; smoothed surface fill when false. */
+  wireframe?: boolean;
+  /** Surfaces use 3 axes: cat + val + ser. */
+  axIds: [number, number, number];
+}
+
+/** Discriminator union of all SpreadsheetML chart kinds modelled so far. */
+export type ChartKind =
+  | BarChart
+  | LineChart
+  | AreaChart
+  | PieChart
+  | DoughnutChart
+  | ScatterChart
+  | RadarChart
+  | BubbleChart
+  | StockChart
+  | SurfaceChart;
 
 export interface CategoryAxis {
   axId: number;
@@ -328,5 +382,74 @@ export function makeRadarChart(opts: {
     series: opts.series ?? [],
     axIds: opts.axIds ?? [1, 2],
     ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+  };
+}
+
+export function makeBubbleChart(opts: {
+  series?: BubbleSeries[];
+  axIds?: [number, number];
+  varyColors?: boolean;
+  bubble3D?: boolean;
+  bubbleScale?: number;
+  showNegBubbles?: boolean;
+  sizeRepresents?: BubbleSizeRepresents;
+}): BubbleChart {
+  return {
+    kind: 'bubble',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+    ...(opts.bubble3D !== undefined ? { bubble3D: opts.bubble3D } : {}),
+    ...(opts.bubbleScale !== undefined ? { bubbleScale: opts.bubbleScale } : {}),
+    ...(opts.showNegBubbles !== undefined ? { showNegBubbles: opts.showNegBubbles } : {}),
+    ...(opts.sizeRepresents !== undefined ? { sizeRepresents: opts.sizeRepresents } : {}),
+  };
+}
+
+export function makeBubbleSeries(opts: {
+  idx: number;
+  order?: number;
+  tx?: BarSeries['tx'];
+  xVal?: NumericRef;
+  yVal: NumericRef;
+  bubbleSize: NumericRef;
+  bubble3D?: boolean;
+}): BubbleSeries {
+  return {
+    idx: opts.idx,
+    order: opts.order ?? opts.idx,
+    yVal: opts.yVal,
+    bubbleSize: opts.bubbleSize,
+    ...(opts.tx ? { tx: opts.tx } : {}),
+    ...(opts.xVal ? { xVal: opts.xVal } : {}),
+    ...(opts.bubble3D !== undefined ? { bubble3D: opts.bubble3D } : {}),
+  };
+}
+
+export function makeStockChart(opts: {
+  series?: BarSeries[];
+  axIds?: [number, number];
+  hiLowLines?: boolean;
+  upDownBars?: boolean;
+}): StockChart {
+  return {
+    kind: 'stock',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2],
+    ...(opts.hiLowLines !== undefined ? { hiLowLines: opts.hiLowLines } : {}),
+    ...(opts.upDownBars !== undefined ? { upDownBars: opts.upDownBars } : {}),
+  };
+}
+
+export function makeSurfaceChart(opts: {
+  series?: BarSeries[];
+  wireframe?: boolean;
+  axIds?: [number, number, number];
+}): SurfaceChart {
+  return {
+    kind: 'surface',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2, 3],
+    ...(opts.wireframe !== undefined ? { wireframe: opts.wireframe } : {}),
   };
 }
