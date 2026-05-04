@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
-- **次のタスク**: フェーズ5 worksheet 追加機能の続き — **columnDimensions / rowDimensions / SheetFormatProperties**。`<cols><col min max width customWidth bestFit/></cols>` を `Worksheet.columnDimensions: ColumnDimension[]` に、`<row r="N" ht="… " customHeight="1" hidden="1">` の row 属性を `Worksheet.rowDimensions: Map<row, RowDimension>` に。reader / writer 両対応。`setColumnWidth(ws, col, width)` / `setRowHeight(ws, row, height)` / `hideColumn` / `hideRow` の API も。
+- **次のタスク**: フェーズ5 §2 — **hyperlinks**。`Worksheet.hyperlinks: Hyperlink[]` を追加 (`{ ref, target, targetMode?, location?, tooltip?, display? }`)、`addHyperlink(ws, ref, target, opts?)` / `removeHyperlink(ws, ref)` の API。reader が `<hyperlinks><hyperlink ref="..." r:id="..." location tooltip display/></hyperlinks>` を読み、worksheet rels から target を解決して Hyperlink list に。writer は worksheet rels に Hyperlink rel を allocate して `<hyperlinks>` block を emit。external → relationships を介し、internal (`#Sheet!A1`) は `location` のみ。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -69,7 +69,7 @@
 
 ### フェーズ5: rich features ([07-rich-features.md](docs/plan/07-rich-features.md))
 
-- [~] §1 worksheet 拡張：**mergedCells** + **sheetView/freezePanes** 完了。`mergedCells`: openpyxl `MergedCellRange.format()` 準拠 (`mergeCells` / `unmergeCells` / `getMergedCells` / `isMergedCell`、reader/writer は `<mergeCells>` block 対応)。`sheetView/freezePanes` (`src/worksheet/views.ts`): SheetView/Pane/Selection 型 + `makeSheetView` / `makeFreezePane(ref)` (B2 → bottomRight, A2 → bottomLeft, B1 → topRight, A1 → throw) / `freezePaneRef(view)`。`Worksheet.views: SheetView[]` + `setFreezePanes(ws, ref|undefined)` / `getFreezePanes(ws)`。reader が `<sheetViews>/<sheetView>/<pane>/<selection>` を float/int/bool 属性込みで全部復元、writer は `<dimension>` 直後に block を emit、空なら省略。12 + 8 = 20 tests、`empty-with-styles.xlsx` の `tabSelected=1` `activeCell=A3` も実機読込で確認。807 tests pass。残：columnDimensions / rowDimensions / SheetFormatProperties。
+- [x] §1 worksheet 拡張：**mergedCells** + **sheetView/freezePanes** + **column/row dimensions + sheetFormatPr** 完了。`mergedCells` (8 tests)、`sheetView/freezePanes` (12 tests)、columnDimensions/rowDimensions (`src/worksheet/dimensions.ts`、10 tests): `ColumnDimension { min, max, width, customWidth, hidden, bestFit, outlineLevel, style, collapsed }` / `RowDimension { height, customHeight, hidden, outlineLevel, collapsed, style }`、`Worksheet.columnDimensions: Map<number, ColumnDimension>` / `Worksheet.rowDimensions: Map<number, RowDimension>` / `defaultColumnWidth?` / `defaultRowHeight?`。`getColumnDimension` / `setColumnDimension` / `setColumnWidth` / `hideColumn` / `getRowDimension` / `setRowDimension` / `setRowHeight` / `hideRow` API。reader は `<sheetFormatPr>` の defaults + `<cols><col/></cols>` + `<row>` 属性 (ht/customHeight/hidden/s/outlineLevel/collapsed) を全部復元、writer は `<sheetFormatPr>` を defaults があれば emit、`<cols>` を `columnDimensions` 非空で emit、`<row>` 属性を inline。dimension-only rows (cell なし、height/hidden だけ) も walk の union で round-trip。`empty-with-styles.xlsx` の `<col width="10.7109375" bestFit="1" customWidth="1"/>` + `<sheetFormatPr defaultRowHeight="15"/>` を実機 fixture で確認。817 tests pass。
 - [ ] §2 hyperlinks / comments / dataValidations / conditionalFormatting / autoFilter / tables
 - [ ] §3 named ranges / defined names / external links
 
