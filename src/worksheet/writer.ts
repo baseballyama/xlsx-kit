@@ -18,6 +18,8 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
 import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
+import { serializeXml } from '../xml/serializer';
+import type { XmlNode } from '../xml/tree';
 import type { AutoFilter } from './auto-filter';
 import { multiCellRangeToString, rangeToString } from './cell-range';
 import type { ConditionalFormatting, ConditionalFormattingRule } from './conditional-formatting';
@@ -79,8 +81,11 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   const parts: string[] = [
     XML_HEADER,
     `<worksheet xmlns="${SHEET_MAIN_NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`,
-    serializeDimension(ws),
   ];
+  if (ws.bodyExtras?.beforeSheetData) {
+    for (const node of ws.bodyExtras.beforeSheetData) parts.push(serializeBodyExtraNode(node));
+  }
+  parts.push(serializeDimension(ws));
   if (ws.views.length > 0) parts.push(serializeSheetViews(ws.views));
   const sheetFormatPr = serializeSheetFormatPr(ws);
   if (sheetFormatPr) parts.push(sheetFormatPr);
@@ -128,6 +133,17 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   }
   if (ws.hyperlinks.length > 0) {
     parts.push(serializeHyperlinks(ws.hyperlinks, ctx.rels));
+  }
+  // afterSheetData extras live between hyperlinks and the drawing/
+  // legacyDrawing/tableParts tail. ECMA-376 puts printOptions / pageMargins
+  // / pageSetup / headerFooter / rowBreaks / colBreaks here; oleObjects /
+  // controls / picture / legacyDrawingHF technically belong AFTER drawing
+  // and BEFORE tableParts, but Excel reads them in either spot. extLst is
+  // strictly the last child per ECMA, but landing it before tableParts
+  // keeps round-trip Excel-compatible without requiring fine-grained
+  // positional tracking.
+  if (ws.bodyExtras?.afterSheetData) {
+    for (const node of ws.bodyExtras.afterSheetData) parts.push(serializeBodyExtraNode(node));
   }
   if (ws.drawing && ctx.registerDrawing) {
     const { rId } = ctx.registerDrawing(ws.drawing);
@@ -497,3 +513,12 @@ const serializeRowDimensionAttrs = (dim: RowDimension): string => {
   if (dim.style !== undefined) attrs += ` s="${dim.style}" customFormat="1"`;
   return attrs;
 };
+
+/**
+ * Serialise a captured worksheet body extra (XmlNode) for inline emit.
+ * Reuses the namespace-aware serializer then strips the XML declaration.
+ * Excel tolerates the redundant per-element `xmlns="…"` declarations
+ * that arise from emitting each child as its own root.
+ */
+const serializeBodyExtraNode = (node: XmlNode): string =>
+  new TextDecoder().decode(serializeXml(node, { xmlDeclaration: false }));

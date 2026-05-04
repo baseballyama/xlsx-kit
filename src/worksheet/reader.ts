@@ -248,8 +248,54 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
       if (d) ws.drawing = d;
     }
   }
+
+  captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+/**
+ * Pick up every top-level `<worksheet>` child we don't model (e.g.
+ * `<sheetPr>`, `<printOptions>`, `<pageMargins>`, `<pageSetup>`,
+ * `<headerFooter>`, `<rowBreaks>`, `<colBreaks>`, `<oleObjects>`,
+ * `<controls>`, `<picture>`, `<legacyDrawingHF>`, `<extLst>`) so the
+ * writer can re-emit them around the modeled blocks. Anything before
+ * `<sheetData>` (in document order) goes into the early bucket; the
+ * rest goes into the late bucket.
+ */
+function captureWorksheetBodyExtras(root: XmlNode, ws: Worksheet): void {
+  const beforeSheetData: XmlNode[] = [];
+  const afterSheetData: XmlNode[] = [];
+  let seenSheetData = false;
+  for (const child of root.children) {
+    if (MODELED_WORKSHEET_TAGS.has(child.name)) {
+      if (child.name === SHEETDATA_TAG) seenSheetData = true;
+      continue;
+    }
+    if (seenSheetData) afterSheetData.push(child);
+    else beforeSheetData.push(child);
+  }
+  if (beforeSheetData.length > 0 || afterSheetData.length > 0) {
+    ws.bodyExtras = { beforeSheetData, afterSheetData };
+  }
+}
+
+const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
+  `{${SHEET_MAIN_NS}}dimension`,
+  SHEETDATA_TAG,
+  MERGE_CELLS_TAG,
+  SHEET_VIEWS_TAG,
+  SHEET_FORMAT_PR_TAG,
+  COLS_TAG,
+  HYPERLINKS_TAG,
+  DATA_VALIDATIONS_TAG,
+  AUTOFILTER_TAG,
+  TABLE_PARTS_TAG,
+  CONDITIONAL_FORMATTING_TAG,
+  DRAWING_TAG,
+  // <legacyDrawing r:id> for VML comments — we regenerate it from
+  // ws.legacyComments + ctx.registerComments.
+  `{${SHEET_MAIN_NS}}legacyDrawing`,
+]);
 
 const PANE_TYPES: ReadonlyArray<PaneType> = ['bottomRight', 'topRight', 'bottomLeft', 'topLeft'];
 const PANE_STATES: ReadonlyArray<PaneState> = ['split', 'frozen', 'frozenSplit'];

@@ -122,6 +122,45 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     expect(sheet1Rels).toContain('Target="../pivotTables/pivotTable1.xml"');
   });
 
+  it('round-trips worksheet bodyExtras through reload (pageMargins + extLst tag count stable)', async () => {
+    const original = readFileSync(FIXTURE);
+    const wb = await loadWorkbook(fromBuffer(original));
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+
+    const sheet1Round = wb2.sheets[0];
+    if (sheet1Round?.kind !== 'worksheet') throw new Error('expected worksheet');
+    const namesAfter = (sheet1Round.sheet.bodyExtras?.afterSheetData ?? []).map((n) =>
+      n.name.replace(/^\{[^}]+\}/, ''),
+    );
+    expect(namesAfter).toContain('pageMargins');
+    expect(namesAfter).toContain('extLst');
+  });
+
+  it('preserves worksheet bodyExtras (pageMargins + extLst on sheet1)', async () => {
+    const original = readFileSync(FIXTURE);
+    const wb = await loadWorkbook(fromBuffer(original));
+
+    // sheet1 has <pageMargins/> and <extLst><ext><mx:PLV/></ext></extLst>
+    // captured into Worksheet.bodyExtras.afterSheetData.
+    const sheet1 = wb.sheets[0];
+    expect(sheet1?.kind).toBe('worksheet');
+    if (sheet1?.kind !== 'worksheet') return;
+    const after = sheet1.sheet.bodyExtras?.afterSheetData ?? [];
+    const localNames = after.map((n) => n.name.replace(/^\{[^}]+\}/, ''));
+    expect(localNames).toContain('pageMargins');
+    expect(localNames).toContain('extLst');
+
+    const bytes = await workbookToBytes(wb);
+    const { unzipSync } = await import('fflate');
+    const entries = unzipSync(bytes);
+    const sheet1Xml = new TextDecoder().decode(entries['xl/worksheets/sheet1.xml']);
+    expect(sheet1Xml).toContain('<pageMargins');
+    expect(sheet1Xml).toContain('<extLst');
+    // mx:PLV survives via captured XmlNode tree (prefix may be reallocated).
+    expect(sheet1Xml).toMatch(/PLV[^/]*Mode="0"/);
+  });
+
   it('preserves the workbook-extras (fileVersion / workbookPr / bookViews / calcPr / extLst)', async () => {
     const original = readFileSync(FIXTURE);
     const wb = await loadWorkbook(fromBuffer(original));

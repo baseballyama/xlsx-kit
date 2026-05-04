@@ -83,6 +83,24 @@ export interface Worksheet {
    * a round-trip.
    */
   relsExtras?: ReadonlyArray<{ id: string; type: string; target: string }>;
+  /**
+   * Top-level `<worksheet>` children we don't model — `<sheetPr>`,
+   * `<printOptions>`, `<pageMargins>`, `<pageSetup>`, `<headerFooter>`,
+   * `<rowBreaks>`, `<colBreaks>`, `<oleObjects>`, `<controls>`,
+   * `<picture>`, `<extLst>`, etc. Captured as XmlNodes; the writer emits
+   * them in two anchored slots so common ECMA-376 ordering survives a
+   * round-trip even though we don't track every position individually:
+   * - `beforeSheetData` → emitted before our `<dimension>` (typical for
+   *   `<sheetPr>`).
+   * - `afterSheetData` → emitted between our `<hyperlinks>` and
+   *   `<drawing>` block, which lands page setup / extLst / oleObjects in
+   *   roughly the right place. Excel reads back regardless of strict
+   *   ECMA position; openpyxl-emitted files round-trip cleanly.
+   */
+  bodyExtras?: {
+    beforeSheetData: import('../xml/tree').XmlNode[];
+    afterSheetData: import('../xml/tree').XmlNode[];
+  };
 }
 
 /** Build a Worksheet shell. */
