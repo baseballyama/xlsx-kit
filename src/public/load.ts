@@ -436,6 +436,10 @@ const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
   'xl/embeddings/',
   'xl/pivotCache/',
   'xl/pivotTables/',
+  'xl/printerSettings/',
+  'xl/queryTables/',
+  'xl/slicerCaches/',
+  'xl/slicers/',
   'customUI/',
   'customXml/',
 ];

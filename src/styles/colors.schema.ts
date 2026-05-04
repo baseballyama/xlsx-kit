@@ -11,7 +11,11 @@ export const ColorSchema: Schema<Color> = defineSchema<Color>({
   xmlNs: SHEET_MAIN_NS,
   attrs: {
     rgb: { kind: 'string', optional: true },
-    indexed: { kind: 'int', optional: true, min: 0, max: 65 },
+    // ECMA-376 §18.8.27 documents indices 0..63 + 64 (system fg) + 65
+    // (system bg), but Excel emits higher indices (81 = light text on
+    // dark background among others) — keep the lower bound and stay
+    // permissive on the upper end.
+    indexed: { kind: 'int', optional: true, min: 0 },
     theme: { kind: 'int', optional: true, min: 0 },
     auto: { kind: 'bool', optional: true },
     tint: { kind: 'float', optional: true, min: -1, max: 1 },

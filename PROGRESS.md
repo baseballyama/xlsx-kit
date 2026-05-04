@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts 全部完了**
-- **次のタスク**: **フェーズ4 streaming (read-only + write-only) 両方の API 完了**。残：streaming-deflate ZIP writer (現在は buffered)、perf bench (100M cells / 1GB heap / 500k cells/s)、openpyxl 実 fixture round-trip (pivot/vba)、Excel 365 視覚 QA (人手)。コア実装はフェーズ1-7 すべて完了。
+- **次のタスク**: **フェーズ7 acceptance 完了** (openpyxl `vba+comments.xlsm` 実 fixture round-trip — vbaProject.bin byte-identical / 10× ctrlProps / printerSettings / xlsm 昇格 / sheet 構造保持)。残：streaming-deflate ZIP writer (現在は buffered)、perf bench (100M cells / 1GB heap / 500k cells/s)、Excel 365 視覚 QA (人手)。コア実装はフェーズ1-7 すべて完了。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -94,6 +94,7 @@
 - [x] §4 暗号化検出: openZip 入口で OLE Compound File Binary magic (`D0 CF 11 E0 A1 B1 1A E1`) を検出 → `OpenXmlNotImplementedError('Encrypted xlsx is not supported. Decrypt with msoffcrypto-tool first.')`。
 - [x] §5 customXml passthrough + `listCustomXmlParts(wb)` 公開ヘルパ。
 - [x] §6 content type 推論: 各 passthrough エントリは `Workbook.passthroughContentTypes: Map<path, content-type>` に保持し manifest Override に書き戻し。
+- [x] §3.3 acceptance (実 xlsm fixture round-trip) 完了。`tests/phase-7/genuine-vba-roundtrip.test.ts`: openpyxl `tests/data/reader/vba+comments.xlsm` (22.5KB / xl/vbaProject.bin 14848B + 10× xl/ctrlProps + xl/printerSettings/printerSettings1.bin + xl/comments1.xml + xl/drawings/{drawing1.xml,vmlDrawing1.vml}) を loadWorkbook → workbookToBytes → loadWorkbook で round-trip し、(1) vbaProject.bin が byte-identical / (2) 10 ctrlProps すべての path + bytes 保存 / (3) printerSettings1.bin (1040B) byte-identical / (4) Content_Types.xml が xlsm 昇格 / (5) sheet 構造保持 を assert。passthrough 対応 prefix を `xl/printerSettings/` / `xl/queryTables/` / `xl/slicerCaches/` / `xl/slicers/` にも拡張。`Color.indexed` の max=65 制約を削除 (Excel が 81 等の non-ECMA index を emit するため、下限のみ保持)。1074 tests pass。
 - 7 passthrough tests (encrypted detection / vbaProject byte-identical + xlsm 昇格 / vbaSignature / customXml + listCustomXmlParts / activeX+ctrlProps+embeddings+customUI / pivotCache+pivotTables / comment VML が誤キャプチャされない)。1049 tests pass。残：実 xlsm fixture (openpyxl `tests/data/reader/vba+comments.xlsm` 等) との byte-identical round-trip、Excel 365 マクロ署名警告手動 QA。
 
 ## 1 ターンの流れ
