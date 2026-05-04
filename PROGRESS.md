@@ -6,7 +6,8 @@
 ## カレント
 
 - **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §4 Workbook / Worksheet データモデル。`Workbook = { sheets: SheetRef[], styles: Stylesheet, properties, ... }` + `createWorkbook` / `addWorksheet` / `removeSheet` / `getSheet` / `setActiveSheet` / `defineName`。`Worksheet = { title, rows: Map<row, Map<col, Cell>>, columnDimensions, rowDimensions, mergedCells, views, ... }` + `getCell` / `setCell` / `appendRow` / `iterRows` / `mergeCells` / `setColumnWidth` / `setRowHeight` / `setFreezePanes`。Worksheet → Workbook back-ref (mutate 用)、JSON.stringify replacer で循環参照対策。続けて §4.5 cell-range / multi-cell-range、§5 Formula tokenizer / translator。
+- **次のタスク**: フェーズ2 §4.5 cell-range / multi-cell-range。`CellRange = { minRow, minCol, maxRow, maxRow }` + `parseRange("A1:B5")` / `rangeToString` / `rangeContainsCell` / `rangeContainsRange` / `shiftRange` / `unionRange` / `intersectionRange` / `iterRangeCoordinates`、`MultiCellRange = CellRange[]` の wrapper。次いで §5 Formula tokenizer / translator (openpyxl `formula/tokenizer.py` / `translate.py` 移植)、§6 JSON round-trip 統合テスト、§7 phase-2 受け入れ条件確認 → フェーズ3 へ。
+
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -43,7 +44,7 @@
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
 - [~] §3.7 Built-in NamedStyles (curated subset 完了：`NamedStyle` 型 + `addNamedStyle` (Stylesheet で font/fill/border/numFmt を pool に登録、apply* flags 付きで cellStyleXfs に CellXf を allocate、name → xfId を idempotent に dedup)、`StylesheetNamedStyle` 内部表現、`Stylesheet.namedStyles` / `_namedStyleByName` フィールド追加。`BUILTIN_NAMED_STYLES` は Excel "Cell Styles" gallery のうち最頻の 23 entries (Normal / Good / Bad / Neutral / Calculation / Check Cell / Linked Cell / Note / Warning Text / Input / Output / Explanatory Text / Title / Headline 1-4 / Total / Comma / Comma [0] / Currency / Currency [0] / Percent / Hyperlink / Followed Hyperlink) を frozen Record で提供、`ensureBuiltinStyle(ss, name): xfId` で登録。447 tests pass。残：Accent1-6 + 20/40/60% variants は将来補完)
 - [x] §3.8 DifferentialStyle (DXF) 完了：`DifferentialStyle` (Partial of font/fill/border/alignment/protection/numFmt の plain object)、`makeDifferentialStyle` で freeze、`addDxf(ss, dxf): number` は `dxfs` / `_dxfIdByKey` を Stylesheet に lazy 追加、stableStringify で insertion-order 非依存 dedup、`getDxfs(ss)` で read-only access。`DifferentialStyleSchema` は font/numFmt/fill (raw passthrough)/alignment/border/protection の object 構成。453 tests pass。
-- [ ] §4 Workbook / Worksheet データモデル
+- [~] §4 Workbook / Worksheet データモデル (基本部分完了：`Workbook = { sheets, activeSheetIndex, styles, date1904, properties?, appProperties?, customProperties?, authors }`、`createWorkbook` / `addWorksheet` (sheetId 自動採番、duplicate / 1..31 char title 検証、index / state opts) / `getSheet` / `getSheetByIndex` / `sheetNames` / `removeSheet` (active index clamp) / `setActiveSheet` / `getActiveSheet`、`SheetRef = { kind: 'worksheet', sheet, sheetId, state }`。`Worksheet = { title, rows: Map<row, Map<col, Cell>>, _appendRowCursor }`、`makeWorksheet` / `getCell` / `setCell` (in-place identity 保持、styleId 上書き対応) / `deleteCell` (空 row 自動 prune) / `appendRow` (cursor で次行追記、null/undefined skip) / `iterRows` / `iterValues` (range filter) / `getMaxRow` / `getMaxCol` / `countCells` / `setCellByCoord` / `getCellByCoord`。`jsonReplacer` / `jsonReviver` で `Map` を `__map__: [[k, v]]` に変換し JSON round-trip 可。501 tests pass。残：mergedCells / freezePanes / dimensions / views / hyperlinks 等は phase 5 へ)
 - [ ] §4.5 cell-range / multi-cell-range
 - [ ] §5 Formula tokenizer + translator
 - [ ] §6 JSON round-trip テスト
