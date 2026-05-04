@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §3.4 Stylesheet。プール (`fonts: Font[]`, `fills: Fill[]`, `borders: Border[]`, `numFmts: Map<id, code>`) + dedup 機構 + `addFont` / `addFill` / `addBorder` / `addNumFmt` / `addCellXf` 等の add 関数。値ベース dedup は `stableStringify` で正規化したキーで `Map<string, number>` を引く。phase 3 の Worksheet writer から呼ばれる。続けて §3.6 Cell↔Stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)、§3.7 Built-in NamedStyles (Normal / Good / Bad / 等)、§3.8 DifferentialStyle。
+- **次のタスク**: フェーズ2 §3.7 Built-in NamedStyles (`BUILTIN_NAMED_STYLES`)。openpyxl `styles/builtins.py` の "Normal" / "Good" / "Bad" / "Neutral" / "Calculation" / "Check Cell" / "Currency" / "Currency [0]" / "Comma" / "Comma [0]" / "Percent" / "Linked Cell" / "Hyperlink" / "Followed Hyperlink" / "Note" / "Title" / "Headline 1〜4" / "Accent1〜6" / "Total" / "Warning Text" / "Input" / "Output" / "Explanatory Text" などの Font + Fill + Border + Alignment + NumberFormat の組み合わせを Object として持つ。`ensureBuiltinStyle(wb, name)` で Stylesheet に登録 + index 返却。続けて §3.8 DifferentialStyle (DXF) → §3.6 cell-style bridge (Workbook 後で接続)。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -39,7 +39,7 @@
 
 - [ ] §2 Cell (CellValue 型, makeCell, getCoordinate, bindValue, RichText, MergedCell)
 - [x] §3 Style 値オブジェクト群 (Color + Side + Border + Fill + Alignment + Protection + NumberFormat + Font 完了)。Font は openpyxl の "nested-with-val-attr" パターンに合わせて Schema に `nested` ElementDef 種別を追加 (`<sz val="11"/>` を primitive で運ぶ)。`empty` 種別の fromTree も「absent → undefined / present → true」semantics に変更（false/未設定の round-trip 整合性のため）。Font は name/charset/family/size/color/bold/italic/strike/outline/shadow/condense/extend/underline/vertAlign/scheme の 15 フィールド、`DEFAULT_FONT = Calibri 11 minor scheme theme=1`。413 tests pass。
-- [ ] §3.4 Stylesheet (プール + dedup + StyleArray index)
+- [x] §3.4 Stylesheet (プール + dedup 完了)：`utils/stable-stringify.ts` で順序非依存 JSON 正規化、`Stylesheet` 型 (fonts/fills/borders/numFmts/cellXfs/cellStyleXfs + 各 _IdByKey 内部 dedup map)、`makeStylesheet` は Excel 必須 default (DEFAULT_FONT / DEFAULT_EMPTY_FILL + DEFAULT_GRAY_FILL / DEFAULT_BORDER) を pre-populate、`addFont` / `addFill` / `addBorder` / `addNumFmt` / `addCellXf` / `addCellStyleXf` は idempotent (1000× 同値 add → 1 entry)、numFmt は built-in code → canonical id、custom code は 164 から自動採番、CellXf は ref 範囲チェック (font/fill/border/xfId) + insertion-order 非依存 dedup。`defaultCellXf()` / `getCustomNumFmts()` ヘルパ。434 tests pass。
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
 - [ ] §3.7 Built-in NamedStyles
 - [ ] §3.8 DifferentialStyle (DXF)
