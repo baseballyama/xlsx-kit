@@ -22,8 +22,9 @@ const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/gen
 
 const loadFixture = (name: string): Buffer => readFileSync(resolve(FIXTURES, name));
 
-const expectSheet = (ws: Worksheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected sheet');
+  if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;
 };
 
@@ -39,7 +40,10 @@ describe('phase 3 §8 — genuine fixture round-trip', () => {
     expect(wb2.sheets.map((s) => s.sheet.title)).toEqual(['Sheet1', 'Sheet2', 'Sheet3']);
     expect(wb2.sheets.map((s) => s.sheetId)).toEqual([1, 2, 3]);
     // Each sheet still empty.
-    for (const s of wb2.sheets) expect(s.sheet.rows.size).toBe(0);
+    for (const s of wb2.sheets) {
+      if (s.kind !== 'worksheet') throw new Error('expected only worksheets');
+      expect(s.sheet.rows.size).toBe(0);
+    }
     // Theme bytes match exactly.
     expect(wb2.themeXml?.byteLength).toBe(themeBefore.byteLength);
   });
@@ -81,11 +85,11 @@ describe('phase 3 §8 — genuine fixture round-trip', () => {
     expect((formulaCell?.value as FormulaValue).cachedValue).toBe(5);
 
     // Per-sheet snapshots.
-    const before = wb.sheets.map((s) => collectCells(s.sheet));
+    const before = wb.sheets.map((s) => collectCells(expectSheet(s.sheet)));
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
     expect(wb2.sheets.map((s) => s.sheet.title)).toEqual(wb.sheets.map((s) => s.sheet.title));
-    const after = wb2.sheets.map((s) => collectCells(s.sheet));
+    const after = wb2.sheets.map((s) => collectCells(expectSheet(s.sheet)));
     expect(after).toEqual(before);
   });
 });

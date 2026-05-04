@@ -9,8 +9,9 @@ import { makeFont } from '../../src/styles/fonts';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import { getCell, setCell, type Worksheet } from '../../src/worksheet/worksheet';
 
-const expectSheet = (ws: Worksheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected worksheet');
+  if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;
 };
 
@@ -22,7 +23,7 @@ describe('saveWorkbook → loadWorkbook round-trip', () => {
     const wb2 = await loadWorkbook(fromBuffer(bytes));
     expect(wb2.sheets.length).toBe(1);
     expect(wb2.sheets[0]?.sheet.title).toBe('Only');
-    expect(wb2.sheets[0]?.sheet.rows.size).toBe(0);
+    expect(expectSheet(wb2.sheets[0]?.sheet).rows.size).toBe(0);
   });
 
   it('preserves number / string / boolean / formula cells', async () => {

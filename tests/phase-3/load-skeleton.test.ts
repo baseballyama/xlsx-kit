@@ -72,7 +72,10 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     expect(wb.sheets.map((s) => s.sheetId)).toEqual([1, 2, 3]);
     expect(wb.sheets.every((s) => s.state === 'visible')).toBe(true);
     // Cells haven't been read in the minimum-skeleton stage.
-    for (const ref of wb.sheets) expect(ref.sheet.rows.size).toBe(0);
+    for (const ref of wb.sheets) {
+      if (ref.kind !== 'worksheet') throw new Error('expected only worksheets in fixture');
+      expect(ref.sheet.rows.size).toBe(0);
+    }
   });
 
   it('reads sheet content cells through the worksheet reader', async () => {
@@ -115,7 +118,7 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     await w.finalize();
     const wb = await loadWorkbook(fromBuffer(sink.result()));
     const ws = wb.sheets[0]?.sheet;
-    if (!ws) throw new Error('expected one sheet');
+    if (!ws || !('rows' in ws)) throw new Error('expected one worksheet');
     expect(ws.title).toBe('Data');
     const { getCell } = await import('../../src/worksheet/worksheet');
     expect(getCell(ws, 1, 1)?.value).toBe(42);
@@ -130,7 +133,7 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     const bytes = readFileSync(resolve(FIXTURES, 'empty-with-styles.xlsx'));
     const wb = await loadWorkbook(fromBuffer(bytes));
     const ws = wb.sheets[0]?.sheet;
-    if (!ws) throw new Error('expected one sheet');
+    if (!ws || !('rows' in ws)) throw new Error('expected one worksheet');
     // empty-with-styles.xlsx has A1 as t="s" -> sst[0] = "TEST HERE"
     const { getCell } = await import('../../src/worksheet/worksheet');
     expect(getCell(ws, 1, 1)?.value).toBe('TEST HERE');
@@ -147,7 +150,7 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     expect(wb.styles.cellXfs.length).toBe(5);
     // The cell A2 has s="2" which points at numFmtId=14 (date format).
     const ws = wb.sheets[0]?.sheet;
-    if (!ws) throw new Error('expected one sheet');
+    if (!ws || !('rows' in ws)) throw new Error('expected one worksheet');
     const { getCell } = await import('../../src/worksheet/worksheet');
     const a2 = getCell(ws, 2, 1);
     expect(a2?.styleId).toBe(2);

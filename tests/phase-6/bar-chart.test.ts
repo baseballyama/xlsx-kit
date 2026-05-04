@@ -9,8 +9,9 @@ import { workbookToBytes } from '../../src/public/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import type { Worksheet } from '../../src/worksheet/worksheet';
 
-const expectSheet = (ws: Worksheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected sheet');
+  if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;
 };
 
@@ -156,7 +157,7 @@ describe('full chart round-trip through saveWorkbook → loadWorkbook', () => {
     ]);
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
-    const titles = (sheet: Worksheet | undefined): string[] =>
+    const titles = (sheet: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): string[] =>
       (sheet?.drawing?.items ?? [])
         .map((i) => (i.content.kind === 'chart' ? i.content.chart.space?.title?.text : undefined))
         .filter((t): t is string => t !== undefined);

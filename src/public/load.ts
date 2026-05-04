@@ -12,6 +12,7 @@
 
 import { parseChartXml } from '../chart/chart-xml';
 import { isChartExBytes, parseChartExXml } from '../chart/cx/chartex-xml';
+import { parseChartsheetXml } from '../chartsheet/chartsheet-xml';
 import { parseDrawingXml } from '../drawing/drawing-xml';
 import { loadImage } from '../drawing/image';
 import type { XlsxSource } from '../io/source';
@@ -365,6 +366,29 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
           return drawing;
         }
       : undefined;
+    // Distinguish worksheet vs chartsheet by inspecting the workbook-rels
+    // entry's relationship type.
+    const isChartsheet = rel.type === `${REL_NS}/chartsheet`;
+    if (isChartsheet) {
+      const chartsheet = parseChartsheetXml(archive.read(sheetPath), entry.name);
+      // Inline drawing reference from the chartsheet XML.
+      if (sheetRels) {
+        // Find the drawing rel and resolve it the same way worksheets do.
+        const drawingRel = sheetRels.rels.find((r) => r.type === `${REL_NS}/drawing`);
+        if (drawingRel && loadDrawing) {
+          const d = loadDrawing(drawingRel.id);
+          if (d) chartsheet.drawing = d;
+        }
+      }
+      const ref: SheetRef = {
+        kind: 'chartsheet',
+        sheet: chartsheet,
+        sheetId: entry.sheetId,
+        state: entry.state,
+      };
+      wb.sheets.push(ref);
+      continue;
+    }
     const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, {
       sharedStrings: sst,
       ...(sheetRels ? { rels: sheetRels } : {}),

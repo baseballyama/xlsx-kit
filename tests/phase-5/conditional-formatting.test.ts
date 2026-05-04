@@ -7,8 +7,9 @@ import { parseMultiCellRange } from '../../src/worksheet/cell-range';
 import { makeCfRule, makeConditionalFormatting } from '../../src/worksheet/conditional-formatting';
 import { addConditionalFormatting, getConditionalFormatting, type Worksheet } from '../../src/worksheet/worksheet';
 
-const expectSheet = (ws: Worksheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected sheet');
+  if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;
 };
 

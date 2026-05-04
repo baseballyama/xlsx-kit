@@ -16,6 +16,7 @@
 
 import { chartToBytes } from '../chart/chart-xml';
 import { chartExToBytes } from '../chart/cx/chartex-xml';
+import { chartsheetToBytes } from '../chartsheet/chartsheet-xml';
 import type { Drawing, DrawingItem } from '../drawing/drawing';
 import { drawingToBytes } from '../drawing/drawing-xml';
 import { IMAGE_FORMAT_EXTENSION, IMAGE_FORMAT_MIME, type XlsxImageFormat } from '../drawing/image';
@@ -46,7 +47,6 @@ import {
   ARC_WORKBOOK_RELS,
   CHARTEX_TYPE,
   CPROPS_TYPE,
-  PACKAGE_WORKSHEETS,
   PKG_REL_NS,
   REL_NS,
   SHARED_STRINGS_TYPE,
@@ -75,6 +75,8 @@ const DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.drawing+xml'
 const CHART_REL = `${REL_NS}/chart`;
 const CHART_TYPE = 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml';
 const IMAGE_REL = `${REL_NS}/image`;
+const CHARTSHEET_REL = `${REL_NS}/chartsheet`;
+const CHARTSHEET_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml';
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -99,7 +101,13 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     id: string;
     target: string;
     bytes: Uint8Array;
-    /** Per-sheet rels — populated only if the worksheet has hyperlinks etc. */
+    /** OOXML relationship type used in workbook.xml.rels. */
+    relType: string;
+    /** ZIP archive path the bytes are written to. */
+    archivePath: string;
+    /** Override content type for [Content_Types].xml. */
+    contentType: string;
+    /** Per-sheet rels — populated only if the sheet has hyperlinks / drawings / etc. */
     rels?: Relationships;
   }
   const sheetEmits: SheetEmit[] = [];
@@ -140,8 +148,19 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   const imageEmits: ImageEmit[] = [];
   const imageExts = new Set<string>();
   let nextImageId = 1;
+  // Track separate counters so worksheet / chartsheet IDs do not collide
+  // (Excel uses xl/worksheets/sheetN.xml and xl/chartsheets/sheetM.xml
+  // independently of one another).
+  let nextWorksheetId = 1;
+  let nextChartsheetId = 1;
   wb.sheets.forEach((ref, i) => {
-    const target = `worksheets/sheet${i + 1}.xml`;
+    const isChartsheet = ref.kind === 'chartsheet';
+    const target = isChartsheet ? `chartsheets/sheet${nextChartsheetId}.xml` : `worksheets/sheet${nextWorksheetId}.xml`;
+    const archivePath = isChartsheet
+      ? `xl/chartsheets/sheet${nextChartsheetId}.xml`
+      : `xl/worksheets/sheet${nextWorksheetId}.xml`;
+    if (isChartsheet) nextChartsheetId++;
+    else nextWorksheetId++;
     const sheetRels = makeRelationships();
     const registerTable = (table: TableDefinition): { rId: string } => {
       const tableId = nextTableId++;
@@ -252,14 +271,30 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       drawingEmits.push(emit);
       return { rId };
     };
-    const bytes = worksheetToBytes(ref.sheet, {
-      sharedStrings: sst,
-      rels: sheetRels,
-      registerTable,
-      registerComments,
-      registerDrawing,
-    });
-    const emit: SheetEmit = { id: `rId${i + 1}`, target, bytes };
+    let bytes: Uint8Array;
+    if (ref.kind === 'worksheet') {
+      bytes = worksheetToBytes(ref.sheet, {
+        sharedStrings: sst,
+        rels: sheetRels,
+        registerTable,
+        registerComments,
+        registerDrawing,
+      });
+    } else {
+      // Chartsheet: register the drawing (if any), then emit the
+      // chartsheet part with the resulting r:id baked in.
+      let drawingRId: string | undefined;
+      if (ref.sheet.drawing) drawingRId = registerDrawing(ref.sheet.drawing).rId;
+      bytes = chartsheetToBytes(ref.sheet, drawingRId !== undefined ? { drawingRId } : {});
+    }
+    const emit: SheetEmit = {
+      id: `rId${i + 1}`,
+      target,
+      bytes,
+      relType: isChartsheet ? CHARTSHEET_REL : `${REL_NS}/worksheet`,
+      archivePath,
+      contentType: isChartsheet ? CHARTSHEET_TYPE : WORKSHEET_TYPE,
+    };
     if (sheetRels.rels.length > 0) emit.rels = sheetRels;
     sheetEmits.push(emit);
   });
@@ -271,7 +306,7 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   const wbRels = makeRelationships();
   wbRels.rels = sheetEmits.map((e) => ({
     id: e.id,
-    type: `${REL_NS}/worksheet`,
+    type: e.relType,
     target: e.target,
   }));
   if (sst.entries.length > 0) {
@@ -302,13 +337,15 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   await writer.addEntry(ARC_WORKBOOK, new TextEncoder().encode(workbookXml));
   await writer.addEntry(ARC_WORKBOOK_RELS, relsToBytes(wbRels));
 
-  // ---- 4. each worksheet (and its rels file when present) ----------------
-  for (let i = 0; i < sheetEmits.length; i++) {
-    const e = sheetEmits[i];
-    if (!e) continue;
-    await writer.addEntry(`${PACKAGE_WORKSHEETS}/sheet${i + 1}.xml`, e.bytes);
+  // ---- 4. each worksheet / chartsheet (and its rels file when present) --
+  for (const e of sheetEmits) {
+    await writer.addEntry(e.archivePath, e.bytes);
     if (e.rels) {
-      await writer.addEntry(`${PACKAGE_WORKSHEETS}/_rels/sheet${i + 1}.xml.rels`, relsToBytes(e.rels));
+      // The rels file sits alongside its part: `xl/<dir>/_rels/<file>.rels`.
+      const slash = e.archivePath.lastIndexOf('/');
+      const dir = e.archivePath.slice(0, slash);
+      const file = e.archivePath.slice(slash + 1);
+      await writer.addEntry(`${dir}/_rels/${file}.rels`, relsToBytes(e.rels));
     }
   }
 
@@ -391,8 +428,8 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   addDefault(manifest, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
   addDefault(manifest, 'xml', 'application/xml');
   addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
-  for (let i = 0; i < sheetEmits.length; i++) {
-    addOverride(manifest, `/${PACKAGE_WORKSHEETS}/sheet${i + 1}.xml`, WORKSHEET_TYPE);
+  for (const e of sheetEmits) {
+    addOverride(manifest, `/${e.archivePath}`, e.contentType);
   }
   addOverride(manifest, `/${ARC_STYLE}`, STYLES_TYPE);
   if (sst.entries.length > 0) {

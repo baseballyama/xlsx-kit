@@ -3,6 +3,10 @@
 // object the user composes via free functions. The Stylesheet pool
 // is held inline so styling operations don't need a side channel.
 
+import type { Chartsheet } from '../chartsheet/chartsheet';
+import { makeChartsheet } from '../chartsheet/chartsheet';
+import { makeAbsoluteAnchor } from '../drawing/anchor';
+import { type ChartReference, makeChartDrawingItem, makeDrawing } from '../drawing/drawing';
 import type { CoreProperties } from '../packaging/core';
 import type { CustomProperties } from '../packaging/custom';
 import type { ExtendedProperties } from '../packaging/extended';
@@ -14,14 +18,15 @@ import { makeWorksheet } from '../worksheet/worksheet';
 
 export type SheetState = 'visible' | 'hidden' | 'veryHidden';
 
-export interface SheetRef {
-  /** Kind tag — only `worksheet` for now; chartsheet lands in phase 6. */
-  kind: 'worksheet';
-  sheet: Worksheet;
-  /** OOXML sheetId attribute (1-based, unique within the workbook). */
-  sheetId: number;
-  state: SheetState;
-}
+/**
+ * Discriminated union over the two kinds of sheet a workbook can host.
+ * Both variants share `title` (via `sheet.title`) plus the OOXML
+ * `sheetId` and `state` attributes; consumers narrow on `kind` to reach
+ * the worksheet- vs chartsheet-specific data.
+ */
+export type SheetRef =
+  | { kind: 'worksheet'; sheet: Worksheet; sheetId: number; state: SheetState }
+  | { kind: 'chartsheet'; sheet: Chartsheet; sheetId: number; state: SheetState };
 
 export interface Workbook {
   sheets: SheetRef[];
@@ -99,15 +104,60 @@ export function addWorksheet(wb: Workbook, title: string, opts?: { index?: numbe
   return sheet;
 }
 
-/** Look up a Worksheet by title. Returns undefined if absent. */
+/** Look up a Worksheet by title. Returns undefined for missing names or chartsheets. */
 export function getSheet(wb: Workbook, title: string): Worksheet | undefined {
-  for (const s of wb.sheets) if (s.sheet.title === title) return s.sheet;
+  for (const s of wb.sheets) {
+    if (s.kind === 'worksheet' && s.sheet.title === title) return s.sheet;
+  }
   return undefined;
 }
 
-/** Look up a Worksheet by index in the sheets array. */
+/** Look up a Worksheet by index in the sheets array. Returns undefined for chartsheet slots. */
 export function getSheetByIndex(wb: Workbook, idx: number): Worksheet | undefined {
-  return wb.sheets[idx]?.sheet;
+  const ref = wb.sheets[idx];
+  return ref?.kind === 'worksheet' ? ref.sheet : undefined;
+}
+
+/** Look up a Chartsheet by title. Returns undefined for missing names or worksheets. */
+export function getChartsheet(wb: Workbook, title: string): Chartsheet | undefined {
+  for (const s of wb.sheets) {
+    if (s.kind === 'chartsheet' && s.sheet.title === title) return s.sheet;
+  }
+  return undefined;
+}
+
+/** Add a Chartsheet to the Workbook. Returns the chartsheet for further population. */
+export function addChartsheet(
+  wb: Workbook,
+  title: string,
+  opts?: { index?: number; state?: SheetState; chart?: ChartReference },
+): Chartsheet {
+  validateUniqueTitle(wb, title);
+  const cs = makeChartsheet(title);
+  // When the caller supplies a ChartReference, wrap it in a single-anchor
+  // drawing so the writer emits xl/drawings/drawingN.xml + chart part.
+  if (opts?.chart) {
+    // The drawing wraps the chart in a single absoluteAnchor sized to a
+    // standard A4-landscape page (Excel re-flows on open if needed).
+    cs.drawing = makeDrawing([
+      makeChartDrawingItem(makeAbsoluteAnchor({ x: 0, y: 0, cx: 9144000, cy: 6858000 }), opts.chart),
+    ]);
+  }
+  const ref: SheetRef = {
+    kind: 'chartsheet',
+    sheet: cs,
+    sheetId: allocateSheetId(wb),
+    state: opts?.state ?? 'visible',
+  };
+  if (opts?.index === undefined) {
+    wb.sheets.push(ref);
+  } else {
+    if (opts.index < 0 || opts.index > wb.sheets.length) {
+      throw new OpenXmlSchemaError(`addChartsheet: index ${opts.index} out of range`);
+    }
+    wb.sheets.splice(opts.index, 0, ref);
+  }
+  return cs;
 }
 
 /** All worksheet titles, in display order. */
@@ -133,9 +183,10 @@ export function setActiveSheet(wb: Workbook, title: string): void {
   wb.activeSheetIndex = i;
 }
 
-/** Currently active worksheet, or undefined if the workbook is empty. */
+/** Currently active sheet (worksheet only), or undefined if the active slot is empty or a chartsheet. */
 export function getActiveSheet(wb: Workbook): Worksheet | undefined {
-  return wb.sheets[wb.activeSheetIndex]?.sheet;
+  const ref = wb.sheets[wb.activeSheetIndex];
+  return ref?.kind === 'worksheet' ? ref.sheet : undefined;
 }
 
 /**

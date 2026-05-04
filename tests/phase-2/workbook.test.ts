@@ -253,10 +253,11 @@ describe('JSON round-trip via jsonReplacer / jsonReviver', () => {
     const wb2 = JSON.parse(text, jsonReviver) as typeof wb;
 
     const restored = wb2.sheets[0]?.sheet;
-    expect(restored?.title).toBe('S');
-    expect(restored?.rows instanceof Map).toBe(true);
-    expect(restored?.rows.get(1) instanceof Map).toBe(true);
-    expect(restored?.rows.get(1)?.get(1)?.value).toBe('hello');
-    expect(restored?.rows.get(2)?.get(1)?.value).toBe(42);
+    if (!restored || !('rows' in restored)) throw new Error('expected worksheet');
+    expect(restored.title).toBe('S');
+    expect(restored.rows instanceof Map).toBe(true);
+    expect(restored.rows.get(1) instanceof Map).toBe(true);
+    expect(restored.rows.get(1)?.get(1)?.value).toBe('hello');
+    expect(restored.rows.get(2)?.get(1)?.value).toBe(42);
   });
 });

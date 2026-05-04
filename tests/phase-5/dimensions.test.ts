@@ -16,8 +16,9 @@ import {
   type Worksheet,
 } from '../../src/worksheet/worksheet';
 
-const expectSheet = (ws: Worksheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected sheet');
+  if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;
 };
 
