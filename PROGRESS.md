@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts** 着手準備
-- **次のタスク**: フェーズ6 残り — chartex 側の spPr / txPr / dLbls / trendline / errorBars 配線 (今 turn は legacy `c:` の series-level decorations のみ完了)。次いで Chartsheet (`xl/chartsheets/sheetN.xml`) / UserShapes (`xl/drawings/chartDrawingN.xml`)、最後に §7 受け入れ条件 (chart 25 種 round-trip + Excel 視覚同等性 QA)。画像 / loadImage は完了。
+- **次のタスク**: フェーズ6 残り — chartex 側の spPr / txPr / dLbls / trendline / errorBars 配線、UserShapes (`xl/drawings/chartDrawingN.xml`)、最後に §7 受け入れ条件 (chart 25 種 round-trip + Excel 視覚同等性 QA)。Chartsheet / 画像 / loadImage / series decorations は完了。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -95,6 +95,8 @@
 ## メモ・判断ログ
 
 - pnpm 10.25 / Node 24.13（local）/ CI matrix は 18, 20, 22。
+- **lint**: `@biomejs/biome` から `oxlint` (oxc) に移行。`.oxlintrc.json` で全 category (correctness/suspicious/perf/style/pedantic) を error に上げて最大強度。`restriction` と `nursery` は off (機能制限ルールは合わない)。既存コードに合わせて `no-underscore-dangle` / `max-statements` / `capitalized-comments` / `unicorn/no-array-sort` / `unicorn/prefer-set-has` / `new-cap` 等は off、`typescript/no-non-null-assertion` は warn (旧 biome と同じ閾値)。`pnpm lint` / `pnpm lint:fix`。
+- **build**: `tsup` から `tsdown` (rolldown 系) に移行。`tsdown.config.ts` で同じ shape (entry / format / target / platform / sourcemap / clean / treeshake / outExtensions)。`pnpm build` は `tsdown && tsc -p tsconfig.build.json` の二段構え (.mjs + .d.ts)。
 - **クラス禁止ルール**は Biome の標準ルールではなく、コードレビューで都度確認する（カスタム lint プラグインは将来化）。
 - `Object.freeze` を値オブジェクトの make 関数で常用する方針。
 - 受け入れ条件にひっかかったら本ファイル「メモ」に記録、PR タイトルに `(WIP)` を付けて次ターンへ。

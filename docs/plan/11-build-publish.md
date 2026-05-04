@@ -44,13 +44,13 @@
   },
   "devDependencies": {
     "@types/node": "^22",
-    "@biomejs/biome": "^2",
+    "oxlint": "^1",
     "@vitest/browser": "^2",
     "@vitest/coverage-v8": "^2",
     "fast-check": "^3",
     "playwright": "^1",
     "size-limit": "^11",
-    "tsup": "^8",
+    "tsdown": "^0.21",
     "typedoc": "^0.26",
     "typescript": "^5.4",
     "vitest": "^2",
@@ -94,11 +94,11 @@
 }
 ```
 
-### 1.3 ビルド: tsup
+### 1.3 ビルド: tsdown
 
-`tsup.config.ts`:
+`tsdown.config.ts`:
 ```ts
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsdown';
 
 const entries = [
   { name: 'index',          file: 'src/index.ts',                      envs: ['node', 'browser'] },
@@ -154,35 +154,39 @@ export default defineConfig(
 
 CI で size-limit を必須通過とする。
 
-## 2. リント / フォーマット
+## 2. リント
 
-Biome で一本化：
+`oxlint`（oxc 系）で一本化。Rust 実装で 10× 速いほか、設定ファイルが ESLint の rule 名と互換 (`eslint(...)` / `eslint-plugin-unicorn(...)` / `typescript-eslint(...)` / `oxc(...)`)。
 
-`biome.json`（Biome 2.4 schema）:
+`.oxlintrc.json`（最大強度・厳格設定）:
 ```jsonc
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": { "includes": ["**", "!**/dist", "!**/reference", "!**/node_modules", "!**/coverage"] },
-  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true,
-      "complexity": { "noForEach": "off" },
-      "performance": { "noAccumulatingSpread": "warn" },
-      "style": { "noNonNullAssertion": "warn" },
-      "suspicious": { "noClassAssign": "error" }
-    }
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "style": "error",
+    "pedantic": "error",
+    "restriction": "off",
+    "nursery": "off"
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
-  "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "all" } }
+  "rules": {
+    // 既存コードに合わせたゆるめのオーバーライド (代表例):
+    "no-underscore-dangle": "off",        // `_xxxByKey` 内部 dedup map
+    "max-statements": "off",
+    "capitalized-comments": "off",
+    "typescript/no-non-null-assertion": "warn",
+    "unicorn/no-array-sort": "off",       // ローカル配列の sort は OK
+    "unicorn/prefer-set-has": "off",
+    "new-cap": "off"
+  },
+  "ignorePatterns": ["dist", "reference", "node_modules", "coverage"]
 }
 ```
 
-> Biome 2.x は 1.x からスキーマが変わっており、`files.ignore` → `files.includes`（`!` プレフィックス）、`organizeImports` → `assist.actions.source.organizeImports`。テンプレを書き換えるときは `pnpm exec biome migrate --write` で自動移行できる。
+`pnpm lint` は `oxlint`、`pnpm lint:fix` は `oxlint --fix`。フォーマッタは現時点で oxc 系には専用ツールがないので `tsc` の strict 設定 + `oxlint --fix` で許容範囲を保つ。
 
-加えて、**`class` キーワード使用禁止のカスタムルール**を Biome カスタムプラグイン（または ESLint 併用）で実装する。例外：`Error` 派生のみ許可。
+加えて、**`class` キーワード使用禁止のカスタムルール**は将来 oxlint プラグインまたは codereview チェックで実装。例外：`Error` 派生のみ許可。
 
 ## 3. CI
 
