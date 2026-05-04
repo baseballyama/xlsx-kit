@@ -23,6 +23,8 @@ import { makeRelationships, type Relationships, relsToBytes } from '../packaging
 import { stylesheetToBytes } from '../styles/stylesheet-writer';
 import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-strings';
 import type { Workbook } from '../workbook/workbook';
+import type { LegacyComment } from '../worksheet/comments';
+import { commentsToBytes, placeholderVmlDrawing } from '../worksheet/comments-xml';
 import type { TableDefinition } from '../worksheet/table';
 import { tableToBytes } from '../worksheet/table-xml';
 import { worksheetToBytes } from '../worksheet/writer';
@@ -58,6 +60,10 @@ const CUSTOM_PROPS_REL = `${REL_NS}/custom-properties`;
 const THEME_REL = `${REL_NS}/theme`;
 const TABLE_REL = `${REL_NS}/table`;
 const TABLE_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml';
+const COMMENTS_REL = `${REL_NS}/comments`;
+const VML_DRAWING_REL = `${REL_NS}/vmlDrawing`;
+const COMMENTS_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml';
+const VML_DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.vmlDrawing';
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -89,6 +95,15 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   // Workbook-global table counter so xl/tables/tableN.xml ids stay unique.
   const tableEmits: Array<{ id: number; bytes: Uint8Array }> = [];
   let nextTableId = 1;
+  // Same counter pattern for comments parts. The comments part and the
+  // VML drawing share their N because Excel always emits them paired.
+  interface CommentEmit {
+    id: number;
+    commentsBytes: Uint8Array;
+    vmlBytes: Uint8Array;
+  }
+  const commentEmits: CommentEmit[] = [];
+  let nextCommentsId = 1;
   wb.sheets.forEach((ref, i) => {
     const target = `worksheets/sheet${i + 1}.xml`;
     const sheetRels = makeRelationships();
@@ -106,7 +121,33 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       tableEmits.push({ id: tableId, bytes: tableToBytes(xmlTable) });
       return { rId };
     };
-    const bytes = worksheetToBytes(ref.sheet, { sharedStrings: sst, rels: sheetRels, registerTable });
+    const registerComments = (comments: ReadonlyArray<LegacyComment>): { vmlRelId: string } => {
+      const id = nextCommentsId++;
+      const commentsRelId = `rId${sheetRels.rels.length + 1}`;
+      sheetRels.rels.push({
+        id: commentsRelId,
+        type: COMMENTS_REL,
+        target: `../comments${id}.xml`,
+      });
+      const vmlRelId = `rId${sheetRels.rels.length + 1}`;
+      sheetRels.rels.push({
+        id: vmlRelId,
+        type: VML_DRAWING_REL,
+        target: `../drawings/vmlDrawing${id}.vml`,
+      });
+      commentEmits.push({
+        id,
+        commentsBytes: commentsToBytes(comments),
+        vmlBytes: placeholderVmlDrawing(),
+      });
+      return { vmlRelId };
+    };
+    const bytes = worksheetToBytes(ref.sheet, {
+      sharedStrings: sst,
+      rels: sheetRels,
+      registerTable,
+      registerComments,
+    });
     const emit: SheetEmit = { id: `rId${i + 1}`, target, bytes };
     if (sheetRels.rels.length > 0) emit.rels = sheetRels;
     sheetEmits.push(emit);
@@ -163,6 +204,12 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   // ---- 4b. table parts ----------------------------------------------------
   for (const t of tableEmits) {
     await writer.addEntry(`xl/tables/table${t.id}.xml`, t.bytes);
+  }
+
+  // ---- 4c. comments parts + matching VML drawings ------------------------
+  for (const c of commentEmits) {
+    await writer.addEntry(`xl/comments${c.id}.xml`, c.commentsBytes);
+    await writer.addEntry(`xl/drawings/vmlDrawing${c.id}.vml`, c.vmlBytes);
   }
 
   // ---- 5. styles.xml + sharedStrings.xml (if any) -------------------------
@@ -225,6 +272,12 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   if (wb.themeXml) addOverride(manifest, `/${ARC_THEME}`, THEME_TYPE);
   for (const t of tableEmits) {
     addOverride(manifest, `/xl/tables/table${t.id}.xml`, TABLE_TYPE);
+  }
+  if (commentEmits.length > 0) {
+    addDefault(manifest, 'vml', VML_DRAWING_TYPE);
+  }
+  for (const c of commentEmits) {
+    addOverride(manifest, `/xl/comments${c.id}.xml`, COMMENTS_TYPE);
   }
   if (wb.properties) addOverride(manifest, `/${ARC_CORE}`, CORE_PROPS_TYPE);
   if (wb.appProperties) addOverride(manifest, `/${ARC_APP}`, EXT_PROPS_TYPE);

@@ -26,6 +26,7 @@ import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import type { AutoFilter, FilterColumn } from './auto-filter';
 import { parseMultiCellRange, parseRange } from './cell-range';
+import type { LegacyComment } from './comments';
 import type {
   DataValidation,
   DataValidationErrorStyle,
@@ -80,6 +81,12 @@ export interface WorksheetReadContext {
   rels?: Relationships;
   /** Resolves a worksheet-rels rId pointing at xl/tables/tableN.xml into a parsed TableDefinition. */
   loadTable?: (relId: string) => TableDefinition | undefined;
+  /**
+   * Loader for comments parts (rels Type=…/comments). Called once per
+   * matching rel; the reader appends every returned LegacyComment onto
+   * `ws.legacyComments`.
+   */
+  loadComments?: (relId: string) => ReadonlyArray<LegacyComment> | undefined;
 }
 
 /** Per-worksheet state for shared-formula expansion. */
@@ -191,6 +198,18 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
       if (table) {
         table.rId = rId;
         ws.tables.push(table);
+      }
+    }
+  }
+
+  // Comments don't have a sheet-inline anchor — they're discovered via the
+  // rels file (Type ending in /comments). Walk those and let load.ts read
+  // each commentsN.xml part.
+  if (ctx.rels && ctx.loadComments) {
+    for (const rel of ctx.rels.rels) {
+      if (rel.type === `${REL_NS}/comments`) {
+        const list = ctx.loadComments(rel.id);
+        if (list) ws.legacyComments.push(...list);
       }
     }
   }

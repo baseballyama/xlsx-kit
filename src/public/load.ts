@@ -22,6 +22,7 @@ import type { DefinedName } from '../workbook/defined-names';
 import { makeDefinedName } from '../workbook/defined-names';
 import { parseSharedStringsXml, type SharedStringsTable } from '../workbook/shared-strings';
 import { createWorkbook, type SheetRef, type SheetState, type Workbook } from '../workbook/workbook';
+import { parseCommentsXml } from '../worksheet/comments-xml';
 import { parseWorksheetXml } from '../worksheet/reader';
 import { parseTableXml } from '../worksheet/table-xml';
 import {
@@ -305,10 +306,20 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
           return parseTableXml(archive.read(tablePath));
         }
       : undefined;
+    const loadComments = sheetRels
+      ? (relId: string) => {
+          const cRel = sheetRels.rels.find((r) => r.id === relId);
+          if (!cRel) return undefined;
+          const cPath = resolveRelTarget(sheetPath, cRel.target);
+          if (!archive.has(cPath)) return undefined;
+          return parseCommentsXml(archive.read(cPath));
+        }
+      : undefined;
     const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, {
       sharedStrings: sst,
       ...(sheetRels ? { rels: sheetRels } : {}),
       ...(loadTable ? { loadTable } : {}),
+      ...(loadComments ? { loadComments } : {}),
     });
     const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
     wb.sheets.push(ref);

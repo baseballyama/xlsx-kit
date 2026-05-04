@@ -12,6 +12,8 @@ import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { AutoFilter } from './auto-filter';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
+import type { LegacyComment } from './comments';
+import { makeLegacyComment } from './comments';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
@@ -61,6 +63,8 @@ export interface Worksheet {
   autoFilter?: AutoFilter;
   /** Excel Table objects. Each lives in its own xl/tables/tableN.xml part. */
   tables: TableDefinition[];
+  /** Legacy comments. Persisted as `xl/commentsN.xml` + a placeholder VML drawing. */
+  legacyComments: LegacyComment[];
 }
 
 /** Build a Worksheet shell. */
@@ -79,6 +83,7 @@ export function makeWorksheet(title: string): Worksheet {
     hyperlinks: [],
     dataValidations: [],
     tables: [],
+    legacyComments: [],
   };
 }
 
@@ -473,5 +478,27 @@ export function removeTable(ws: Worksheet, displayName: string): boolean {
   const i = ws.tables.findIndex((t) => t.displayName === displayName);
   if (i < 0) return false;
   ws.tables.splice(i, 1);
+  return true;
+}
+
+// ---- legacy comments -----------------------------------------------------
+
+/** Add or replace the comment at `ref`. */
+export function setComment(ws: Worksheet, opts: { ref: string; author: string; text: string }): LegacyComment {
+  const i = ws.legacyComments.findIndex((c) => c.ref === opts.ref);
+  const c = makeLegacyComment(opts);
+  if (i < 0) ws.legacyComments.push(c);
+  else ws.legacyComments[i] = c;
+  return c;
+}
+
+export function getComment(ws: Worksheet, ref: string): LegacyComment | undefined {
+  return ws.legacyComments.find((c) => c.ref === ref);
+}
+
+export function removeComment(ws: Worksheet, ref: string): boolean {
+  const i = ws.legacyComments.findIndex((c) => c.ref === ref);
+  if (i < 0) return false;
+  ws.legacyComments.splice(i, 1);
   return true;
 }

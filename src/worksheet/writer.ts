@@ -44,6 +44,14 @@ export interface WorksheetWriteContext {
    * once per `ws.tables` entry while serialising.
    */
   registerTable?: (table: import('./table').TableDefinition) => { rId: string };
+  /**
+   * Comments / VML drawing allocator. saveWorkbook emits the comments
+   * part + a placeholder VML drawing for all comments on the sheet, and
+   * returns the worksheet-rels rId for the VML — which the writer
+   * splats into `<legacyDrawing r:id>`. Called once per worksheet that
+   * carries any comments.
+   */
+  registerComments?: (comments: ReadonlyArray<import('./comments').LegacyComment>) => { vmlRelId: string };
 }
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
@@ -108,6 +116,10 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   }
   if (ws.hyperlinks.length > 0) {
     parts.push(serializeHyperlinks(ws.hyperlinks, ctx.rels));
+  }
+  if (ws.legacyComments.length > 0 && ctx.registerComments) {
+    const { vmlRelId } = ctx.registerComments(ws.legacyComments);
+    parts.push(`<legacyDrawing r:id="${escapeXmlAttr(vmlRelId)}"/>`);
   }
   if (ws.tables.length > 0 && ctx.registerTable) {
     parts.push(`<tableParts count="${ws.tables.length}">`);
