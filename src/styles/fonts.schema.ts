@@ -30,6 +30,8 @@ export const FontSchema: Schema<Font> = defineSchema<Font>({
     { kind: 'object', key: 'color', schema: () => ColorSchema, optional: true },
     { kind: 'nested', key: 'size', name: 'sz', xmlNs: SHEET_MAIN_NS, primitive: 'float', optional: true },
     {
+      // ECMA-376 §18.4.13: bare `<u/>` (no @val) means underline=single.
+      // Real Excel emits this for hyperlink fonts.
       kind: 'nested',
       key: 'underline',
       name: 'u',
@@ -37,6 +39,7 @@ export const FontSchema: Schema<Font> = defineSchema<Font>({
       primitive: 'enum',
       values: UNDERLINE_VALUES,
       optional: true,
+      default: 'single',
     },
     {
       kind: 'nested',

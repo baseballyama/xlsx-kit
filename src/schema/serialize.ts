@@ -247,8 +247,12 @@ export function fromTree<T>(node: XmlNode, schema: Schema<T>): T {
       case 'nested': {
         const child = childByName(node, fullName);
         if (child === undefined) {
-          if (def.default !== undefined) out[def.key] = def.default;
-          else if (!def.optional) {
+          // The element itself was omitted: leave the field unset for
+          // optional nested elements, regardless of `default`. `default`
+          // here governs the "child present but @val omitted" case
+          // (e.g. <u/> meaning underline=single per ECMA-376 §18.4.13),
+          // not "child entirely absent".
+          if (!def.optional) {
             throw new OpenXmlSchemaError(`<${schema.tagname}>: required nested element "${def.key}" is missing`);
           }
           break;
@@ -256,6 +260,10 @@ export function fromTree<T>(node: XmlNode, schema: Schema<T>): T {
         const valAttr = def.valAttr ?? 'val';
         const raw = child.attrs[valAttr];
         if (raw === undefined) {
+          if (def.default !== undefined) {
+            out[def.key] = def.default;
+            break;
+          }
           throw new OpenXmlSchemaError(
             `<${schema.tagname}>: nested element "${def.key}" missing attribute "${valAttr}"`,
           );
