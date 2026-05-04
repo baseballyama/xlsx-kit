@@ -5,8 +5,8 @@
 
 ## カレント
 
-- **フェーズ**: 0 (bootstrap) → フェーズ1 へ
-- **次のタスク**: フェーズ1 §1 (IO 抽象 `XlsxSource` / `XlsxSink`) の最小実装
+- **フェーズ**: フェーズ1（基盤層）に着手
+- **次のタスク**: フェーズ1 §1 (`XlsxSource` / `XlsxSink` interface + Node ヘルパ + ブラウザヘルパ) の最小実装。型から先、実装は Buffer / Uint8Array / Blob のメモリ経路だけ。ストリーム経路は §2 ZIP 実装と同時に。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -20,7 +20,7 @@
 - [x] **bootstrap**: vitest 設定 + smoke test（vitest 4.1 + @vitest/coverage-v8、`tests/phase-0/smoke.test.ts` で `pnpm test` pass、`pnpm typecheck` pass）
 - [x] **bootstrap**: tsup 設定（`tsup.config.ts` / `pnpm build` で `dist/index.mjs` + `dist/index.d.ts` を生成。tsup と tsc を二段で走らせる二段構え（plan 11 §1.3 に従う））
 - [x] **bootstrap**: biome lint 通過（@biomejs/biome 2.4 install、`biome migrate --write` で v2.4 schema へ更新、`pnpm lint` 8 files clean。プラン doc 11 §2 も v2.4 schema に書き換え済）
-- [ ] **bootstrap**: GitHub Actions CI 雛形（typecheck / lint / test ジョブ）
+- [x] **bootstrap**: GitHub Actions CI 雛形（`.github/workflows/ci.yml`: `static` ジョブで typecheck/lint/build、`test` ジョブで Node 18/20/22 マトリクス。pnpm/action-setup@v4 + setup-node@v4 + submodule 取得。同 ref の in-flight runs は cancel-in-progress）
 
 ### フェーズ1: 基盤層（[03-foundations.md](docs/plan/03-foundations.md)）
 
