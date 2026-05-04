@@ -11,6 +11,7 @@ import { type Cell, makeCell } from '../cell/cell';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
+import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
@@ -52,6 +53,8 @@ export interface Worksheet {
   defaultRowHeight?: number;
   /** Hyperlinks. External URLs round-trip via worksheet rels; internal jumps stay inline. */
   hyperlinks: Hyperlink[];
+  /** Data validation entries. */
+  dataValidations: DataValidation[];
 }
 
 /** Build a Worksheet shell. */
@@ -68,6 +71,7 @@ export function makeWorksheet(title: string): Worksheet {
     columnDimensions: new Map(),
     rowDimensions: new Map(),
     hyperlinks: [],
+    dataValidations: [],
   };
 }
 
@@ -411,4 +415,19 @@ export function removeHyperlink(ws: Worksheet, ref: string): boolean {
 /** Look up a hyperlink by its ref. */
 export function getHyperlink(ws: Worksheet, ref: string): Hyperlink | undefined {
   return ws.hyperlinks.find((h) => h.ref === ref);
+}
+
+// ---- data validations ----------------------------------------------------
+
+/** Append a DataValidation entry. */
+export function addDataValidation(ws: Worksheet, dv: DataValidation): DataValidation {
+  ws.dataValidations.push(dv);
+  return dv;
+}
+
+/** Drop every validation whose sqref overlaps `ref` (string parse). Returns count removed. */
+export function removeDataValidations(ws: Worksheet, predicate: (dv: DataValidation) => boolean): number {
+  const before = ws.dataValidations.length;
+  ws.dataValidations = ws.dataValidations.filter((dv) => !predicate(dv));
+  return before - ws.dataValidations.length;
 }

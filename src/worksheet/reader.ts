@@ -24,7 +24,14 @@ import { ERROR_CODES } from '../utils/inference';
 import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
-import { parseRange } from './cell-range';
+import { parseMultiCellRange, parseRange } from './cell-range';
+import type {
+  DataValidation,
+  DataValidationErrorStyle,
+  DataValidationOperator,
+  DataValidationType,
+} from './data-validations';
+import { makeDataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
@@ -52,6 +59,10 @@ const COL_TAG = `{${SHEET_MAIN_NS}}col`;
 const SHEET_FORMAT_PR_TAG = `{${SHEET_MAIN_NS}}sheetFormatPr`;
 const HYPERLINKS_TAG = `{${SHEET_MAIN_NS}}hyperlinks`;
 const HYPERLINK_TAG = `{${SHEET_MAIN_NS}}hyperlink`;
+const DATA_VALIDATIONS_TAG = `{${SHEET_MAIN_NS}}dataValidations`;
+const DATA_VALIDATION_TAG = `{${SHEET_MAIN_NS}}dataValidation`;
+const FORMULA1_TAG = `{${SHEET_MAIN_NS}}formula1`;
+const FORMULA2_TAG = `{${SHEET_MAIN_NS}}formula2`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -141,6 +152,14 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (hyperlinksEl) {
     for (const h of findChildren(hyperlinksEl, HYPERLINK_TAG)) {
       ws.hyperlinks.push(parseHyperlink(h, ctx.rels));
+    }
+  }
+
+  // <dataValidations> — list / range / formula constraints, sqref-scoped.
+  const dvWrap = findChild(root, DATA_VALIDATIONS_TAG);
+  if (dvWrap) {
+    for (const d of findChildren(dvWrap, DATA_VALIDATION_TAG)) {
+      ws.dataValidations.push(parseDataValidation(d));
     }
   }
   return ws;
@@ -455,6 +474,68 @@ const parseColumnDimension = (node: XmlNode): ColumnDimension => {
   if (collapsed !== undefined) opts.collapsed = collapsed;
   // makeColumnDimension fills min=col=max; rebuild with both range ends.
   return { ...makeColumnDimension(min, opts), max };
+};
+
+const DV_TYPES: ReadonlyArray<DataValidationType> = [
+  'whole',
+  'decimal',
+  'list',
+  'date',
+  'time',
+  'textLength',
+  'custom',
+];
+const DV_OPERATORS: ReadonlyArray<DataValidationOperator> = [
+  'between',
+  'notBetween',
+  'equal',
+  'notEqual',
+  'greaterThan',
+  'greaterThanOrEqual',
+  'lessThan',
+  'lessThanOrEqual',
+];
+const DV_ERROR_STYLES: ReadonlyArray<DataValidationErrorStyle> = ['stop', 'warning', 'information'];
+
+const parseDataValidation = (node: XmlNode): DataValidation => {
+  const typeRaw = node.attrs['type'];
+  const type: DataValidationType =
+    typeRaw && (DV_TYPES as ReadonlyArray<string>).includes(typeRaw) ? (typeRaw as DataValidationType) : 'custom';
+  const sqrefRaw = node.attrs['sqref'];
+  if (!sqrefRaw) throw new OpenXmlSchemaError('worksheet: <dataValidation> missing @sqref');
+  const opts: Partial<DataValidation> & { type: DataValidationType; sqref: ReturnType<typeof parseMultiCellRange> } = {
+    type,
+    sqref: parseMultiCellRange(sqrefRaw),
+  };
+  const operator = node.attrs['operator'];
+  if (operator && (DV_OPERATORS as ReadonlyArray<string>).includes(operator)) {
+    opts.operator = operator as DataValidationOperator;
+  }
+  const allowBlank = parseBoolXmlAttr(node.attrs['allowBlank']);
+  if (allowBlank !== undefined) opts.allowBlank = allowBlank;
+  const showInputMessage = parseBoolXmlAttr(node.attrs['showInputMessage']);
+  if (showInputMessage !== undefined) opts.showInputMessage = showInputMessage;
+  const showErrorMessage = parseBoolXmlAttr(node.attrs['showErrorMessage']);
+  if (showErrorMessage !== undefined) opts.showErrorMessage = showErrorMessage;
+  const showDropDown = parseBoolXmlAttr(node.attrs['showDropDown']);
+  if (showDropDown !== undefined) opts.showDropDown = showDropDown;
+  const errorTitle = node.attrs['errorTitle'];
+  if (errorTitle !== undefined) opts.errorTitle = errorTitle;
+  const error = node.attrs['error'];
+  if (error !== undefined) opts.error = error;
+  const errorStyle = node.attrs['errorStyle'];
+  if (errorStyle && (DV_ERROR_STYLES as ReadonlyArray<string>).includes(errorStyle)) {
+    opts.errorStyle = errorStyle as DataValidationErrorStyle;
+  }
+  const promptTitle = node.attrs['promptTitle'];
+  if (promptTitle !== undefined) opts.promptTitle = promptTitle;
+  const prompt = node.attrs['prompt'];
+  if (prompt !== undefined) opts.prompt = prompt;
+  const f1 = findChild(node, FORMULA1_TAG);
+  if (f1?.text !== undefined) opts.formula1 = f1.text;
+  const f2 = findChild(node, FORMULA2_TAG);
+  if (f2?.text !== undefined) opts.formula2 = f2.text;
+  return makeDataValidation(opts);
 };
 
 const parseHyperlink = (node: XmlNode, rels: Relationships | undefined): Hyperlink => {

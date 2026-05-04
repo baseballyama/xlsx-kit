@@ -18,7 +18,8 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
 import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
-import { rangeToString } from './cell-range';
+import { multiCellRangeToString, rangeToString } from './cell-range';
+import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
 import type { Pane, Selection, SheetView } from './views';
@@ -91,6 +92,9 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
       parts.push(`<mergeCell ref="${rangeToString(range)}"/>`);
     }
     parts.push('</mergeCells>');
+  }
+  if (ws.dataValidations.length > 0) {
+    parts.push(serializeDataValidations(ws.dataValidations));
   }
   if (ws.hyperlinks.length > 0) {
     parts.push(serializeHyperlinks(ws.hyperlinks, ctx.rels));
@@ -313,6 +317,34 @@ const serializeColumnDimension = (dim: ColumnDimension): string => {
   if (dim.outlineLevel !== undefined) attrs += ` outlineLevel="${dim.outlineLevel}"`;
   if (dim.collapsed) attrs += ' collapsed="1"';
   return `<col${attrs}/>`;
+};
+
+const serializeDataValidations = (dvs: ReadonlyArray<DataValidation>): string => {
+  const parts: string[] = [`<dataValidations count="${dvs.length}">`];
+  for (const dv of dvs) parts.push(serializeDataValidation(dv));
+  parts.push('</dataValidations>');
+  return parts.join('');
+};
+
+const serializeDataValidation = (dv: DataValidation): string => {
+  let attrs = ` type="${dv.type}"`;
+  if (dv.errorStyle) attrs += ` errorStyle="${dv.errorStyle}"`;
+  if (dv.operator) attrs += ` operator="${dv.operator}"`;
+  if (dv.allowBlank) attrs += ' allowBlank="1"';
+  if (dv.showDropDown) attrs += ' showDropDown="1"';
+  if (dv.showInputMessage) attrs += ' showInputMessage="1"';
+  if (dv.showErrorMessage) attrs += ' showErrorMessage="1"';
+  if (dv.errorTitle !== undefined) attrs += ` errorTitle="${escapeXmlAttr(dv.errorTitle)}"`;
+  if (dv.error !== undefined) attrs += ` error="${escapeXmlAttr(dv.error)}"`;
+  if (dv.promptTitle !== undefined) attrs += ` promptTitle="${escapeXmlAttr(dv.promptTitle)}"`;
+  if (dv.prompt !== undefined) attrs += ` prompt="${escapeXmlAttr(dv.prompt)}"`;
+  attrs += ` sqref="${escapeXmlAttr(multiCellRangeToString(dv.sqref))}"`;
+
+  const formulas: string[] = [];
+  if (dv.formula1 !== undefined) formulas.push(`<formula1>${escapeXmlText(dv.formula1)}</formula1>`);
+  if (dv.formula2 !== undefined) formulas.push(`<formula2>${escapeXmlText(dv.formula2)}</formula2>`);
+  if (formulas.length === 0) return `<dataValidation${attrs}/>`;
+  return `<dataValidation${attrs}>${formulas.join('')}</dataValidation>`;
 };
 
 const serializeHyperlinks = (links: ReadonlyArray<Hyperlink>, rels: Relationships | undefined): string => {
