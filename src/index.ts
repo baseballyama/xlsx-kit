@@ -62,6 +62,11 @@ export {
   relsFromBytes,
   relsToBytes,
 } from './packaging';
+// Phase 3 (read / write). Currently the loadWorkbook minimum skeleton —
+// reads manifest + workbook.xml + sheet rels and produces a Workbook
+// shell. Cell content is filled in by later iterations.
+export type { LoadOptions } from './public/load';
+export { loadWorkbook } from './public/load';
 // Schema layer.
 export type { AttrDef, ElementDef, Primitive, Schema } from './schema';
 export { defineSchema, fromTree, toTree } from './schema';
