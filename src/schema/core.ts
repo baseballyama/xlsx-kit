@@ -50,6 +50,16 @@ export type ElementDef =
       primitive: Primitive;
       optional?: boolean;
       default?: unknown;
+      /**
+       * Fixed attributes always emitted on this element. Keys in Clark
+       * notation. On parse, attributes other than these are ignored;
+       * keep the schema strict only for the value (text content).
+       *
+       * Used for the `xsi:type="dcterms:W3CDTF"` marker that
+       * docProps/core.xml emits on its <dcterms:created> /
+       * <dcterms:modified> children, and similar fixed-marker patterns.
+       */
+      attrs?: Record<string, string>;
     }
   | {
       kind: 'object';

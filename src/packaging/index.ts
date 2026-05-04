@@ -2,6 +2,8 @@
 // two structural files every OOXML zip carries; doc properties (core,
 // app, custom) follow in the next bootstrap-style turn.
 
+export type { CoreProperties } from './core';
+export { corePropsFromBytes, corePropsToBytes, makeCoreProperties } from './core';
 export type { DefaultEntry, Manifest, OverrideEntry } from './manifest';
 export {
   addDefault,

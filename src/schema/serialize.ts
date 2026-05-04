@@ -115,7 +115,7 @@ export function toTree<T>(value: T, schema: Schema<T>): XmlNode {
     switch (def.kind) {
       case 'text': {
         const text = coerceToString(raw, def.primitive, { kind: def.primitive });
-        node.children.push(el(elementXmlName(def, schema.xmlNs), {}, [], text));
+        node.children.push(el(elementXmlName(def, schema.xmlNs), def.attrs ?? {}, [], text));
         break;
       }
       case 'empty': {
