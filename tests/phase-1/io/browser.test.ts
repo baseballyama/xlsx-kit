@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { fromArrayBuffer, fromBlob, fromFile, toArrayBuffer, toBlob } from '../../../src/io/browser';
+import {
+  fromArrayBuffer,
+  fromBlob,
+  fromFile,
+  fromResponse,
+  fromStream,
+  toArrayBuffer,
+  toBlob,
+} from '../../../src/io/browser';
 import { OpenXmlIoError } from '../../../src/utils/exceptions';
 
 describe('fromBlob', () => {
@@ -84,6 +92,85 @@ describe('toBlob', () => {
     const w = sink.toBytes();
     await w.finish();
     expect(() => w.write(new Uint8Array([1]))).toThrowError(OpenXmlIoError);
+  });
+});
+
+describe('fromResponse', () => {
+  it('reads bytes via toBytes() from a JSON-style Response', async () => {
+    const payload = new Uint8Array([1, 2, 3, 4]);
+    const res = new Response(payload);
+    const src = fromResponse(res);
+    expect(Array.from(await src.toBytes())).toEqual([1, 2, 3, 4]);
+  });
+
+  it('exposes the body stream via toStream()', async () => {
+    const payload = new Uint8Array([9, 8, 7]);
+    const res = new Response(payload);
+    const src = fromResponse(res);
+    const stream = src.toStream?.();
+    if (!stream) throw new Error('expected toStream() to be defined');
+    const reader = stream.getReader();
+    const out: number[] = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      out.push(...value);
+    }
+    expect(out).toEqual([9, 8, 7]);
+  });
+
+  it('handles bodyless responses with an empty stream', async () => {
+    const res = new Response(null, { status: 204 });
+    const src = fromResponse(res);
+    const stream = src.toStream?.();
+    if (!stream) throw new Error('expected toStream() to be defined');
+    const reader = stream.getReader();
+    const { done } = await reader.read();
+    expect(done).toBe(true);
+  });
+
+  it('rejects non-Response inputs with OpenXmlIoError', () => {
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately exercising the error path
+    expect(() => fromResponse({} as any)).toThrowError(OpenXmlIoError);
+  });
+});
+
+describe('fromStream', () => {
+  const streamOf = (chunks: Uint8Array[]): ReadableStream<Uint8Array> =>
+    new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const c of chunks) controller.enqueue(c);
+        controller.close();
+      },
+    });
+
+  it('drains a Web ReadableStream into Uint8Array via toBytes()', async () => {
+    const src = fromStream(streamOf([new Uint8Array([1, 2]), new Uint8Array([3, 4, 5])]));
+    expect(Array.from(await src.toBytes())).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('returns the same stream via toStream()', async () => {
+    const original = streamOf([new Uint8Array([42])]);
+    const src = fromStream(original);
+    const back = src.toStream?.();
+    expect(back).toBe(original);
+  });
+
+  it('throws when toBytes is called after toStream', () => {
+    const src = fromStream(streamOf([new Uint8Array([1])]));
+    src.toStream?.();
+    return expect(src.toBytes()).rejects.toBeInstanceOf(OpenXmlIoError);
+  });
+
+  it('throws when toStream is called after toBytes', async () => {
+    const src = fromStream(streamOf([new Uint8Array([1])]));
+    await src.toBytes();
+    expect(() => src.toStream?.()).toThrowError(OpenXmlIoError);
+  });
+
+  it('rejects non-ReadableStream inputs', () => {
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately exercising the error path
+    expect(() => fromStream('not a stream' as any)).toThrowError(OpenXmlIoError);
   });
 });
 

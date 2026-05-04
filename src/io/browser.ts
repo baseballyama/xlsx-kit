@@ -37,6 +37,101 @@ export function fromBlob(blob: Blob): XlsxSource {
 export const fromFile = fromBlob;
 
 /**
+ * Wrap a fetch {@link Response} as an XlsxSource. `toBytes` collects
+ * the entire response body via `Response.arrayBuffer()`; `toStream`
+ * returns `response.body` directly so the ZIP reader can pull chunks
+ * lazily from the network. The Response can have been fetched with
+ * any method and content-type; this helper does no validation.
+ */
+export function fromResponse(response: Response): XlsxSource {
+  if (!(response instanceof Response)) {
+    throw new OpenXmlIoError('fromResponse expects a fetch Response');
+  }
+  let bytes: Promise<Uint8Array> | undefined;
+  return {
+    async toBytes() {
+      if (bytes) return bytes;
+      bytes = (async () => {
+        try {
+          return new Uint8Array(await response.arrayBuffer());
+        } catch (cause) {
+          throw new OpenXmlIoError('fromResponse: failed to read response body', { cause });
+        }
+      })();
+      return bytes;
+    },
+    toStream() {
+      const body = response.body;
+      if (!body) {
+        // Bodyless responses (HEAD / 204 / 304) — return an empty stream.
+        return new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.close();
+          },
+        });
+      }
+      return body;
+    },
+  };
+}
+
+/**
+ * Wrap a Web {@link ReadableStream} of bytes as an XlsxSource. `toStream`
+ * returns the stream directly; `toBytes` drains it once and caches the
+ * bytes. Streams can only be consumed once — calling `toBytes` after
+ * `toStream` (or vice versa) on the same source throws.
+ */
+export function fromStream(stream: ReadableStream<Uint8Array>): XlsxSource {
+  if (!(stream instanceof ReadableStream)) {
+    throw new OpenXmlIoError('fromStream expects a ReadableStream<Uint8Array>');
+  }
+  let consumed = false;
+  let bytes: Promise<Uint8Array> | undefined;
+  return {
+    async toBytes() {
+      if (bytes) return bytes;
+      if (consumed) {
+        throw new OpenXmlIoError('fromStream: stream already consumed via toStream()');
+      }
+      consumed = true;
+      bytes = (async () => {
+        const chunks: Uint8Array[] = [];
+        const reader = stream.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) chunks.push(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        let total = 0;
+        for (const c of chunks) total += c.byteLength;
+        const out = new Uint8Array(total);
+        let off = 0;
+        for (const c of chunks) {
+          out.set(c, off);
+          off += c.byteLength;
+        }
+        return out;
+      })();
+      return bytes;
+    },
+    toStream() {
+      if (bytes) {
+        throw new OpenXmlIoError('fromStream: bytes already consumed via toBytes()');
+      }
+      if (consumed) {
+        throw new OpenXmlIoError('fromStream: stream already consumed');
+      }
+      consumed = true;
+      return stream;
+    },
+  };
+}
+
+/**
  * Wrap an ArrayBuffer or Uint8Array. The bytes are referenced (Uint8Array
  * input) or wrapped without copy (ArrayBuffer input).
  */

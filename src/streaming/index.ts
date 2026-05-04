@@ -28,7 +28,15 @@ export {
 // live behind the `openxml-js/node` subpath to keep this entry browser-
 // safe — importing `node:fs` here would fail under Vite / webpack.
 export { fromBuffer, toBuffer } from '../io/node';
-export { fromArrayBuffer, fromBlob, fromFile, toArrayBuffer, toBlob } from '../io/browser';
+export {
+  fromArrayBuffer,
+  fromBlob,
+  fromFile,
+  fromResponse,
+  fromStream,
+  toArrayBuffer,
+  toBlob,
+} from '../io/browser';
 export type { BufferedSinkWriter, XlsxSink } from '../io/sink';
 export type { XlsxSource } from '../io/source';
 
