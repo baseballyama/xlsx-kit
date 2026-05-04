@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts 全部完了**
-- **次のタスク**: **フェーズ4 read-only streaming 完了** (loadWorkbookStream + ReadOnlyWorkbook + iterRows / iterValues SAX iter)。残：write-only streaming (createWriteOnlyWorkbook)、perf bench (100M cells / 1GB heap / 500k cells/s)、openpyxl 実 fixture round-trip (pivot/vba)、Excel 365 視覚 QA (人手)。
+- **次のタスク**: **フェーズ4 streaming (read-only + write-only) 両方の API 完了**。残：streaming-deflate ZIP writer (現在は buffered)、perf bench (100M cells / 1GB heap / 500k cells/s)、openpyxl 実 fixture round-trip (pivot/vba)、Excel 365 視覚 QA (人手)。コア実装はフェーズ1-7 すべて完了。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -66,6 +66,7 @@
 
 ### フェーズ4: streaming ([06-streaming.md](docs/plan/06-streaming.md))
 
+- [~] §3 write-only streaming 完了。`src/streaming/write-only.ts`: `createWriteOnlyWorkbook(sink, opts?): WriteOnlyWorkbook` が WriteOnlyWorkbook { addWorksheet(title) → WriteOnlyWorksheet, finalize } を返す。WriteOnlyWorksheet { title, appendRow(row), setColumnWidth(col, width), close } で行ごとに append。`WriteOnlyRowItem = CellValue | { value, style? }`、`WriteOnlyStyle { font, fill, border, alignment, numberFormat, protection }` で per-cell スタイル指定。allocateXfId は addFont/addFill/addBorder/addNumFmt + addCellXf で Stylesheet pool dedup を活用、cellXfs[0] は default を予約 (unstyled cell の styleId=0 が default を指すように)。SharedStringsTable は worksheetToBytes 経由で in-place dedup、文字列が無ければ sharedStrings.xml を omit。シーケンス保護：previous worksheet が close 前に addWorksheet すると拒絶 / closed worksheet に appendRow 拒絶 / open worksheet 残ったまま finalize 拒絶 / 重複 finalize 拒絶 / 重複 title 拒絶。setColumnWidth は columnDimensions に customWidth=true で反映、round-trip で復元。11 write-only tests (basic round-trip / 多 sheet / 5 sequence-error / styled cell dedup / shared string dedup / strings なし omit / column widths)。1069 tests pass。残：streaming-deflate ZIP writer (buffered → true streaming)、`addWorksheet({buffered:true})` parallel append、100M cells perf bench (10s / 1GB heap / xlsx-validator 検査)、bundle ≤ 80KB min+gz。
 - [~] §2 read-only streaming 完了。`src/streaming/read-only.ts`: `loadWorkbookStream(source): ReadOnlyWorkbook` が zip + sharedStrings + styles + workbook.xml の **メタだけ** を eager parse、`openWorksheet(name)` で SAX iter (iterParse 経由) を返す。`iterRows(opts?: IterRowsOptions)` は `<sheetData>/<row>/<c>` 走査の generator で、`{minRow, maxRow, minCol, maxCol}` 範囲でフィルタ可能。`iterValues` は cell envelope を剥がした values-only 高速ルート。cell type は n/s/b/e/str/inlineStr 全対応 (sharedStrings index 解決込み)、styleId 保持。`close()` で zip ハンドルを解放。9 read-only tests (sheet metadata / unknown sheet エラー / 全行 iter / minRow+maxRow 範囲 / minCol+maxCol 範囲 / iterValues / 並行 2-sheet iter / sharedStrings 解決 / Stylesheet 公開)。1058 tests pass。残：write-only streaming (createWriteOnlyWorkbook)、100 万行 perf bench (1GB heap / 500k cells/s)、ReadOnlyCell.numberFormat getter 最適化、parallel buffered worksheet append。
 
 ### フェーズ5: rich features ([07-rich-features.md](docs/plan/07-rich-features.md))
