@@ -37,6 +37,8 @@ export interface Workbook {
   customProperties?: CustomProperties;
   /** Author display names, shared between threaded comments. */
   authors: string[];
+  /** Workbook + sheet-scope defined names (named ranges, print areas etc). */
+  definedNames: import('./defined-names').DefinedName[];
   /**
    * Raw `xl/theme/theme1.xml` payload kept verbatim across read → write.
    * The theme XML is large and seldom edited by writers; we just shuttle it.
@@ -52,6 +54,7 @@ export function createWorkbook(opts?: { date1904?: boolean }): Workbook {
     styles: makeStylesheet(),
     date1904: opts?.date1904 ?? false,
     authors: [],
+    definedNames: [],
   };
 }
 

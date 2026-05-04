@@ -18,6 +18,8 @@ import { manifestFromBytes } from '../packaging/manifest';
 import { findById, relsFromBytes } from '../packaging/relationships';
 import { parseStylesheetXml } from '../styles/stylesheet-reader';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import type { DefinedName } from '../workbook/defined-names';
+import { makeDefinedName } from '../workbook/defined-names';
 import { parseSharedStringsXml, type SharedStringsTable } from '../workbook/shared-strings';
 import { createWorkbook, type SheetRef, type SheetState, type Workbook } from '../workbook/workbook';
 import { parseWorksheetXml } from '../worksheet/reader';
@@ -105,7 +107,31 @@ interface SheetEntry {
 
 const SHEET_TAG = `{${SHEET_MAIN_NS}}sheet`;
 const SHEETS_TAG = `{${SHEET_MAIN_NS}}sheets`;
+const DEFINED_NAMES_TAG = `{${SHEET_MAIN_NS}}definedNames`;
+const DEFINED_NAME_TAG = `{${SHEET_MAIN_NS}}definedName`;
 const RID_ATTR = `{${REL_NS}}id`;
+
+/** Extract the `<definedNames>/<definedName>` entries from a parsed `xl/workbook.xml`. */
+export function parseDefinedNames(workbookRoot: XmlNode): DefinedName[] {
+  const wrapper = findChild(workbookRoot, DEFINED_NAMES_TAG);
+  if (!wrapper) return [];
+  const out: DefinedName[] = [];
+  for (const node of findChildren(wrapper, DEFINED_NAME_TAG)) {
+    const name = node.attrs['name'];
+    if (!name) throw new OpenXmlSchemaError("workbook.xml: <definedName> is missing 'name'");
+    const value = node.text ?? '';
+    const opts: Partial<DefinedName> & { name: string; value: string } = { name, value };
+    const scopeAttr = node.attrs['localSheetId'];
+    if (scopeAttr !== undefined) {
+      const scope = Number.parseInt(scopeAttr, 10);
+      if (Number.isInteger(scope) && scope >= 0) opts.scope = scope;
+    }
+    if (node.attrs['hidden'] === '1' || node.attrs['hidden'] === 'true') opts.hidden = true;
+    if (node.attrs['comment'] !== undefined) opts.comment = node.attrs['comment'];
+    out.push(makeDefinedName(opts));
+  }
+  return out;
+}
 
 /** Extract the `<sheets>/<sheet>` entries from a parsed `xl/workbook.xml`. */
 export function parseSheetEntries(workbookRoot: XmlNode): SheetEntry[] {
@@ -180,6 +206,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     throw new OpenXmlSchemaError(`loadWorkbook: ${workbookPath} root is "${wbRoot.name}", expected workbook`);
   }
   const sheetEntries = parseSheetEntries(wbRoot);
+  const definedNamesFromXml = parseDefinedNames(wbRoot);
 
   // 4. workbook.xml.rels — needed to resolve each sheet's rId to a part path.
   const wbRelsPath = relsPathFor(workbookPath);
@@ -251,6 +278,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   if (appProperties) wb.appProperties = appProperties;
   if (customProperties) wb.customProperties = customProperties;
   if (themeXml) wb.themeXml = themeXml;
+  if (definedNamesFromXml.length > 0) wb.definedNames = definedNamesFromXml;
   const seenTitles = new Set<string>();
   for (const entry of sheetEntries) {
     if (seenTitles.has(entry.name)) {

@@ -218,8 +218,22 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     const rId = sheetRIds[i] ?? `rId${i + 1}`;
     parts.push(`<sheet name="${escapeAttr(ref.sheet.title)}" sheetId="${ref.sheetId}"${stateAttr} r:id="${rId}"/>`);
   });
-  parts.push('</sheets></workbook>');
+  parts.push('</sheets>');
+  if (wb.definedNames.length > 0) {
+    parts.push('<definedNames>');
+    for (const dn of wb.definedNames) {
+      let attrs = ` name="${escapeAttr(dn.name)}"`;
+      if (dn.scope !== undefined) attrs += ` localSheetId="${dn.scope}"`;
+      if (dn.hidden) attrs += ' hidden="1"';
+      if (dn.comment !== undefined) attrs += ` comment="${escapeAttr(dn.comment)}"`;
+      parts.push(`<definedName${attrs}>${escapeText(dn.value)}</definedName>`);
+    }
+    parts.push('</definedNames>');
+  }
+  parts.push('</workbook>');
   return parts.join('');
 }
+
+const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
