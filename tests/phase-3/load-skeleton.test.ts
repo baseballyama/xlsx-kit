@@ -139,6 +139,21 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     expect(getCell(ws, 3, 1)?.value).toBeCloseTo(3.14);
   });
 
+  it('loads xl/styles.xml into Workbook.styles', async () => {
+    const bytes = readFileSync(resolve(FIXTURES, 'empty-with-styles.xlsx'));
+    const wb = await loadWorkbook(fromBuffer(bytes));
+    expect(wb.styles.fonts.length).toBe(1);
+    expect(wb.styles.fills.length).toBe(2);
+    expect(wb.styles.cellXfs.length).toBe(5);
+    // The cell A2 has s="2" which points at numFmtId=14 (date format).
+    const ws = wb.sheets[0]?.sheet;
+    if (!ws) throw new Error('expected one sheet');
+    const { getCell } = await import('../../src/worksheet/worksheet');
+    const a2 = getCell(ws, 2, 1);
+    expect(a2?.styleId).toBe(2);
+    expect(wb.styles.cellXfs[a2?.styleId ?? 0]?.numFmtId).toBe(14);
+  });
+
   it('rejects an archive missing [Content_Types].xml', async () => {
     const { createZipWriter } = await import('../../src/zip/writer');
     const { toBuffer } = await import('../../src/io/node');

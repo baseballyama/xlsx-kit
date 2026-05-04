@@ -13,6 +13,7 @@
 import type { XlsxSource } from '../io/source';
 import { manifestFromBytes } from '../packaging/manifest';
 import { findById, relsFromBytes } from '../packaging/relationships';
+import { parseStylesheetXml } from '../styles/stylesheet-reader';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { parseSharedStringsXml, type SharedStringsTable } from '../workbook/shared-strings';
 import { createWorkbook, type SheetRef, type SheetState, type Workbook } from '../workbook/workbook';
@@ -21,6 +22,7 @@ import {
   ARC_CONTENT_TYPES,
   ARC_ROOT_RELS,
   ARC_SHARED_STRINGS,
+  ARC_STYLE,
   ARC_WORKBOOK,
   parseQName,
   REL_NS,
@@ -200,9 +202,24 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   }
   const sst: ReadonlyArray<string> = sharedStrings?.entries ?? [];
 
+  // 4c. styles.xml — optional. Same default-or-rels lookup as sst.
+  let styles: ReturnType<typeof parseStylesheetXml> | undefined;
+  if (archive.has(ARC_STYLE)) {
+    styles = parseStylesheetXml(archive.read(ARC_STYLE));
+  } else {
+    const stylesRel = wbRels.rels.find((r) => r.type === `${REL_NS}/styles`);
+    if (stylesRel) {
+      const stylesPath = resolveRelTarget(workbookPath, stylesRel.target);
+      if (archive.has(stylesPath)) {
+        styles = parseStylesheetXml(archive.read(stylesPath));
+      }
+    }
+  }
+
   // 5. Build the Workbook. We bypass `addWorksheet` because that allocates
   // sheetIds via `allocateSheetId`; load preserves the IDs from XML.
   const wb = createWorkbook();
+  if (styles) wb.styles = styles;
   const seenTitles = new Set<string>();
   for (const entry of sheetEntries) {
     if (seenTitles.has(entry.name)) {
