@@ -11,6 +11,9 @@
 // phase 3 a stable scaffolding to layer onto.
 
 import type { XlsxSource } from '../io/source';
+import { corePropsFromBytes } from '../packaging/core';
+import { customPropsFromBytes } from '../packaging/custom';
+import { extendedPropsFromBytes } from '../packaging/extended';
 import { manifestFromBytes } from '../packaging/manifest';
 import { findById, relsFromBytes } from '../packaging/relationships';
 import { parseStylesheetXml } from '../styles/stylesheet-reader';
@@ -19,10 +22,14 @@ import { parseSharedStringsXml, type SharedStringsTable } from '../workbook/shar
 import { createWorkbook, type SheetRef, type SheetState, type Workbook } from '../workbook/workbook';
 import { parseWorksheetXml } from '../worksheet/reader';
 import {
+  ARC_APP,
   ARC_CONTENT_TYPES,
+  ARC_CORE,
+  ARC_CUSTOM,
   ARC_ROOT_RELS,
   ARC_SHARED_STRINGS,
   ARC_STYLE,
+  ARC_THEME,
   ARC_WORKBOOK,
   parseQName,
   REL_NS,
@@ -216,10 +223,34 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     }
   }
 
+  // 4d. docProps/{core,app,custom}.xml — package-level metadata. Each part is
+  // optional; absent ones leave the matching Workbook field undefined. We
+  // walk both the canonical path and the root rels so non-default layouts
+  // (rare but legal) still resolve.
+  const properties = archive.has(ARC_CORE) ? corePropsFromBytes(archive.read(ARC_CORE)) : undefined;
+  const appProperties = archive.has(ARC_APP) ? extendedPropsFromBytes(archive.read(ARC_APP)) : undefined;
+  const customProperties = archive.has(ARC_CUSTOM) ? customPropsFromBytes(archive.read(ARC_CUSTOM)) : undefined;
+
+  // 4e. xl/theme/theme1.xml — kept verbatim. Excel renders with this exact
+  // payload; round-tripping the bytes avoids drift.
+  const themeXml: Uint8Array | undefined = (() => {
+    if (archive.has(ARC_THEME)) return archive.read(ARC_THEME);
+    const themeRel = wbRels.rels.find((r) => r.type === `${REL_NS}/theme`);
+    if (themeRel) {
+      const themePath = resolveRelTarget(workbookPath, themeRel.target);
+      if (archive.has(themePath)) return archive.read(themePath);
+    }
+    return undefined;
+  })();
+
   // 5. Build the Workbook. We bypass `addWorksheet` because that allocates
   // sheetIds via `allocateSheetId`; load preserves the IDs from XML.
   const wb = createWorkbook();
   if (styles) wb.styles = styles;
+  if (properties) wb.properties = properties;
+  if (appProperties) wb.appProperties = appProperties;
+  if (customProperties) wb.customProperties = customProperties;
+  if (themeXml) wb.themeXml = themeXml;
   const seenTitles = new Set<string>();
   for (const entry of sheetEntries) {
     if (seenTitles.has(entry.name)) {

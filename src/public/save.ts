@@ -15,6 +15,9 @@
 // iterations — load tolerates their absence.
 
 import type { XlsxSink } from '../io/sink';
+import { corePropsToBytes } from '../packaging/core';
+import { customPropsToBytes } from '../packaging/custom';
+import { extendedPropsToBytes } from '../packaging/extended';
 import { addDefault, addOverride, makeManifest, manifestToBytes } from '../packaging/manifest';
 import { makeRelationships, type Relationships, relsToBytes } from '../packaging/relationships';
 import { stylesheetToBytes } from '../styles/stylesheet-writer';
@@ -22,21 +25,35 @@ import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-stri
 import type { Workbook } from '../workbook/workbook';
 import { worksheetToBytes } from '../worksheet/writer';
 import {
+  ARC_APP,
   ARC_CONTENT_TYPES,
+  ARC_CORE,
+  ARC_CUSTOM,
   ARC_ROOT_RELS,
   ARC_SHARED_STRINGS,
   ARC_STYLE,
+  ARC_THEME,
   ARC_WORKBOOK,
   ARC_WORKBOOK_RELS,
+  CPROPS_TYPE,
   PACKAGE_WORKSHEETS,
+  PKG_REL_NS,
   REL_NS,
   SHARED_STRINGS_TYPE,
   SHEET_MAIN_NS,
   STYLES_TYPE,
+  THEME_TYPE,
   WORKSHEET_TYPE,
   XLSX_TYPE,
 } from '../xml/namespaces';
 import { createZipWriter } from '../zip/writer';
+
+const CORE_PROPS_TYPE = 'application/vnd.openxmlformats-package.core-properties+xml';
+const EXT_PROPS_TYPE = 'application/vnd.openxmlformats-officedocument.extended-properties+xml';
+const CORE_PROPS_REL = `${PKG_REL_NS}/metadata/core-properties`;
+const EXT_PROPS_REL = `${REL_NS}/extended-properties`;
+const CUSTOM_PROPS_REL = `${REL_NS}/custom-properties`;
+const THEME_REL = `${REL_NS}/theme`;
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -86,6 +103,13 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     type: `${REL_NS}/styles`,
     target: 'styles.xml',
   });
+  if (wb.themeXml) {
+    wbRels.rels.push({
+      id: `rId${wbRels.rels.length + 1}`,
+      type: THEME_REL,
+      target: 'theme/theme1.xml',
+    });
+  }
 
   // ---- 3. workbook.xml ----------------------------------------------------
   const workbookXml = serializeWorkbookXml(
@@ -108,16 +132,43 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     await writer.addEntry(ARC_SHARED_STRINGS, sharedStringsToBytes(sst));
   }
 
+  // ---- 5b. theme1.xml (passthrough) — only when wb carries one. The theme
+  // rel was already added to wbRels above so workbook.xml.rels references it.
+  if (wb.themeXml) await writer.addEntry(ARC_THEME, wb.themeXml);
+
+  // ---- 5c. docProps/{core,app,custom}.xml (when present) ------------------
+  if (wb.properties) await writer.addEntry(ARC_CORE, corePropsToBytes(wb.properties));
+  if (wb.appProperties) await writer.addEntry(ARC_APP, extendedPropsToBytes(wb.appProperties));
+  if (wb.customProperties) await writer.addEntry(ARC_CUSTOM, customPropsToBytes(wb.customProperties));
+
   // ---- 6. root rels -------------------------------------------------------
-  const rootRels: Relationships = {
-    rels: [
-      {
-        id: 'rId1',
-        type: `${REL_NS}/officeDocument`,
-        target: 'xl/workbook.xml',
-      },
-    ],
-  };
+  const rootRels: Relationships = { rels: [] };
+  rootRels.rels.push({
+    id: 'rId1',
+    type: `${REL_NS}/officeDocument`,
+    target: 'xl/workbook.xml',
+  });
+  if (wb.properties) {
+    rootRels.rels.push({
+      id: `rId${rootRels.rels.length + 1}`,
+      type: CORE_PROPS_REL,
+      target: 'docProps/core.xml',
+    });
+  }
+  if (wb.appProperties) {
+    rootRels.rels.push({
+      id: `rId${rootRels.rels.length + 1}`,
+      type: EXT_PROPS_REL,
+      target: 'docProps/app.xml',
+    });
+  }
+  if (wb.customProperties) {
+    rootRels.rels.push({
+      id: `rId${rootRels.rels.length + 1}`,
+      type: CUSTOM_PROPS_REL,
+      target: 'docProps/custom.xml',
+    });
+  }
   await writer.addEntry(ARC_ROOT_RELS, relsToBytes(rootRels));
 
   // ---- 7. [Content_Types].xml --------------------------------------------
@@ -132,6 +183,10 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   if (sst.entries.length > 0) {
     addOverride(manifest, `/${ARC_SHARED_STRINGS}`, SHARED_STRINGS_TYPE);
   }
+  if (wb.themeXml) addOverride(manifest, `/${ARC_THEME}`, THEME_TYPE);
+  if (wb.properties) addOverride(manifest, `/${ARC_CORE}`, CORE_PROPS_TYPE);
+  if (wb.appProperties) addOverride(manifest, `/${ARC_APP}`, EXT_PROPS_TYPE);
+  if (wb.customProperties) addOverride(manifest, `/${ARC_CUSTOM}`, CPROPS_TYPE);
   await writer.addEntry(ARC_CONTENT_TYPES, manifestToBytes(manifest));
 
   // ---- 8. close ----------------------------------------------------------

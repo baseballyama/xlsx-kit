@@ -37,6 +37,11 @@ export interface Workbook {
   customProperties?: CustomProperties;
   /** Author display names, shared between threaded comments. */
   authors: string[];
+  /**
+   * Raw `xl/theme/theme1.xml` payload kept verbatim across read → write.
+   * The theme XML is large and seldom edited by writers; we just shuttle it.
+   */
+  themeXml?: Uint8Array;
 }
 
 /** Build an empty Workbook ready to host worksheets. */
