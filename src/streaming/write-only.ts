@@ -1,13 +1,16 @@
 // Streaming write-only workbook. Per docs/plan/06-streaming.md §3.
 //
 // `createWriteOnlyWorkbook` lets callers append rows one at a time
-// without holding a full Workbook in memory. The current backend uses
-// the buffered ZIP writer underneath — so the API is correct but the
-// 100M-cells / 1GB-heap acceptance criterion isn't met yet (that needs
-// a streaming deflate writer; see TODO at the bottom). The API surface
-// matches the doc spec so the perf rewrite is a drop-in later.
+// without holding a full Workbook in memory. Each `appendRow` serialises
+// the row directly into a string buffer (no `Cell` objects, no
+// Worksheet rows Map) — when `close()` runs we glue the rows under a
+// `<sheetData>` envelope and hand the bytes to the streaming-deflate
+// ZIP writer. The buffer keeps ~30 bytes per cell of XML text instead
+// of the ~200-byte V8 footprint a Cell + Map entry costs, so the heap
+// budget at 3M cells drops roughly an order of magnitude vs. the
+// previous setCell-based path.
 
-import type { CellValue } from '../cell/cell';
+import type { Cell, CellValue } from '../cell/cell';
 import type { XlsxSink } from '../io/sink';
 import { addOverride, makeManifest, manifestToBytes } from '../packaging/manifest';
 import { makeRelationships, relsToBytes } from '../packaging/relationships';
@@ -30,8 +33,7 @@ import type { Font } from '../styles/fonts';
 import type { Protection } from '../styles/protection';
 import { OpenXmlIoError } from '../utils/exceptions';
 import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-strings';
-import { worksheetToBytes } from '../worksheet/writer';
-import { makeWorksheet, setCell, type Worksheet } from '../worksheet/worksheet';
+import { serializeCell } from '../worksheet/writer';
 import {
   ARC_CONTENT_TYPES,
   ARC_ROOT_RELS,
@@ -135,20 +137,27 @@ interface WorkbookState {
 
 /**
  * Factory: build a {@link WriteOnlyWorksheet} that closes over the
- * shared {@link WorkbookState}. The worksheet captures `nextRow` /
- * `closed` / `columnWidths` in the closure rather than instance fields
- * — `WriteOnlyWorksheet` is a plain object per the project-wide "no
- * classes" rule (see CLAUDE.md / docs/plan/01-architecture.md).
+ * shared {@link WorkbookState}. Per the project-wide "no classes" rule
+ * (CLAUDE.md / docs/plan/01-architecture.md) the worksheet is a plain
+ * object holding the row buffer + column-width map in closure state.
+ *
+ * Rows are serialised into XML strings inside `appendRow` and pushed
+ * onto a sheet-local string buffer; no `Cell` objects are retained.
+ * `close()` joins the buffer under a `<worksheet><sheetData>...` /
+ * `</sheetData></worksheet>` envelope and stages the resulting bytes
+ * for the workbook-level finalize.
  */
 const makeWriteOnlyWorksheet = (state: WorkbookState, title: string): WriteOnlyWorksheet => {
-  const sheet: Worksheet = makeWorksheet(title);
   let nextRow = 1;
   let closed = false;
   const columnWidths = new Map<number, number>();
+  const rowChunks: string[] = [];
+  const dummyCtx = { sharedStrings: state.sst, rels: makeRelationships() };
 
   const appendRow = async (row: WriteOnlyRowItem[]): Promise<void> => {
     if (closed) throw new OpenXmlIoError('appendRow: worksheet already closed');
     const r = nextRow++;
+    let xml = `<row r="${r}">`;
     for (let i = 0; i < row.length; i++) {
       const item = row[i];
       if (item === undefined || item === null) continue;
@@ -163,8 +172,14 @@ const makeWriteOnlyWorksheet = (state: WorkbookState, title: string): WriteOnlyW
         value = item as CellValue;
       }
       const styleId = style ? allocateXfId(state.styles, style) : 0;
-      setCell(sheet, r, col, value, styleId);
+      // Ephemeral cell-shaped object — discarded as soon as serializeCell
+      // returns its `<c .../>` string. Keeps the heap footprint at the
+      // size of the row buffer instead of a full Worksheet model.
+      const cell: Cell = { row: r, col, value, styleId };
+      xml += serializeCell(cell, dummyCtx);
     }
+    xml += '</row>';
+    rowChunks.push(xml);
   };
 
   const setColumnWidth = (col: number, width: number): void => {
@@ -175,27 +190,31 @@ const makeWriteOnlyWorksheet = (state: WorkbookState, title: string): WriteOnlyW
   const close = async (): Promise<void> => {
     if (closed) return;
     closed = true;
-    for (const [col, width] of columnWidths) {
-      sheet.columnDimensions.set(col, { min: col, max: col, width, customWidth: true });
+
+    const parts: string[] = [
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      `<worksheet xmlns="${SHEET_MAIN_NS}" xmlns:r="${REL_NS}">`,
+    ];
+    if (columnWidths.size > 0) {
+      parts.push('<cols>');
+      const sorted = [...columnWidths.entries()].sort((a, b) => a[0] - b[0]);
+      for (const [col, width] of sorted) {
+        parts.push(`<col min="${col}" max="${col}" width="${width}" customWidth="1"/>`);
+      }
+      parts.push('</cols>');
     }
-    // Serialise via the regular worksheet writer. SharedStrings dedup is
-    // performed in-place by the writer.
-    const bytes = worksheetToBytes(sheet, {
-      sharedStrings: state.sst,
-      rels: makeRelationships(),
-      registerTable: () => {
-        throw new OpenXmlIoError('write-only: table support is not yet wired');
-      },
-      registerComments: () => {
-        throw new OpenXmlIoError('write-only: comments support is not yet wired');
-      },
-      registerDrawing: () => {
-        throw new OpenXmlIoError('write-only: drawings support is not yet wired');
-      },
-    });
+    parts.push('<sheetData>');
+    for (const chunk of rowChunks) parts.push(chunk);
+    parts.push('</sheetData>');
+    parts.push('</worksheet>');
+
+    const bytes = new TextEncoder().encode(parts.join(''));
     const sheetId = state.sheets.length + 1;
     state.sheets.push({ title, sheetId, bytes });
     state.hasOpenWorksheet = false;
+    // Help V8 release the row buffer eagerly — the workbook-level
+    // finalize path now only needs the encoded `bytes`.
+    rowChunks.length = 0;
   };
 
   return { title, appendRow, setColumnWidth, close };

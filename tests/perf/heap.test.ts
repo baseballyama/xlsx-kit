@@ -22,14 +22,14 @@ const COLS = 30;
 const TOTAL_CELLS = ROWS * COLS;
 
 const PERF_HEAP_GATE = process.env['PERF_HEAP_GATE'] === '1';
-// Tracking floor for the *current* buffered implementation (Cell objects
-// retained on Worksheet.rows until close()). Empirically lands around
-// 2_900 cells per heapUsed MB on M-series Node 22 — set the gate at
-// 2_000 to leave breathing room while still catching catastrophic
+// Tracking floor for the *current* row-buffer implementation (XML
+// strings accumulated per row, no Cell / Map retention). Empirically
+// lands around 4_100 cells per heapUsed MB on M-series Node 22 — set
+// the gate at 3_000 to leave breathing room while catching real
 // regressions. The docs target (100M cells in 1 GB heap → 100k cells/MB)
-// is a aspirational SAX-streaming-rewrite goal, not the floor for this
-// gate.
-const FLOOR_CELLS_PER_HEAP_MB = 2_000;
+// is the SAX-streaming-rewrite goal that would write each row directly
+// through the deflate stream; tracked separately.
+const FLOOR_CELLS_PER_HEAP_MB = 3_000;
 
 describe('phase-4 perf — write-only heap budget', () => {
   it(

@@ -202,7 +202,16 @@ const colLetters = (n: number): string => {
   return out;
 };
 
-const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string => {
+/**
+ * Serialise a single cell into its `<c .../>` element. Exported so the
+ * streaming write-only path can emit cells row-by-row without going
+ * through the full Worksheet model — see src/streaming/write-only.ts.
+ *
+ * Only `ctx.sharedStrings` is consulted for plain-string cells; the
+ * other context fields are used by the worksheet-level serializer that
+ * wraps this helper.
+ */
+export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string => {
   const ref = getCoordinate(cell);
   const styleAttr = cell.styleId === 0 ? '' : ` s="${cell.styleId}"`;
   const value = cell.value;
