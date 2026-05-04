@@ -15,6 +15,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     streaming: 'src/streaming/index.ts',
+    node: 'src/node.ts',
   },
   format: ['esm'],
   target: 'es2022',

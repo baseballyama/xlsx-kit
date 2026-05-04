@@ -1,6 +1,11 @@
-// Node-only I/O helpers. Phase-1 §1: in-memory paths only. Filesystem
-// (fromFile / toFile) and Readable/Writable bridges land alongside the
-// streaming ZIP work in §2.
+// In-memory Node helpers. Per docs/plan/03-foundations.md §1.1.
+//
+// `fromBuffer` / `toBuffer` rely only on the global `Buffer` symbol —
+// no `node:*` imports — so they're safe to ship through the
+// `openxml-js/streaming` browser-targeted entry too. Filesystem +
+// Readable / Writable helpers live in `./node-fs.ts` (re-exported via
+// `openxml-js/node`) where the `node:fs` / `node:stream` imports stay
+// out of the browser-safe surface.
 
 import { OpenXmlIoError } from '../utils/exceptions';
 import type { BufferedSinkWriter, XlsxSink } from './sink';

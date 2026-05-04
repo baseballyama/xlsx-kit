@@ -23,6 +23,10 @@
     "./streaming": {
       "types": "./dist/streaming/index.d.ts",
       "import": "./dist/streaming.mjs"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.mjs"
     }
   },
   "scripts": {

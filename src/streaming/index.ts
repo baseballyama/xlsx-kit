@@ -21,7 +21,12 @@ export {
   type WriteOnlyWorksheet,
 } from './write-only';
 
-// I/O abstractions are required to compose either entry point.
+// Environment-neutral I/O — `fromBuffer` works under Node and any
+// runtime that polyfills Buffer; the browser-specific helpers are
+// always-callable from Node 18+ since Blob / File / fetch are global.
+// Filesystem-bound helpers (fromFile / toFile / fromReadable / toWritable)
+// live behind the `openxml-js/node` subpath to keep this entry browser-
+// safe — importing `node:fs` here would fail under Vite / webpack.
 export { fromBuffer, toBuffer } from '../io/node';
 export { fromArrayBuffer, fromBlob, fromFile, toArrayBuffer, toBlob } from '../io/browser';
 export type { BufferedSinkWriter, XlsxSink } from '../io/sink';
