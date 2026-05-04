@@ -4,6 +4,26 @@
 
 export type { CoreProperties } from './core';
 export { corePropsFromBytes, corePropsToBytes, makeCoreProperties } from './core';
+export type { CustomProperties, CustomProperty } from './custom';
+export {
+  appendCustomProperty,
+  customPropsFromBytes,
+  customPropsToBytes,
+  findCustomPropertyByName,
+  makeAsciiStringValue,
+  makeBoolValue,
+  makeCustomProperties,
+  makeDateValue,
+  makeDoubleValue,
+  makeFiletimeValue,
+  makeIntValue,
+  makeStringValue,
+  readBoolValue,
+  readDoubleValue,
+  readFiletimeValue,
+  readIntValue,
+  readStringValue,
+} from './custom';
 export type { ExtendedProperties } from './extended';
 export { extendedPropsFromBytes, extendedPropsToBytes, makeExtendedProperties } from './extended';
 export type { DefaultEntry, Manifest, OverrideEntry } from './manifest';

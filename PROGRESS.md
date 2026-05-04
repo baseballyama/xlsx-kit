@@ -6,7 +6,8 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §6 packaging 層の続き：`docProps/custom.xml` (CustomProperties)。`<property fmtid pid name>` 配下に `<vt:lpwstr>` / `<vt:i4>` / `<vt:filetime>` / `<vt:bool>` / `<vt:r8>` 等の typed value 1 個。最初は schema の sequence + 値型 1 個ずつの object schema で表現してみるか、property を raw passthrough（最小実装）で済ませるかの 2 択。openpyxl の `tests/data/genuine` に custom.xml を持つフィクスチャは無いため、自前で簡易 fixture を仕込む。続けて §7 utils（coordinate / datetime / units / inference / escape）。
+- **次のタスク**: フェーズ1 §7 utils。`src/utils/coordinate.ts` で `columnLetterFromIndex` / `columnIndexFromLetter`（`Map` キャッシュ、最大列 16384=XFD）、`coordinateFromString`（"A1" → [col, row]）、`rangeBoundaries`（"A1:B5"）、`rangeToTuple`（"Sheet1!A1:B5"）。`utils/datetime.ts`、`utils/units.ts`、`utils/inference.ts`、`utils/escape.ts` は順次。openpyxl の coordinate 系単体テストを移植して pass を必須化。
+- **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -29,7 +30,7 @@
 - [x] §3 XML 層（namespaces / tree / parser DOM / serializer DOM / iterParse SAX 完了：saxes 6 ベース `iterParse(SaxInput): AsyncIterableIterator<SaxEvent>`、入力は `Uint8Array | string | ReadableStream<Uint8Array>`、SaxEvent は start/end/text の discriminated union（Clark 表記名）、xmlns 宣言は attrs から落とす、DOCTYPE は事前バイト走査 + saxes の doctype event でも reject、ストリームは TextDecoder で stream:true デコード、prologue 256 文字バッファで DOCTYPE 検査、openpyxl `genuine/sample.xlsx` の `xl/worksheets/sheet1.xml` で row/cell 数 + start/end ネスト整合確認。117 tests pass。残：canonical compare helper / 大規模 round-trip は §10 testing helper の領分）
 - [x] §4 Schema 層（クラス不使用：`Schema<T>` は plain object、`AttrDef` は string/int/float/bool/enum + min/max + xmlName/xmlNs、`ElementDef` は text/object/sequence/empty の discriminated union（lazy schema getter で循環解決）、`defineSchema<T>(s)` は inference pin、`toTree<T>(value, schema): XmlNode` / `fromTree<T>(node, schema): T` は switch on kind の純粋関数。Border + Side で round-trip、bool は OOXML の `1`/`0`、loose に `true/false/t/f/0/1` を受理、`preSerialize`/`postParse` フック動作、required attribute / 範囲外 enum で OpenXmlSchemaError、container 付き sequence の `count` 属性も round-trip。127 tests pass）
 - [x] §5 XmlStreamWriter（buffered モード：`createXmlStreamWriter(opts?): XmlStreamWriter`、API は `start`/`text`/`writeNode`/`writeRaw`/`end`/`flush`/`result`、Clark 名 → prefix 変換は writer 生成時の `prefixMap`（DEFAULT_PREFIXES + ユーザ override + `xml` 予約 binding）、auto-flush 閾値 64KB、self-closing 最適化、unclosed / post-result でエラー。100k `<c>` を `writeRaw` 経由で吐き 1MB 越えのバイト列が parseXml で N=100k 子要素として戻る。141 tests pass。残：streaming (`WritableStream<Uint8Array>`) 対応は phase 4 写表 writer と一緒に）
-- [~] §6 packaging 層（manifest + relationships + docProps/core.xml + docProps/app.xml 完了：Schema に `raw` ElementDef 種別追加（XmlNode subtree を opaque 保持、HeadingPairs/TitlesOfParts/HLinks/Hyperlinks/DigSig 等の vt:vector 系を実装ぬきで round-trip）、`ExtendedProperties` 28 フィールド、DEFAULT_PREFIXES の `XPROPS_NS` / `CUSTPROPS_NS` を `''`（default namespace）に修正。openpyxl `genuine/empty.xlsx` の `docProps/app.xml` で application/docSecurity/scaleCrop/company/appVersion 等の値一致 + headingPairs/titlesOfParts の raw 保持 (vt:vector size 一致) + 完全 round-trip。169 tests pass。残：docProps/custom.xml）
+- [x] §6 packaging 層（manifest + relationships + docProps/core.xml + docProps/app.xml + docProps/custom.xml 完了：CustomProperties は schema を使わず手書き（`<property>` の attrs + 子 1 個の vt: typed value）。`make*Value` / `read*Value` ヘルパで lpwstr / lpstr / bstr / i4/i2/i1/uint / r4/r8/decimal/cy / bool / filetime / date を相互変換。pid 自動採番（>= 2、衝突回避）、`appendCustomProperty` / `findCustomPropertyByName`、malformed (missing pid / value-less) は OpenXmlSchemaError。183 tests pass）
 - [ ] §7 utils（coordinate, datetime, units, inference, escape, exceptions）
 - [ ] §8 compat
 - [ ] §9 phase-1 テスト群
