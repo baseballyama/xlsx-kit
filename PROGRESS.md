@@ -5,8 +5,8 @@
 
 ## カレント
 
-- **フェーズ**: フェーズ1 完了 → **フェーズ2 着手**
-- **次のタスク**: フェーズ2 §3 styles の値オブジェクト群から着手（[04-core-model.md](docs/plan/04-core-model.md) §3）。最初に `Color` (rgb/theme/indexed/auto + tint) と `Font` を実装し、続いて `Side`/`Border`、`PatternFill`/`GradientFill`/`Fill`、`Alignment`、`Protection`、`NumberFormat`。すべて plain object + `make*` (`Object.freeze`) で immutable に統一、Schema 経由で round-trip。BUILTIN_FORMATS は openpyxl `styles/numbers.py` の id 0〜163 をフルコピー。`isDateFormat` / `isTimedeltaFormat` の正規表現ヒューリスティクスも移植。
+- **フェーズ**: フェーズ2 (コアモデル)
+- **次のタスク**: フェーズ2 §3 styles 続き：`PatternFill` / `GradientFill` / `Fill` (discriminated union, fgColor/bgColor、preset patternType 19 種、gradient stops は schema sequence)。fgColor/bgColor は Color の参照。openpyxl `styles/fills.py` を参照。続けて `Alignment` (horizontal / vertical / wrapText / textRotation / indent / shrinkToFit など)、`Protection` (locked / hidden)、`NumberFormat` (BUILTIN_FORMATS id 0〜163、isDateFormat / isTimedeltaFormat ヒューリスティクス)、`Font`（schema に `nested` element kind を追加して `<sz val="11"/>` パターンに対応）。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
@@ -40,7 +40,7 @@
 ### フェーズ2: コアモデル ([04-core-model.md](docs/plan/04-core-model.md))
 
 - [ ] §2 Cell (CellValue 型, makeCell, getCoordinate, bindValue, RichText, MergedCell)
-- [ ] §3 Style (Color, Font, Side, Border, Fill, Alignment, Protection, NumberFormat, BUILTIN_FORMATS)
+- [~] §3 Style (Color + Side + Border 完了：plain object + freeze、`makeColor` (rgb 8-hex normalise、indexed [0,65] / theme ≥0 / tint [-1,1] のレンジ検証)、`COLOR_INDEX` 64 entries (frozen)、`resolveIndexedColor`、BLACK/WHITE/BLUE 定数。SIDE_STYLES 13 種 (`thin`/`medium`/`thick`/`double`/`hair`/`dotted`/`dashed`/`dashDot`/`dashDotDot`/`mediumDashed`/`mediumDashDot`/`mediumDashDotDot`/`slantDashDot`)、`makeSide` / `makeBorder` (nested Side を自動 freeze)、`EMPTY_SIDE` / `DEFAULT_BORDER`。ColorSchema / SideSchema / BorderSchema (sibling `*.schema.ts` 配置で tree-shake 可)。round-trip OK。319 tests pass。残：Font / Fill / Alignment / Protection / NumberFormat)
 - [ ] §3.4 Stylesheet (プール + dedup + StyleArray index)
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
 - [ ] §3.7 Built-in NamedStyles
