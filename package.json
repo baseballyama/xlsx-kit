@@ -27,15 +27,21 @@
     "format": "biome format --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsup",
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "build:js": "tsup",
+    "build:dts": "tsc -p tsconfig.build.json",
     "size": "size-limit",
     "doc:api": "typedoc"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "^4.1.5",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.2",
     "vitest": "^4.1.5"
   },
-  "packageManager": "pnpm@10.25.0"
+  "packageManager": "pnpm@10.25.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
 }
