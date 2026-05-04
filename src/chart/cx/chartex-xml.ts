@@ -1,6 +1,14 @@
 // xl/charts/chartN.xml read/write for the chartex (cx:) namespace.
 // Per docs/plan/08-charts-drawings.md §6.
 
+import {
+  parseShapeProperties,
+  parseTextBody,
+  serializeShapeProperties,
+  serializeTextBody,
+} from '../../drawing/dml/dml-xml';
+import type { ShapeProperties } from '../../drawing/dml/shape-properties';
+import type { TextBody } from '../../drawing/dml/text';
 import { OpenXmlSchemaError } from '../../utils/exceptions';
 import { CX_NS, REL_NS } from '../../xml/namespaces';
 import { parseXml } from '../../xml/parser';
@@ -62,7 +70,20 @@ const VISIBILITY_DL = T('visibility');
 const LEGEND = T('legend');
 const PLOT_VIS_ONLY = T('plotVisOnly');
 const DISP_BLANKS_AS = T('dispBlanksAs');
+const SP_PR = T('spPr');
+const TX_PR = T('txPr');
+const PLOT_SURFACE = T('plotSurface');
 const A_T = '{http://schemas.openxmlformats.org/drawingml/2006/main}t';
+
+const parseSpPrSlot = (parent: XmlNode): ShapeProperties | undefined => {
+  const el = findChild(parent, SP_PR);
+  return el ? parseShapeProperties(el) : undefined;
+};
+
+const parseTxPrSlot = (parent: XmlNode): TextBody | undefined => {
+  const el = findChild(parent, TX_PR);
+  return el ? parseTextBody(el) : undefined;
+};
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
@@ -188,12 +209,16 @@ const parseTitle = (el: XmlNode): CxTitle => {
       }
     }
   }
+  const spPr = parseSpPrSlot(el);
+  const txPr = parseTxPrSlot(el);
   return {
     ...(pos ? { pos } : {}),
     ...(align ? { align } : {}),
     ...(overlay !== undefined ? { overlay } : {}),
     ...(text !== undefined ? { text } : {}),
     ...(txDataRef !== undefined ? { txDataRef } : {}),
+    ...(spPr ? { spPr } : {}),
+    ...(txPr ? { txPr } : {}),
   };
 };
 
@@ -204,10 +229,14 @@ const parseLegend = (el: XmlNode): CxLegend => {
   const alignRaw = el.attrs['align'];
   const align = alignRaw === 'ctr' || alignRaw === 'l' || alignRaw === 'r' ? alignRaw : undefined;
   const overlay = boolAttr(el, 'overlay');
+  const spPr = parseSpPrSlot(el);
+  const txPr = parseTxPrSlot(el);
   return {
     ...(pos ? { pos } : {}),
     ...(align ? { align } : {}),
     ...(overlay !== undefined ? { overlay } : {}),
+    ...(spPr ? { spPr } : {}),
+    ...(txPr ? { txPr } : {}),
   };
 };
 
@@ -339,6 +368,8 @@ const parseSeries = (el: XmlNode): CxSeries => {
   }
   const dlEl = findChild(el, DATA_LABELS);
   const dataLabels = dlEl ? parseDataLabels(dlEl) : undefined;
+  const spPr = parseSpPrSlot(el);
+  const txPr = parseTxPrSlot(el);
   return {
     layoutId,
     ...(hidden !== undefined ? { hidden } : {}),
@@ -349,6 +380,8 @@ const parseSeries = (el: XmlNode): CxSeries => {
     ...(dataLabels ? { dataLabels } : {}),
     ...(dataId !== undefined ? { dataId } : {}),
     ...(layoutPr ? { layoutPr } : {}),
+    ...(spPr ? { spPr } : {}),
+    ...(txPr ? { txPr } : {}),
   };
 };
 
@@ -372,6 +405,8 @@ const parseAxis = (el: XmlNode): CxAxis => {
   const majorGridlines = findChild(el, MAJOR_GRIDLINES) !== undefined ? true : undefined;
   const titleEl = findChild(el, TITLE);
   const title = titleEl ? parseTitle(titleEl) : undefined;
+  const spPr = parseSpPrSlot(el);
+  const txPr = parseTxPrSlot(el);
   return {
     id,
     ...(hidden !== undefined ? { hidden } : {}),
@@ -379,6 +414,8 @@ const parseAxis = (el: XmlNode): CxAxis => {
     ...(catGap !== undefined ? { catScalingGapWidth: catGap } : {}),
     ...(majorGridlines !== undefined ? { majorGridlines } : {}),
     ...(title ? { title } : {}),
+    ...(spPr ? { spPr } : {}),
+    ...(txPr ? { txPr } : {}),
   };
 };
 
@@ -393,6 +430,10 @@ const parseChart = (el: XmlNode): CxChart => {
   for (const sEl of findChildren(region, SERIES)) series.push(parseSeries(sEl));
   const axes: CxAxis[] = [];
   for (const aEl of findChildren(region, AXIS)) axes.push(parseAxis(aEl));
+  // <cx:plotSurface> sits inside plotAreaRegion and carries the plot
+  // background spPr.
+  const plotSurfaceEl = findChild(region, PLOT_SURFACE);
+  const plotSurfaceSpPr = plotSurfaceEl ? parseShapeProperties(plotSurfaceEl) : undefined;
   const legendEl = findChild(el, LEGEND);
   const legend = legendEl ? parseLegend(legendEl) : undefined;
   const plotVisOnlyEl = findChild(el, PLOT_VIS_ONLY);
@@ -400,7 +441,7 @@ const parseChart = (el: XmlNode): CxChart => {
   const dispRaw = valAttr(findChild(el, DISP_BLANKS_AS));
   const dispBlanksAs = dispRaw === 'gap' || dispRaw === 'zero' || dispRaw === 'span' ? dispRaw : undefined;
   return {
-    plotArea: { series, axes },
+    plotArea: { series, axes, ...(plotSurfaceSpPr ? { spPr: plotSurfaceSpPr } : {}) },
     ...(title ? { title } : {}),
     ...(legend ? { legend } : {}),
     ...(plotVisOnly !== undefined ? { plotVisOnly } : {}),
@@ -417,10 +458,14 @@ export function parseChartExXml(bytes: Uint8Array | string): CxChartSpace {
   if (!chartDataEl) throw new OpenXmlSchemaError('parseChartExXml: <cx:chartSpace> missing <cx:chartData>');
   const chartEl = findChild(root, CHART);
   if (!chartEl) throw new OpenXmlSchemaError('parseChartExXml: <cx:chartSpace> missing <cx:chart>');
+  const spPr = parseSpPrSlot(root);
+  const txPr = parseTxPrSlot(root);
   return {
     kind: 'cxChartSpace',
     chartData: parseChartData(chartDataEl),
     chart: parseChart(chartEl),
+    ...(spPr ? { spPr } : {}),
+    ...(txPr ? { txPr } : {}),
   };
 }
 
@@ -471,13 +516,15 @@ const serializeTitle = (t: CxTitle, tag: 'cx:title' = 'cx:title'): string => {
   if (t.align) attrs.push(`align="${t.align}"`);
   if (t.overlay !== undefined) attrs.push(`overlay="${t.overlay ? '1' : '0'}"`);
   const open = `<${tag}${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}`;
-  let inner = '';
+  const innerParts: string[] = [];
   if (t.text !== undefined || t.txDataRef !== undefined) {
     const f = t.txDataRef !== undefined ? `<cx:f>${escapeText(t.txDataRef)}</cx:f>` : '';
     const v = t.text !== undefined ? `<cx:v>${escapeText(t.text)}</cx:v>` : '';
-    inner = `<cx:tx><cx:txData>${f}${v}</cx:txData></cx:tx>`;
+    innerParts.push(`<cx:tx><cx:txData>${f}${v}</cx:txData></cx:tx>`);
   }
-  return inner === '' ? `${open}/>` : `${open}>${inner}</${tag}>`;
+  if (t.spPr) innerParts.push(serializeShapeProperties(t.spPr, 'cx:spPr'));
+  if (t.txPr) innerParts.push(serializeTextBody(t.txPr, 'cx:txPr'));
+  return innerParts.length === 0 ? `${open}/>` : `${open}>${innerParts.join('')}</${tag}>`;
 };
 
 const serializeLegend = (l: CxLegend): string => {
@@ -485,7 +532,11 @@ const serializeLegend = (l: CxLegend): string => {
   if (l.pos) attrs.push(`pos="${l.pos}"`);
   if (l.align) attrs.push(`align="${l.align}"`);
   if (l.overlay !== undefined) attrs.push(`overlay="${l.overlay ? '1' : '0'}"`);
-  return `<cx:legend${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}/>`;
+  const open = `<cx:legend${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}`;
+  const innerParts: string[] = [];
+  if (l.spPr) innerParts.push(serializeShapeProperties(l.spPr, 'cx:spPr'));
+  if (l.txPr) innerParts.push(serializeTextBody(l.txPr, 'cx:txPr'));
+  return innerParts.length === 0 ? `${open}/>` : `${open}>${innerParts.join('')}</cx:legend>`;
 };
 
 const serializeLayoutPr = (lp: CxLayoutPr): string => {
@@ -556,6 +607,8 @@ const serializeSeries = (s: CxSeries): string => {
     const v = s.tx.v !== undefined ? `<cx:v>${escapeText(s.tx.v)}</cx:v>` : '';
     parts.push(`<cx:tx><cx:txData>${f}${v}</cx:txData></cx:tx>`);
   }
+  if (s.spPr) parts.push(serializeShapeProperties(s.spPr, 'cx:spPr'));
+  if (s.txPr) parts.push(serializeTextBody(s.txPr, 'cx:txPr'));
   if (s.dataLabels) parts.push(serializeDataLabels(s.dataLabels));
   if (s.dataId !== undefined) parts.push(`<cx:dataId val="${s.dataId}"/>`);
   if (s.layoutPr) parts.push(serializeLayoutPr(s.layoutPr));
@@ -579,6 +632,8 @@ const serializeAxis = (a: CxAxis): string => {
   }
   if (a.majorGridlines) parts.push('<cx:majorGridlines/>');
   if (a.title) parts.push(serializeTitle(a.title));
+  if (a.spPr) parts.push(serializeShapeProperties(a.spPr, 'cx:spPr'));
+  if (a.txPr) parts.push(serializeTextBody(a.txPr, 'cx:txPr'));
   parts.push('</cx:axis>');
   return parts.join('');
 };
@@ -587,6 +642,9 @@ const serializeChart = (c: CxChart): string => {
   const parts: string[] = ['<cx:chart>'];
   if (c.title) parts.push(serializeTitle(c.title));
   parts.push('<cx:plotArea><cx:plotAreaRegion>');
+  // <cx:plotSurface> sits at the start of <cx:plotAreaRegion> and carries
+  // the plot background spPr.
+  if (c.plotArea.spPr) parts.push(serializeShapeProperties(c.plotArea.spPr, 'cx:plotSurface'));
   for (const s of c.plotArea.series) parts.push(serializeSeries(s));
   for (const a of c.plotArea.axes) parts.push(serializeAxis(a));
   parts.push('</cx:plotAreaRegion></cx:plotArea>');
@@ -598,13 +656,17 @@ const serializeChart = (c: CxChart): string => {
 };
 
 export function serializeChartExSpace(space: CxChartSpace): string {
-  return [
+  const parts: string[] = [
     XML_HEADER,
     `<cx:chartSpace xmlns:cx="${CX_NS}" xmlns:r="${REL_NS}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">`,
     serializeChartData(space.chartData),
     serializeChart(space.chart),
-    '</cx:chartSpace>',
-  ].join('');
+  ];
+  // chartSpace-level spPr / txPr are siblings of <cx:chart>, emitted after.
+  if (space.spPr) parts.push(serializeShapeProperties(space.spPr, 'cx:spPr'));
+  if (space.txPr) parts.push(serializeTextBody(space.txPr, 'cx:txPr'));
+  parts.push('</cx:chartSpace>');
+  return parts.join('');
 }
 
 export function chartExToBytes(space: CxChartSpace): Uint8Array {

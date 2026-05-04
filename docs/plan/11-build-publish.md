@@ -1,5 +1,24 @@
 # 11. ビルド・公開
 
+## 0. 開発環境（Nix flake）
+
+全コントリビューターで Node / pnpm / Python のバージョンを揃えるため、`flake.nix` で再現可能な devShell を提供する。
+
+```nix
+# flake.nix（抜粋）
+devShells.default = pkgs.mkShell {
+  packages = [ pkgs.nodejs_22 pkgs.nodePackages.pnpm pkgs.git pkgs.python3 ];
+};
+```
+
+使い方：
+```bash
+nix develop          # 一回だけ
+direnv allow         # .envrc に `use flake` を仕込んでおけば自動で nix develop
+```
+
+`nix flake check` は `pnpm typecheck` + `pnpm test` を実行する軽量ゲート。重い build / lint は CI で実行する。
+
 ## 1. パッケージ構成
 
 `openxml-js` 単一パッケージ、サブパス export で機能分割（[01-architecture.md](./01-architecture.md) §6）。

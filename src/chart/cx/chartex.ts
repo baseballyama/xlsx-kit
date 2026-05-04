@@ -1,3 +1,6 @@
+import type { ShapeProperties } from '../../drawing/dml/shape-properties';
+import type { TextBody } from '../../drawing/dml/text';
+
 // Chartex (cx:) data model. Per docs/plan/08-charts-drawings.md §6.
 //
 // Chartex covers the eight Excel-2016 chart kinds that aren't part of
@@ -123,6 +126,10 @@ export interface CxSeries {
   /** Numeric id pointing into chartData.data. */
   dataId?: number;
   layoutPr?: CxLayoutPr;
+  /** Per-series shape properties (fill / line / effects). */
+  spPr?: ShapeProperties;
+  /** Per-series default text properties. */
+  txPr?: TextBody;
 }
 
 export interface CxAxis {
@@ -134,6 +141,10 @@ export interface CxAxis {
   catScalingGapWidth?: number;
   majorGridlines?: boolean;
   title?: CxTitle;
+  /** Axis-line / tick formatting. */
+  spPr?: ShapeProperties;
+  /** Tick-label text formatting. */
+  txPr?: TextBody;
 }
 
 export interface CxTitle {
@@ -144,17 +155,27 @@ export interface CxTitle {
   text?: string;
   /** Cell-reference text source. */
   txDataRef?: string;
+  /** Title chrome (frame fill / border). */
+  spPr?: ShapeProperties;
+  /** Title text formatting. */
+  txPr?: TextBody;
 }
 
 export interface CxLegend {
   pos?: 't' | 'b' | 'l' | 'r' | 'tr';
   align?: 'ctr' | 'l' | 'r';
   overlay?: boolean;
+  /** Legend chrome (frame fill / border). */
+  spPr?: ShapeProperties;
+  /** Legend text formatting. */
+  txPr?: TextBody;
 }
 
 export interface CxPlotArea {
   series: CxSeries[];
   axes: CxAxis[];
+  /** Plot-surface shape properties (background fill / border line). */
+  spPr?: ShapeProperties;
 }
 
 export interface CxChart {
@@ -170,6 +191,10 @@ export interface CxChartSpace {
   kind: 'cxChartSpace';
   chartData: CxChartData;
   chart: CxChart;
+  /** Chart-space level shape properties (overall frame). */
+  spPr?: ShapeProperties;
+  /** Chart-space level default text properties. */
+  txPr?: TextBody;
 }
 
 // ---- factories --------------------------------------------------------------
@@ -220,6 +245,8 @@ export const makeCxSeries = (opts: {
   tx?: { f?: string; v?: string };
   dataLabels?: CxDataLabels;
   layoutPr?: CxLayoutPr;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
 }): CxSeries => ({
   layoutId: opts.layoutId,
   ...(opts.hidden !== undefined ? { hidden: opts.hidden } : {}),
@@ -230,6 +257,8 @@ export const makeCxSeries = (opts: {
   ...(opts.dataLabels ? { dataLabels: opts.dataLabels } : {}),
   ...(opts.dataId !== undefined ? { dataId: opts.dataId } : {}),
   ...(opts.layoutPr ? { layoutPr: opts.layoutPr } : {}),
+  ...(opts.spPr ? { spPr: opts.spPr } : {}),
+  ...(opts.txPr ? { txPr: opts.txPr } : {}),
 });
 
 export const makeCxAxis = (opts: {
@@ -239,6 +268,8 @@ export const makeCxAxis = (opts: {
   catScalingGapWidth?: number;
   majorGridlines?: boolean;
   title?: CxTitle;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
 }): CxAxis => ({
   id: opts.id,
   ...(opts.hidden !== undefined ? { hidden: opts.hidden } : {}),
@@ -246,6 +277,8 @@ export const makeCxAxis = (opts: {
   ...(opts.catScalingGapWidth !== undefined ? { catScalingGapWidth: opts.catScalingGapWidth } : {}),
   ...(opts.majorGridlines !== undefined ? { majorGridlines: opts.majorGridlines } : {}),
   ...(opts.title ? { title: opts.title } : {}),
+  ...(opts.spPr ? { spPr: opts.spPr } : {}),
+  ...(opts.txPr ? { txPr: opts.txPr } : {}),
 });
 
 export const makeCxChartSpace = (opts: {
@@ -257,6 +290,9 @@ export const makeCxChartSpace = (opts: {
   plotVisOnly?: boolean;
   dispBlanksAs?: CxChart['dispBlanksAs'];
   externalData?: CxExternalData;
+  plotAreaSpPr?: ShapeProperties;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
 }): CxChartSpace => ({
   kind: 'cxChartSpace',
   chartData: {
@@ -264,12 +300,18 @@ export const makeCxChartSpace = (opts: {
     data: opts.data ?? [],
   },
   chart: {
-    plotArea: { series: opts.series, axes: opts.axes ?? [] },
+    plotArea: {
+      series: opts.series,
+      axes: opts.axes ?? [],
+      ...(opts.plotAreaSpPr ? { spPr: opts.plotAreaSpPr } : {}),
+    },
     ...(opts.title ? { title: opts.title } : {}),
     ...(opts.legend ? { legend: opts.legend } : {}),
     ...(opts.plotVisOnly !== undefined ? { plotVisOnly: opts.plotVisOnly } : {}),
     ...(opts.dispBlanksAs !== undefined ? { dispBlanksAs: opts.dispBlanksAs } : {}),
   },
+  ...(opts.spPr ? { spPr: opts.spPr } : {}),
+  ...(opts.txPr ? { txPr: opts.txPr } : {}),
 });
 
 // ---- per-kind convenience factories ----------------------------------------

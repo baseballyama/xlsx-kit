@@ -130,6 +130,11 @@ dist
 
 # pnpm
 .pnpm-store
+# Nix flake / direnv local state
+.pnpm
+.direnv
+result
+result-*
 
 # yarn v3
 .pnp.*
