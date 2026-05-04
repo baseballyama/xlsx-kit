@@ -8,6 +8,7 @@
 // modules land.
 
 import type { Fill } from './fill';
+import type { Geometry } from './geometry';
 import type { LineProperties } from './line';
 
 export type BlackWhiteMode =
@@ -46,13 +47,14 @@ export interface Transform2D {
 }
 
 /**
- * `<a:spPr>` wrapper. Geometry / effects / 3-D / text-body slots will be
- * added as their primitive modules land — kept absent here so the type
- * stays closed under the modules currently shipped.
+ * `<a:spPr>` wrapper. Effects / 3-D / text-body slots will be added as
+ * their primitive modules land — kept absent here so the type stays
+ * closed under the modules currently shipped.
  */
 export interface ShapeProperties {
   bwMode?: BlackWhiteMode;
   xfrm?: Transform2D;
+  geometry?: Geometry;
   fill?: Fill;
   ln?: LineProperties;
 }
@@ -60,6 +62,7 @@ export interface ShapeProperties {
 export const makeShapeProperties = (opts: Partial<ShapeProperties> = {}): ShapeProperties => ({
   ...(opts.bwMode !== undefined ? { bwMode: opts.bwMode } : {}),
   ...(opts.xfrm ? { xfrm: opts.xfrm } : {}),
+  ...(opts.geometry ? { geometry: opts.geometry } : {}),
   ...(opts.fill ? { fill: opts.fill } : {}),
   ...(opts.ln ? { ln: opts.ln } : {}),
 });

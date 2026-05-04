@@ -13,6 +13,19 @@ import {
   VALUELESS_COLOR_MOD_KINDS,
 } from './colors';
 import type { Blip, BlipEffect, Fill, GradientLineDir, GradientStop, RelativeRect, TileFill, TileFlip } from './fill';
+import type {
+  AdjPoint2D,
+  AdjustHandle,
+  ConnectionSite,
+  CustomGeometry,
+  Geometry,
+  GeometryPath,
+  GuideRect,
+  PathCommand,
+  PathFill,
+  PresetGeometry,
+  ShapeGuide,
+} from './geometry';
 import type { LineCap, LineCompound, LineEnd, LineEndSize, LineEndType, LineProperties, PresetDash } from './line';
 import type { BlackWhiteMode, Point2D, PositiveSize2D, ShapeProperties, Transform2D } from './shape-properties';
 
@@ -597,6 +610,277 @@ export const serializeLine = (ln: LineProperties): string => {
   return parts.join('');
 };
 
+// ---- Geometry --------------------------------------------------------------
+
+const parseShapeGuides = (lstEl: XmlNode): ShapeGuide[] => {
+  const out: ShapeGuide[] = [];
+  for (const gd of findChildren(lstEl, A('gd'))) {
+    const name = gd.attrs['name'];
+    const fmla = gd.attrs['fmla'];
+    if (name === undefined || fmla === undefined) continue;
+    out.push({ name, fmla });
+  }
+  return out;
+};
+
+const serializeShapeGuides = (tag: string, guides: ShapeGuide[]): string => {
+  if (guides.length === 0) return `<${tag}/>`;
+  const inner = guides.map((g) => `<a:gd name="${escapeAttr(g.name)}" fmla="${escapeAttr(g.fmla)}"/>`).join('');
+  return `<${tag}>${inner}</${tag}>`;
+};
+
+const parseAdjPoint = (el: XmlNode): AdjPoint2D => ({
+  x: el.attrs['x'] ?? '0',
+  y: el.attrs['y'] ?? '0',
+});
+
+const parseConnectionSites = (lstEl: XmlNode): ConnectionSite[] => {
+  const out: ConnectionSite[] = [];
+  for (const cxn of findChildren(lstEl, A('cxn'))) {
+    const ang = cxn.attrs['ang'] ?? '0';
+    const posEl = findChild(cxn, A('pos'));
+    if (!posEl) continue;
+    out.push({ ang, pos: parseAdjPoint(posEl) });
+  }
+  return out;
+};
+
+const serializeConnectionSites = (sites: ConnectionSite[]): string => {
+  if (sites.length === 0) return '<a:cxnLst/>';
+  const inner = sites
+    .map(
+      (s) => `<a:cxn ang="${escapeAttr(s.ang)}"><a:pos x="${escapeAttr(s.pos.x)}" y="${escapeAttr(s.pos.y)}"/></a:cxn>`,
+    )
+    .join('');
+  return `<a:cxnLst>${inner}</a:cxnLst>`;
+};
+
+const parseAdjustHandles = (lstEl: XmlNode): AdjustHandle[] => {
+  const out: AdjustHandle[] = [];
+  for (const child of lstEl.children) {
+    if (typeof child === 'string') continue;
+    const local = child.name.split('}').pop() ?? child.name;
+    if (local !== 'ahXY' && local !== 'ahPolar') continue;
+    const posEl = findChild(child, A('pos'));
+    if (!posEl) continue;
+    const handle: AdjustHandle = {
+      kind: local === 'ahXY' ? 'xy' : 'polar',
+      pos: parseAdjPoint(posEl),
+    };
+    const a = child.attrs;
+    if (a['gdRefX'] !== undefined) handle.gdRefX = a['gdRefX'];
+    if (a['minX'] !== undefined) handle.minX = a['minX'];
+    if (a['maxX'] !== undefined) handle.maxX = a['maxX'];
+    if (a['gdRefY'] !== undefined) handle.gdRefY = a['gdRefY'];
+    if (a['minY'] !== undefined) handle.minY = a['minY'];
+    if (a['maxY'] !== undefined) handle.maxY = a['maxY'];
+    if (a['gdRefR'] !== undefined) handle.gdRefR = a['gdRefR'];
+    if (a['minR'] !== undefined) handle.minR = a['minR'];
+    if (a['maxR'] !== undefined) handle.maxR = a['maxR'];
+    if (a['gdRefAng'] !== undefined) handle.gdRefAng = a['gdRefAng'];
+    if (a['minAng'] !== undefined) handle.minAng = a['minAng'];
+    if (a['maxAng'] !== undefined) handle.maxAng = a['maxAng'];
+    out.push(handle);
+  }
+  return out;
+};
+
+const serializeAdjustHandles = (handles: AdjustHandle[]): string => {
+  if (handles.length === 0) return '<a:ahLst/>';
+  const inner = handles
+    .map((h) => {
+      const tag = h.kind === 'xy' ? 'a:ahXY' : 'a:ahPolar';
+      const attrs: string[] = [];
+      const push = (k: string, v: string | undefined): void => {
+        if (v !== undefined) attrs.push(`${k}="${escapeAttr(v)}"`);
+      };
+      push('gdRefX', h.gdRefX);
+      push('minX', h.minX);
+      push('maxX', h.maxX);
+      push('gdRefY', h.gdRefY);
+      push('minY', h.minY);
+      push('maxY', h.maxY);
+      push('gdRefR', h.gdRefR);
+      push('minR', h.minR);
+      push('maxR', h.maxR);
+      push('gdRefAng', h.gdRefAng);
+      push('minAng', h.minAng);
+      push('maxAng', h.maxAng);
+      return `<${tag}${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}><a:pos x="${escapeAttr(h.pos.x)}" y="${escapeAttr(h.pos.y)}"/></${tag}>`;
+    })
+    .join('');
+  return `<a:ahLst>${inner}</a:ahLst>`;
+};
+
+const parseRectGuide = (el: XmlNode): GuideRect => ({
+  l: el.attrs['l'] ?? '0',
+  t: el.attrs['t'] ?? '0',
+  r: el.attrs['r'] ?? '0',
+  b: el.attrs['b'] ?? '0',
+});
+
+const VALID_PATH_FILLS: ReadonlyArray<string> = ['none', 'norm', 'lighten', 'lightenLess', 'darken', 'darkenLess'];
+
+const parsePathPt = (el: XmlNode): Point2D => ({
+  x: intAttr(el, 'x') ?? 0,
+  y: intAttr(el, 'y') ?? 0,
+});
+
+const parsePathCommand = (el: XmlNode): PathCommand | undefined => {
+  const local = el.name.split('}').pop() ?? el.name;
+  switch (local) {
+    case 'moveTo':
+    case 'lnTo': {
+      const ptEl = findChild(el, A('pt'));
+      if (!ptEl) return undefined;
+      return { kind: local, pt: parsePathPt(ptEl) };
+    }
+    case 'arcTo':
+      return {
+        kind: 'arcTo',
+        wR: el.attrs['wR'] ?? '0',
+        hR: el.attrs['hR'] ?? '0',
+        stAng: el.attrs['stAng'] ?? '0',
+        swAng: el.attrs['swAng'] ?? '0',
+      };
+    case 'quadBezTo': {
+      const pts: Point2D[] = [];
+      for (const pt of findChildren(el, A('pt'))) pts.push(parsePathPt(pt));
+      if (pts.length < 2) return undefined;
+      return { kind: 'quadBezTo', pts: [pts[0] as Point2D, pts[1] as Point2D] };
+    }
+    case 'cubicBezTo': {
+      const pts: Point2D[] = [];
+      for (const pt of findChildren(el, A('pt'))) pts.push(parsePathPt(pt));
+      if (pts.length < 3) return undefined;
+      return {
+        kind: 'cubicBezTo',
+        pts: [pts[0] as Point2D, pts[1] as Point2D, pts[2] as Point2D],
+      };
+    }
+    case 'close':
+      return { kind: 'close' };
+    default:
+      return undefined;
+  }
+};
+
+const parsePath = (el: XmlNode): GeometryPath => {
+  const out: GeometryPath = { commands: [] };
+  const w = intAttr(el, 'w');
+  const h = intAttr(el, 'h');
+  if (w !== undefined) out.w = w;
+  if (h !== undefined) out.h = h;
+  const fillRaw = el.attrs['fill'];
+  if (fillRaw && VALID_PATH_FILLS.includes(fillRaw)) out.fill = fillRaw as PathFill;
+  const stroke = boolAttr(el, 'stroke');
+  if (stroke !== undefined) out.stroke = stroke;
+  const extrusionOk = boolAttr(el, 'extrusionOk');
+  if (extrusionOk !== undefined) out.extrusionOk = extrusionOk;
+  for (const c of el.children) {
+    if (typeof c === 'string') continue;
+    const cmd = parsePathCommand(c);
+    if (cmd) out.commands.push(cmd);
+  }
+  return out;
+};
+
+const serializePathCommand = (cmd: PathCommand): string => {
+  switch (cmd.kind) {
+    case 'moveTo':
+      return `<a:moveTo><a:pt x="${cmd.pt.x}" y="${cmd.pt.y}"/></a:moveTo>`;
+    case 'lnTo':
+      return `<a:lnTo><a:pt x="${cmd.pt.x}" y="${cmd.pt.y}"/></a:lnTo>`;
+    case 'arcTo':
+      return `<a:arcTo wR="${escapeAttr(cmd.wR)}" hR="${escapeAttr(cmd.hR)}" stAng="${escapeAttr(cmd.stAng)}" swAng="${escapeAttr(cmd.swAng)}"/>`;
+    case 'quadBezTo':
+      return `<a:quadBezTo><a:pt x="${cmd.pts[0].x}" y="${cmd.pts[0].y}"/><a:pt x="${cmd.pts[1].x}" y="${cmd.pts[1].y}"/></a:quadBezTo>`;
+    case 'cubicBezTo':
+      return `<a:cubicBezTo><a:pt x="${cmd.pts[0].x}" y="${cmd.pts[0].y}"/><a:pt x="${cmd.pts[1].x}" y="${cmd.pts[1].y}"/><a:pt x="${cmd.pts[2].x}" y="${cmd.pts[2].y}"/></a:cubicBezTo>`;
+    case 'close':
+      return '<a:close/>';
+  }
+};
+
+const serializePath = (p: GeometryPath): string => {
+  const a: string[] = [];
+  if (p.w !== undefined) a.push(`w="${p.w}"`);
+  if (p.h !== undefined) a.push(`h="${p.h}"`);
+  if (p.fill) a.push(`fill="${p.fill}"`);
+  if (p.stroke !== undefined) a.push(`stroke="${p.stroke ? '1' : '0'}"`);
+  if (p.extrusionOk !== undefined) a.push(`extrusionOk="${p.extrusionOk ? '1' : '0'}"`);
+  const inner = p.commands.map(serializePathCommand).join('');
+  return `<a:path${a.length > 0 ? ` ${a.join(' ')}` : ''}>${inner}</a:path>`;
+};
+
+export const parseGeometry = (parent: XmlNode): Geometry | undefined => {
+  const prstEl = findChild(parent, A('prstGeom'));
+  if (prstEl) {
+    const prst = prstEl.attrs['prst'] ?? '';
+    const avLstEl = findChild(prstEl, A('avLst'));
+    const out: PresetGeometry = { kind: 'preset', prst };
+    if (avLstEl) {
+      const guides = parseShapeGuides(avLstEl);
+      if (guides.length > 0) out.avLst = guides;
+    }
+    return out;
+  }
+  const custEl = findChild(parent, A('custGeom'));
+  if (custEl) {
+    const out: CustomGeometry = { kind: 'custom', pathLst: [] };
+    const avLstEl = findChild(custEl, A('avLst'));
+    if (avLstEl) {
+      const g = parseShapeGuides(avLstEl);
+      if (g.length > 0) out.avLst = g;
+    }
+    const gdLstEl = findChild(custEl, A('gdLst'));
+    if (gdLstEl) {
+      const g = parseShapeGuides(gdLstEl);
+      if (g.length > 0) out.gdLst = g;
+    }
+    const ahLstEl = findChild(custEl, A('ahLst'));
+    if (ahLstEl) {
+      const ah = parseAdjustHandles(ahLstEl);
+      if (ah.length > 0) out.ahLst = ah;
+    }
+    const cxnLstEl = findChild(custEl, A('cxnLst'));
+    if (cxnLstEl) {
+      const cxn = parseConnectionSites(cxnLstEl);
+      if (cxn.length > 0) out.cxnLst = cxn;
+    }
+    const rectEl = findChild(custEl, A('rect'));
+    if (rectEl) out.rect = parseRectGuide(rectEl);
+    const pathLstEl = findChild(custEl, A('pathLst'));
+    if (pathLstEl) {
+      for (const p of findChildren(pathLstEl, A('path'))) out.pathLst.push(parsePath(p));
+    }
+    return out;
+  }
+  return undefined;
+};
+
+export const serializeGeometry = (g: Geometry): string => {
+  if (g.kind === 'preset') {
+    const av = g.avLst ? serializeShapeGuides('a:avLst', g.avLst) : '';
+    return av === ''
+      ? `<a:prstGeom prst="${escapeAttr(g.prst)}"/>`
+      : `<a:prstGeom prst="${escapeAttr(g.prst)}">${av}</a:prstGeom>`;
+  }
+  const parts: string[] = ['<a:custGeom>'];
+  parts.push(g.avLst ? serializeShapeGuides('a:avLst', g.avLst) : '<a:avLst/>');
+  parts.push(g.gdLst ? serializeShapeGuides('a:gdLst', g.gdLst) : '<a:gdLst/>');
+  parts.push(g.ahLst ? serializeAdjustHandles(g.ahLst) : '<a:ahLst/>');
+  parts.push(g.cxnLst ? serializeConnectionSites(g.cxnLst) : '<a:cxnLst/>');
+  if (g.rect) {
+    parts.push(
+      `<a:rect l="${escapeAttr(g.rect.l)}" t="${escapeAttr(g.rect.t)}" r="${escapeAttr(g.rect.r)}" b="${escapeAttr(g.rect.b)}"/>`,
+    );
+  }
+  parts.push(`<a:pathLst>${g.pathLst.map(serializePath).join('')}</a:pathLst>`);
+  parts.push('</a:custGeom>');
+  return parts.join('');
+};
+
 // ---- ShapeProperties -------------------------------------------------------
 
 const VALID_BWMODE: ReadonlyArray<string> = [
@@ -667,6 +951,8 @@ export const parseShapeProperties = (el: XmlNode): ShapeProperties => {
   if (bwModeRaw && VALID_BWMODE.includes(bwModeRaw)) out.bwMode = bwModeRaw as BlackWhiteMode;
   const xfrm = findChild(el, A('xfrm'));
   if (xfrm) out.xfrm = parseTransform2D(xfrm);
+  const geom = parseGeometry(el);
+  if (geom) out.geometry = geom;
   const fill = parseFill(el);
   if (fill) out.fill = fill;
   const ln = findChild(el, A('ln'));
@@ -680,6 +966,7 @@ export const serializeShapeProperties = (sp: ShapeProperties, wrapperTag = 'c:sp
   if (sp.bwMode) a.push(`bwMode="${sp.bwMode}"`);
   const parts: string[] = [`<${wrapperTag}${a.length > 0 ? ` ${a.join(' ')}` : ''}>`];
   if (sp.xfrm) parts.push(serializeTransform2D(sp.xfrm));
+  if (sp.geometry) parts.push(serializeGeometry(sp.geometry));
   if (sp.fill) parts.push(serializeFill(sp.fill));
   if (sp.ln) parts.push(serializeLine(sp.ln));
   parts.push(`</${wrapperTag}>`);
