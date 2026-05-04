@@ -14,6 +14,7 @@ import type { AutoFilter } from './auto-filter';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
 import type { LegacyComment } from './comments';
 import { makeLegacyComment } from './comments';
+import type { ConditionalFormatting } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
@@ -65,6 +66,8 @@ export interface Worksheet {
   tables: TableDefinition[];
   /** Legacy comments. Persisted as `xl/commentsN.xml` + a placeholder VML drawing. */
   legacyComments: LegacyComment[];
+  /** Conditional formatting blocks. */
+  conditionalFormatting: ConditionalFormatting[];
 }
 
 /** Build a Worksheet shell. */
@@ -84,6 +87,7 @@ export function makeWorksheet(title: string): Worksheet {
     dataValidations: [],
     tables: [],
     legacyComments: [],
+    conditionalFormatting: [],
   };
 }
 
@@ -501,4 +505,17 @@ export function removeComment(ws: Worksheet, ref: string): boolean {
   if (i < 0) return false;
   ws.legacyComments.splice(i, 1);
   return true;
+}
+
+// ---- conditional formatting ----------------------------------------------
+
+/** Append a conditional formatting block. */
+export function addConditionalFormatting(ws: Worksheet, cf: ConditionalFormatting): ConditionalFormatting {
+  ws.conditionalFormatting.push(cf);
+  return cf;
+}
+
+/** All conditional formatting blocks (read-only view). */
+export function getConditionalFormatting(ws: Worksheet): ReadonlyArray<ConditionalFormatting> {
+  return ws.conditionalFormatting;
 }

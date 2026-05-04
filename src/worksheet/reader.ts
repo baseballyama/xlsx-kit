@@ -23,10 +23,18 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import { ERROR_CODES } from '../utils/inference';
 import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
+import { serializeXml } from '../xml/serializer';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import type { AutoFilter, FilterColumn } from './auto-filter';
 import { parseMultiCellRange, parseRange } from './cell-range';
 import type { LegacyComment } from './comments';
+import type {
+  ConditionalFormatting,
+  ConditionalFormattingRule,
+  ConditionalFormattingRuleType,
+  TimePeriod,
+} from './conditional-formatting';
+import { makeCfRule, makeConditionalFormatting } from './conditional-formatting';
 import type {
   DataValidation,
   DataValidationErrorStyle,
@@ -72,6 +80,9 @@ const FILTERS_TAG = `{${SHEET_MAIN_NS}}filters`;
 const FILTER_TAG = `{${SHEET_MAIN_NS}}filter`;
 const TABLE_PARTS_TAG = `{${SHEET_MAIN_NS}}tableParts`;
 const TABLE_PART_TAG = `{${SHEET_MAIN_NS}}tablePart`;
+const CONDITIONAL_FORMATTING_TAG = `{${SHEET_MAIN_NS}}conditionalFormatting`;
+const CF_RULE_TAG = `{${SHEET_MAIN_NS}}cfRule`;
+const FORMULA_TAG = `{${SHEET_MAIN_NS}}formula`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -185,6 +196,13 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (autoFilterEl) {
     const filter = parseAutoFilter(autoFilterEl);
     if (filter) ws.autoFilter = filter;
+  }
+
+  // <conditionalFormatting sqref="…"><cfRule .../></conditionalFormatting> —
+  // multiple per sheet, each with its own sqref + rules array.
+  for (const cfEl of findChildren(root, CONDITIONAL_FORMATTING_TAG)) {
+    const cf = parseConditionalFormatting(cfEl);
+    if (cf) ws.conditionalFormatting.push(cf);
   }
 
   // <tableParts><tablePart r:id="rIdN"/></tableParts> — resolved through the
@@ -587,6 +605,91 @@ const parseDataValidation = (node: XmlNode): DataValidation => {
   const f2 = findChild(node, FORMULA2_TAG);
   if (f2?.text !== undefined) opts.formula2 = f2.text;
   return makeDataValidation(opts);
+};
+
+const CF_RULE_TYPES: ReadonlyArray<ConditionalFormattingRuleType> = [
+  'expression',
+  'cellIs',
+  'colorScale',
+  'dataBar',
+  'iconSet',
+  'top10',
+  'aboveAverage',
+  'uniqueValues',
+  'duplicateValues',
+  'containsText',
+  'notContainsText',
+  'beginsWith',
+  'endsWith',
+  'containsBlanks',
+  'notContainsBlanks',
+  'containsErrors',
+  'notContainsErrors',
+  'timePeriod',
+];
+const VISUAL_RULE_TYPES = new Set<ConditionalFormattingRuleType>(['colorScale', 'dataBar', 'iconSet']);
+
+const parseConditionalFormatting = (node: XmlNode): ConditionalFormatting | undefined => {
+  const sqrefRaw = node.attrs['sqref'];
+  if (!sqrefRaw) return undefined;
+  const rules: ConditionalFormattingRule[] = [];
+  for (const r of findChildren(node, CF_RULE_TAG)) {
+    const rule = parseCfRule(r);
+    if (rule) rules.push(rule);
+  }
+  const opts: Parameters<typeof makeConditionalFormatting>[0] = {
+    sqref: parseMultiCellRange(sqrefRaw),
+    rules,
+  };
+  const pivot = parseBoolXmlAttr(node.attrs['pivot']);
+  if (pivot !== undefined) opts.pivot = pivot;
+  return makeConditionalFormatting(opts);
+};
+
+const parseCfRule = (node: XmlNode): ConditionalFormattingRule | undefined => {
+  const typeRaw = node.attrs['type'];
+  const priorityRaw = node.attrs['priority'];
+  if (!typeRaw || priorityRaw === undefined) return undefined;
+  if (!(CF_RULE_TYPES as ReadonlyArray<string>).includes(typeRaw)) return undefined;
+  const priority = Number.parseInt(priorityRaw, 10);
+  if (!Number.isInteger(priority)) return undefined;
+  const type = typeRaw as ConditionalFormattingRuleType;
+  const opts: Parameters<typeof makeCfRule>[0] = { type, priority };
+  const dxf = parseIntegerAttr(node.attrs['dxfId']);
+  if (dxf !== undefined) opts.dxfId = dxf;
+  const stop = parseBoolXmlAttr(node.attrs['stopIfTrue']);
+  if (stop !== undefined) opts.stopIfTrue = stop;
+  if (node.attrs['operator']) opts.operator = node.attrs['operator'];
+  if (node.attrs['text'] !== undefined) opts.text = node.attrs['text'];
+  const percent = parseBoolXmlAttr(node.attrs['percent']);
+  if (percent !== undefined) opts.percent = percent;
+  const bottom = parseBoolXmlAttr(node.attrs['bottom']);
+  if (bottom !== undefined) opts.bottom = bottom;
+  const rank = parseIntegerAttr(node.attrs['rank']);
+  if (rank !== undefined) opts.rank = rank;
+  const aboveAverage = parseBoolXmlAttr(node.attrs['aboveAverage']);
+  if (aboveAverage !== undefined) opts.aboveAverage = aboveAverage;
+  const equalAverage = parseBoolXmlAttr(node.attrs['equalAverage']);
+  if (equalAverage !== undefined) opts.equalAverage = equalAverage;
+  const stdDev = parseIntegerAttr(node.attrs['stdDev']);
+  if (stdDev !== undefined) opts.stdDev = stdDev;
+  if (node.attrs['timePeriod']) opts.timePeriod = node.attrs['timePeriod'] as TimePeriod;
+
+  const formulas: string[] = [];
+  for (const f of findChildren(node, FORMULA_TAG)) formulas.push(f.text ?? '');
+  if (formulas.length > 0) opts.formulas = formulas;
+
+  if (VISUAL_RULE_TYPES.has(type)) {
+    // Round-trip every non-formula child verbatim. Re-serialise to bytes
+    // then back to a string so the writer can emit the same markup.
+    const inner: string[] = [];
+    for (const child of node.children) {
+      if (child.name === FORMULA_TAG) continue;
+      inner.push(new TextDecoder().decode(serializeXml(child, { xmlDeclaration: false })));
+    }
+    if (inner.length > 0) opts.innerXml = inner.join('');
+  }
+  return makeCfRule(opts);
 };
 
 const parseAutoFilter = (node: XmlNode): AutoFilter | undefined => {

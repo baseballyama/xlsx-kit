@@ -20,6 +20,7 @@ import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import type { AutoFilter } from './auto-filter';
 import { multiCellRangeToString, rangeToString } from './cell-range';
+import type { ConditionalFormatting, ConditionalFormattingRule } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
@@ -110,6 +111,9 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
       parts.push(`<mergeCell ref="${rangeToString(range)}"/>`);
     }
     parts.push('</mergeCells>');
+  }
+  for (const cf of ws.conditionalFormatting) {
+    parts.push(serializeConditionalFormatting(cf));
   }
   if (ws.dataValidations.length > 0) {
     parts.push(serializeDataValidations(ws.dataValidations));
@@ -368,6 +372,38 @@ const serializeAutoFilter = (filter: AutoFilter): string => {
   }
   parts.push('</autoFilter>');
   return parts.join('');
+};
+
+const serializeConditionalFormatting = (cf: ConditionalFormatting): string => {
+  const sqref = escapeXmlAttr(multiCellRangeToString(cf.sqref));
+  let attrs = ` sqref="${sqref}"`;
+  if (cf.pivot !== undefined) attrs += ` pivot="${cf.pivot ? '1' : '0'}"`;
+  if (cf.rules.length === 0) return `<conditionalFormatting${attrs}/>`;
+  const parts: string[] = [`<conditionalFormatting${attrs}>`];
+  for (const rule of cf.rules) parts.push(serializeCfRule(rule));
+  parts.push('</conditionalFormatting>');
+  return parts.join('');
+};
+
+const serializeCfRule = (rule: ConditionalFormattingRule): string => {
+  let attrs = ` type="${rule.type}" priority="${rule.priority}"`;
+  if (rule.dxfId !== undefined) attrs += ` dxfId="${rule.dxfId}"`;
+  if (rule.stopIfTrue) attrs += ' stopIfTrue="1"';
+  if (rule.operator) attrs += ` operator="${escapeXmlAttr(rule.operator)}"`;
+  if (rule.text !== undefined) attrs += ` text="${escapeXmlAttr(rule.text)}"`;
+  if (rule.percent !== undefined) attrs += ` percent="${rule.percent ? '1' : '0'}"`;
+  if (rule.bottom !== undefined) attrs += ` bottom="${rule.bottom ? '1' : '0'}"`;
+  if (rule.rank !== undefined) attrs += ` rank="${rule.rank}"`;
+  if (rule.aboveAverage !== undefined) attrs += ` aboveAverage="${rule.aboveAverage ? '1' : '0'}"`;
+  if (rule.equalAverage !== undefined) attrs += ` equalAverage="${rule.equalAverage ? '1' : '0'}"`;
+  if (rule.stdDev !== undefined) attrs += ` stdDev="${rule.stdDev}"`;
+  if (rule.timePeriod !== undefined) attrs += ` timePeriod="${rule.timePeriod}"`;
+
+  const inner: string[] = [];
+  for (const f of rule.formulas) inner.push(`<formula>${escapeXmlText(f)}</formula>`);
+  if (rule.innerXml) inner.push(rule.innerXml);
+  if (inner.length === 0) return `<cfRule${attrs}/>`;
+  return `<cfRule${attrs}>${inner.join('')}</cfRule>`;
 };
 
 const serializeDataValidations = (dvs: ReadonlyArray<DataValidation>): string => {
