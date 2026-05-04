@@ -11,6 +11,7 @@ import { type Cell, makeCell } from '../cell/cell';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
+import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
 
 export interface Worksheet {
@@ -36,6 +37,18 @@ export interface Worksheet {
    * lone default view doesn't earn its keep on the wire.
    */
   views: SheetView[];
+  /**
+   * Per-column metadata keyed by the entry's `min` index. The value's
+   * `min`/`max` may cover a multi-column run; iteration over the map
+   * yields one entry per run, in `min`-ascending order.
+   */
+  columnDimensions: Map<number, ColumnDimension>;
+  /** Per-row metadata keyed by 1-based row index. */
+  rowDimensions: Map<number, RowDimension>;
+  /** Default column width (characters) when not overridden by a column dimension. */
+  defaultColumnWidth?: number;
+  /** Default row height (points) when not overridden by a row dimension. */
+  defaultRowHeight?: number;
 }
 
 /** Build a Worksheet shell. */
@@ -49,6 +62,8 @@ export function makeWorksheet(title: string): Worksheet {
     _appendRowCursor: 0,
     mergedCells: [],
     views: [],
+    columnDimensions: new Map(),
+    rowDimensions: new Map(),
   };
 }
 
@@ -286,4 +301,76 @@ export function getFreezePanes(ws: Worksheet): string | undefined {
   const view = ws.views[0];
   if (!view) return undefined;
   return freezePaneRef(view);
+}
+
+// ---- column / row dimensions ----------------------------------------------
+
+/**
+ * Look up the ColumnDimension covering `col`. The search walks every
+ * registered entry's `min..max` range; that's fine for the typical
+ * spreadsheet (a handful of column entries) and stays simple.
+ */
+export function getColumnDimension(ws: Worksheet, col: number): ColumnDimension | undefined {
+  for (const dim of ws.columnDimensions.values()) {
+    if (col >= dim.min && col <= dim.max) return dim;
+  }
+  return undefined;
+}
+
+/**
+ * Set a single-column ColumnDimension entry covering `col`. Shadows any
+ * existing run that overlaps — runs are not split for now (callers that
+ * need range-spanning entries can write directly into
+ * `ws.columnDimensions`).
+ */
+export function setColumnDimension(
+  ws: Worksheet,
+  col: number,
+  opts: Partial<Omit<ColumnDimension, 'min' | 'max'>>,
+): ColumnDimension {
+  validateRowCol(1, col);
+  // Strip any existing entry that covers this column. Multi-col runs that
+  // straddle `col` are dropped wholesale — phase-5 minimum scope.
+  for (const [key, dim] of ws.columnDimensions) {
+    if (col >= dim.min && col <= dim.max) ws.columnDimensions.delete(key);
+  }
+  const entry = makeColumnDimension(col, opts);
+  ws.columnDimensions.set(col, entry);
+  return entry;
+}
+
+/** Convenience: set a column's width, leaving other fields untouched. */
+export function setColumnWidth(ws: Worksheet, col: number, width: number): ColumnDimension {
+  const existing = getColumnDimension(ws, col);
+  return setColumnDimension(ws, col, { ...existing, width, customWidth: true });
+}
+
+/** Convenience: hide a column. */
+export function hideColumn(ws: Worksheet, col: number): ColumnDimension {
+  const existing = getColumnDimension(ws, col);
+  return setColumnDimension(ws, col, { ...existing, hidden: true });
+}
+
+/** Look up a row's dimension entry. */
+export function getRowDimension(ws: Worksheet, row: number): RowDimension | undefined {
+  return ws.rowDimensions.get(row);
+}
+
+export function setRowDimension(ws: Worksheet, row: number, opts: Partial<RowDimension>): RowDimension {
+  validateRowCol(row, 1);
+  const entry = makeRowDimension(opts);
+  ws.rowDimensions.set(row, entry);
+  return entry;
+}
+
+/** Convenience: set a row's height, marking customHeight=true. */
+export function setRowHeight(ws: Worksheet, row: number, height: number): RowDimension {
+  const existing = getRowDimension(ws, row);
+  return setRowDimension(ws, row, { ...existing, height, customHeight: true });
+}
+
+/** Convenience: hide a row. */
+export function hideRow(ws: Worksheet, row: number): RowDimension {
+  const existing = getRowDimension(ws, row);
+  return setRowDimension(ws, row, { ...existing, hidden: true });
 }

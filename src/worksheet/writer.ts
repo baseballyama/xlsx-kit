@@ -18,6 +18,7 @@ import type { SharedStringsTable } from '../workbook/shared-strings';
 import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { rangeToString } from './cell-range';
+import type { ColumnDimension, RowDimension } from './dimensions';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
 
@@ -45,14 +46,28 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     serializeDimension(ws),
   ];
   if (ws.views.length > 0) parts.push(serializeSheetViews(ws.views));
+  const sheetFormatPr = serializeSheetFormatPr(ws);
+  if (sheetFormatPr) parts.push(sheetFormatPr);
+  if (ws.columnDimensions.size > 0) parts.push(serializeCols(ws.columnDimensions));
   parts.push('<sheetData>');
   // Iterate rows in numeric order so writer output is deterministic.
   const rowKeys = [...ws.rows.keys()].sort((a, b) => a - b);
-  for (const rowIdx of rowKeys) {
+  // Walk the union of populated rows + rowDimension entries so dimension-
+  // only rows (e.g. an empty row with custom height) still emit.
+  const rowKeyUnion = new Set<number>(rowKeys);
+  for (const k of ws.rowDimensions.keys()) rowKeyUnion.add(k);
+  const sortedRowKeys = [...rowKeyUnion].sort((a, b) => a - b);
+  for (const rowIdx of sortedRowKeys) {
     const row = ws.rows.get(rowIdx);
-    if (!row || row.size === 0) continue;
+    const dim = ws.rowDimensions.get(rowIdx);
+    if ((!row || row.size === 0) && !dim) continue;
+    const dimAttrs = dim ? serializeRowDimensionAttrs(dim) : '';
+    if (!row || row.size === 0) {
+      parts.push(`<row r="${rowIdx}"${dimAttrs}/>`);
+      continue;
+    }
     const colKeys = [...row.keys()].sort((a, b) => a - b);
-    parts.push(`<row r="${rowIdx}">`);
+    parts.push(`<row r="${rowIdx}"${dimAttrs}>`);
     for (const colIdx of colKeys) {
       const cell = row.get(colIdx);
       if (cell) parts.push(serializeCell(cell, ctx));
@@ -257,4 +272,43 @@ const serializeSelection = (s: Selection): string => {
   if (s.activeCell) attrs += ` activeCell="${escapeXmlAttr(s.activeCell)}"`;
   if (s.sqref) attrs += ` sqref="${escapeXmlAttr(s.sqref)}"`;
   return `<selection${attrs}/>`;
+};
+
+const serializeSheetFormatPr = (ws: Worksheet): string => {
+  let attrs = '';
+  if (ws.defaultColumnWidth !== undefined) attrs += ` defaultColWidth="${ws.defaultColumnWidth}"`;
+  if (ws.defaultRowHeight !== undefined) attrs += ` defaultRowHeight="${ws.defaultRowHeight}"`;
+  if (attrs.length === 0) return '';
+  return `<sheetFormatPr${attrs}/>`;
+};
+
+const serializeCols = (cols: ReadonlyMap<number, ColumnDimension>): string => {
+  const sorted = [...cols.values()].sort((a, b) => a.min - b.min);
+  const parts: string[] = ['<cols>'];
+  for (const dim of sorted) parts.push(serializeColumnDimension(dim));
+  parts.push('</cols>');
+  return parts.join('');
+};
+
+const serializeColumnDimension = (dim: ColumnDimension): string => {
+  let attrs = ` min="${dim.min}" max="${dim.max}"`;
+  if (dim.width !== undefined) attrs += ` width="${dim.width}"`;
+  if (dim.style !== undefined) attrs += ` style="${dim.style}"`;
+  if (dim.hidden) attrs += ' hidden="1"';
+  if (dim.bestFit) attrs += ' bestFit="1"';
+  if (dim.customWidth) attrs += ' customWidth="1"';
+  if (dim.outlineLevel !== undefined) attrs += ` outlineLevel="${dim.outlineLevel}"`;
+  if (dim.collapsed) attrs += ' collapsed="1"';
+  return `<col${attrs}/>`;
+};
+
+const serializeRowDimensionAttrs = (dim: RowDimension): string => {
+  let attrs = '';
+  if (dim.height !== undefined) attrs += ` ht="${dim.height}"`;
+  if (dim.customHeight) attrs += ' customHeight="1"';
+  if (dim.hidden) attrs += ' hidden="1"';
+  if (dim.outlineLevel !== undefined) attrs += ` outlineLevel="${dim.outlineLevel}"`;
+  if (dim.collapsed) attrs += ' collapsed="1"';
+  if (dim.style !== undefined) attrs += ` s="${dim.style}" customFormat="1"`;
+  return attrs;
 };

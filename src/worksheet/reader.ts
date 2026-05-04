@@ -23,6 +23,8 @@ import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import { parseRange } from './cell-range';
+import type { ColumnDimension, RowDimension } from './dimensions';
+import { makeColumnDimension, makeRowDimension } from './dimensions';
 import type { Pane, PaneState, PaneType, Selection, SheetView, SheetViewMode } from './views';
 import { makeSheetView } from './views';
 import { makeWorksheet, setCell, type Worksheet } from './worksheet';
@@ -41,6 +43,9 @@ const SHEET_VIEWS_TAG = `{${SHEET_MAIN_NS}}sheetViews`;
 const SHEET_VIEW_TAG = `{${SHEET_MAIN_NS}}sheetView`;
 const PANE_TAG = `{${SHEET_MAIN_NS}}pane`;
 const SELECTION_TAG = `{${SHEET_MAIN_NS}}selection`;
+const COLS_TAG = `{${SHEET_MAIN_NS}}cols`;
+const COL_TAG = `{${SHEET_MAIN_NS}}col`;
+const SHEET_FORMAT_PR_TAG = `{${SHEET_MAIN_NS}}sheetFormatPr`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -66,11 +71,32 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     throw new OpenXmlSchemaError(`parseWorksheetXml: root is "${root.name}", expected worksheet`);
   }
   const ws = makeWorksheet(title);
+
+  // <sheetFormatPr> defaults — recorded so dimension-less sheets still
+  // reflect any non-default workbook-wide row height / column width.
+  const sheetFormatEl = findChild(root, SHEET_FORMAT_PR_TAG);
+  if (sheetFormatEl) {
+    const defaultColumnWidth = parseFloatAttr(sheetFormatEl.attrs['defaultColWidth']);
+    if (defaultColumnWidth !== undefined) ws.defaultColumnWidth = defaultColumnWidth;
+    const defaultRowHeight = parseFloatAttr(sheetFormatEl.attrs['defaultRowHeight']);
+    if (defaultRowHeight !== undefined) ws.defaultRowHeight = defaultRowHeight;
+  }
+
+  // <cols> column dimensions — preserve runs verbatim (one entry per <col>).
+  const colsEl = findChild(root, COLS_TAG);
+  if (colsEl) {
+    for (const c of findChildren(colsEl, COL_TAG)) {
+      const dim = parseColumnDimension(c);
+      ws.columnDimensions.set(dim.min, dim);
+    }
+  }
+
   const sheetData = findChild(root, SHEETDATA_TAG);
   if (sheetData) {
     const sharedFormulas = new Map<number, SharedFormulaCache>();
     for (const rowNode of findChildren(sheetData, ROW_TAG)) {
       const rowIdx = parseRowIndex(rowNode);
+      maybeRecordRowDimension(ws, rowNode, rowIdx);
       let nextCol = 1;
       for (const cNode of findChildren(rowNode, C_TAG)) {
         const coord = parseCellCoord(cNode, rowIdx, nextCol);
@@ -383,4 +409,52 @@ const handleFormula = (
     default:
       throw new OpenXmlSchemaError(`worksheet: <f t="${tAttr}"> unknown formula kind`);
   }
+};
+
+const parseColumnDimension = (node: XmlNode): ColumnDimension => {
+  const minRaw = node.attrs['min'];
+  const maxRaw = node.attrs['max'];
+  if (minRaw === undefined || maxRaw === undefined) {
+    throw new OpenXmlSchemaError('worksheet: <col> missing required @min/@max');
+  }
+  const min = Number.parseInt(minRaw, 10);
+  const max = Number.parseInt(maxRaw, 10);
+  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min) {
+    throw new OpenXmlSchemaError(`worksheet: <col min="${minRaw}" max="${maxRaw}"> not a valid column run`);
+  }
+  const opts: Partial<Omit<ColumnDimension, 'min' | 'max'>> = {};
+  const width = parseFloatAttr(node.attrs['width']);
+  if (width !== undefined) opts.width = width;
+  const customWidth = parseBoolXmlAttr(node.attrs['customWidth']);
+  if (customWidth !== undefined) opts.customWidth = customWidth;
+  const hidden = parseBoolXmlAttr(node.attrs['hidden']);
+  if (hidden !== undefined) opts.hidden = hidden;
+  const bestFit = parseBoolXmlAttr(node.attrs['bestFit']);
+  if (bestFit !== undefined) opts.bestFit = bestFit;
+  const outlineLevel = parseIntegerAttr(node.attrs['outlineLevel']);
+  if (outlineLevel !== undefined) opts.outlineLevel = outlineLevel;
+  const style = parseIntegerAttr(node.attrs['style']);
+  if (style !== undefined) opts.style = style;
+  const collapsed = parseBoolXmlAttr(node.attrs['collapsed']);
+  if (collapsed !== undefined) opts.collapsed = collapsed;
+  // makeColumnDimension fills min=col=max; rebuild with both range ends.
+  return { ...makeColumnDimension(min, opts), max };
+};
+
+const maybeRecordRowDimension = (ws: Worksheet, node: XmlNode, rowIdx: number): void => {
+  const opts: Partial<RowDimension> = {};
+  const ht = parseFloatAttr(node.attrs['ht']);
+  if (ht !== undefined) opts.height = ht;
+  const customHeight = parseBoolXmlAttr(node.attrs['customHeight']);
+  if (customHeight !== undefined) opts.customHeight = customHeight;
+  const hidden = parseBoolXmlAttr(node.attrs['hidden']);
+  if (hidden !== undefined) opts.hidden = hidden;
+  const outlineLevel = parseIntegerAttr(node.attrs['outlineLevel']);
+  if (outlineLevel !== undefined) opts.outlineLevel = outlineLevel;
+  const collapsed = parseBoolXmlAttr(node.attrs['collapsed']);
+  if (collapsed !== undefined) opts.collapsed = collapsed;
+  const style = parseIntegerAttr(node.attrs['s']);
+  if (style !== undefined) opts.style = style;
+  if (Object.keys(opts).length === 0) return;
+  ws.rowDimensions.set(rowIdx, makeRowDimension(opts));
 };
