@@ -1,13 +1,15 @@
-// ZIP read layer. Phase-1 §2: in-memory deflate via fflate.unzipSync.
+// ZIP read layer. Per docs/plan/03-foundations.md §2.1.
 //
-// `openZip(source)` materialises every entry's bytes up-front. That keeps
-// the API simple and is fine for the typical xlsx (≤ tens of MB). The
-// streaming path documented in docs/plan/03-foundations.md §2.1 lands when
-// the read-only / write-only worksheet modes do (phase 4).
+// `openZip(source)` walks the central directory once and inflates each
+// entry on demand inside `read(path)` (see `./random-access-reader.ts`).
+// That keeps peak memory at compressed-archive size + per-entry inflate
+// scratch, instead of holding every uncompressed entry resident at once
+// the way the old `unzipSync` shortcut did. The fallback path through
+// fflate's `unzipSync` is preserved for ZIP64 / non-standard archives.
 
-import { unzipSync } from 'fflate';
 import type { XlsxSource } from '../io/source';
 import { OpenXmlIoError, OpenXmlNotImplementedError } from '../utils/exceptions';
+import { openRandomAccessArchive } from './random-access-reader';
 
 const CFB_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
 
@@ -56,48 +58,5 @@ export async function openZip(source: XlsxSource): Promise<ZipArchive> {
     );
   }
 
-  let entries: Record<string, Uint8Array> | undefined;
-  try {
-    entries = unzipSync(bytes);
-  } catch (cause) {
-    throw new OpenXmlIoError('openZip: archive is not a valid zip', { cause });
-  }
-
-  let live = true;
-  const ensureLive = (): Record<string, Uint8Array> => {
-    if (!live || entries === undefined) {
-      throw new OpenXmlIoError('openZip: archive is closed');
-    }
-    return entries;
-  };
-
-  const readEntry = (path: string): Uint8Array => {
-    const e = ensureLive();
-    const found = e[path];
-    if (found === undefined) {
-      throw new OpenXmlIoError(`openZip: no entry at "${path}"`);
-    }
-    return found;
-  };
-
-  return {
-    list(): string[] {
-      const e = ensureLive();
-      return Object.keys(e).sort();
-    },
-    has(path: string): boolean {
-      if (!live || entries === undefined) return false;
-      return Object.hasOwn(entries, path);
-    },
-    read(path: string): Uint8Array {
-      return readEntry(path);
-    },
-    async readAsync(path: string): Promise<Uint8Array> {
-      return readEntry(path);
-    },
-    close(): void {
-      live = false;
-      entries = undefined;
-    },
-  };
+  return openRandomAccessArchive(bytes);
 }
