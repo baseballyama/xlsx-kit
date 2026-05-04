@@ -17,7 +17,7 @@
 
 - [x] **bootstrap**: 計画コミット（`docs:` / 4573 行） — `773ae69`
 - [x] **bootstrap**: TS プロジェクト雛形（`package.json` / `tsconfig.json` / `tsconfig.build.json` / `biome.json` / `.npmrc` / `.nvmrc` / `src/index.ts` placeholder / `THIRD_PARTY_NOTICES.md` / typescript 5.9 + @types/node 22 install / `pnpm typecheck` pass）
-- [ ] **bootstrap**: vitest 設定 + smoke test（`vitest.config.ts` / `tests/phase-0/smoke.test.ts`）
+- [x] **bootstrap**: vitest 設定 + smoke test（vitest 4.1 + @vitest/coverage-v8、`tests/phase-0/smoke.test.ts` で `pnpm test` pass、`pnpm typecheck` pass）
 - [ ] **bootstrap**: tsup 設定（`tsup.config.ts` / `pnpm build` smoke）
 - [ ] **bootstrap**: biome lint 通過（既存ファイルが pass する状態）
 - [ ] **bootstrap**: GitHub Actions CI 雛形（typecheck / lint / test ジョブ）
@@ -52,3 +52,4 @@
 - **クラス禁止ルール**は Biome の標準ルールではなく、コードレビューで都度確認する（カスタム lint プラグインは将来化）。
 - `Object.freeze` を値オブジェクトの make 関数で常用する方針。
 - 受け入れ条件にひっかかったら本ファイル「メモ」に記録、PR タイトルに `(WIP)` を付けて次ターンへ。
+- 内部 import は **拡張子なし**で書く（`moduleResolution: bundler` 前提）。`*.ts` 明示はやめる — tsc 側 `allowImportingTsExtensions` を有効化するとビルド時の挙動も変わるため避けている。
