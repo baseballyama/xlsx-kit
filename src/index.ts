@@ -67,6 +67,8 @@ export {
 // shell. Cell content is filled in by later iterations.
 export type { LoadOptions } from './public/load';
 export { loadWorkbook } from './public/load';
+export type { SaveOptions } from './public/save';
+export { saveWorkbook, workbookToBytes } from './public/save';
 // Schema layer.
 export type { AttrDef, ElementDef, Primitive, Schema } from './schema';
 export { defineSchema, fromTree, toTree } from './schema';

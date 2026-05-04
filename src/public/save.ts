@@ -1,0 +1,157 @@
+// Public `saveWorkbook` entry point. Per docs/plan/05-read-write.md §1.2.
+//
+// **Stage 1 minimum**: emits the bare set of parts a Workbook needs to
+// round-trip through `loadWorkbook`:
+//
+//     [Content_Types].xml
+//     _rels/.rels
+//     xl/workbook.xml
+//     xl/_rels/workbook.xml.rels
+//     xl/worksheets/sheetN.xml ...
+//     xl/styles.xml
+//     xl/sharedStrings.xml             (only when sst is non-empty)
+//
+// docProps / theme / VBA / drawings / charts are reserved for later
+// iterations — load tolerates their absence.
+
+import type { XlsxSink } from '../io/sink';
+import { addDefault, addOverride, makeManifest, manifestToBytes } from '../packaging/manifest';
+import { makeRelationships, type Relationships, relsToBytes } from '../packaging/relationships';
+import { stylesheetToBytes } from '../styles/stylesheet-writer';
+import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-strings';
+import type { Workbook } from '../workbook/workbook';
+import { worksheetToBytes } from '../worksheet/writer';
+import {
+  ARC_CONTENT_TYPES,
+  ARC_ROOT_RELS,
+  ARC_SHARED_STRINGS,
+  ARC_STYLE,
+  ARC_WORKBOOK,
+  ARC_WORKBOOK_RELS,
+  PACKAGE_WORKSHEETS,
+  REL_NS,
+  SHARED_STRINGS_TYPE,
+  SHEET_MAIN_NS,
+  STYLES_TYPE,
+  WORKSHEET_TYPE,
+  XLSX_TYPE,
+} from '../xml/namespaces';
+import { createZipWriter } from '../zip/writer';
+
+export interface SaveOptions {
+  /** Reserved — passes through to the underlying ZIP writer when implemented. */
+  compressionLevel?: number;
+}
+
+/** Convenience: serialise a Workbook to an in-memory `Uint8Array` xlsx. */
+export async function workbookToBytes(wb: Workbook, opts: SaveOptions = {}): Promise<Uint8Array> {
+  const { toBuffer } = await import('../io/node');
+  const sink = toBuffer();
+  await saveWorkbook(wb, sink, opts);
+  return sink.result();
+}
+
+/** Save a workbook through the given sink. Returns once `finalize()` resolves. */
+export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOptions = {}): Promise<void> {
+  const writer = createZipWriter(sink);
+
+  // ---- 1. assemble the per-sheet rels + serialise each worksheet ----------
+  const sst = makeSharedStrings();
+  const sheetEmits: Array<{ id: string; target: string; bytes: Uint8Array }> = [];
+  wb.sheets.forEach((ref, i) => {
+    const target = `worksheets/sheet${i + 1}.xml`;
+    const bytes = worksheetToBytes(ref.sheet, { sharedStrings: sst });
+    sheetEmits.push({ id: `rId${i + 1}`, target, bytes });
+  });
+
+  // ---- 2. workbook rels -- sheets first, then sst (if any), then styles ---
+  // We pre-assigned rIds (rId1..rIdN) to the sheets so workbook.xml's <sheet
+  // r:id> matches. Build the rels list directly rather than going through
+  // appendRel (which auto-allocates ids).
+  const wbRels = makeRelationships();
+  wbRels.rels = sheetEmits.map((e) => ({
+    id: e.id,
+    type: `${REL_NS}/worksheet`,
+    target: e.target,
+  }));
+  if (sst.entries.length > 0) {
+    wbRels.rels.push({
+      id: `rId${wbRels.rels.length + 1}`,
+      type: `${REL_NS}/sharedStrings`,
+      target: 'sharedStrings.xml',
+    });
+  }
+  wbRels.rels.push({
+    id: `rId${wbRels.rels.length + 1}`,
+    type: `${REL_NS}/styles`,
+    target: 'styles.xml',
+  });
+
+  // ---- 3. workbook.xml ----------------------------------------------------
+  const workbookXml = serializeWorkbookXml(
+    wb,
+    sheetEmits.map((e) => e.id),
+  );
+  await writer.addEntry(ARC_WORKBOOK, new TextEncoder().encode(workbookXml));
+  await writer.addEntry(ARC_WORKBOOK_RELS, relsToBytes(wbRels));
+
+  // ---- 4. each worksheet --------------------------------------------------
+  for (let i = 0; i < sheetEmits.length; i++) {
+    const e = sheetEmits[i];
+    if (!e) continue;
+    await writer.addEntry(`${PACKAGE_WORKSHEETS}/sheet${i + 1}.xml`, e.bytes);
+  }
+
+  // ---- 5. styles.xml + sharedStrings.xml (if any) -------------------------
+  await writer.addEntry(ARC_STYLE, stylesheetToBytes(wb.styles));
+  if (sst.entries.length > 0) {
+    await writer.addEntry(ARC_SHARED_STRINGS, sharedStringsToBytes(sst));
+  }
+
+  // ---- 6. root rels -------------------------------------------------------
+  const rootRels: Relationships = {
+    rels: [
+      {
+        id: 'rId1',
+        type: `${REL_NS}/officeDocument`,
+        target: 'xl/workbook.xml',
+      },
+    ],
+  };
+  await writer.addEntry(ARC_ROOT_RELS, relsToBytes(rootRels));
+
+  // ---- 7. [Content_Types].xml --------------------------------------------
+  const manifest = makeManifest();
+  addDefault(manifest, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
+  addDefault(manifest, 'xml', 'application/xml');
+  addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
+  for (let i = 0; i < sheetEmits.length; i++) {
+    addOverride(manifest, `/${PACKAGE_WORKSHEETS}/sheet${i + 1}.xml`, WORKSHEET_TYPE);
+  }
+  addOverride(manifest, `/${ARC_STYLE}`, STYLES_TYPE);
+  if (sst.entries.length > 0) {
+    addOverride(manifest, `/${ARC_SHARED_STRINGS}`, SHARED_STRINGS_TYPE);
+  }
+  await writer.addEntry(ARC_CONTENT_TYPES, manifestToBytes(manifest));
+
+  // ---- 8. close ----------------------------------------------------------
+  await writer.finalize();
+}
+
+/** Serialise the minimum `<workbook><sheets/></workbook>` Excel needs to load a sheet list. */
+function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): string {
+  const parts: string[] = [
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    `<workbook xmlns="${SHEET_MAIN_NS}" xmlns:r="${REL_NS}">`,
+    '<sheets>',
+  ];
+  wb.sheets.forEach((ref, i) => {
+    const stateAttr = ref.state === 'visible' ? '' : ` state="${ref.state}"`;
+    const rId = sheetRIds[i] ?? `rId${i + 1}`;
+    parts.push(`<sheet name="${escapeAttr(ref.sheet.title)}" sheetId="${ref.sheetId}"${stateAttr} r:id="${rId}"/>`);
+  });
+  parts.push('</sheets></workbook>');
+  return parts.join('');
+}
+
+const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
