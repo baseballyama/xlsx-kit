@@ -8,7 +8,15 @@
 
 import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import type { XlsxSink } from '../io/sink';
-import { OpenXmlIoError } from '../utils/exceptions';
+import { OpenXmlIoError, OpenXmlNotImplementedError } from '../utils/exceptions';
+
+// ZIP32 caps the End-of-Central-Directory entry-count fields at 16 bits.
+// fflate's writer doesn't emit a ZIP64 record when this overflows, which
+// would produce an archive that readers truncate to (count % 65536) on
+// the central directory. We surface that as a clear error so callers
+// know to split their archives. xlsx files in the wild are several
+// orders of magnitude below this limit.
+const ZIP32_MAX_ENTRIES = 0xffff;
 
 export interface ZipWriter {
   /**
@@ -75,6 +83,11 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
       }
       if (seen.has(path)) {
         throw new OpenXmlIoError(`createZipWriter: duplicate entry "${path}"`);
+      }
+      if (seen.size >= ZIP32_MAX_ENTRIES) {
+        throw new OpenXmlNotImplementedError(
+          `createZipWriter: archive would exceed the ZIP32 entry limit (${ZIP32_MAX_ENTRIES}). ZIP64 write is not supported by the underlying deflate library; split the archive into multiple files.`,
+        );
       }
       seen.add(path);
       const compress = opts?.compress ?? true;
