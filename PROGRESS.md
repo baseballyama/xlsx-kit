@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ3 (read / write 実装) [04-core-model.md フェーズ2 全 acceptance pass]
-- **次のタスク**: フェーズ3 §7 saveWorkbook 最小骨格。loadWorkbook で読んだ Workbook を `saveWorkbook(wb): Promise<Uint8Array>` で再 zip 化。styles / sharedStrings / worksheets を XML に戻す writer (`stylesheetToBytes` / `worksheetToBytes`)、manifest+rels を再生成。loadWorkbook → saveWorkbook → loadWorkbook で round-trip 等価が確認できるところまで。`empty.xlsx` / `empty-with-styles.xlsx` 単体で OK な最小構成。
+- **次のタスク**: フェーズ3 §6 docProps + theme passthrough。loadWorkbook で `docProps/core.xml` / `app.xml` / `custom.xml` (任意) を読んで `wb.properties` / `wb.appProperties` / `wb.customProperties` に注入、saveWorkbook で書き戻し。`xl/theme/theme1.xml` は Uint8Array でそのまま `wb.themeXml` に保持して passthrough。manifest の Override/Default も対応。これでフェーズ3 acceptance 条件「openpyxl 出力 xlsx を loadWorkbook → 編集 → saveWorkbook で round-trip」に近づく。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -60,7 +60,7 @@
 - [ ] §4 workbook.xml read/write (sheets / defined names / bookViews)
 - [ ] §5 worksheet.xml read/write
 - [ ] §6 docProps + theme passthrough
-- [ ] §7 saveWorkbook
+- [~] §7 saveWorkbook 最小骨格 完了：`src/public/save.ts`。`saveWorkbook(wb, sink)` / `workbookToBytes(wb)` が `[Content_Types].xml` / `_rels/.rels` / `xl/workbook.xml` + `xl/_rels/workbook.xml.rels` / `xl/worksheets/sheetN.xml` / `xl/styles.xml` / `xl/sharedStrings.xml` (sst が空でない時のみ) を順に zip 化。sst は worksheet writer が emit 中に累積し最後に flush (openpyxl と同順)。`src/worksheet/writer.ts` の `serializeWorksheet`/`worksheetToBytes` は number/string (sst dedup)/boolean/error/formula (normal/array/shared/dataTable + cachedValue)/rich-text (flatten) を `<c>` に出力、`<dimension>` 自動算出、formula text は `escapeCellString` + XML escape。`src/styles/stylesheet-writer.ts` の `stylesheetToBytes` は numFmts/fonts/fills/borders/cellStyleXfs/cellXfs を schema + `fillToTree` で書き戻し、空 cellStyleXfs/cellXfs には default `<xf>` を fallback (Excel が reject するため)。Date / Duration cell は §5.5 styleId 連携待ちで throw。`src/index.ts` から `saveWorkbook` / `workbookToBytes` / `SaveOptions` を named export。5 round-trip tests (createWorkbook → setCell mix → workbookToBytes → loadWorkbook) で number/string/bool/formula 値、multi-sheet 順序、stylesheet pool 同一性を確認。`pnpm build` で dist/index.mjs 122 KB。779 tests pass。残：docProps / theme passthrough、Date/Duration cell、SAX streaming writer、defined names / merged cells / drawings 等。
 - [ ] §8 phase-3 受け入れ条件 (openpyxl genuine/*.xlsx を read → write で full round-trip)
 
 ## 1 ターンの流れ
