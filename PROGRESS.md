@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts** 着手準備
-- **次のタスク**: フェーズ6 charts (docs/plan/08-charts.md or 09-charts.md)。Excel が出力する **全 25 chart types** をサポートする方針が user 重要要件 (chartex 含む)。スコープが大きいので最小 stage-1: chart 部品 (`xl/charts/chartN.xml`) の **passthrough binary** + `xl/drawings/drawingN.xml` への参照保持から。worksheet inline では `<drawing r:id>` を emit。実際の chart モデル化 (BarChart / LineChart / etc) は段階的に追加。最初に scaffolding を入れて、その後 chart kind ごとに parser/writer を増やす。
+- **次のタスク**: フェーズ6 §3 続き — **worksheet ↔ drawing wiring** + 単純 BarChart モデル化を始める。`Worksheet.drawing?: Drawing` を追加、saveWorkbook が drawingN.xml を emit + worksheet rels の Type=`{REL_NS}/drawing` rel + worksheet inline `<drawing r:id>` emit + manifest Override (`drawingml.spreadsheetDrawing+xml`)。loadWorkbook で逆方向に。次に最小 BarChart モデル — series / categoryAxis / valueAxis / title — を `xl/charts/chartN.xml` で round-trip。ECMA-376 §17.16 を refer。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -73,6 +73,15 @@
 - [x] §1 worksheet 拡張：**mergedCells** + **sheetView/freezePanes** + **column/row dimensions + sheetFormatPr** 完了。`mergedCells` (8 tests)、`sheetView/freezePanes` (12 tests)、columnDimensions/rowDimensions (`src/worksheet/dimensions.ts`、10 tests): `ColumnDimension { min, max, width, customWidth, hidden, bestFit, outlineLevel, style, collapsed }` / `RowDimension { height, customHeight, hidden, outlineLevel, collapsed, style }`、`Worksheet.columnDimensions: Map<number, ColumnDimension>` / `Worksheet.rowDimensions: Map<number, RowDimension>` / `defaultColumnWidth?` / `defaultRowHeight?`。`getColumnDimension` / `setColumnDimension` / `setColumnWidth` / `hideColumn` / `getRowDimension` / `setRowDimension` / `setRowHeight` / `hideRow` API。reader は `<sheetFormatPr>` の defaults + `<cols><col/></cols>` + `<row>` 属性 (ht/customHeight/hidden/s/outlineLevel/collapsed) を全部復元、writer は `<sheetFormatPr>` を defaults があれば emit、`<cols>` を `columnDimensions` 非空で emit、`<row>` 属性を inline。dimension-only rows (cell なし、height/hidden だけ) も walk の union で round-trip。`empty-with-styles.xlsx` の `<col width="10.7109375" bestFit="1" customWidth="1"/>` + `<sheetFormatPr defaultRowHeight="15"/>` を実機 fixture で確認。817 tests pass。
 - [x] §2-§8 worksheet rich features 完了 (hyperlinks 8 / defined names 8 / dataValidations 7 / autoFilter 7 / Tables 6 / comments 10 / **conditionalFormatting** 6)。**conditionalFormatting** (`src/worksheet/conditional-formatting.ts`): `ConditionalFormattingRule { type, priority, dxfId?, stopIfTrue?, operator?, text?, percent?, bottom?, rank?, aboveAverage?, equalAverage?, stdDev?, timePeriod?, formulas: string[], innerXml? }` 全 18 wire types を flat shape で表現、visual rule kinds (colorScale/dataBar/iconSet) は `innerXml` で raw 子要素を passthrough (cfvo/colors 完全モデル化は将来)。`ConditionalFormatting { sqref: MultiCellRange, rules, pivot? }`。`Worksheet.conditionalFormatting: ConditionalFormatting[]` + `addConditionalFormatting` / `getConditionalFormatting`。reader が `<conditionalFormatting sqref><cfRule .../>` 全部取得、formula 子要素 + visual rule の inner を `serializeXml + TextDecoder` で保持、writer は `</sheetData>` 直後 `<dataValidations>` の前に emit。869 tests pass。フェーズ5 worksheet rich features 全完了 → 次 phase 6 charts。
 - [ ] §3 named ranges / defined names / external links
+
+### フェーズ6: drawing / charts ([08-charts-drawings.md](docs/plan/08-charts-drawings.md))
+
+- [~] §3 anchor + part-level scaffolding 完了：`src/drawing/{anchor,drawing,drawing-xml}.ts`。`DrawingAnchor` (`absolute`/`oneCell`/`twoCell` discriminated union)、`AnchorMarker { col, colOff, row, rowOff }` (0-based)、`Point2D` / `PositiveSize2D` (EMU)、`anchorMarkerFromCellRef('A1')` / `makeAbsoluteAnchor` / `makeOneCellAnchor` / `makeTwoCellAnchor`。`Drawing { items: DrawingItem[] }` — content は `chart` (rels-only) か `unsupported` (placeholder for picture/shape/connector/group)。`parseDrawingXml` / `drawingToBytes` が `xl/drawings/drawingN.xml` を round-trip (anchor の document order を保持、`<c:chart r:id>` から rId 抽出)。9 tests pass。878 total。残：worksheet ↔ drawing wiring (load/save)、画像、ChartML フル実装、cfvo/colors/3D等 DrawingML primitive。
+- [ ] §2 image / loadImage
+- [ ] §4 DrawingML primitives (colors / fill / line / effect / geometry / text / shape-properties)
+- [ ] §5 ChartML フル実装 (chartSpace / plotArea / 各 chart kind / series / data point / labels / trendline / errorBars / axes / legend / title / 3D)
+- [ ] §6 chartex namespace の 8 種 (Sunburst / Treemap / Waterfall / Histogram / Pareto / Funnel / BoxWhisker / Map)
+- [ ] §7 受け入れ条件
 
 ## 1 ターンの流れ
 
