@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §3.8 DifferentialStyle (DXF)。`DifferentialStyle = Partial<{ font, fill, border, alignment, protection, numberFormat }>` で条件付き書式・Table style から参照。`addDxf(ss, dxf): number` を Stylesheet 拡張で実装、stableStringify 経由 dedup。Schema (DXF はネスト要素なので既存 Schema layer で対応可)。続けて §3.6 cell-style bridge は Workbook 接続後（§4 と同時）。Accent1-6 + 20/40/60% の built-in は phase 6 に近づいてから補完。
+- **次のタスク**: フェーズ2 §2 Cell モデル + §4 Workbook / Worksheet データ。Cell は plain object（`{ row, col, value, styleId }`）で `makeCell` / `getCoordinate` / `setCellValue` / `bindValue` (型推論) / `setFormula` / `setArrayFormula` / `setSharedFormula`。Workbook はプール (Stylesheet) を保持しつつ Worksheet 配列、Worksheet は `rows: Map<rowIndex, Map<colIndex, Cell>>` の sparse 構造で `getCell` / `setCell` / `appendRow` / `iterRows` / `mergeCells` / `setColumnWidth` / `setRowHeight` 等。続いて §4.5 cell-range / multi-cell-range、§5 Formula tokenizer / translator、§6 JSON round-trip テスト。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -42,7 +42,7 @@
 - [x] §3.4 Stylesheet (プール + dedup 完了)：`utils/stable-stringify.ts` で順序非依存 JSON 正規化、`Stylesheet` 型 (fonts/fills/borders/numFmts/cellXfs/cellStyleXfs + 各 _IdByKey 内部 dedup map)、`makeStylesheet` は Excel 必須 default (DEFAULT_FONT / DEFAULT_EMPTY_FILL + DEFAULT_GRAY_FILL / DEFAULT_BORDER) を pre-populate、`addFont` / `addFill` / `addBorder` / `addNumFmt` / `addCellXf` / `addCellStyleXf` は idempotent (1000× 同値 add → 1 entry)、numFmt は built-in code → canonical id、custom code は 164 から自動採番、CellXf は ref 範囲チェック (font/fill/border/xfId) + insertion-order 非依存 dedup。`defaultCellXf()` / `getCustomNumFmts()` ヘルパ。434 tests pass。
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
 - [~] §3.7 Built-in NamedStyles (curated subset 完了：`NamedStyle` 型 + `addNamedStyle` (Stylesheet で font/fill/border/numFmt を pool に登録、apply* flags 付きで cellStyleXfs に CellXf を allocate、name → xfId を idempotent に dedup)、`StylesheetNamedStyle` 内部表現、`Stylesheet.namedStyles` / `_namedStyleByName` フィールド追加。`BUILTIN_NAMED_STYLES` は Excel "Cell Styles" gallery のうち最頻の 23 entries (Normal / Good / Bad / Neutral / Calculation / Check Cell / Linked Cell / Note / Warning Text / Input / Output / Explanatory Text / Title / Headline 1-4 / Total / Comma / Comma [0] / Currency / Currency [0] / Percent / Hyperlink / Followed Hyperlink) を frozen Record で提供、`ensureBuiltinStyle(ss, name): xfId` で登録。447 tests pass。残：Accent1-6 + 20/40/60% variants は将来補完)
-- [ ] §3.8 DifferentialStyle (DXF)
+- [x] §3.8 DifferentialStyle (DXF) 完了：`DifferentialStyle` (Partial of font/fill/border/alignment/protection/numFmt の plain object)、`makeDifferentialStyle` で freeze、`addDxf(ss, dxf): number` は `dxfs` / `_dxfIdByKey` を Stylesheet に lazy 追加、stableStringify で insertion-order 非依存 dedup、`getDxfs(ss)` で read-only access。`DifferentialStyleSchema` は font/numFmt/fill (raw passthrough)/alignment/border/protection の object 構成。453 tests pass。
 - [ ] §4 Workbook / Worksheet データモデル
 - [ ] §4.5 cell-range / multi-cell-range
 - [ ] §5 Formula tokenizer + translator
