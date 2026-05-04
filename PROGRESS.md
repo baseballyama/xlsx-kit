@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ3 (read / write 実装) [04-core-model.md フェーズ2 全 acceptance pass]
-- **次のタスク**: フェーズ3 §3 sharedStrings.xml read/write。`xl/sharedStrings.xml` の `<sst><si>...<t>text</t>...</si>...</sst>` を SAX iterparse で配列に展開、loadWorkbook で読んで worksheet reader に渡せるよう wiring。inline rich text (`<r><rPr>...<t>`) は flatten + 後で richText option で原型保存。write は openpyxl `writer/strings.py` 形式 (sst dedup を Map で構築、worksheet write 時に `t="s"` index 解決)。
+- **次のタスク**: フェーズ3 §2 styles.xml read。`xl/styles.xml` の `<fonts><font>...</font></fonts>` `<fills>` `<borders>` `<numFmts>` `<cellStyleXfs>` `<cellXfs>` `<cellStyles>` `<dxfs>` を読み、Stylesheet pool / cellXfs 配列 / cellStyleXfs 配列に復元。`addFont/addFill/addBorder/addNumFmt/addCellXf/addCellStyleXf` を経由するが、ID は XML の登場順を保つ必要があるので "load mode" で順番付き push を許容する内部経路を用意。loadWorkbook で読み込んで Workbook.styles に注入。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -56,7 +56,7 @@
 - [~] §1 全体フロー：loadWorkbook minimum skeleton 完了 (`src/public/load.ts`)。`openZip` → `[Content_Types].xml` Manifest → root rels の `officeDocument` rel から workbook part path 解決 → `xl/workbook.xml` の `<sheets>/<sheet>` を `parseSheetEntries` で `{ name, sheetId, rId, state }` に → `xl/_rels/workbook.xml.rels` を resolve して各 sheet の part path を確認 → §5 で実装した `parseWorksheetXml` でセル内容を読み込み、Workbook に push (sheetId は XML から保持)。`resolveRelTarget` は `/`-anchored / 相対 / `..` collapse をカバー。openpyxl genuine/empty.xlsx (3 sheets) で round-trip 確認、`Content_Types` 欠落 archive で reject。`src/index.ts` から `loadWorkbook` / `LoadOptions` を named export。残：styles / sharedStrings / theme / docProps / VBA。
 - [~] §5 worksheet.xml read：`src/worksheet/reader.ts` の `parseWorksheetXml(bytes, title, ctx)` (DOM-based stage-1)。`<sheetData>/<row>/<c>` を walk して `t="n"|"s"|"b"|"e"|"str"|"inlineStr"` の全 6 種を Cell に復元、`<f>` は normal/array/shared/dataTable に分岐 — shared formula は origin の `{coord, formula}` を `Map<si, ...>` にキャッシュし、後続 reference は `translateFormula(=formula, origin, {dest})` で展開 (OOXML は formula 文字列に `=` を持たないので prefix を付け足してから渡し、結果から strip する)。`<is>/<t>` のリッチ inline string は run concat。@r 欠落セルは next-col fallback、`<c s="N">` の styleId は素通し。752 tests pass。残：SAX iterparse 化 (perf 受け入れ条件 1M cells / 10s)、dimension/sheetView/mergeCells/cols 等の構造、style 連携 (date 検出など)。
 - [ ] §2 styles.xml read/write
-- [ ] §3 sharedStrings.xml read/write
+- [~] §3/§4 sharedStrings.xml read/write 完了：`src/workbook/shared-strings.ts`。`SharedStringsTable = { entries: string[], index: Map<string, number> }`。read: `parseSharedStringsXml(bytes)` は `<sst><si>` を slot 単位で保持 (重複 `<si>` も index で保持、`t="s"` ref は slot 参照で text 同値ではないため)、`<r>/<t>` rich runs は stage-1 flatten + `unescapeCellString` で `_xHHHH_` 復号。write: `addSharedString(table, value)` は O(1) 冪等、`serializeSharedStrings`/`sharedStringsToBytes` は `<sst count uniqueCount>` + 1 `<si><t>` per slot、`<` `>` `&` escape + 制御文字の `_xHHHH_` re-escape + 端 whitespace で `xml:space="preserve"` 自動付与。loadWorkbook が `xl/sharedStrings.xml` (or rels の sharedStrings entry) を読んで `parseWorksheetXml` に渡し、`empty-with-styles.xlsx` の A1 `t="s"` → "TEST HERE" を fixture で確認。765 tests pass。残：rich-text 完全 fidelity (RichText 型での round-trip)。
 - [ ] §4 workbook.xml read/write (sheets / defined names / bookViews)
 - [ ] §5 worksheet.xml read/write
 - [ ] §6 docProps + theme passthrough
