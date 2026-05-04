@@ -12,6 +12,7 @@ import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
+import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
 
 export interface Worksheet {
@@ -49,6 +50,8 @@ export interface Worksheet {
   defaultColumnWidth?: number;
   /** Default row height (points) when not overridden by a row dimension. */
   defaultRowHeight?: number;
+  /** Hyperlinks. External URLs round-trip via worksheet rels; internal jumps stay inline. */
+  hyperlinks: Hyperlink[];
 }
 
 /** Build a Worksheet shell. */
@@ -64,6 +67,7 @@ export function makeWorksheet(title: string): Worksheet {
     views: [],
     columnDimensions: new Map(),
     rowDimensions: new Map(),
+    hyperlinks: [],
   };
 }
 
@@ -373,4 +377,38 @@ export function setRowHeight(ws: Worksheet, row: number, height: number): RowDim
 export function hideRow(ws: Worksheet, row: number): RowDimension {
   const existing = getRowDimension(ws, row);
   return setRowDimension(ws, row, { ...existing, hidden: true });
+}
+
+// ---- hyperlinks -----------------------------------------------------------
+
+/**
+ * Replace any prior hyperlink on the same `ref` with the given options.
+ * Pass `{ target }` for an external URL, `{ location }` for an internal
+ * jump, or both. Returns the resulting Hyperlink record.
+ */
+export function setHyperlink(
+  ws: Worksheet,
+  ref: string,
+  opts: { target?: string; location?: string; display?: string; tooltip?: string },
+): Hyperlink {
+  if (opts.target === undefined && opts.location === undefined) {
+    throw new OpenXmlSchemaError('setHyperlink: one of target / location is required');
+  }
+  removeHyperlink(ws, ref);
+  const hl = makeHyperlink({ ref, ...opts });
+  ws.hyperlinks.push(hl);
+  return hl;
+}
+
+/** Remove the hyperlink registered against `ref`. Returns true if anything was removed. */
+export function removeHyperlink(ws: Worksheet, ref: string): boolean {
+  const i = ws.hyperlinks.findIndex((h) => h.ref === ref);
+  if (i < 0) return false;
+  ws.hyperlinks.splice(i, 1);
+  return true;
+}
+
+/** Look up a hyperlink by its ref. */
+export function getHyperlink(ws: Worksheet, ref: string): Hyperlink | undefined {
+  return ws.hyperlinks.find((h) => h.ref === ref);
 }

@@ -16,15 +16,19 @@ import {
   setSharedFormula,
 } from '../cell/cell';
 import { translateFormula } from '../formula/translate';
+import type { Relationships } from '../packaging/relationships';
+import { findById } from '../packaging/relationships';
 import { coordinateToTuple, tupleToCoordinate } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { ERROR_CODES } from '../utils/inference';
-import { SHEET_MAIN_NS } from '../xml/namespaces';
+import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import { parseRange } from './cell-range';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
+import type { Hyperlink } from './hyperlinks';
+import { makeHyperlink } from './hyperlinks';
 import type { Pane, PaneState, PaneType, Selection, SheetView, SheetViewMode } from './views';
 import { makeSheetView } from './views';
 import { makeWorksheet, setCell, type Worksheet } from './worksheet';
@@ -46,11 +50,15 @@ const SELECTION_TAG = `{${SHEET_MAIN_NS}}selection`;
 const COLS_TAG = `{${SHEET_MAIN_NS}}cols`;
 const COL_TAG = `{${SHEET_MAIN_NS}}col`;
 const SHEET_FORMAT_PR_TAG = `{${SHEET_MAIN_NS}}sheetFormatPr`;
+const HYPERLINKS_TAG = `{${SHEET_MAIN_NS}}hyperlinks`;
+const HYPERLINK_TAG = `{${SHEET_MAIN_NS}}hyperlink`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
   /** Resolved shared-strings table. Pass `[]` when no sst is present. */
   sharedStrings: ReadonlyArray<string>;
+  /** This worksheet's `_rels/sheetN.xml.rels`. Used to resolve external hyperlink targets. */
+  rels?: Relationships;
 }
 
 /** Per-worksheet state for shared-formula expansion. */
@@ -125,6 +133,14 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (sheetViewsEl) {
     for (const v of findChildren(sheetViewsEl, SHEET_VIEW_TAG)) {
       ws.views.push(parseSheetView(v));
+    }
+  }
+
+  // <hyperlinks> — relations to external URLs come from the worksheet rels.
+  const hyperlinksEl = findChild(root, HYPERLINKS_TAG);
+  if (hyperlinksEl) {
+    for (const h of findChildren(hyperlinksEl, HYPERLINK_TAG)) {
+      ws.hyperlinks.push(parseHyperlink(h, ctx.rels));
     }
   }
   return ws;
@@ -439,6 +455,22 @@ const parseColumnDimension = (node: XmlNode): ColumnDimension => {
   if (collapsed !== undefined) opts.collapsed = collapsed;
   // makeColumnDimension fills min=col=max; rebuild with both range ends.
   return { ...makeColumnDimension(min, opts), max };
+};
+
+const parseHyperlink = (node: XmlNode, rels: Relationships | undefined): Hyperlink => {
+  const ref = node.attrs['ref'];
+  if (!ref) throw new OpenXmlSchemaError('worksheet: <hyperlink> missing @ref');
+  const ridAttr = node.attrs[`{${REL_NS}}id`];
+  const opts: Partial<Hyperlink> = { ref };
+  if (ridAttr) {
+    opts.rId = ridAttr;
+    const rel = rels ? findById(rels, ridAttr) : undefined;
+    if (rel) opts.target = rel.target;
+  }
+  if (node.attrs['location']) opts.location = node.attrs['location'];
+  if (node.attrs['tooltip']) opts.tooltip = node.attrs['tooltip'];
+  if (node.attrs['display']) opts.display = node.attrs['display'];
+  return makeHyperlink(opts as Hyperlink);
 };
 
 const maybeRecordRowDimension = (ws: Worksheet, node: XmlNode, rowIdx: number): void => {

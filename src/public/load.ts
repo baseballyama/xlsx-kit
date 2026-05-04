@@ -265,7 +265,12 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     if (!archive.has(sheetPath)) {
       throw new OpenXmlSchemaError(`loadWorkbook: sheet part "${sheetPath}" not found in archive`);
     }
-    const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, { sharedStrings: sst });
+    const sheetRelsPath = relsPathFor(sheetPath);
+    const sheetRels = archive.has(sheetRelsPath) ? relsFromBytes(archive.read(sheetRelsPath)) : undefined;
+    const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, {
+      sharedStrings: sst,
+      ...(sheetRels ? { rels: sheetRels } : {}),
+    });
     const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
     wb.sheets.push(ref);
   }

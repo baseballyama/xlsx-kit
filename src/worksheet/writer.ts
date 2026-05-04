@@ -12,6 +12,7 @@
 // callers noticing.
 
 import { type Cell, type CellValue, type ExcelErrorCode, type FormulaValue, getCoordinate } from '../cell/cell';
+import type { Relationships } from '../packaging/relationships';
 import { escapeCellString } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
@@ -19,12 +20,21 @@ import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { rangeToString } from './cell-range';
 import type { ColumnDimension, RowDimension } from './dimensions';
+import type { Hyperlink } from './hyperlinks';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
+
+const HYPERLINK_REL_TYPE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink';
 
 export interface WorksheetWriteContext {
   /** Accumulator the writer mutates as it emits string cells. */
   sharedStrings: SharedStringsTable;
+  /**
+   * Worksheet rels collector. The writer pushes a rel per external
+   * hyperlink, allocating ids `rId1..rIdN`. Caller emits the resulting
+   * relationships file alongside the worksheet part.
+   */
+  rels?: Relationships;
 }
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
@@ -81,6 +91,9 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
       parts.push(`<mergeCell ref="${rangeToString(range)}"/>`);
     }
     parts.push('</mergeCells>');
+  }
+  if (ws.hyperlinks.length > 0) {
+    parts.push(serializeHyperlinks(ws.hyperlinks, ctx.rels));
   }
   parts.push('</worksheet>');
   return parts.join('');
@@ -300,6 +313,39 @@ const serializeColumnDimension = (dim: ColumnDimension): string => {
   if (dim.outlineLevel !== undefined) attrs += ` outlineLevel="${dim.outlineLevel}"`;
   if (dim.collapsed) attrs += ' collapsed="1"';
   return `<col${attrs}/>`;
+};
+
+const serializeHyperlinks = (links: ReadonlyArray<Hyperlink>, rels: Relationships | undefined): string => {
+  const parts: string[] = ['<hyperlinks>'];
+  for (const link of links) {
+    let attrs = ` ref="${escapeXmlAttr(link.ref)}"`;
+    if (link.target !== undefined) {
+      // Allocate or reuse a rels entry. We need rels to host external URLs;
+      // when ctx.rels is missing we fall back to inlining via location only.
+      if (rels) {
+        let rId = link.rId;
+        if (!rId) {
+          rId = `rId${rels.rels.length + 1}`;
+        }
+        // Add rel only if no entry already targets this URL (conservative).
+        if (!rels.rels.some((r) => r.id === rId)) {
+          rels.rels.push({
+            id: rId,
+            type: HYPERLINK_REL_TYPE,
+            target: link.target,
+            targetMode: 'External',
+          });
+        }
+        attrs += ` r:id="${escapeXmlAttr(rId)}"`;
+      }
+    }
+    if (link.location !== undefined) attrs += ` location="${escapeXmlAttr(link.location)}"`;
+    if (link.tooltip !== undefined) attrs += ` tooltip="${escapeXmlAttr(link.tooltip)}"`;
+    if (link.display !== undefined) attrs += ` display="${escapeXmlAttr(link.display)}"`;
+    parts.push(`<hyperlink${attrs}/>`);
+  }
+  parts.push('</hyperlinks>');
+  return parts.join('');
 };
 
 const serializeRowDimensionAttrs = (dim: RowDimension): string => {

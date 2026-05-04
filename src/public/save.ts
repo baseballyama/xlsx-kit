@@ -74,11 +74,21 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
 
   // ---- 1. assemble the per-sheet rels + serialise each worksheet ----------
   const sst = makeSharedStrings();
-  const sheetEmits: Array<{ id: string; target: string; bytes: Uint8Array }> = [];
+  interface SheetEmit {
+    id: string;
+    target: string;
+    bytes: Uint8Array;
+    /** Per-sheet rels — populated only if the worksheet has hyperlinks etc. */
+    rels?: Relationships;
+  }
+  const sheetEmits: SheetEmit[] = [];
   wb.sheets.forEach((ref, i) => {
     const target = `worksheets/sheet${i + 1}.xml`;
-    const bytes = worksheetToBytes(ref.sheet, { sharedStrings: sst });
-    sheetEmits.push({ id: `rId${i + 1}`, target, bytes });
+    const sheetRels = makeRelationships();
+    const bytes = worksheetToBytes(ref.sheet, { sharedStrings: sst, rels: sheetRels });
+    const emit: SheetEmit = { id: `rId${i + 1}`, target, bytes };
+    if (sheetRels.rels.length > 0) emit.rels = sheetRels;
+    sheetEmits.push(emit);
   });
 
   // ---- 2. workbook rels -- sheets first, then sst (if any), then styles ---
@@ -119,11 +129,14 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   await writer.addEntry(ARC_WORKBOOK, new TextEncoder().encode(workbookXml));
   await writer.addEntry(ARC_WORKBOOK_RELS, relsToBytes(wbRels));
 
-  // ---- 4. each worksheet --------------------------------------------------
+  // ---- 4. each worksheet (and its rels file when present) ----------------
   for (let i = 0; i < sheetEmits.length; i++) {
     const e = sheetEmits[i];
     if (!e) continue;
     await writer.addEntry(`${PACKAGE_WORKSHEETS}/sheet${i + 1}.xml`, e.bytes);
+    if (e.rels) {
+      await writer.addEntry(`${PACKAGE_WORKSHEETS}/_rels/sheet${i + 1}.xml.rels`, relsToBytes(e.rels));
+    }
   }
 
   // ---- 5. styles.xml + sharedStrings.xml (if any) -------------------------
