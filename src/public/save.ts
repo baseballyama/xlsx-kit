@@ -15,6 +15,7 @@
 // iterations — load tolerates their absence.
 
 import { chartToBytes } from '../chart/chart-xml';
+import { chartExToBytes } from '../chart/cx/chartex-xml';
 import type { Drawing, DrawingItem } from '../drawing/drawing';
 import { drawingToBytes } from '../drawing/drawing-xml';
 import type { XlsxSink } from '../io/sink';
@@ -42,6 +43,7 @@ import {
   ARC_THEME,
   ARC_WORKBOOK,
   ARC_WORKBOOK_RELS,
+  CHARTEX_TYPE,
   CPROPS_TYPE,
   PACKAGE_WORKSHEETS,
   PKG_REL_NS,
@@ -123,7 +125,7 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   let nextDrawingId = 1;
   // Chart parts share a workbook-global counter so xl/charts/chartN.xml
   // ids stay unique.
-  const chartEmits: Array<{ id: number; bytes: Uint8Array }> = [];
+  const chartEmits: Array<{ id: number; bytes: Uint8Array; isCx: boolean }> = [];
   let nextChartId = 1;
   wb.sheets.forEach((ref, i) => {
     const target = `worksheets/sheet${i + 1}.xml`;
@@ -178,7 +180,7 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       const drawingRels = makeRelationships();
       const itemsForXml: DrawingItem[] = [];
       for (const item of drawing.items) {
-        if (item.content.kind === 'chart' && item.content.chart.space) {
+        if (item.content.kind === 'chart' && (item.content.chart.space || item.content.chart.cxSpace)) {
           const chartId = nextChartId++;
           const chartRId = `rId${drawingRels.rels.length + 1}`;
           drawingRels.rels.push({
@@ -186,7 +188,19 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
             type: CHART_REL,
             target: `../charts/chart${chartId}.xml`,
           });
-          chartEmits.push({ id: chartId, bytes: chartToBytes(item.content.chart.space) });
+          if (item.content.chart.cxSpace) {
+            chartEmits.push({
+              id: chartId,
+              bytes: chartExToBytes(item.content.chart.cxSpace),
+              isCx: true,
+            });
+          } else if (item.content.chart.space) {
+            chartEmits.push({
+              id: chartId,
+              bytes: chartToBytes(item.content.chart.space),
+              isCx: false,
+            });
+          }
           itemsForXml.push({
             anchor: item.anchor,
             content: { kind: 'chart', chart: { rId: chartRId } },
@@ -355,7 +369,7 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     addOverride(manifest, `/xl/drawings/drawing${d.id}.xml`, DRAWING_TYPE);
   }
   for (const c of chartEmits) {
-    addOverride(manifest, `/xl/charts/chart${c.id}.xml`, CHART_TYPE);
+    addOverride(manifest, `/xl/charts/chart${c.id}.xml`, c.isCx ? CHARTEX_TYPE : CHART_TYPE);
   }
   if (wb.properties) addOverride(manifest, `/${ARC_CORE}`, CORE_PROPS_TYPE);
   if (wb.appProperties) addOverride(manifest, `/${ARC_APP}`, EXT_PROPS_TYPE);

@@ -145,6 +145,7 @@ export const STYLES_TYPE = fmt(SPREADSHEET_TPL, 'styles');
 export const CHARTSHEET_TYPE = fmt(SPREADSHEET_TPL, 'chartsheet');
 export const DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.drawing+xml';
 export const CHART_TYPE = 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml';
+export const CHARTEX_TYPE = 'application/vnd.ms-office.chartex+xml';
 export const CHARTSHAPE_TYPE = 'application/vnd.openxmlformats-officedocument.drawingml.chartshapes+xml';
 export const THEME_TYPE = 'application/vnd.openxmlformats-officedocument.theme+xml';
 export const CPROPS_TYPE = 'application/vnd.openxmlformats-officedocument.custom-properties+xml';

@@ -11,6 +11,7 @@
 // phase 3 a stable scaffolding to layer onto.
 
 import { parseChartXml } from '../chart/chart-xml';
+import { isChartExBytes, parseChartExXml } from '../chart/cx/chartex-xml';
 import { parseDrawingXml } from '../drawing/drawing-xml';
 import type { XlsxSource } from '../io/source';
 import { corePropsFromBytes } from '../packaging/core';
@@ -336,7 +337,12 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
               if (!chartRel) continue;
               const chartPath = resolveRelTarget(dPath, chartRel.target);
               if (archive.has(chartPath)) {
-                item.content.chart.space = parseChartXml(archive.read(chartPath));
+                const chartBytes = archive.read(chartPath);
+                if (isChartExBytes(chartBytes)) {
+                  item.content.chart.cxSpace = parseChartExXml(chartBytes);
+                } else {
+                  item.content.chart.space = parseChartXml(chartBytes);
+                }
               }
             }
           }
