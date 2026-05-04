@@ -19,6 +19,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs"
+    },
+    "./streaming": {
+      "types": "./dist/streaming/index.d.ts",
+      "import": "./dist/streaming.mjs"
     }
   },
   "scripts": {
@@ -36,10 +40,12 @@
     "doc:api": "typedoc"
   },
   "devDependencies": {
+    "@size-limit/preset-small-lib": "^12.1.0",
     "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "^4.1.5",
     "fast-check": "^3.23.2",
     "oxlint": "^1.62.0",
+    "size-limit": "^12.1.0",
     "tsdown": "^0.21.10",
     "typescript": "^5.7.2",
     "vitest": "^4.1.5"

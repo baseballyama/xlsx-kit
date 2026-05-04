@@ -1,0 +1,14 @@
+[
+  {
+    "name": "openxml-js (full library)",
+    "path": "dist/index.mjs",
+    "import": "*",
+    "limit": "120 KB"
+  },
+  {
+    "name": "openxml-js/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
+    "path": "dist/streaming.mjs",
+    "import": "*",
+    "limit": "80 KB"
+  }
+]

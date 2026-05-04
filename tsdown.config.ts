@@ -1,16 +1,21 @@
 import { defineConfig } from 'tsdown';
 
-// Bootstrap-stage tsdown config: a single ESM entry from src/index.
+// Two public subpath entries:
+// - `openxml-js`           — full library surface
+// - `openxml-js/streaming` — read-only iter + write-only append, gated
+//                            at ≤80KB min+gz by size-limit (docs/plan/
+//                            06-streaming.md acceptance §3.4).
 //
-// The eventual matrix (per docs/plan/11-build-publish.md §1.3) builds many
-// subpath entries (read / write / streaming / styles / chart / chart-extended
-// / drawing / pivot / schema / io-node / io-browser) with node and browser
-// platform variants. That config lands when we have actual subpackage entries
-// to point it at — not before. Keeping the surface narrow now means a CI
-// build smoke can pass with no dead exports.
+// The eventual matrix (per docs/plan/11-build-publish.md §1.3) adds further
+// subpath entries (read / write / styles / chart / chart-extended / drawing /
+// pivot / schema / io-node / io-browser) with node and browser platform
+// variants. Those land alongside the size gates that justify them.
 
 export default defineConfig({
-  entry: { index: 'src/index.ts' },
+  entry: {
+    index: 'src/index.ts',
+    streaming: 'src/streaming/index.ts',
+  },
   format: ['esm'],
   target: 'es2022',
   platform: 'neutral',
