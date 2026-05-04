@@ -5,8 +5,8 @@
 
 ## カレント
 
-- **フェーズ**: フェーズ3 (read / write 実装) [04-core-model.md フェーズ2 全 acceptance pass]
-- **次のタスク**: フェーズ3 §8 受け入れ条件。`tests/phase-3/genuine-roundtrip.test.ts` で openpyxl genuine fixtures (empty.xlsx / empty-with-styles.xlsx / sample.xlsx) を loadWorkbook → workbookToBytes → loadWorkbook して、cell value / styleId / sheet titles / themeXml が完全一致することを確認。失敗ケースは Date / Duration / merged cells など phase 5 へ deferred の機能なので、その時は scope 説明 + skip でも可。完了次第 phase 4 (streaming) または phase 5 (rich features) へ。
+- **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
+- **次のタスク**: フェーズ5 worksheet 追加機能の最初に **mergedCells**。`docs/plan/04-core-model.md` §4 "残：mergedCells" を解消する。`Worksheet.mergedCells: MultiCellRange` を追加 (cell-range は既存)、`mergeCells(ws, range)` / `unmergeCells(ws, range)` / `iterMergedRanges(ws)` の API。worksheet reader / writer の `<mergeCells><mergeCell ref="..."/></mergeCells>` 対応。範囲の重なり検証 + 上限チェック。merged 範囲内の top-left 以外を openpyxl 互換の MergedCell placeholder で初期化するかは決める。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -61,7 +61,17 @@
 - [ ] §5 worksheet.xml read/write
 - [x] §6 docProps + theme passthrough 完了：`Workbook.themeXml: Uint8Array` フィールドを追加。loadWorkbook が `docProps/core.xml` (corePropsFromBytes) / `docProps/app.xml` (extendedPropsFromBytes) / `docProps/custom.xml` (customPropsFromBytes) を読んで `wb.properties` / `wb.appProperties` / `wb.customProperties` に、`xl/theme/theme1.xml` は raw bytes で `wb.themeXml` に保持。saveWorkbook が逆向きに、theme rel は `workbook.xml.rels` に、core/app/custom rels は `_rels/.rels` に追加 (CORE_PROPS_REL は PKG_REL_NS、ext/custom/theme は REL_NS namespace)、対応する Override Content-Type も manifest に登録。`empty.xlsx` で theme 6KB が byte-for-byte 等価、core/app props が round-trip、空 Workbook では何も emit しないことを 5 tests で確認。784 tests pass。
 - [~] §7 saveWorkbook 最小骨格 完了：`src/public/save.ts`。`saveWorkbook(wb, sink)` / `workbookToBytes(wb)` が `[Content_Types].xml` / `_rels/.rels` / `xl/workbook.xml` + `xl/_rels/workbook.xml.rels` / `xl/worksheets/sheetN.xml` / `xl/styles.xml` / `xl/sharedStrings.xml` (sst が空でない時のみ) を順に zip 化。sst は worksheet writer が emit 中に累積し最後に flush (openpyxl と同順)。`src/worksheet/writer.ts` の `serializeWorksheet`/`worksheetToBytes` は number/string (sst dedup)/boolean/error/formula (normal/array/shared/dataTable + cachedValue)/rich-text (flatten) を `<c>` に出力、`<dimension>` 自動算出、formula text は `escapeCellString` + XML escape。`src/styles/stylesheet-writer.ts` の `stylesheetToBytes` は numFmts/fonts/fills/borders/cellStyleXfs/cellXfs を schema + `fillToTree` で書き戻し、空 cellStyleXfs/cellXfs には default `<xf>` を fallback (Excel が reject するため)。Date / Duration cell は §5.5 styleId 連携待ちで throw。`src/index.ts` から `saveWorkbook` / `workbookToBytes` / `SaveOptions` を named export。5 round-trip tests (createWorkbook → setCell mix → workbookToBytes → loadWorkbook) で number/string/bool/formula 値、multi-sheet 順序、stylesheet pool 同一性を確認。`pnpm build` で dist/index.mjs 122 KB。779 tests pass。残：docProps / theme passthrough、Date/Duration cell、SAX streaming writer、defined names / merged cells / drawings 等。
-- [ ] §8 phase-3 受け入れ条件 (openpyxl genuine/*.xlsx を read → write で full round-trip)
+- [x] §8 phase-3 受け入れ条件 完了：`tests/phase-3/genuine-roundtrip.test.ts` (3 tests)。openpyxl `empty.xlsx` / `empty-with-styles.xlsx` / `sample.xlsx` を `loadWorkbook → workbookToBytes → loadWorkbook` で round-trip し、(1) sheet title / sheetId が全一致、(2) `iterRows` で `{row, col, value, styleId}` を per-sheet snapshot して deep equality、(3) `Sheet3 - Formulas` の `D2` cross-sheet formula `'Sheet2 - Numbers'!D5` (cachedValue=5) が formula kind + 文字列 + cached value で round-trip、(4) `theme.xml` の byteLength が一致 (byte-for-byte equality は §6 で確認済み)。`mac_date` / `sample.xlsx Sheet4 - Dates` の Date セルは現状 numeric serial のまま round-trip (§5.5 styleId 連携で Date 化は phase 5 へ deferred)。787 tests pass、`pnpm typecheck` / `pnpm lint` clean、`pnpm build` 122 KB。
+
+### フェーズ4: streaming ([06-streaming.md](docs/plan/06-streaming.md))
+
+- [ ] (perf bench で必要性を裏付けてから着手)
+
+### フェーズ5: rich features ([07-rich-features.md](docs/plan/07-rich-features.md))
+
+- [ ] §1 mergedCells / freezePanes / dimensions / sheetView 等の worksheet 拡張
+- [ ] §2 hyperlinks / comments / dataValidations / conditionalFormatting / autoFilter / tables
+- [ ] §3 named ranges / defined names / external links
 
 ## 1 ターンの流れ
 
