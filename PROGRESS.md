@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
-- **次のタスク**: フェーズ5 §2 — **hyperlinks**。`Worksheet.hyperlinks: Hyperlink[]` を追加 (`{ ref, target, targetMode?, location?, tooltip?, display? }`)、`addHyperlink(ws, ref, target, opts?)` / `removeHyperlink(ws, ref)` の API。reader が `<hyperlinks><hyperlink ref="..." r:id="..." location tooltip display/></hyperlinks>` を読み、worksheet rels から target を解決して Hyperlink list に。writer は worksheet rels に Hyperlink rel を allocate して `<hyperlinks>` block を emit。external → relationships を介し、internal (`#Sheet!A1`) は `location` のみ。
+- **次のタスク**: フェーズ5 §3 — **defined names** (workbook-scope + sheet-scope)。`Workbook.definedNames: DefinedName[]` を追加 (`{ name, value, scope?, hidden?, comment? }`)、`<workbook><definedNames><definedName name=… localSheetId=…>='Sheet 1'!$A$1:$B$10</definedName></definedNames>` の reader/writer 対応。print_area / print_titles の特殊 name (`_xlnm.Print_Area` / `_xlnm.Print_Titles`) はそのまま value に格納するだけで OK。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -70,7 +70,7 @@
 ### フェーズ5: rich features ([07-rich-features.md](docs/plan/07-rich-features.md))
 
 - [x] §1 worksheet 拡張：**mergedCells** + **sheetView/freezePanes** + **column/row dimensions + sheetFormatPr** 完了。`mergedCells` (8 tests)、`sheetView/freezePanes` (12 tests)、columnDimensions/rowDimensions (`src/worksheet/dimensions.ts`、10 tests): `ColumnDimension { min, max, width, customWidth, hidden, bestFit, outlineLevel, style, collapsed }` / `RowDimension { height, customHeight, hidden, outlineLevel, collapsed, style }`、`Worksheet.columnDimensions: Map<number, ColumnDimension>` / `Worksheet.rowDimensions: Map<number, RowDimension>` / `defaultColumnWidth?` / `defaultRowHeight?`。`getColumnDimension` / `setColumnDimension` / `setColumnWidth` / `hideColumn` / `getRowDimension` / `setRowDimension` / `setRowHeight` / `hideRow` API。reader は `<sheetFormatPr>` の defaults + `<cols><col/></cols>` + `<row>` 属性 (ht/customHeight/hidden/s/outlineLevel/collapsed) を全部復元、writer は `<sheetFormatPr>` を defaults があれば emit、`<cols>` を `columnDimensions` 非空で emit、`<row>` 属性を inline。dimension-only rows (cell なし、height/hidden だけ) も walk の union で round-trip。`empty-with-styles.xlsx` の `<col width="10.7109375" bestFit="1" customWidth="1"/>` + `<sheetFormatPr defaultRowHeight="15"/>` を実機 fixture で確認。817 tests pass。
-- [ ] §2 hyperlinks / comments / dataValidations / conditionalFormatting / autoFilter / tables
+- [~] §2 hyperlinks 完了：`src/worksheet/hyperlinks.ts` に `Hyperlink { ref, target?, location?, tooltip?, display?, rId? }` + `makeHyperlink`。`Worksheet.hyperlinks: Hyperlink[]` + `setHyperlink` / `removeHyperlink` / `getHyperlink` API (target または location 必須、同一 ref 重複は replace)。reader は `WorksheetReadContext` に optional `rels: Relationships` を追加して `<hyperlinks><hyperlink r:id ref location tooltip display/>` から rId → target を resolve、writer は `WorksheetWriteContext` に optional `rels` 追加して external Hyperlink ごとに `rId{N}` 採番 + `TargetMode="External"` rel push、internal (location only) は rels なし。loadWorkbook が `xl/worksheets/_rels/sheetN.xml.rels` を読み込み、saveWorkbook が writer から戻った rels を `<sheet rels 非空 ⇒ alongside emit>`。8 tests (API + round-trip external/internal/mixed)。825 tests pass。残：comments / dataValidations / conditionalFormatting / autoFilter / tables。
 - [ ] §3 named ranges / defined names / external links
 
 ## 1 ターンの流れ
