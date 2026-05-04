@@ -27,6 +27,8 @@
     "lint:fix": "oxlint --fix",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:perf": "vitest run --config vitest.perf.config.ts",
+    "bench": "vitest bench --run tests/perf/throughput.bench.ts",
     "build": "tsdown && tsc -p tsconfig.build.json",
     "build:js": "tsdown",
     "build:dts": "tsc -p tsconfig.build.json",
