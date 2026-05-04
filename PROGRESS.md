@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §3 XML 層。`src/xml/namespaces.ts` で OOXML 全 namespace 定数を網羅、`src/xml/parser.ts` で `parseXml(bytes): XmlNode`（fast-xml-parser ラップ + DTD/外部実体拒否）、`src/xml/serializer.ts` で `serializeXml(node): Uint8Array`、`src/xml/tree.ts` で軽量 `XmlNode` 表現と `el()` ヘルパ。SAX (saxes) は別ターン。openpyxl のフィクスチャ XML（例: `xl/workbook.xml`）で round-trip canonical 比較が成立するところまで。
+- **次のタスク**: フェーズ1 §3 XML 層の続き：`src/xml/parser.ts` で `parseXml(bytes): XmlNode` を fast-xml-parser ベースで実装。Clark 形式 (`{ns}local`) への namespace 解決を行うこと。DOCTYPE / 外部実体は parse 前にバイト走査で拒否（OpenXmlSchemaError）。openpyxl の `xl/workbook.xml` を parse して expected な root.name と sheet child を確認するところまで。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -26,7 +26,7 @@
 
 - [~] §1 I/O 抽象（メモリ経路のみ完了：`XlsxSource` / `XlsxSink` / `BufferedSinkWriter` の interface、`OpenXmlError` 階層、Node の `fromBuffer` / `toBuffer`、ブラウザの `fromBlob` / `fromFile` / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`、30 tests pass。残：filesystem / Readable / Writable / Response 経路は §2 ZIP streaming と同時に）
 - [~] §2 ZIP 層（reader / writer メモリ経路完了：`fflate.unzipSync` の `openZip` + `fflate.zipSync` の `createZipWriter`。`empty.xlsx` の 11 エントリを writer に流して再 zip → 再 read で全 path・全 bytes が一致。STORE 圧縮の compress: false パス、duplicate / post-finalize / ReadableStream 入力は OpenXmlIoError。47 tests pass。残：streaming reader / streaming writer / ZIP64 read/write）
-- [ ] §3 XML 層（fast-xml-parser DOM + saxes SAX + namespace 定数）
+- [~] §3 XML 層（namespaces / tree 完了：openpyxl の全 NS 定数 + ARC_* package paths + content-type 文字列 + chartex/c14-c16/x14-x16/threaded-comments の MS 拡張、`qname` / `parseQName` Clark 表記ヘルパ、`XmlNode` plain object + `el` / `elNs` / `findChild` / `findChildren` / `appendChild`、`DEFAULT_PREFIXES` を frozen マップで提供。68 tests pass。残：parser DOM / serializer DOM / iterparse SAX / 中規模フィクスチャでの round-trip）
 - [ ] §4 Schema 層（Schema 型 + `toTree`/`fromTree`）
 - [ ] §5 XmlStreamWriter
 - [ ] §6 packaging 層（manifest, relationships, doc properties）
