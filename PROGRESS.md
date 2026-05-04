@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
-- **次のタスク**: フェーズ5 worksheet 追加機能の最初に **mergedCells**。`docs/plan/04-core-model.md` §4 "残：mergedCells" を解消する。`Worksheet.mergedCells: MultiCellRange` を追加 (cell-range は既存)、`mergeCells(ws, range)` / `unmergeCells(ws, range)` / `iterMergedRanges(ws)` の API。worksheet reader / writer の `<mergeCells><mergeCell ref="..."/></mergeCells>` 対応。範囲の重なり検証 + 上限チェック。merged 範囲内の top-left 以外を openpyxl 互換の MergedCell placeholder で初期化するかは決める。
+- **次のタスク**: フェーズ5 worksheet 追加機能の続き — **freezePanes / sheetView**。`Worksheet.views: SheetView[]` (initially length 1, default activeCell + workbookViewId=0) を追加、`setFreezePanes(ws, ref)` で `pane` オブジェクトを生成して view に注入。worksheet reader/writer の `<sheetViews>/<sheetView>/<pane>` 対応。次は dimension の正確化、columnDimensions / rowDimensions、SheetFormatProperties。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -69,7 +69,7 @@
 
 ### フェーズ5: rich features ([07-rich-features.md](docs/plan/07-rich-features.md))
 
-- [ ] §1 mergedCells / freezePanes / dimensions / sheetView 等の worksheet 拡張
+- [~] §1 worksheet 拡張：**mergedCells** 完了 (`src/worksheet/worksheet.ts` の `mergeCells` / `unmergeCells` / `getMergedCells` / `isMergedCell`、`Worksheet.mergedCells: CellRange[]` 追加)。mergeCells は openpyxl `MergedCellRange.format()` 準拠で top-left 以外のセルを `ws.rows` から drop、既存 merge と重なる場合は throw、同一 range は冪等。reader が `<mergeCells><mergeCell ref="…"/>` を `parseRange` で `mergedCells` に load (source の overlap check はせず信用)、writer は `</sheetData>` 直後に `<mergeCells count="N">` block を emit (なければ省略)。8 tests で API + save → load round-trip 確認。795 tests pass。残：freezePanes / sheetView / columnDimensions / rowDimensions / SheetFormatProperties。
 - [ ] §2 hyperlinks / comments / dataValidations / conditionalFormatting / autoFilter / tables
 - [ ] §3 named ranges / defined names / external links
 
