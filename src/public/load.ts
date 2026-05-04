@@ -14,9 +14,18 @@ import type { XlsxSource } from '../io/source';
 import { manifestFromBytes } from '../packaging/manifest';
 import { findById, relsFromBytes } from '../packaging/relationships';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import { parseSharedStringsXml, type SharedStringsTable } from '../workbook/shared-strings';
 import { createWorkbook, type SheetRef, type SheetState, type Workbook } from '../workbook/workbook';
 import { parseWorksheetXml } from '../worksheet/reader';
-import { ARC_CONTENT_TYPES, ARC_ROOT_RELS, ARC_WORKBOOK, parseQName, REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
+import {
+  ARC_CONTENT_TYPES,
+  ARC_ROOT_RELS,
+  ARC_SHARED_STRINGS,
+  ARC_WORKBOOK,
+  parseQName,
+  REL_NS,
+  SHEET_MAIN_NS,
+} from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import { openZip, type ZipArchive } from '../zip/reader';
@@ -173,6 +182,24 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   }
   const wbRels = archive.has(wbRelsPath) ? relsFromBytes(archive.read(wbRelsPath)) : { rels: [] };
 
+  // 4b. sharedStrings.xml — optional. The workbook rels can also point at a
+  // non-default location; for the minimum-skeleton stage we look at the
+  // canonical `xl/sharedStrings.xml` path first, then fall back to the rels
+  // entry if present.
+  let sharedStrings: SharedStringsTable | undefined;
+  if (archive.has(ARC_SHARED_STRINGS)) {
+    sharedStrings = parseSharedStringsXml(archive.read(ARC_SHARED_STRINGS));
+  } else {
+    const sstRel = wbRels.rels.find((r) => r.type === `${REL_NS}/sharedStrings`);
+    if (sstRel) {
+      const sstPath = resolveRelTarget(workbookPath, sstRel.target);
+      if (archive.has(sstPath)) {
+        sharedStrings = parseSharedStringsXml(archive.read(sstPath));
+      }
+    }
+  }
+  const sst: ReadonlyArray<string> = sharedStrings?.entries ?? [];
+
   // 5. Build the Workbook. We bypass `addWorksheet` because that allocates
   // sheetIds via `allocateSheetId`; load preserves the IDs from XML.
   const wb = createWorkbook();
@@ -190,7 +217,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     if (!archive.has(sheetPath)) {
       throw new OpenXmlSchemaError(`loadWorkbook: sheet part "${sheetPath}" not found in archive`);
     }
-    const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, { sharedStrings: [] });
+    const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, { sharedStrings: sst });
     const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
     wb.sheets.push(ref);
   }

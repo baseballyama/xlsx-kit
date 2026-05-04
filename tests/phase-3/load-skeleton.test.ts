@@ -126,6 +126,19 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     expect(f.cachedValue).toBe(3);
   });
 
+  it('resolves t="s" cells against the sharedStrings table', async () => {
+    const bytes = readFileSync(resolve(FIXTURES, 'empty-with-styles.xlsx'));
+    const wb = await loadWorkbook(fromBuffer(bytes));
+    const ws = wb.sheets[0]?.sheet;
+    if (!ws) throw new Error('expected one sheet');
+    // empty-with-styles.xlsx has A1 as t="s" -> sst[0] = "TEST HERE"
+    const { getCell } = await import('../../src/worksheet/worksheet');
+    expect(getCell(ws, 1, 1)?.value).toBe('TEST HERE');
+    // A2..A5 are numeric (date / pi / fraction / scientific) — read as numbers.
+    expect(typeof getCell(ws, 2, 1)?.value).toBe('number');
+    expect(getCell(ws, 3, 1)?.value).toBeCloseTo(3.14);
+  });
+
   it('rejects an archive missing [Content_Types].xml', async () => {
     const { createZipWriter } = await import('../../src/zip/writer');
     const { toBuffer } = await import('../../src/io/node');
