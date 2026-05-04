@@ -43,6 +43,97 @@ export interface CategoryRef {
   formatCode?: string;
 }
 
+// ---- Series decorations: data labels, trendlines, error bars --------------
+
+export interface NumberFormat {
+  formatCode: string;
+  sourceLinked?: boolean;
+}
+
+export type DataLabelPosition = 'bestFit' | 'b' | 'ctr' | 'inBase' | 'inEnd' | 'l' | 'outEnd' | 'r' | 't';
+
+/** Per-point data label override. Lives inside `<c:dLbls><c:dLbl idx="N">…</c:dLbl></c:dLbls>`. */
+export interface DataLabel {
+  idx: number;
+  /** Delete this individual label (suppresses display even if the parent dLbls would show it). */
+  delete?: boolean;
+  /** Inline rich text or a cell reference. Mutually exclusive. */
+  tx?: { kind: 'rich'; body: TextBody } | { kind: 'strRef'; ref: string };
+  numFmt?: NumberFormat;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
+  dLblPos?: DataLabelPosition;
+  showLegendKey?: boolean;
+  showVal?: boolean;
+  showCatName?: boolean;
+  showSerName?: boolean;
+  showPercent?: boolean;
+  showBubbleSize?: boolean;
+  separator?: string;
+}
+
+/** Series-wide data label settings. `<c:dLbls>` element. */
+export interface DataLabelList {
+  /** When true, suppress all labels (`<c:delete val="1"/>`). */
+  delete?: boolean;
+  /** Per-point overrides. */
+  dLbl?: DataLabel[];
+  numFmt?: NumberFormat;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
+  dLblPos?: DataLabelPosition;
+  showLegendKey?: boolean;
+  showVal?: boolean;
+  showCatName?: boolean;
+  showSerName?: boolean;
+  showPercent?: boolean;
+  showBubbleSize?: boolean;
+  separator?: string;
+  showLeaderLines?: boolean;
+}
+
+export type TrendlineType = 'exp' | 'linear' | 'log' | 'movingAvg' | 'poly' | 'power';
+
+export interface Trendline {
+  /** Display name shown in the chart legend (`<c:name>` text). */
+  name?: string;
+  spPr?: ShapeProperties;
+  trendlineType: TrendlineType;
+  /** Polynomial order (2..6) when `trendlineType === 'poly'`. */
+  order?: number;
+  /** Moving-average period when `trendlineType === 'movingAvg'`. */
+  period?: number;
+  /** Forecast forward periods. */
+  forward?: number;
+  /** Forecast backward periods. */
+  backward?: number;
+  /** Y-axis intercept (linear only). */
+  intercept?: number;
+  /** Display R² value on the chart. */
+  dispRSqr?: boolean;
+  /** Display the trendline equation. */
+  dispEq?: boolean;
+}
+
+export type ErrorBarDirection = 'x' | 'y';
+export type ErrorBarType = 'both' | 'minus' | 'plus';
+export type ErrorValType = 'cust' | 'fixedVal' | 'percentage' | 'stdDev' | 'stdErr';
+
+export interface ErrorBars {
+  /** Direction. Required only on scatter / bubble series; bar / line / area imply `'y'`. */
+  errDir?: ErrorBarDirection;
+  errBarType: ErrorBarType;
+  errValType: ErrorValType;
+  noEndCap?: boolean;
+  /** Numeric magnitude for fixedVal / percentage / stdDev / stdErr. */
+  val?: number;
+  /** Custom plus-side data (NumericRef) — required when `errValType === 'cust'`. */
+  plus?: NumericRef;
+  /** Custom minus-side data (NumericRef) — required when `errValType === 'cust'`. */
+  minus?: NumericRef;
+  spPr?: ShapeProperties;
+}
+
 export interface BarSeries {
   /** 0-based slot in the chart (`<c:idx>`). */
   idx: number;
@@ -52,6 +143,12 @@ export interface BarSeries {
   tx?: { kind: 'literal'; value: string } | { kind: 'ref'; ref: string };
   /** Per-series shape properties (fill / line / effects). */
   spPr?: ShapeProperties;
+  /** Series-wide data labels. */
+  dLbls?: DataLabelList;
+  /** Trendlines attached to this series. */
+  trendline?: Trendline[];
+  /** Error bars. Bar / line / area / radar default to a single y-direction entry. */
+  errBars?: ErrorBars[];
   /** Categories. */
   cat?: CategoryRef;
   /** Values (always required for a bar series). */
@@ -119,6 +216,10 @@ export interface ScatterSeries {
   order: number;
   tx?: BarSeries['tx'];
   spPr?: ShapeProperties;
+  dLbls?: DataLabelList;
+  trendline?: Trendline[];
+  /** Up to 2 entries (one per direction). */
+  errBars?: ErrorBars[];
   xVal?: NumericRef;
   yVal: NumericRef;
   smooth?: boolean;
@@ -147,6 +248,10 @@ export interface BubbleSeries {
   order: number;
   tx?: BarSeries['tx'];
   spPr?: ShapeProperties;
+  dLbls?: DataLabelList;
+  trendline?: Trendline[];
+  /** Up to 2 entries (one per direction). */
+  errBars?: ErrorBars[];
   xVal?: NumericRef;
   yVal: NumericRef;
   /** Bubble size — required for a real bubble chart. */

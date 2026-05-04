@@ -32,7 +32,14 @@ import {
   type ChartKind,
   type ChartSpace,
   type ChartTitle,
+  type DataLabel,
+  type DataLabelList,
+  type DataLabelPosition,
   type DoughnutChart,
+  type ErrorBarDirection,
+  type ErrorBars,
+  type ErrorBarType,
+  type ErrorValType,
   type GroupingType,
   type Legend,
   type LegendPosition,
@@ -59,6 +66,7 @@ import {
   makeStockChart,
   makeSurface3DChart,
   makeSurfaceChart,
+  type NumberFormat,
   type NumericRef,
   type OfPieChart,
   type OfPieType,
@@ -74,6 +82,8 @@ import {
   type StockChart,
   type Surface3DChart,
   type SurfaceChart,
+  type Trendline,
+  type TrendlineType,
   type ValueAxis,
 } from './chart';
 
@@ -153,6 +163,36 @@ const DISP_BLANKS_AS_TAG = `{${CHART_NS}}dispBlanksAs`;
 const SP_PR_TAG = `{${CHART_NS}}spPr`;
 const TX_PR_TAG = `{${CHART_NS}}txPr`;
 const OVERLAY_TAG = `{${CHART_NS}}overlay`;
+const D_LBLS_TAG = `{${CHART_NS}}dLbls`;
+const D_LBL_TAG = `{${CHART_NS}}dLbl`;
+const NUM_FMT_TAG = `{${CHART_NS}}numFmt`;
+const D_LBL_POS_TAG = `{${CHART_NS}}dLblPos`;
+const SHOW_LEGEND_KEY_TAG = `{${CHART_NS}}showLegendKey`;
+const SHOW_VAL_TAG = `{${CHART_NS}}showVal`;
+const SHOW_CAT_NAME_TAG = `{${CHART_NS}}showCatName`;
+const SHOW_SER_NAME_TAG = `{${CHART_NS}}showSerName`;
+const SHOW_PERCENT_TAG = `{${CHART_NS}}showPercent`;
+const SHOW_BUBBLE_SIZE_TAG = `{${CHART_NS}}showBubbleSize`;
+const SHOW_LEADER_LINES_TAG = `{${CHART_NS}}showLeaderLines`;
+const SEPARATOR_TAG = `{${CHART_NS}}separator`;
+const DELETE_LBL_TAG = `{${CHART_NS}}delete`;
+const TRENDLINE_TAG = `{${CHART_NS}}trendline`;
+const TRENDLINE_TYPE_TAG = `{${CHART_NS}}trendlineType`;
+const TRENDLINE_NAME_TAG = `{${CHART_NS}}name`;
+const TRENDLINE_ORDER_TAG = `{${CHART_NS}}order`;
+const TRENDLINE_PERIOD_TAG = `{${CHART_NS}}period`;
+const TRENDLINE_FORWARD_TAG = `{${CHART_NS}}forward`;
+const TRENDLINE_BACKWARD_TAG = `{${CHART_NS}}backward`;
+const TRENDLINE_INTERCEPT_TAG = `{${CHART_NS}}intercept`;
+const TRENDLINE_DISP_RSQR_TAG = `{${CHART_NS}}dispRSqr`;
+const TRENDLINE_DISP_EQ_TAG = `{${CHART_NS}}dispEq`;
+const ERR_BARS_TAG = `{${CHART_NS}}errBars`;
+const ERR_DIR_TAG = `{${CHART_NS}}errDir`;
+const ERR_BAR_TYPE_TAG = `{${CHART_NS}}errBarType`;
+const ERR_VAL_TYPE_TAG = `{${CHART_NS}}errValType`;
+const NO_END_CAP_TAG = `{${CHART_NS}}noEndCap`;
+const PLUS_TAG = `{${CHART_NS}}plus`;
+const MINUS_TAG = `{${CHART_NS}}minus`;
 const A_R_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}r';
 const A_T_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}t';
 
@@ -219,6 +259,292 @@ const parseSpPrSlot = (parent: XmlNode): ShapeProperties | undefined => {
 const parseTxPrSlot = (parent: XmlNode): TextBody | undefined => {
   const el = findChild(parent, TX_PR_TAG);
   return el ? parseTextBody(el) : undefined;
+};
+
+// ---- Series decorations (dLbls, trendlines, error bars) -------------------
+
+const VALID_D_LBL_POS: ReadonlyArray<string> = ['bestFit', 'b', 'ctr', 'inBase', 'inEnd', 'l', 'outEnd', 'r', 't'];
+
+const parseNumberFormat = (el: XmlNode | undefined): NumberFormat | undefined => {
+  if (!el) return undefined;
+  const formatCode = el.attrs['formatCode'];
+  if (formatCode === undefined) return undefined;
+  const sourceLinkedRaw = el.attrs['sourceLinked'];
+  const sourceLinked =
+    sourceLinkedRaw === '1' || sourceLinkedRaw === 'true'
+      ? true
+      : sourceLinkedRaw === '0' || sourceLinkedRaw === 'false'
+        ? false
+        : undefined;
+  return { formatCode, ...(sourceLinked !== undefined ? { sourceLinked } : {}) };
+};
+
+const serializeNumberFormat = (n: NumberFormat): string => {
+  const sl = n.sourceLinked !== undefined ? ` sourceLinked="${n.sourceLinked ? '1' : '0'}"` : '';
+  return `<c:numFmt formatCode="${escapeText(n.formatCode)}"${sl}/>`;
+};
+
+interface DataLabelCommon {
+  delete?: boolean;
+  numFmt?: NumberFormat;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
+  dLblPos?: DataLabelPosition;
+  showLegendKey?: boolean;
+  showVal?: boolean;
+  showCatName?: boolean;
+  showSerName?: boolean;
+  showPercent?: boolean;
+  showBubbleSize?: boolean;
+  separator?: string;
+}
+
+const parseDataLabelCommon = (el: XmlNode): DataLabelCommon => {
+  const out: DataLabelCommon = {};
+  const del = boolVal(findChild(el, DELETE_LBL_TAG));
+  if (del !== undefined) out.delete = del;
+  const numFmt = parseNumberFormat(findChild(el, NUM_FMT_TAG));
+  if (numFmt) out.numFmt = numFmt;
+  const spPr = parseSpPrSlot(el);
+  if (spPr) out.spPr = spPr;
+  const txPr = parseTxPrSlot(el);
+  if (txPr) out.txPr = txPr;
+  const posRaw = valAttr(findChild(el, D_LBL_POS_TAG));
+  if (posRaw && VALID_D_LBL_POS.includes(posRaw)) out.dLblPos = posRaw as DataLabelPosition;
+  const showLegendKey = boolVal(findChild(el, SHOW_LEGEND_KEY_TAG));
+  if (showLegendKey !== undefined) out.showLegendKey = showLegendKey;
+  const showVal = boolVal(findChild(el, SHOW_VAL_TAG));
+  if (showVal !== undefined) out.showVal = showVal;
+  const showCatName = boolVal(findChild(el, SHOW_CAT_NAME_TAG));
+  if (showCatName !== undefined) out.showCatName = showCatName;
+  const showSerName = boolVal(findChild(el, SHOW_SER_NAME_TAG));
+  if (showSerName !== undefined) out.showSerName = showSerName;
+  const showPercent = boolVal(findChild(el, SHOW_PERCENT_TAG));
+  if (showPercent !== undefined) out.showPercent = showPercent;
+  const showBubbleSize = boolVal(findChild(el, SHOW_BUBBLE_SIZE_TAG));
+  if (showBubbleSize !== undefined) out.showBubbleSize = showBubbleSize;
+  const sep = findChild(el, SEPARATOR_TAG);
+  if (sep?.text !== undefined) out.separator = sep.text;
+  return out;
+};
+
+const serializeDataLabelCommon = (d: DataLabelCommon): string => {
+  // ECMA-376 element ordering inside <c:dLbl>/<c:dLbls>:
+  // numFmt → spPr → txPr → dLblPos → showLegendKey → showVal → showCatName
+  // → showSerName → showPercent → showBubbleSize → separator → showLeaderLines
+  // (delete is exclusive — when true the label has no other children).
+  if (d.delete) return '<c:delete val="1"/>';
+  const parts: string[] = [];
+  if (d.numFmt) parts.push(serializeNumberFormat(d.numFmt));
+  if (d.spPr) parts.push(serializeShapeProperties(d.spPr));
+  if (d.txPr) parts.push(serializeTextBody(d.txPr, 'c:txPr'));
+  if (d.dLblPos) parts.push(`<c:dLblPos val="${d.dLblPos}"/>`);
+  if (d.showLegendKey !== undefined) parts.push(`<c:showLegendKey val="${d.showLegendKey ? '1' : '0'}"/>`);
+  if (d.showVal !== undefined) parts.push(`<c:showVal val="${d.showVal ? '1' : '0'}"/>`);
+  if (d.showCatName !== undefined) parts.push(`<c:showCatName val="${d.showCatName ? '1' : '0'}"/>`);
+  if (d.showSerName !== undefined) parts.push(`<c:showSerName val="${d.showSerName ? '1' : '0'}"/>`);
+  if (d.showPercent !== undefined) parts.push(`<c:showPercent val="${d.showPercent ? '1' : '0'}"/>`);
+  if (d.showBubbleSize !== undefined) parts.push(`<c:showBubbleSize val="${d.showBubbleSize ? '1' : '0'}"/>`);
+  if (d.separator !== undefined) parts.push(`<c:separator>${escapeText(d.separator)}</c:separator>`);
+  return parts.join('');
+};
+
+const parseDataLabel = (el: XmlNode): DataLabel | undefined => {
+  const idx = intVal(findChild(el, IDX_TAG));
+  if (idx === undefined) return undefined;
+  const out: DataLabel = { idx, ...parseDataLabelCommon(el) };
+  // <c:tx>: either <c:rich> (TextBody) or <c:strRef><c:f>.
+  const txEl = findChild(el, TX_TAG);
+  if (txEl) {
+    const richEl = findChild(txEl, RICH_TAG);
+    if (richEl) {
+      out.tx = { kind: 'rich', body: parseTextBody(richEl) };
+    } else {
+      const strRef = findChild(txEl, STR_REF_TAG);
+      if (strRef) {
+        const ref = findChild(strRef, F_TAG)?.text ?? '';
+        out.tx = { kind: 'strRef', ref };
+      }
+    }
+  }
+  return out;
+};
+
+const serializeDataLabel = (d: DataLabel): string => {
+  if (d.delete) return `<c:dLbl><c:idx val="${d.idx}"/><c:delete val="1"/></c:dLbl>`;
+  const parts: string[] = [`<c:dLbl><c:idx val="${d.idx}"/>`];
+  if (d.tx) {
+    if (d.tx.kind === 'rich') {
+      parts.push(`<c:tx>${serializeTextBody(d.tx.body, 'c:rich')}</c:tx>`);
+    } else {
+      parts.push(`<c:tx><c:strRef><c:f>${escapeText(d.tx.ref)}</c:f></c:strRef></c:tx>`);
+    }
+  }
+  parts.push(serializeDataLabelCommon(d));
+  parts.push('</c:dLbl>');
+  return parts.join('');
+};
+
+const parseDataLabelList = (el: XmlNode): DataLabelList => {
+  const common = parseDataLabelCommon(el);
+  const out: DataLabelList = { ...common };
+  const showLeader = boolVal(findChild(el, SHOW_LEADER_LINES_TAG));
+  if (showLeader !== undefined) out.showLeaderLines = showLeader;
+  const dLbls: DataLabel[] = [];
+  for (const child of findChildren(el, D_LBL_TAG)) {
+    const dl = parseDataLabel(child);
+    if (dl) dLbls.push(dl);
+  }
+  if (dLbls.length > 0) out.dLbl = dLbls;
+  return out;
+};
+
+const serializeDataLabelList = (d: DataLabelList): string => {
+  if (d.delete) return '<c:dLbls><c:delete val="1"/></c:dLbls>';
+  const parts: string[] = ['<c:dLbls>'];
+  if (d.dLbl) for (const dl of d.dLbl) parts.push(serializeDataLabel(dl));
+  parts.push(serializeDataLabelCommon(d));
+  if (d.showLeaderLines !== undefined) {
+    parts.push(`<c:showLeaderLines val="${d.showLeaderLines ? '1' : '0'}"/>`);
+  }
+  parts.push('</c:dLbls>');
+  return parts.join('');
+};
+
+const VALID_TRENDLINE_TYPES: ReadonlyArray<string> = ['exp', 'linear', 'log', 'movingAvg', 'poly', 'power'];
+
+const parseTrendline = (el: XmlNode): Trendline | undefined => {
+  const typeRaw = valAttr(findChild(el, TRENDLINE_TYPE_TAG));
+  if (!typeRaw || !VALID_TRENDLINE_TYPES.includes(typeRaw)) return undefined;
+  const out: Trendline = { trendlineType: typeRaw as TrendlineType };
+  const nameEl = findChild(el, TRENDLINE_NAME_TAG);
+  if (nameEl?.text !== undefined) out.name = nameEl.text;
+  const spPr = parseSpPrSlot(el);
+  if (spPr) out.spPr = spPr;
+  const order = intVal(findChild(el, TRENDLINE_ORDER_TAG));
+  if (order !== undefined) out.order = order;
+  const period = intVal(findChild(el, TRENDLINE_PERIOD_TAG));
+  if (period !== undefined) out.period = period;
+  // forward / backward / intercept can be floats.
+  const fwdEl = findChild(el, TRENDLINE_FORWARD_TAG);
+  if (fwdEl) {
+    const v = valAttr(fwdEl);
+    if (v !== undefined) {
+      const n = Number.parseFloat(v);
+      if (Number.isFinite(n)) out.forward = n;
+    }
+  }
+  const bwdEl = findChild(el, TRENDLINE_BACKWARD_TAG);
+  if (bwdEl) {
+    const v = valAttr(bwdEl);
+    if (v !== undefined) {
+      const n = Number.parseFloat(v);
+      if (Number.isFinite(n)) out.backward = n;
+    }
+  }
+  const intEl = findChild(el, TRENDLINE_INTERCEPT_TAG);
+  if (intEl) {
+    const v = valAttr(intEl);
+    if (v !== undefined) {
+      const n = Number.parseFloat(v);
+      if (Number.isFinite(n)) out.intercept = n;
+    }
+  }
+  const dispRSqr = boolVal(findChild(el, TRENDLINE_DISP_RSQR_TAG));
+  if (dispRSqr !== undefined) out.dispRSqr = dispRSqr;
+  const dispEq = boolVal(findChild(el, TRENDLINE_DISP_EQ_TAG));
+  if (dispEq !== undefined) out.dispEq = dispEq;
+  return out;
+};
+
+const serializeTrendline = (t: Trendline): string => {
+  // ECMA-376: name → spPr → trendlineType → order → period → forward →
+  // backward → intercept → dispRSqr → dispEq → trendlineLbl.
+  const parts: string[] = ['<c:trendline>'];
+  if (t.name !== undefined) parts.push(`<c:name>${escapeText(t.name)}</c:name>`);
+  if (t.spPr) parts.push(serializeShapeProperties(t.spPr));
+  parts.push(`<c:trendlineType val="${t.trendlineType}"/>`);
+  if (t.order !== undefined) parts.push(`<c:order val="${t.order}"/>`);
+  if (t.period !== undefined) parts.push(`<c:period val="${t.period}"/>`);
+  if (t.forward !== undefined) parts.push(`<c:forward val="${t.forward}"/>`);
+  if (t.backward !== undefined) parts.push(`<c:backward val="${t.backward}"/>`);
+  if (t.intercept !== undefined) parts.push(`<c:intercept val="${t.intercept}"/>`);
+  if (t.dispRSqr !== undefined) parts.push(`<c:dispRSqr val="${t.dispRSqr ? '1' : '0'}"/>`);
+  if (t.dispEq !== undefined) parts.push(`<c:dispEq val="${t.dispEq ? '1' : '0'}"/>`);
+  parts.push('</c:trendline>');
+  return parts.join('');
+};
+
+const VALID_ERR_DIR: ReadonlyArray<string> = ['x', 'y'];
+const VALID_ERR_BAR_TYPE: ReadonlyArray<string> = ['both', 'minus', 'plus'];
+const VALID_ERR_VAL_TYPE: ReadonlyArray<string> = ['cust', 'fixedVal', 'percentage', 'stdDev', 'stdErr'];
+
+const parseErrBars = (el: XmlNode): ErrorBars | undefined => {
+  const typeRaw = valAttr(findChild(el, ERR_BAR_TYPE_TAG));
+  const valRaw = valAttr(findChild(el, ERR_VAL_TYPE_TAG));
+  if (!typeRaw || !valRaw || !VALID_ERR_BAR_TYPE.includes(typeRaw) || !VALID_ERR_VAL_TYPE.includes(valRaw)) {
+    return undefined;
+  }
+  const out: ErrorBars = {
+    errBarType: typeRaw as ErrorBarType,
+    errValType: valRaw as ErrorValType,
+  };
+  const dirRaw = valAttr(findChild(el, ERR_DIR_TAG));
+  if (dirRaw && VALID_ERR_DIR.includes(dirRaw)) out.errDir = dirRaw as ErrorBarDirection;
+  const noEnd = boolVal(findChild(el, NO_END_CAP_TAG));
+  if (noEnd !== undefined) out.noEndCap = noEnd;
+  const valEl = findChild(el, VAL_TAG);
+  if (valEl) {
+    const v = valAttr(valEl);
+    if (v !== undefined) {
+      const n = Number.parseFloat(v);
+      if (Number.isFinite(n)) out.val = n;
+    }
+  }
+  const plus = parseNumericRef(el, PLUS_TAG);
+  if (plus) out.plus = plus;
+  const minus = parseNumericRef(el, MINUS_TAG);
+  if (minus) out.minus = minus;
+  const spPr = parseSpPrSlot(el);
+  if (spPr) out.spPr = spPr;
+  return out;
+};
+
+const serializeErrBars = (e: ErrorBars): string => {
+  // ECMA-376: errDir? → errBarType → errValType → noEndCap? → plus? → minus? → val? → spPr?.
+  const parts: string[] = ['<c:errBars>'];
+  if (e.errDir) parts.push(`<c:errDir val="${e.errDir}"/>`);
+  parts.push(`<c:errBarType val="${e.errBarType}"/>`);
+  parts.push(`<c:errValType val="${e.errValType}"/>`);
+  if (e.noEndCap !== undefined) parts.push(`<c:noEndCap val="${e.noEndCap ? '1' : '0'}"/>`);
+  if (e.plus) parts.push(serializeNumericRef('plus', e.plus));
+  if (e.minus) parts.push(serializeNumericRef('minus', e.minus));
+  if (e.val !== undefined) parts.push(`<c:val val="${e.val}"/>`);
+  if (e.spPr) parts.push(serializeShapeProperties(e.spPr));
+  parts.push('</c:errBars>');
+  return parts.join('');
+};
+
+/** Pull dLbls / trendline[] / errBars[] off a `<c:ser>` element. */
+const parseSeriesDecorations = (
+  serEl: XmlNode,
+): { dLbls?: DataLabelList; trendline?: Trendline[]; errBars?: ErrorBars[] } => {
+  const out: { dLbls?: DataLabelList; trendline?: Trendline[]; errBars?: ErrorBars[] } = {};
+  const dLblsEl = findChild(serEl, D_LBLS_TAG);
+  if (dLblsEl) out.dLbls = parseDataLabelList(dLblsEl);
+  const trends: Trendline[] = [];
+  for (const t of findChildren(serEl, TRENDLINE_TAG)) {
+    const tl = parseTrendline(t);
+    if (tl) trends.push(tl);
+  }
+  if (trends.length > 0) out.trendline = trends;
+  const ebs: ErrorBars[] = [];
+  for (const eb of findChildren(serEl, ERR_BARS_TAG)) {
+    const e = parseErrBars(eb);
+    if (e) ebs.push(e);
+  }
+  if (ebs.length > 0) out.errBars = ebs;
+  return out;
 };
 
 const parseNumCache = (cacheEl: XmlNode): { values: number[]; formatCode?: string } => {
@@ -297,7 +623,12 @@ const parseSeries = (serEl: XmlNode): BarSeries | undefined => {
   if (cat) opts.cat = cat;
   const base = makeBarSeries(opts);
   const spPr = parseSpPrSlot(serEl);
-  return spPr ? { ...base, spPr } : base;
+  const deco = parseSeriesDecorations(serEl);
+  return {
+    ...base,
+    ...(spPr ? { spPr } : {}),
+    ...deco,
+  };
 };
 
 const parseAxIds = (chartEl: XmlNode): [number, number] => {
@@ -399,7 +730,12 @@ const parseScatterSeries = (serEl: XmlNode): ScatterSeries | undefined => {
   if (smooth !== undefined) opts.smooth = smooth;
   const base = makeScatterSeries(opts);
   const spPr = parseSpPrSlot(serEl);
-  return spPr ? { ...base, spPr } : base;
+  const deco = parseSeriesDecorations(serEl);
+  return {
+    ...base,
+    ...(spPr ? { spPr } : {}),
+    ...deco,
+  };
 };
 
 const parseScatterChart = (scatterEl: XmlNode): ScatterChart => {
@@ -444,7 +780,12 @@ const parseBubbleSeries = (serEl: XmlNode): BubbleSeries | undefined => {
   if (bubble3D !== undefined) opts.bubble3D = bubble3D;
   const base = makeBubbleSeries(opts);
   const spPr = parseSpPrSlot(serEl);
-  return spPr ? { ...base, spPr } : base;
+  const deco = parseSeriesDecorations(serEl);
+  return {
+    ...base,
+    ...(spPr ? { spPr } : {}),
+    ...deco,
+  };
 };
 
 const parseBubbleChart = (bubbleEl: XmlNode): BubbleChart => {
@@ -772,6 +1113,9 @@ const serializeSeries = (s: BarSeries): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
+  if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
+  if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
+  if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));
   if (s.cat) parts.push(serializeCategoryRef(s.cat));
   parts.push(serializeNumericRef('val', s.val));
   parts.push('</c:ser>');
@@ -849,6 +1193,9 @@ const serializeScatterSeries = (s: ScatterSeries): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
+  if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
+  if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
+  if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));
   if (s.xVal) parts.push(serializeNumericRef('xVal', s.xVal));
   parts.push(serializeNumericRef('yVal', s.yVal));
   if (s.smooth !== undefined) parts.push(`<c:smooth val="${s.smooth ? '1' : '0'}"/>`);
@@ -886,6 +1233,9 @@ const serializeBubbleSeries = (s: BubbleSeries): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
+  if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
+  if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
+  if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));
   if (s.xVal) parts.push(serializeNumericRef('xVal', s.xVal));
   parts.push(serializeNumericRef('yVal', s.yVal));
   parts.push(serializeNumericRef('bubbleSize', s.bubbleSize));
