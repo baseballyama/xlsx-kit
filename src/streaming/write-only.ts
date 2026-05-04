@@ -127,13 +127,22 @@ interface WorkbookState {
   sheets: Array<{
     title: string;
     sheetId: number;
-    bytes: Uint8Array;
   }>;
   /** True once finalize() has been called (further mutations throw). */
   finalised: boolean;
   /** True while a worksheet is open (the next addWorksheet must wait). */
   hasOpenWorksheet: boolean;
+  /** ZIP writer the workbook + each open worksheet stream chunks through. */
+  writer: import('../zip/writer').ZipWriter;
 }
+
+/**
+ * Flush threshold for the worksheet's pending-row text buffer. Smaller
+ * values minimise heap; larger values amortise the TextEncoder + push
+ * overhead. 64 KB is a sweet spot — heap stays low and per-row JS work
+ * is dominated by the actual XML construction, not flushing.
+ */
+const FLUSH_THRESHOLD_BYTES = 64 * 1024;
 
 /**
  * Factory: build a {@link WriteOnlyWorksheet} that closes over the
@@ -141,21 +150,55 @@ interface WorkbookState {
  * (CLAUDE.md / docs/plan/01-architecture.md) the worksheet is a plain
  * object holding the row buffer + column-width map in closure state.
  *
- * Rows are serialised into XML strings inside `appendRow` and pushed
- * onto a sheet-local string buffer; no `Cell` objects are retained.
- * `close()` joins the buffer under a `<worksheet><sheetData>...` /
- * `</sheetData></worksheet>` envelope and stages the resulting bytes
- * for the workbook-level finalize.
+ * The worksheet streams its `<sheetData>` body chunk-by-chunk through
+ * the ZIP writer's `addStreamingEntry` API, so the heap footprint
+ * stays at one ~64 KB pending text buffer plus deflate scratch — no
+ * Cell objects, no all-rows accumulation. The XML envelope (decl /
+ * worksheet open / cols / sheetData open) flushes on the first
+ * `appendRow` (or `close()` if the sheet is empty); column widths
+ * staged via `setColumnWidth` *must* land before the first row.
  */
-const makeWriteOnlyWorksheet = (state: WorkbookState, title: string): WriteOnlyWorksheet => {
+const makeWriteOnlyWorksheet = (state: WorkbookState, title: string, sheetId: number): WriteOnlyWorksheet => {
   let nextRow = 1;
   let closed = false;
+  let headerFlushed = false;
   const columnWidths = new Map<number, number>();
-  const rowChunks: string[] = [];
   const dummyCtx = { sharedStrings: state.sst, rels: makeRelationships() };
+  const encoder = new TextEncoder();
+  const stream = state.writer.addStreamingEntry(`xl/worksheets/sheet${sheetId}.xml`);
+  let pendingText = '';
+  let pendingBytes = 0;
+
+  const writeText = (text: string): void => {
+    pendingText += text;
+    pendingBytes += text.length; // chars approximate bytes; UTF-8 may be larger.
+    if (pendingBytes >= FLUSH_THRESHOLD_BYTES) {
+      stream.write(encoder.encode(pendingText));
+      pendingText = '';
+      pendingBytes = 0;
+    }
+  };
+
+  const flushHeader = (): void => {
+    if (headerFlushed) return;
+    headerFlushed = true;
+    let header = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+    header += `<worksheet xmlns="${SHEET_MAIN_NS}" xmlns:r="${REL_NS}">`;
+    if (columnWidths.size > 0) {
+      header += '<cols>';
+      const sorted = [...columnWidths.entries()].sort((a, b) => a[0] - b[0]);
+      for (const [col, width] of sorted) {
+        header += `<col min="${col}" max="${col}" width="${width}" customWidth="1"/>`;
+      }
+      header += '</cols>';
+    }
+    header += '<sheetData>';
+    writeText(header);
+  };
 
   const appendRow = async (row: WriteOnlyRowItem[]): Promise<void> => {
     if (closed) throw new OpenXmlIoError('appendRow: worksheet already closed');
+    flushHeader();
     const r = nextRow++;
     let xml = `<row r="${r}">`;
     for (let i = 0; i < row.length; i++) {
@@ -174,47 +217,37 @@ const makeWriteOnlyWorksheet = (state: WorkbookState, title: string): WriteOnlyW
       const styleId = style ? allocateXfId(state.styles, style) : 0;
       // Ephemeral cell-shaped object — discarded as soon as serializeCell
       // returns its `<c .../>` string. Keeps the heap footprint at the
-      // size of the row buffer instead of a full Worksheet model.
+      // size of the pending text buffer instead of a full Worksheet model.
       const cell: Cell = { row: r, col, value, styleId };
       xml += serializeCell(cell, dummyCtx);
     }
     xml += '</row>';
-    rowChunks.push(xml);
+    writeText(xml);
   };
 
   const setColumnWidth = (col: number, width: number): void => {
     if (closed) throw new OpenXmlIoError('setColumnWidth: worksheet already closed');
+    if (headerFlushed) {
+      throw new OpenXmlIoError(
+        'setColumnWidth: must be called before the first appendRow — column widths are emitted as part of the worksheet header',
+      );
+    }
     columnWidths.set(col, width);
   };
 
   const close = async (): Promise<void> => {
     if (closed) return;
     closed = true;
-
-    const parts: string[] = [
-      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
-      `<worksheet xmlns="${SHEET_MAIN_NS}" xmlns:r="${REL_NS}">`,
-    ];
-    if (columnWidths.size > 0) {
-      parts.push('<cols>');
-      const sorted = [...columnWidths.entries()].sort((a, b) => a[0] - b[0]);
-      for (const [col, width] of sorted) {
-        parts.push(`<col min="${col}" max="${col}" width="${width}" customWidth="1"/>`);
-      }
-      parts.push('</cols>');
+    flushHeader();
+    writeText('</sheetData></worksheet>');
+    if (pendingText.length > 0) {
+      stream.write(encoder.encode(pendingText));
+      pendingText = '';
+      pendingBytes = 0;
     }
-    parts.push('<sheetData>');
-    for (const chunk of rowChunks) parts.push(chunk);
-    parts.push('</sheetData>');
-    parts.push('</worksheet>');
-
-    const bytes = new TextEncoder().encode(parts.join(''));
-    const sheetId = state.sheets.length + 1;
-    state.sheets.push({ title, sheetId, bytes });
+    await stream.end();
+    state.sheets.push({ title, sheetId });
     state.hasOpenWorksheet = false;
-    // Help V8 release the row buffer eagerly — the workbook-level
-    // finalize path now only needs the encoded `bytes`.
-    rowChunks.length = 0;
   };
 
   return { title, appendRow, setColumnWidth, close };
@@ -231,12 +264,17 @@ const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
   // point at this slot via styleId=0; user-styled cells start at index
   // 1 so the writer emits an `s="N"` attribute for them.
   addCellXf(styles, defaultCellXf());
+  // The ZIP writer is created up front: each addWorksheet opens a
+  // streaming entry on it and flushes row chunks through the deflate
+  // stream as they arrive. Sheets emit before styles / sst / workbook
+  // / rels / content-types so the writer can serialise them in order.
   const state: WorkbookState = {
     styles,
     sst: makeSharedStrings(),
     sheets: [],
     finalised: false,
     hasOpenWorksheet: false,
+    writer: createZipWriter(sink),
   };
 
   const addWorksheet = async (title: string): Promise<WriteOnlyWorksheet> => {
@@ -251,7 +289,8 @@ const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
     const taken = new Set(state.sheets.map((s) => s.title));
     validateTitle(title, taken);
     state.hasOpenWorksheet = true;
-    return makeWriteOnlyWorksheet(state, title);
+    const sheetId = state.sheets.length + 1;
+    return makeWriteOnlyWorksheet(state, title, sheetId);
   };
 
   const finalize = async (): Promise<void> => {
@@ -262,12 +301,10 @@ const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
       throw new OpenXmlIoError('finalize: a worksheet is still open — call close() before finalising');
     }
     state.finalised = true;
-    const writer = createZipWriter(sink);
+    const writer = state.writer;
 
-    // 1. Worksheets.
-    for (const s of state.sheets) {
-      await writer.addEntry(`xl/worksheets/sheet${s.sheetId}.xml`, s.bytes);
-    }
+    // 1. Worksheets — already streamed through writer.addStreamingEntry
+    // during each WriteOnlyWorksheet's appendRow / close cycle.
 
     // 2. Stylesheet.
     await writer.addEntry(ARC_STYLE, stylesheetToBytes(state.styles));

@@ -31,10 +31,31 @@ export interface ZipWriter {
   addEntry(path: string, bytes: Uint8Array | ReadableStream<Uint8Array>, opts?: { compress?: boolean }): Promise<void>;
 
   /**
+   * Open a streaming entry. Returns a writer the caller can `write()`
+   * chunks to and `end()` to seal the entry. Each chunk pushes through
+   * the same fflate `ZipDeflate` / `ZipPassThrough` machinery as
+   * `addEntry`, so peak memory stays at one chunk + deflate scratch
+   * even for multi-GB worksheets.
+   *
+   * Sequencing: only one streaming entry may be open at a time —
+   * `addEntry` and a second `addStreamingEntry` both throw until the
+   * current entry's `end()` resolves.
+   */
+  addStreamingEntry(path: string, opts?: { compress?: boolean }): StreamingEntryWriter;
+
+  /**
    * Build the central directory and flush all bytes through the sink.
    * Idempotent; subsequent calls resolve to the same payload.
    */
   finalize(): Promise<Uint8Array>;
+}
+
+/** Writer handle for a single streaming entry. */
+export interface StreamingEntryWriter {
+  /** Push a chunk of bytes (already-encoded). Throws after `end()`. */
+  write(chunk: Uint8Array): void;
+  /** Seal the entry. Subsequent `write()` throws. Idempotent. */
+  end(): Promise<void>;
 }
 
 /**
@@ -71,24 +92,33 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
     }
   });
 
+  let streamingOpen = false;
+
+  const guardAdd = (path: string): void => {
+    if (finalised !== undefined) {
+      throw new OpenXmlIoError('createZipWriter: addEntry after finalize');
+    }
+    if (streamingOpen) {
+      throw new OpenXmlIoError('createZipWriter: a streaming entry is still open — call end() first');
+    }
+    if (seen.has(path)) {
+      throw new OpenXmlIoError(`createZipWriter: duplicate entry "${path}"`);
+    }
+    if (seen.size >= ZIP32_MAX_ENTRIES) {
+      throw new OpenXmlNotImplementedError(
+        `createZipWriter: archive would exceed the ZIP32 entry limit (${ZIP32_MAX_ENTRIES}). ZIP64 write is not supported by the underlying deflate library; split the archive into multiple files.`,
+      );
+    }
+  };
+
   return {
     async addEntry(path, bytes, opts) {
-      if (finalised !== undefined) {
-        throw new OpenXmlIoError('createZipWriter: addEntry after finalize');
-      }
       if (!(bytes instanceof Uint8Array)) {
         throw new OpenXmlIoError(
           'createZipWriter: ReadableStream entries are not yet supported (deferred to streaming writer)',
         );
       }
-      if (seen.has(path)) {
-        throw new OpenXmlIoError(`createZipWriter: duplicate entry "${path}"`);
-      }
-      if (seen.size >= ZIP32_MAX_ENTRIES) {
-        throw new OpenXmlNotImplementedError(
-          `createZipWriter: archive would exceed the ZIP32 entry limit (${ZIP32_MAX_ENTRIES}). ZIP64 write is not supported by the underlying deflate library; split the archive into multiple files.`,
-        );
-      }
+      guardAdd(path);
       seen.add(path);
       const compress = opts?.compress ?? true;
       const file = compress ? new ZipDeflate(path) : new ZipPassThrough(path);
@@ -103,8 +133,56 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
       }
     },
 
+    addStreamingEntry(path, opts) {
+      guardAdd(path);
+      seen.add(path);
+      streamingOpen = true;
+      const compress = opts?.compress ?? true;
+      const file = compress ? new ZipDeflate(path) : new ZipPassThrough(path);
+      try {
+        zip.add(file);
+      } catch (cause) {
+        streamingOpen = false;
+        throw new OpenXmlIoError(`createZipWriter: failed to open streaming entry "${path}"`, { cause });
+      }
+      let ended = false;
+      return {
+        write(chunk: Uint8Array): void {
+          if (ended) throw new OpenXmlIoError(`createZipWriter: write after end on "${path}"`);
+          if (!(chunk instanceof Uint8Array)) {
+            throw new OpenXmlIoError(`createZipWriter: streaming entry "${path}" chunk is not a Uint8Array`);
+          }
+          if (chunk.byteLength === 0) return;
+          try {
+            file.push(chunk, /* final */ false);
+          } catch (cause) {
+            throw new OpenXmlIoError(`createZipWriter: failed to push chunk on "${path}"`, { cause });
+          }
+          if (errors.length > 0) {
+            throw new OpenXmlIoError('createZipWriter: stream error during write', { cause: errors[0] });
+          }
+        },
+        async end(): Promise<void> {
+          if (ended) return;
+          ended = true;
+          try {
+            file.push(new Uint8Array(0), /* final */ true);
+          } catch (cause) {
+            throw new OpenXmlIoError(`createZipWriter: failed to end streaming entry "${path}"`, { cause });
+          }
+          streamingOpen = false;
+          if (errors.length > 0) {
+            throw new OpenXmlIoError('createZipWriter: stream error during end', { cause: errors[0] });
+          }
+        },
+      };
+    },
+
     async finalize() {
       if (finalised !== undefined) return finalised;
+      if (streamingOpen) {
+        throw new OpenXmlIoError('createZipWriter: cannot finalize while a streaming entry is open');
+      }
       finalised = (async () => {
         try {
           if (!endCalled) {
