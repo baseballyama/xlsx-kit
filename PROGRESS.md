@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §3 styles 続き：`PatternFill` / `GradientFill` / `Fill` (discriminated union, fgColor/bgColor、preset patternType 19 種、gradient stops は schema sequence)。fgColor/bgColor は Color の参照。openpyxl `styles/fills.py` を参照。続けて `Alignment` (horizontal / vertical / wrapText / textRotation / indent / shrinkToFit など)、`Protection` (locked / hidden)、`NumberFormat` (BUILTIN_FORMATS id 0〜163、isDateFormat / isTimedeltaFormat ヒューリスティクス)、`Font`（schema に `nested` element kind を追加して `<sz val="11"/>` パターンに対応）。
+- **次のタスク**: フェーズ2 §3 styles 続き：`Alignment` (horizontal / vertical / wrapText / shrinkToFit / textRotation / indent / readingOrder / justifyLastLine / relativeIndent) と `Protection` (locked / hidden) を attrs だけの schema で実装。続けて `NumberFormat`（openpyxl `styles/numbers.py` の BUILTIN_FORMATS id 0〜163 をフルコピー、`isDateFormat` / `isTimedeltaFormat` ヒューリスティクス）。最後に `Font`（schema に `nested` element kind 追加 → `<sz val="11"/>` パターン対応）。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
@@ -40,7 +40,7 @@
 ### フェーズ2: コアモデル ([04-core-model.md](docs/plan/04-core-model.md))
 
 - [ ] §2 Cell (CellValue 型, makeCell, getCoordinate, bindValue, RichText, MergedCell)
-- [~] §3 Style (Color + Side + Border 完了：plain object + freeze、`makeColor` (rgb 8-hex normalise、indexed [0,65] / theme ≥0 / tint [-1,1] のレンジ検証)、`COLOR_INDEX` 64 entries (frozen)、`resolveIndexedColor`、BLACK/WHITE/BLUE 定数。SIDE_STYLES 13 種 (`thin`/`medium`/`thick`/`double`/`hair`/`dotted`/`dashed`/`dashDot`/`dashDotDot`/`mediumDashed`/`mediumDashDot`/`mediumDashDotDot`/`slantDashDot`)、`makeSide` / `makeBorder` (nested Side を自動 freeze)、`EMPTY_SIDE` / `DEFAULT_BORDER`。ColorSchema / SideSchema / BorderSchema (sibling `*.schema.ts` 配置で tree-shake 可)。round-trip OK。319 tests pass。残：Font / Fill / Alignment / Protection / NumberFormat)
+- [~] §3 Style (Color + Side + Border + Fill 完了：Fill は `PatternFill | GradientFill` の discriminated union (`kind` フィールド)。PATTERN_TYPES 19 種 (`none`/`solid`/`darkDown`/...) を enum で持ち、`makePatternFill` (fg/bgColor を自動 freeze)、`makeGradientFill` (type=`'linear'|'path'`、stops は `GradientStop[]` で position [0,1] enforce)、`makeFill` ディスパッチ、`DEFAULT_EMPTY_FILL` / `DEFAULT_GRAY_FILL` 定数。Schema は `<fill>` ラッパを `fillToTree`/`fillFromTree` で hand-roll し、PatternFillSchema/GradientFillSchema は kind 抜きで作って postParse で復元。round-trip 7 ケース pass (空 Pattern / solid / fg+bg / gradient default / gradient with stops / path with insets etc.)。341 tests pass。残：Alignment / Protection / NumberFormat / Font)
 - [ ] §3.4 Stylesheet (プール + dedup + StyleArray index)
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
 - [ ] §3.7 Built-in NamedStyles
