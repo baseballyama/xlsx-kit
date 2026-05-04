@@ -42,7 +42,7 @@ describe('chart-xml round-trip — BarChart', () => {
       },
     });
     const back = parseChartXml(chartToBytes(space));
-    expect(back.title).toBe('Quarterly Sales');
+    expect(back.title?.text).toBe('Quarterly Sales');
     expect(back.legend?.position).toBe('r');
     const bar = back.plotArea.chart;
     if (bar.kind !== 'bar') throw new Error('expected bar chart');
@@ -125,7 +125,7 @@ describe('full chart round-trip through saveWorkbook → loadWorkbook', () => {
     expect(item?.content.kind).toBe('chart');
     if (item?.content.kind === 'chart') {
       const back = item.content.chart.space as ChartSpace;
-      expect(back.title).toBe('Test');
+      expect(back.title?.text).toBe('Test');
       const barBack = back.plotArea.chart;
       if (barBack.kind !== 'bar') throw new Error('expected bar chart');
       expect(barBack.barDir).toBe('col');
@@ -158,7 +158,7 @@ describe('full chart round-trip through saveWorkbook → loadWorkbook', () => {
     const wb2 = await loadWorkbook(fromBuffer(bytes));
     const titles = (sheet: Worksheet | undefined): string[] =>
       (sheet?.drawing?.items ?? [])
-        .map((i) => (i.content.kind === 'chart' ? i.content.chart.space?.title : undefined))
+        .map((i) => (i.content.kind === 'chart' ? i.content.chart.space?.title?.text : undefined))
         .filter((t): t is string => t !== undefined);
     expect(titles(wb2.sheets[0]?.sheet)).toEqual(['chart-A1']);
     expect(titles(wb2.sheets[1]?.sheet)).toEqual(['chart-B1', 'chart-B2']);

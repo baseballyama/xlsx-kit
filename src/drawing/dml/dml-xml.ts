@@ -1818,9 +1818,12 @@ export const parseTextBody = (el: XmlNode): TextBody => {
   const bodyPr = bodyPrEl ? parseTextBodyProperties(bodyPrEl) : {};
   const lstStyleEl = findChild(el, A('lstStyle'));
   const lstStyle = lstStyleEl ? parseListStyle(lstStyleEl) : undefined;
+  // Excel emits a bare `<a:lstStyle/>` even when no level overrides are set;
+  // treat that as absent so round-trip equality holds for `lstStyle: undefined`.
+  const lstStyleHasContent = lstStyle && Object.keys(lstStyle).length > 0;
   const paragraphs: TextParagraph[] = [];
   for (const p of findChildren(el, A('p'))) paragraphs.push(parseTextParagraph(p));
-  return { bodyPr, ...(lstStyle ? { lstStyle } : {}), paragraphs };
+  return { bodyPr, ...(lstStyleHasContent ? { lstStyle } : {}), paragraphs };
 };
 
 /** Serialise a TextBody. Wrapper defaults to `<c:txPr>` to match chart usage. */

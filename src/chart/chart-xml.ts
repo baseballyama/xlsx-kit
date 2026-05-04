@@ -5,6 +5,14 @@
 // strCache). Other chart kinds slot in alongside as their own
 // `<c:lineChart>` / `<c:pieChart>` / etc. parsers.
 
+import {
+  parseShapeProperties,
+  parseTextBody,
+  serializeShapeProperties,
+  serializeTextBody,
+} from '../drawing/dml/dml-xml';
+import type { ShapeProperties } from '../drawing/dml/shape-properties';
+import type { TextBody } from '../drawing/dml/text';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { CHART_NS, REL_NS, SHEET_DRAWING_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
@@ -23,6 +31,7 @@ import {
   type CategoryRef,
   type ChartKind,
   type ChartSpace,
+  type ChartTitle,
   type DoughnutChart,
   type GroupingType,
   type Legend,
@@ -141,6 +150,9 @@ const LEGEND_TAG = `{${CHART_NS}}legend`;
 const LEGEND_POS_TAG = `{${CHART_NS}}legendPos`;
 const PLOT_VIS_ONLY_TAG = `{${CHART_NS}}plotVisOnly`;
 const DISP_BLANKS_AS_TAG = `{${CHART_NS}}dispBlanksAs`;
+const SP_PR_TAG = `{${CHART_NS}}spPr`;
+const TX_PR_TAG = `{${CHART_NS}}txPr`;
+const OVERLAY_TAG = `{${CHART_NS}}overlay`;
 const A_R_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}r';
 const A_T_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}t';
 
@@ -163,20 +175,50 @@ const boolVal = (n: XmlNode | undefined): boolean | undefined => {
   return undefined;
 };
 
-const parseTitleString = (titleEl: XmlNode): string | undefined => {
-  // Excel surfaces the title text inside <c:tx><c:rich>...<a:r><a:t>text</a:t></a:r></c:rich></c:tx>.
-  const tx = findChild(titleEl, TX_TAG);
-  if (!tx) return undefined;
-  const rich = findChild(tx, RICH_TAG);
-  if (!rich) return undefined;
+const parseRichTextString = (richEl: XmlNode): string | undefined => {
   let out = '';
-  for (const p of rich.children) {
+  for (const p of richEl.children) {
+    if (typeof p === 'string') continue;
     for (const r of findChildren(p, A_R_TAG)) {
       const t = findChild(r, A_T_TAG);
       if (t?.text) out += t.text;
     }
   }
   return out.length > 0 ? out : undefined;
+};
+
+const parseChartTitle = (titleEl: XmlNode): ChartTitle => {
+  const out: ChartTitle = {};
+  const tx = findChild(titleEl, TX_TAG);
+  if (tx) {
+    const rich = findChild(tx, RICH_TAG);
+    if (rich) {
+      // Parse the rich text body fully so callers see the formatted content.
+      // For the convenience plain-text shortcut we also run a simple scrape
+      // when the body has only literal runs.
+      const body = parseTextBody(rich);
+      out.tx = body;
+      const flat = parseRichTextString(rich);
+      if (flat !== undefined) out.text = flat;
+    }
+  }
+  const overlay = boolVal(findChild(titleEl, OVERLAY_TAG));
+  if (overlay !== undefined) out.overlay = overlay;
+  const spPrEl = findChild(titleEl, SP_PR_TAG);
+  if (spPrEl) out.spPr = parseShapeProperties(spPrEl);
+  const txPrEl = findChild(titleEl, TX_PR_TAG);
+  if (txPrEl) out.txPr = parseTextBody(txPrEl);
+  return out;
+};
+
+const parseSpPrSlot = (parent: XmlNode): ShapeProperties | undefined => {
+  const el = findChild(parent, SP_PR_TAG);
+  return el ? parseShapeProperties(el) : undefined;
+};
+
+const parseTxPrSlot = (parent: XmlNode): TextBody | undefined => {
+  const el = findChild(parent, TX_PR_TAG);
+  return el ? parseTextBody(el) : undefined;
 };
 
 const parseNumCache = (cacheEl: XmlNode): { values: number[]; formatCode?: string } => {
@@ -253,7 +295,9 @@ const parseSeries = (serEl: XmlNode): BarSeries | undefined => {
   if (order !== undefined) opts.order = order;
   const cat = parseCategoryRef(serEl);
   if (cat) opts.cat = cat;
-  return makeBarSeries(opts);
+  const base = makeBarSeries(opts);
+  const spPr = parseSpPrSlot(serEl);
+  return spPr ? { ...base, spPr } : base;
 };
 
 const parseAxIds = (chartEl: XmlNode): [number, number] => {
@@ -353,7 +397,9 @@ const parseScatterSeries = (serEl: XmlNode): ScatterSeries | undefined => {
   if (order !== undefined) opts.order = order;
   if (xVal) opts.xVal = xVal;
   if (smooth !== undefined) opts.smooth = smooth;
-  return makeScatterSeries(opts);
+  const base = makeScatterSeries(opts);
+  const spPr = parseSpPrSlot(serEl);
+  return spPr ? { ...base, spPr } : base;
 };
 
 const parseScatterChart = (scatterEl: XmlNode): ScatterChart => {
@@ -396,7 +442,9 @@ const parseBubbleSeries = (serEl: XmlNode): BubbleSeries | undefined => {
   if (order !== undefined) opts.order = order;
   if (xVal) opts.xVal = xVal;
   if (bubble3D !== undefined) opts.bubble3D = bubble3D;
-  return makeBubbleSeries(opts);
+  const base = makeBubbleSeries(opts);
+  const spPr = parseSpPrSlot(serEl);
+  return spPr ? { ...base, spPr } : base;
 };
 
 const parseBubbleChart = (bubbleEl: XmlNode): BubbleChart => {
@@ -594,19 +642,31 @@ const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
 
 const parseAxis = (
   axEl: XmlNode,
-): { axId: number; crossAx: number; position?: 'b' | 't' | 'l' | 'r'; delete?: boolean; majorGridlines?: boolean } => {
+): {
+  axId: number;
+  crossAx: number;
+  position?: 'b' | 't' | 'l' | 'r';
+  delete?: boolean;
+  majorGridlines?: boolean;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
+} => {
   const axId = intVal(findChild(axEl, AX_ID_TAG)) ?? 0;
   const crossAx = intVal(findChild(axEl, CROSS_AX_TAG)) ?? 0;
   const positionRaw = valAttr(findChild(axEl, AX_POS_TAG));
   const validPos = positionRaw === 'b' || positionRaw === 't' || positionRaw === 'l' || positionRaw === 'r';
   const del = boolVal(findChild(axEl, DELETE_TAG));
   const majorGridlines = findChild(axEl, MAJOR_GRIDLINES_TAG) !== undefined ? true : undefined;
+  const spPr = parseSpPrSlot(axEl);
+  const txPr = parseTxPrSlot(axEl);
   return {
     axId,
     crossAx,
     ...(validPos ? { position: positionRaw as 'b' | 't' | 'l' | 'r' } : {}),
     ...(del !== undefined ? { delete: del } : {}),
     ...(majorGridlines !== undefined ? { majorGridlines } : {}),
+    ...(spPr ? { spPr } : {}),
+    ...(txPr ? { txPr } : {}),
   };
 };
 
@@ -623,27 +683,42 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
   const chart = parsePlotChart(plotAreaEl);
   const catAxEl = findChild(plotAreaEl, CAT_AX_TAG);
   const valAxEl = findChild(plotAreaEl, VAL_AX_TAG);
+  const plotAreaSpPr = parseSpPrSlot(plotAreaEl);
   const plotArea: PlotArea = {
     chart,
     ...(catAxEl ? { catAx: parseAxis(catAxEl) as CategoryAxis } : {}),
     ...(valAxEl ? { valAx: parseAxis(valAxEl) as ValueAxis } : {}),
+    ...(plotAreaSpPr ? { spPr: plotAreaSpPr } : {}),
   };
   const titleEl = findChild(chartEl, TITLE_TAG);
-  const title = titleEl ? parseTitleString(titleEl) : undefined;
+  const title = titleEl ? parseChartTitle(titleEl) : undefined;
   const legendEl = findChild(chartEl, LEGEND_TAG);
   let legend: Legend | undefined;
   if (legendEl) {
     const posRaw = valAttr(findChild(legendEl, LEGEND_POS_TAG)) as LegendPosition | undefined;
-    legend = { position: posRaw ?? 'r' };
+    const overlay = boolVal(findChild(legendEl, OVERLAY_TAG));
+    const legendSpPr = parseSpPrSlot(legendEl);
+    const legendTxPr = parseTxPrSlot(legendEl);
+    legend = {
+      position: posRaw ?? 'r',
+      ...(overlay !== undefined ? { overlay } : {}),
+      ...(legendSpPr ? { spPr: legendSpPr } : {}),
+      ...(legendTxPr ? { txPr: legendTxPr } : {}),
+    };
   }
   const plotVisOnly = boolVal(findChild(chartEl, PLOT_VIS_ONLY_TAG));
   const dispBlanksAs = valAttr(findChild(chartEl, DISP_BLANKS_AS_TAG)) as ChartSpace['dispBlanksAs'];
+  // Top-level spPr / txPr live on chartSpace (sibling of <c:chart>), not inside <c:chart>.
+  const spaceSpPr = parseSpPrSlot(root);
+  const spaceTxPr = parseTxPrSlot(root);
   return makeChartSpace({
     plotArea,
     ...(title !== undefined ? { title } : {}),
     ...(legend ? { legend } : {}),
     ...(plotVisOnly !== undefined ? { plotVisOnly } : {}),
     ...(dispBlanksAs ? { dispBlanksAs } : {}),
+    ...(spaceSpPr ? { spPr: spaceSpPr } : {}),
+    ...(spaceTxPr ? { txPr: spaceTxPr } : {}),
   });
 }
 
@@ -696,6 +771,7 @@ const serializeSeries = (s: BarSeries): string => {
       parts.push(`<c:tx><c:strRef><c:f>${escapeText(s.tx.ref)}</c:f></c:strRef></c:tx>`);
     }
   }
+  if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
   if (s.cat) parts.push(serializeCategoryRef(s.cat));
   parts.push(serializeNumericRef('val', s.val));
   parts.push('</c:ser>');
@@ -772,6 +848,7 @@ const serializeScatterSeries = (s: ScatterSeries): string => {
       parts.push(`<c:tx><c:strRef><c:f>${escapeText(s.tx.ref)}</c:f></c:strRef></c:tx>`);
     }
   }
+  if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
   if (s.xVal) parts.push(serializeNumericRef('xVal', s.xVal));
   parts.push(serializeNumericRef('yVal', s.yVal));
   if (s.smooth !== undefined) parts.push(`<c:smooth val="${s.smooth ? '1' : '0'}"/>`);
@@ -808,6 +885,7 @@ const serializeBubbleSeries = (s: BubbleSeries): string => {
       parts.push(`<c:tx><c:strRef><c:f>${escapeText(s.tx.ref)}</c:f></c:strRef></c:tx>`);
     }
   }
+  if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
   if (s.xVal) parts.push(serializeNumericRef('xVal', s.xVal));
   parts.push(serializeNumericRef('yVal', s.yVal));
   parts.push(serializeNumericRef('bubbleSize', s.bubbleSize));
@@ -939,24 +1017,42 @@ const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): st
     `<c:axPos val="${ax.position ?? (tag === 'catAx' ? 'b' : 'l')}"/>`,
   ];
   if (tag === 'valAx' && (ax as ValueAxis).majorGridlines) parts.push('<c:majorGridlines/>');
+  // ECMA-376 element order places spPr / txPr immediately before crossAx.
+  if (ax.spPr) parts.push(serializeShapeProperties(ax.spPr));
+  if (ax.txPr) parts.push(serializeTextBody(ax.txPr, 'c:txPr'));
   parts.push(`<c:crossAx val="${ax.crossAx}"/>`);
   parts.push(`</c:${tag}>`);
   return parts.join('');
 };
 
-const serializeTitle = (title: string): string =>
-  [
-    '<c:title>',
-    '<c:tx>',
-    '<c:rich>',
-    '<a:bodyPr/><a:lstStyle/><a:p>',
-    `<a:r><a:t>${escapeText(title)}</a:t></a:r>`,
-    '</a:p>',
-    '</c:rich>',
-    '</c:tx>',
-    '<c:overlay val="0"/>',
-    '</c:title>',
-  ].join('');
+const serializeChartTitle = (title: ChartTitle): string => {
+  const parts: string[] = ['<c:title>'];
+  if (title.tx) {
+    // Wrap a TextBody as <c:tx><c:rich>...</c:rich></c:tx>.
+    parts.push('<c:tx>');
+    parts.push(serializeTextBody(title.tx, 'c:rich'));
+    parts.push('</c:tx>');
+  } else if (title.text !== undefined) {
+    parts.push(
+      '<c:tx>',
+      '<c:rich>',
+      '<a:bodyPr/><a:lstStyle/><a:p>',
+      `<a:r><a:t>${escapeText(title.text)}</a:t></a:r>`,
+      '</a:p>',
+      '</c:rich>',
+      '</c:tx>',
+    );
+  }
+  if (title.overlay !== undefined) {
+    parts.push(`<c:overlay val="${title.overlay ? '1' : '0'}"/>`);
+  } else {
+    parts.push('<c:overlay val="0"/>');
+  }
+  if (title.spPr) parts.push(serializeShapeProperties(title.spPr));
+  if (title.txPr) parts.push(serializeTextBody(title.txPr, 'c:txPr'));
+  parts.push('</c:title>');
+  return parts.join('');
+};
 
 const serializeChartKind = (chart: ChartKind): string => {
   switch (chart.kind) {
@@ -1000,7 +1096,17 @@ const serializePlotArea = (plotArea: PlotArea): string => {
   parts.push(serializeChartKind(plotArea.chart));
   if (plotArea.catAx) parts.push(serializeAxis('catAx', plotArea.catAx));
   if (plotArea.valAx) parts.push(serializeAxis('valAx', plotArea.valAx));
+  if (plotArea.spPr) parts.push(serializeShapeProperties(plotArea.spPr));
   parts.push('</c:plotArea>');
+  return parts.join('');
+};
+
+const serializeLegend = (legend: Legend): string => {
+  const parts: string[] = ['<c:legend>', `<c:legendPos val="${legend.position}"/>`];
+  if (legend.overlay !== undefined) parts.push(`<c:overlay val="${legend.overlay ? '1' : '0'}"/>`);
+  if (legend.spPr) parts.push(serializeShapeProperties(legend.spPr));
+  if (legend.txPr) parts.push(serializeTextBody(legend.txPr, 'c:txPr'));
+  parts.push('</c:legend>');
   return parts.join('');
 };
 
@@ -1015,16 +1121,18 @@ export function serializeChartSpace(space: ChartSpace): string {
     `<c:chartSpace xmlns:c="${CHART_NS}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL_NS}">`,
     '<c:chart>',
   ];
-  if (space.title !== undefined) parts.push(serializeTitle(space.title));
+  if (space.title !== undefined) parts.push(serializeChartTitle(space.title));
   // openpyxl emits autoTitleDeleted="0" for charts that have a title; we
   // skip it for stage-1 since Excel tolerates the absence.
   parts.push(serializePlotArea(space.plotArea));
-  if (space.legend) {
-    parts.push(`<c:legend><c:legendPos val="${space.legend.position}"/></c:legend>`);
-  }
+  if (space.legend) parts.push(serializeLegend(space.legend));
   if (space.plotVisOnly !== undefined) parts.push(`<c:plotVisOnly val="${space.plotVisOnly ? '1' : '0'}"/>`);
   if (space.dispBlanksAs !== undefined) parts.push(`<c:dispBlanksAs val="${space.dispBlanksAs}"/>`);
-  parts.push('</c:chart></c:chartSpace>');
+  parts.push('</c:chart>');
+  // chartSpace-level spPr / txPr are siblings of <c:chart>, emitted after.
+  if (space.spPr) parts.push(serializeShapeProperties(space.spPr));
+  if (space.txPr) parts.push(serializeTextBody(space.txPr, 'c:txPr'));
+  parts.push('</c:chartSpace>');
   return parts.join('');
 }
 

@@ -1,3 +1,6 @@
+import type { ShapeProperties } from '../drawing/dml/shape-properties';
+import type { TextBody } from '../drawing/dml/text';
+
 // ChartML data model. Per docs/plan/08-charts-drawings.md §5.
 //
 // **Stage 1**: BarChart end-to-end. The full 17 SpreadsheetML chart
@@ -47,6 +50,8 @@ export interface BarSeries {
   order: number;
   /** Series title — either a static string or a cell reference. */
   tx?: { kind: 'literal'; value: string } | { kind: 'ref'; ref: string };
+  /** Per-series shape properties (fill / line / effects). */
+  spPr?: ShapeProperties;
   /** Categories. */
   cat?: CategoryRef;
   /** Values (always required for a bar series). */
@@ -113,6 +118,7 @@ export interface ScatterSeries {
   idx: number;
   order: number;
   tx?: BarSeries['tx'];
+  spPr?: ShapeProperties;
   xVal?: NumericRef;
   yVal: NumericRef;
   smooth?: boolean;
@@ -140,6 +146,7 @@ export interface BubbleSeries {
   idx: number;
   order: number;
   tx?: BarSeries['tx'];
+  spPr?: ShapeProperties;
   xVal?: NumericRef;
   yVal: NumericRef;
   /** Bubble size — required for a real bubble chart. */
@@ -276,6 +283,10 @@ export interface CategoryAxis {
   crossAx: number;
   position?: 'b' | 't' | 'l' | 'r';
   delete?: boolean;
+  /** Axis-line / tick formatting. */
+  spPr?: ShapeProperties;
+  /** Tick-label text formatting (default text run + paragraph properties). */
+  txPr?: TextBody;
 }
 
 export interface ValueAxis {
@@ -284,28 +295,53 @@ export interface ValueAxis {
   position?: 'b' | 't' | 'l' | 'r';
   delete?: boolean;
   majorGridlines?: boolean;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
 }
 
 export interface PlotArea {
   chart: ChartKind;
   catAx?: CategoryAxis;
   valAx?: ValueAxis;
+  /** Plot-area shape properties (background fill, border line). */
+  spPr?: ShapeProperties;
 }
 
 export interface Legend {
   position: LegendPosition;
   overlay?: boolean;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
+}
+
+/** Chart title with full DrawingML formatting support. */
+export interface ChartTitle {
+  /**
+   * Plain title text. When set the serializer emits
+   * `<c:tx><c:rich><a:p><a:r><a:t>text</a:t></a:r></c:rich></c:tx>`.
+   * Mutually exclusive with `tx`.
+   */
+  text?: string;
+  /** Rich text body — overrides `text` when both are present. */
+  tx?: TextBody;
+  overlay?: boolean;
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
 }
 
 export interface ChartSpace {
-  /** Optional chart title (plain string in stage-1). */
-  title?: string;
+  /** Optional chart title. */
+  title?: ChartTitle;
   legend?: Legend;
   plotArea: PlotArea;
   /** Honour the formatting hints in cached numeric data when rendering. */
   plotVisOnly?: boolean;
   /** Display blanks as gap, zero, or span — Excel default is `gap`. */
   dispBlanksAs?: 'gap' | 'zero' | 'span';
+  /** Chart-space level shape properties (overall frame). */
+  spPr?: ShapeProperties;
+  /** Chart-space level default text properties. */
+  txPr?: TextBody;
 }
 
 export function makeBarChart(opts: {
@@ -345,17 +381,23 @@ export function makeBarSeries(opts: {
 
 export function makeChartSpace(opts: {
   plotArea: PlotArea;
-  title?: string;
+  /** Plain string is wrapped in `{ text }`; pass `ChartTitle` for full formatting. */
+  title?: string | ChartTitle;
   legend?: Legend;
   plotVisOnly?: boolean;
   dispBlanksAs?: ChartSpace['dispBlanksAs'];
+  spPr?: ShapeProperties;
+  txPr?: TextBody;
 }): ChartSpace {
+  const title: ChartTitle | undefined = typeof opts.title === 'string' ? { text: opts.title } : opts.title;
   return {
     plotArea: opts.plotArea,
-    ...(opts.title !== undefined ? { title: opts.title } : {}),
+    ...(title !== undefined ? { title } : {}),
     ...(opts.legend ? { legend: opts.legend } : {}),
     ...(opts.plotVisOnly !== undefined ? { plotVisOnly: opts.plotVisOnly } : {}),
     ...(opts.dispBlanksAs !== undefined ? { dispBlanksAs: opts.dispBlanksAs } : {}),
+    ...(opts.spPr ? { spPr: opts.spPr } : {}),
+    ...(opts.txPr ? { txPr: opts.txPr } : {}),
   };
 }
 
