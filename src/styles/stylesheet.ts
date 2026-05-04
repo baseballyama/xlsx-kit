@@ -54,6 +54,8 @@ export interface Stylesheet {
   numFmts: Map<number, string>;
   cellXfs: CellXf[];
   cellStyleXfs: CellXf[];
+  /** Named styles (Excel's "Cell Styles" gallery; populated by addNamedStyle). */
+  namedStyles?: Array<import('./named-styles').StylesheetNamedStyle>;
 
   // Internal dedup maps. Underscore-prefixed so JSON / structuredClone
   // serialisation can choose to skip them; never part of the public API.
@@ -63,6 +65,7 @@ export interface Stylesheet {
   _xfIdByKey: Map<string, number>;
   _styleXfIdByKey: Map<string, number>;
   _numFmtIdByCode: Map<string, number>;
+  _namedStyleByName?: Map<string, import('./named-styles').StylesheetNamedStyle>;
 }
 
 /**
