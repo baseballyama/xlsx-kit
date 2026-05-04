@@ -5,8 +5,8 @@
 
 ## カレント
 
-- **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §7/§8 受け入れ条件確認。`docs/plan/04-core-model.md` §7 のテストファイル一覧 (cell / styles/* / stylesheet-dedup / worksheet / cell-range / formula-tokenize / formula-translate / json-roundtrip) を点検し、欠けている describe があれば補完。同 §8 「100 セル書き込み → JSON シリアライズ → 復元 → 同一性検証」の end-to-end サンプル + property-based dedup 冪等性 (fast-check) を追加。完了後フェーズ3 (read/write workbook) へ。
+- **フェーズ**: フェーズ3 (read / write 実装) [04-core-model.md フェーズ2 全 acceptance pass]
+- **次のタスク**: フェーズ3 §1 全体フロー。まず `docs/plan/05-read-write.md` を再読し、最小ステップ ―― `loadWorkbook(source, opts?): Promise<Workbook>` の **空 xlsx スケルトン読込** から始める。openpyxl genuine/empty.xlsx を `openZip` → `[Content_Types].xml` Manifest → workbook part 解決 → `xl/workbook.xml` の sheets リスト → `xl/worksheets/sheet1.xml` を SAX iterparse で空 Worksheet として復元、まで。styles / sharedStrings / theme / docProps の本格対応は次のターン以降。`src/public/load.ts` を新設して entry point を提供。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -48,8 +48,19 @@
 - [x] §4.5 cell-range / multi-cell-range 完了：`src/worksheet/cell-range.ts`。`CellRange` は `utils/coordinate` の `CellRangeBoundaries` を再エクスポート（型重複回避）。`makeCellRange(minRow, minCol, maxRow, maxCol)` は MAX_ROW/MAX_COL 範囲チェック + min/max 反転正規化、`parseRange` は `rangeBoundaries` ラッパ、`rangeToString` は `boundariesToRangeString` ラッパ、`rangeContainsCell` / `rangeContainsRange` は両軸 inclusive、`shiftRange` (整数 dr/dc 検証)、`unionRange` (bounding box) / `intersectionRange` (`null`-on-disjoint) / `rangesOverlap` / `rangeArea` / `iterRangeCoordinates` (row-major generator)。`MultiCellRange = { ranges: CellRange[] }` (sqref) は `parseMultiCellRange` (whitespace-split) / `multiCellRangeToString` (space-join) / `makeMultiCellRange` (defensive copy) / `multiCellRangeContainsCell` / `multiCellRangeArea` (overlaps non-deduped)。519 tests pass。
 - [x] §5 Formula tokenizer + translator 完了：`src/formula/{tokenizer,translate}.ts`。Tokenizer は openpyxl の Token クラスを `Token = { value, type, subtype }` の plain object + free function に分解 (`tokenize` / `renderTokens` / `makeOperand` / `makeSubexp` / `makeSeparator` / `getCloser`)、TokenType (LITERAL/OPERAND/FUNC/ARRAY/PAREN/SEP/OPERATOR-{PREFIX,INFIX,POSTFIX}/WHITE-SPACE) と TokenSubtype (TEXT/NUMBER/LOGICAL/ERROR/RANGE/OPEN/CLOSE/ARG/ROW) は string 定数 + union type、TokenizerState は internal struct。state machine + regex (SN_RE / WSPACE_RE / STRING_DOUBLE_RE / STRING_SINGLE_RE) で ',' を top-level / PAREN 直下では range-union OP_IN として扱う。Translator は `translateFormula(formula, origin, { dest? rowDelta? colDelta? })` を提供、`translateRow` / `translateCol` / `stripWsName` / `translateRange` は `$`-anchor 保持 + 範囲外で `TranslatorError`、LITERAL は素通し。`makeTranslator` / `translatorFormula` / `translatorRender` は openpyxl `Translator` 互換の薄いラッパ。openpyxl `test_tokenizer.py` / `test_translate.py` の parametrize fixture 全件を `tests/phase-2/formula-{tokenize,translate}.test.ts` に移植 (87 + 90 = 177 tests)、quoted sheet name in range / structured table refs (`Table1[[#Data],[Col]:[Col2]]`) / scientific notation の prefix/infix `+/-` 切替も全カバー。696 tests pass。**数式評価はしない**方針を doc + コメントで明記。
 - [x] §6 JSON round-trip テスト 完了：`tests/phase-2/json-roundtrip.test.ts`。`jsonReplacer` / `jsonReviver` で stringify→parse した Workbook が以下を保持することを 9 ケースで確認 — (1) default Stylesheet pre-populate (1 font / 2 fills / 1 border, 内部 `_*ByKey` Map のまま生存), (2) number/string/boolean/null セル値, (3) formula / error / rich-text の discriminated 値 (kind + 全フィールド), (4) sparse `Map<row, Map<col, Cell>>` の getMaxRow/getMaxCol/iterValues, (5) 複数 sheet の order / sheetId / activeSheetIndex, (6) cellXfs/font/fill/border pool 数 + 各 cell の styleId, (7) revive 後も dedup が有効 (同一 Font/同一 numFmt code を再 set すると同じ id), (8) custom numFmt の id 連続性。mergedCells 往復は phase 5 へ deferred のため sqref 文字列の JSON safe のみ確認。716 tests pass。
-- [ ] §7 phase-2 テスト群（残：property-based dedup 冪等性 (fast-check)、worksheet を含む追加テストの整理）
-- [ ] §8 phase-2 完了条件 (100 cell write → JSON ラウンドトリップ end-to-end サンプル)
+- [x] §7 phase-2 テスト群 完了：plan §7 で挙げた 8 ファイル群はすべて存在 (`tests/phase-2/cell/{cell,rich-text}.test.ts` / `styles/{alignment,borders,colors,differential,fills,fonts,named-styles,numbers,protection,stylesheet,cell-style-bridge}.test.ts` / `cell-range.test.ts` / `formula-tokenize.test.ts` / `formula-translate.test.ts` / `json-roundtrip.test.ts` / `workbook.test.ts`)。worksheet は workbook.test.ts に統合 (`Worksheet getCell / setCell / deleteCell` 等の describe 群)。Property-based は `tests/phase-2/dedup.property.test.ts` (fast-check 3.23 を devDeps 追加)、9 properties で addFont/addFill/addBorder/addNumFmt/addCellXf の冪等性 + insertion order 非依存 + interleave 安定性 + cellXfs reverse-stream 等価 + defaultCellXf 常に slot 0 を fc.assert で確認。
+- [x] §8 phase-2 完了条件 確認：`tests/phase-2/phase2-acceptance.test.ts` で「createWorkbook → 10×10=100 セル書き込み (number/string/bool/null 4-rotate, col1=bold, col10=italic) → JSON.stringify → JSON.parse → pool size + 全 cell の value/styleId/coords 一致」を end-to-end pass。`pnpm build` で `dist/index.mjs` 57.99 KB (フェーズ1 56KB から +2KB; cell/style/workbook/worksheet/formula が乗ったぶん)。`pnpm test` 726 tests pass、`pnpm typecheck` / `pnpm lint` clean、フェーズ1 のテスト全て pass で回帰なし。
+
+### フェーズ3: read / write 実装 ([05-read-write.md](docs/plan/05-read-write.md))
+
+- [ ] §1 全体フロー (loadWorkbook → minimum skeleton から段階的に拡充)
+- [ ] §2 styles.xml read/write
+- [ ] §3 sharedStrings.xml read/write
+- [ ] §4 workbook.xml read/write (sheets / defined names / bookViews)
+- [ ] §5 worksheet.xml read/write
+- [ ] §6 docProps + theme passthrough
+- [ ] §7 saveWorkbook
+- [ ] §8 phase-3 受け入れ条件 (openpyxl genuine/*.xlsx を read → write で full round-trip)
 
 ## 1 ターンの流れ
 
