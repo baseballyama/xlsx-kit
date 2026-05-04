@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §3 styles 最後の値オブジェクト：`Font`。openpyxl の Font は `<font><sz val="11"/><b/><color theme="1"/>...</font>` の "nested-with-val-attr" パターンなので、Schema layer に **`nested` ElementDef 種別を追加**：`<tagname val="value"/>` の attribute 経由で primitive を運ぶ形。`<b/>` / `<i/>` 等の bool-empty は既存 `empty` kind を使う。Font のフィールドは name / size / bold / italic / underline / strike / color / family / charset / scheme / vertAlign / outline / shadow / condense / extend。`makeFont` + FontSchema + DEFAULT_FONT (Calibri 11)。round-trip テスト。
+- **次のタスク**: フェーズ2 §3.4 Stylesheet。プール (`fonts: Font[]`, `fills: Fill[]`, `borders: Border[]`, `numFmts: Map<id, code>`) + dedup 機構 + `addFont` / `addFill` / `addBorder` / `addNumFmt` / `addCellXf` 等の add 関数。値ベース dedup は `stableStringify` で正規化したキーで `Map<string, number>` を引く。phase 3 の Worksheet writer から呼ばれる。続けて §3.6 Cell↔Stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)、§3.7 Built-in NamedStyles (Normal / Good / Bad / 等)、§3.8 DifferentialStyle。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -38,7 +38,7 @@
 ### フェーズ2: コアモデル ([04-core-model.md](docs/plan/04-core-model.md))
 
 - [ ] §2 Cell (CellValue 型, makeCell, getCoordinate, bindValue, RichText, MergedCell)
-- [~] §3 Style (Color + Side + Border + Fill + Alignment + Protection + NumberFormat 完了：NumberFormat は openpyxl `BUILTIN_FORMATS` 36 entries (id 0–22 / 37–49 のスパース) をフルコピー、`BUILTIN_FORMATS_MAX_SIZE = 164`、`builtinFormatCode(id)` / `builtinFormatId(code)` / `isBuiltinFormat(code)`、`isDateFormat` / `isTimedeltaFormat` / `classifyDateFormat` (date/time/datetime/undefined) を openpyxl 互換の正規表現ヒューリスティクスで実装。`makeNumberFormat({ numFmtId, formatCode })` + Schema (numFmt 要素)。FORMAT_GENERAL / FORMAT_TEXT / FORMAT_NUMBER / FORMAT_PERCENTAGE / FORMAT_DATE_DATETIME 等の named export。399 tests pass。残：Font)
+- [x] §3 Style 値オブジェクト群 (Color + Side + Border + Fill + Alignment + Protection + NumberFormat + Font 完了)。Font は openpyxl の "nested-with-val-attr" パターンに合わせて Schema に `nested` ElementDef 種別を追加 (`<sz val="11"/>` を primitive で運ぶ)。`empty` 種別の fromTree も「absent → undefined / present → true」semantics に変更（false/未設定の round-trip 整合性のため）。Font は name/charset/family/size/color/bold/italic/strike/outline/shadow/condense/extend/underline/vertAlign/scheme の 15 フィールド、`DEFAULT_FONT = Calibri 11 minor scheme theme=1`。413 tests pass。
 - [ ] §3.4 Stylesheet (プール + dedup + StyleArray index)
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
 - [ ] §3.7 Built-in NamedStyles

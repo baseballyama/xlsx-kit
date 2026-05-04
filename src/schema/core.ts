@@ -82,10 +82,37 @@ export type ElementDef =
       container?: { name: string; xmlNs?: string; count?: boolean };
     }
   | {
+      /**
+       * Empty marker element — `<key/>` whose presence sets `T[key] = true`,
+       * absence leaves it `undefined`. Used by Font's `<b/>`, `<i/>`, etc.
+       */
       kind: 'empty';
       key: string;
       name?: string;
       xmlNs?: string;
+    }
+  | {
+      /**
+       * `<key val="value"/>` style child carrying a single primitive
+       * value via an attribute (default `val`). This is openpyxl's
+       * NestedString / NestedFloat / NestedInteger / NestedBool /
+       * NestedNoneSet pattern; it shows up across Font, NumberFormat
+       * children and several chart sub-elements.
+       */
+      kind: 'nested';
+      key: string;
+      name?: string;
+      xmlNs?: string;
+      primitive: Primitive | 'enum';
+      /** Allowed values when primitive === 'enum'. */
+      values?: readonly string[];
+      /** Attribute name carrying the value. Defaults to "val". */
+      valAttr?: string;
+      /** Numeric range bounds (int / float). */
+      min?: number;
+      max?: number;
+      optional?: boolean;
+      default?: unknown;
     }
   | {
       /**

@@ -123,6 +123,18 @@ export function toTree<T>(value: T, schema: Schema<T>): XmlNode {
         if (raw === true) node.children.push(el(elementXmlName(def, schema.xmlNs), {}, []));
         break;
       }
+      case 'nested': {
+        const valAttr = def.valAttr ?? 'val';
+        const fakeAttrDef: AttrDef = {
+          kind: def.primitive,
+          ...(def.values !== undefined ? { values: def.values } : {}),
+          ...(def.min !== undefined ? { min: def.min } : {}),
+          ...(def.max !== undefined ? { max: def.max } : {}),
+        };
+        const text = coerceToString(raw, def.primitive, fakeAttrDef);
+        node.children.push(el(elementXmlName(def, schema.xmlNs), { [valAttr]: text }, []));
+        break;
+      }
       case 'object': {
         const sub = toTree(raw as Record<string, unknown>, def.schema());
         // Allow the schema to declare its own tagname OR be addressed
@@ -227,7 +239,33 @@ export function fromTree<T>(node: XmlNode, schema: Schema<T>): T {
       }
       case 'empty': {
         const child = childByName(node, fullName);
-        out[def.key] = child !== undefined;
+        if (child !== undefined) out[def.key] = true;
+        // Absent → leave key unset so the value compares equal to the
+        // round-trip-emitting input that omitted it.
+        break;
+      }
+      case 'nested': {
+        const child = childByName(node, fullName);
+        if (child === undefined) {
+          if (def.default !== undefined) out[def.key] = def.default;
+          else if (!def.optional) {
+            throw new OpenXmlSchemaError(`<${schema.tagname}>: required nested element "${def.key}" is missing`);
+          }
+          break;
+        }
+        const valAttr = def.valAttr ?? 'val';
+        const raw = child.attrs[valAttr];
+        if (raw === undefined) {
+          throw new OpenXmlSchemaError(
+            `<${schema.tagname}>: nested element "${def.key}" missing attribute "${valAttr}"`,
+          );
+        }
+        out[def.key] = coerceFromString(raw, def.primitive, {
+          kind: def.primitive,
+          ...(def.values !== undefined ? { values: def.values } : {}),
+          ...(def.min !== undefined ? { min: def.min } : {}),
+          ...(def.max !== undefined ? { max: def.max } : {}),
+        });
         break;
       }
       case 'raw': {
