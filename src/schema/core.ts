@@ -86,6 +86,20 @@ export type ElementDef =
       key: string;
       name?: string;
       xmlNs?: string;
+    }
+  | {
+      /**
+       * Opaque round-trip slot — fromTree stores the matched child as a
+       * raw `XmlNode`, toTree splices it back verbatim. Used for
+       * subtrees we don't want to model in detail (e.g. the vt:vector
+       * content under app.xml's HeadingPairs / TitlesOfParts) but still
+       * need to preserve byte-for-byte through edits.
+       */
+      kind: 'raw';
+      key: string;
+      name?: string;
+      xmlNs?: string;
+      optional?: boolean;
     };
 
 export interface Schema<T> {

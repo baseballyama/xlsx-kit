@@ -107,7 +107,8 @@ export function toTree<T>(value: T, schema: Schema<T>): XmlNode {
     if (raw === undefined) {
       // 'empty' has no `optional`; presence is binary on the value itself.
       // 'sequence' is implicitly optional (undefined / [] = no items).
-      if ((def.kind === 'text' || def.kind === 'object') && !def.optional) {
+      // 'raw' uses the same optional flag as text/object.
+      if ((def.kind === 'text' || def.kind === 'object' || def.kind === 'raw') && !def.optional) {
         throw new OpenXmlSchemaError(`<${schema.tagname}>: required element "${def.key}" is missing`);
       }
       continue;
@@ -135,6 +136,19 @@ export function toTree<T>(value: T, schema: Schema<T>): XmlNode {
           sub.name = qname(def.xmlNs ?? schema.xmlNs ?? '', def.key);
         }
         node.children.push(sub);
+        break;
+      }
+      case 'raw': {
+        // Splice the stored XmlNode back verbatim, but realign its name
+        // to the schema-declared position so the output is well-formed
+        // even when the caller mutates `name`.
+        const sub = raw as XmlNode;
+        const expected = elementXmlName(def, schema.xmlNs);
+        if (sub.name !== expected) {
+          node.children.push({ ...sub, name: expected });
+        } else {
+          node.children.push(sub);
+        }
         break;
       }
       case 'sequence': {
@@ -214,6 +228,17 @@ export function fromTree<T>(node: XmlNode, schema: Schema<T>): T {
       case 'empty': {
         const child = childByName(node, fullName);
         out[def.key] = child !== undefined;
+        break;
+      }
+      case 'raw': {
+        const child = childByName(node, fullName);
+        if (child === undefined) {
+          if (!def.optional) {
+            throw new OpenXmlSchemaError(`<${schema.tagname}>: required raw element "${def.key}" is missing`);
+          }
+          break;
+        }
+        out[def.key] = child;
         break;
       }
       case 'object': {

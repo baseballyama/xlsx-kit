@@ -73,8 +73,11 @@ export const DEFAULT_PREFIXES: Readonly<Record<string, string>> = Object.freeze(
   [DCMITYPE_NS]: 'dcmitype',
   [REL_NS]: 'r',
   [VTYPES_NS]: 'vt',
-  [XPROPS_NS]: 'xprops',
-  [CUSTPROPS_NS]: 'cust',
+  // app.xml uses XPROPS_NS as its default namespace; custom.xml uses
+  // CUSTPROPS_NS the same way. Mark them as '' so serialised output
+  // matches Office / openpyxl convention out of the box.
+  [XPROPS_NS]: '',
+  [CUSTPROPS_NS]: '',
   [PKG_REL_NS]: '',
   [COREPROPS_NS]: 'cp',
   [CONTYPES_NS]: '',
