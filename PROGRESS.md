@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §7 utils の続き：`src/utils/datetime.ts`。1900 epoch（既定）/ 1904 epoch、1900 leap-year bug 補正（serial 60）、`excelToDate(serial, opts?): Date`、`dateToExcel(d, opts?): number`、`excelToDuration(serial): number ms`、ISO8601 helper。openpyxl `utils/datetime.py` の `from_excel` / `to_excel` / `from_ISO8601` / `to_ISO8601` / `time_to_days` / `timedelta_to_days` / `days_to_time` を移植。続けて `utils/units.ts` (EMU 定数 + 変換)、`utils/inference.ts` (cell value type → 'n'/'s'/'b'/'d'/'f'/'e')、`utils/escape.ts` (XML control char サニタイズ)。
+- **次のタスク**: フェーズ1 §7 utils の続き：`src/utils/units.ts`（EMU = 9525、cm / inch / px の相互変換、`emuFromPx` / `pxFromEmu` / `emuFromCm` / `emuFromInch` 等）。続けて `utils/inference.ts`（cell value → `'n'/'s'/'b'/'d'/'f'/'e'` 推論、openpyxl `_TYPES` 互換）と `utils/escape.ts`（XML 1.0 で禁止される control chars の reject）。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -31,7 +31,7 @@
 - [x] §4 Schema 層（クラス不使用：`Schema<T>` は plain object、`AttrDef` は string/int/float/bool/enum + min/max + xmlName/xmlNs、`ElementDef` は text/object/sequence/empty の discriminated union（lazy schema getter で循環解決）、`defineSchema<T>(s)` は inference pin、`toTree<T>(value, schema): XmlNode` / `fromTree<T>(node, schema): T` は switch on kind の純粋関数。Border + Side で round-trip、bool は OOXML の `1`/`0`、loose に `true/false/t/f/0/1` を受理、`preSerialize`/`postParse` フック動作、required attribute / 範囲外 enum で OpenXmlSchemaError、container 付き sequence の `count` 属性も round-trip。127 tests pass）
 - [x] §5 XmlStreamWriter（buffered モード：`createXmlStreamWriter(opts?): XmlStreamWriter`、API は `start`/`text`/`writeNode`/`writeRaw`/`end`/`flush`/`result`、Clark 名 → prefix 変換は writer 生成時の `prefixMap`（DEFAULT_PREFIXES + ユーザ override + `xml` 予約 binding）、auto-flush 閾値 64KB、self-closing 最適化、unclosed / post-result でエラー。100k `<c>` を `writeRaw` 経由で吐き 1MB 越えのバイト列が parseXml で N=100k 子要素として戻る。141 tests pass。残：streaming (`WritableStream<Uint8Array>`) 対応は phase 4 写表 writer と一緒に）
 - [x] §6 packaging 層（manifest + relationships + docProps/core.xml + docProps/app.xml + docProps/custom.xml 完了：CustomProperties は schema を使わず手書き（`<property>` の attrs + 子 1 個の vt: typed value）。`make*Value` / `read*Value` ヘルパで lpwstr / lpstr / bstr / i4/i2/i1/uint / r4/r8/decimal/cy / bool / filetime / date を相互変換。pid 自動採番（>= 2、衝突回避）、`appendCustomProperty` / `findCustomPropertyByName`、malformed (missing pid / value-less) は OpenXmlSchemaError。183 tests pass）
-- [~] §7 utils (coordinate 完了：`columnLetterFromIndex` / `columnIndexFromLetter` (Map cache、case-insensitive、3 letter / 16384 max enforce、ZZZ は範囲外として reject)、`coordinateFromString` (A1 → {column, row} に正規化、絶対参照 `$` 透過、行 1〜1048576 enforce)、`coordinateToTuple` (numeric col 版)、`tupleToCoordinate` (逆変換)、`rangeBoundaries` (rectangular / single-cell / whole-column "A:A" / whole-row "1:1" / 反転自動補正)、`boundariesToRangeString` (1×1 は単一座標)、`parseSheetRange` ("'Bob''s Sheet'!A1" の SQL 風エスケープ含む)。228 tests pass。残：utils/datetime, units, inference, escape, exceptions は既存)
+- [~] §7 utils (coordinate + datetime 完了：datetime は `excelToDate` / `dateToExcel` (Windows 1900 / Mac 1904 両対応、1900 phantom Feb 29 を Feb 28 に collapse する openpyxl 互換挙動)、`excelToDuration` / `durationToExcel` (ms ↔ fraction-of-day)、`fromIso8601` / `toIso8601` (W3CDTF 形式に合わせて millisecond suffix を trim)。`WINDOWS_EPOCH_MS` / `MAC_EPOCH_MS` 定数。Windows と Mac で同じ日付の serial が 1462 ずれる事も確認。260 tests pass。残：utils/units, inference, escape)
 - [ ] §8 compat
 - [ ] §9 phase-1 テスト群
 - [ ] §10 フェーズ1 完了条件
