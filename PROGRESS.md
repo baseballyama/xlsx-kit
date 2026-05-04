@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §3 XML 層の続き：iterparse SAX。`src/xml/iterparse.ts` で `iterParse(stream | bytes): AsyncIterableIterator<SaxEvent>` を `saxes` ベースで実装。SaxEvent は `{ kind: 'start' | 'end' | 'text', name?, attrs?, text? }` でよい。namespace 解決は parser と同等の挙動（Clark）。phase 4 の read-only worksheet で消費される。受け入れ条件は 1k 行 sheetData の全 cell カウントが一致するスモークテスト。saxes が dynamic import で済むなら `openxml-js` のメインエントリには載せず streaming サブパス側に隔離。
+- **次のタスク**: フェーズ1 §4 Schema 層。`src/schema/core.ts` で `Schema<T>`, `AttrDef`, `ElementDef`（discriminated union: text / object / sequence / union / empty）、`defineSchema` ヘルパ。`src/schema/serialize.ts` で `toTree` / `fromTree`。`Border` / `Side` / `Alignment` あたりを最小スキーマで往復させる単体テストまで。フェーズ2 styles のためのお膳立て。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -26,7 +26,7 @@
 
 - [~] §1 I/O 抽象（メモリ経路のみ完了：`XlsxSource` / `XlsxSink` / `BufferedSinkWriter` の interface、`OpenXmlError` 階層、Node の `fromBuffer` / `toBuffer`、ブラウザの `fromBlob` / `fromFile` / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`、30 tests pass。残：filesystem / Readable / Writable / Response 経路は §2 ZIP streaming と同時に）
 - [~] §2 ZIP 層（reader / writer メモリ経路完了：`fflate.unzipSync` の `openZip` + `fflate.zipSync` の `createZipWriter`。`empty.xlsx` の 11 エントリを writer に流して再 zip → 再 read で全 path・全 bytes が一致。STORE 圧縮の compress: false パス、duplicate / post-finalize / ReadableStream 入力は OpenXmlIoError。47 tests pass。残：streaming reader / streaming writer / ZIP64 read/write）
-- [~] §3 XML 層（namespaces / tree / parser DOM / serializer DOM 完了：`serializeXml(node, opts?): Uint8Array`、Clark 表記から prefix 復元（DEFAULT_PREFIXES → 未登録 NS は `ns{N}`）、`xml` prefix は予約・宣言不要、root NS が DEFAULT で `''` の時のみ default として emit、attr は never default、`& < > " ' \\r \\n \\t` のエスケープ、XML 宣言は opt 切替可。`parseXml → serializeXml → parseXml` で `xl/workbook.xml` / `[Content_Types].xml` / `_rels/.rels` の round-trip pass。105 tests pass。残：iterparse SAX / canonical compare helper / 大規模 round-trip）
+- [x] §3 XML 層（namespaces / tree / parser DOM / serializer DOM / iterParse SAX 完了：saxes 6 ベース `iterParse(SaxInput): AsyncIterableIterator<SaxEvent>`、入力は `Uint8Array | string | ReadableStream<Uint8Array>`、SaxEvent は start/end/text の discriminated union（Clark 表記名）、xmlns 宣言は attrs から落とす、DOCTYPE は事前バイト走査 + saxes の doctype event でも reject、ストリームは TextDecoder で stream:true デコード、prologue 256 文字バッファで DOCTYPE 検査、openpyxl `genuine/sample.xlsx` の `xl/worksheets/sheet1.xml` で row/cell 数 + start/end ネスト整合確認。117 tests pass。残：canonical compare helper / 大規模 round-trip は §10 testing helper の領分）
 - [ ] §4 Schema 層（Schema 型 + `toTree`/`fromTree`）
 - [ ] §5 XmlStreamWriter
 - [ ] §6 packaging 層（manifest, relationships, doc properties）

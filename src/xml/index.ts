@@ -2,6 +2,8 @@
 // in subsequent /loop turns; this turn ships the namespace catalog and
 // the lightweight XmlNode representation.
 
+export type { SaxEvent, SaxInput } from './iterparse';
+export { iterParse } from './iterparse';
 export {
   ACTIVEX_TYPE,
   // namespace constants — re-exported for ergonomics
