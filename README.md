@@ -126,7 +126,6 @@ await wb.close();
 
 ## What's not (yet)
 
-- Date / Duration cell write (read works as numeric serial).
 - Random-access streaming reader for sub-sheet cell ranges (the SAX iter
   API is in place; per-cell random access is buffered).
 - ZIP64 write — fflate's writer doesn't emit the ZIP64 EOCD record, so we

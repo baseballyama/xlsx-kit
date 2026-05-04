@@ -352,6 +352,7 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     if (ref.kind === 'worksheet') {
       bytes = worksheetToBytes(ref.sheet, {
         sharedStrings: sst,
+        date1904: wb.date1904,
         rels: sheetRels,
         registerTable,
         registerComments,

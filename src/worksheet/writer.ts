@@ -13,6 +13,7 @@
 
 import { type Cell, type CellValue, type ExcelErrorCode, type FormulaValue, getCoordinate } from '../cell/cell';
 import type { Relationships } from '../packaging/relationships';
+import { dateToExcel, durationToExcel } from '../utils/datetime';
 import { escapeCellString } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
@@ -34,6 +35,13 @@ const HYPERLINK_REL_TYPE = 'http://schemas.openxmlformats.org/officeDocument/200
 export interface WorksheetWriteContext {
   /** Accumulator the writer mutates as it emits string cells. */
   sharedStrings: SharedStringsTable;
+  /**
+   * Workbook epoch for `Date` / `{kind:'duration'}` cell serialisation.
+   * `true` = Mac 1904 epoch; `false` (default) = Windows 1900 epoch.
+   * Modern Excel emits 1900-based serials; 1904 only appears in legacy
+   * Mac workbooks but the round-trip respects the workbook setting.
+   */
+  date1904?: boolean;
   /**
    * Worksheet rels collector. The writer pushes a rel per external
    * hyperlink and per Table, allocating ids `rId1..rIdN`. Caller emits
@@ -253,18 +261,17 @@ export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string =>
     return `<c r="${ref}"${styleAttr} t="s"><v>${id}</v></c>`;
   }
   if (value instanceof Date) {
-    // Excel stores dates as serial numbers. The conversion is in utils/datetime.
-    // For stage-1 we throw — date round-trip needs the styleId-driven format
-    // detection that lives in §5.5 (deferred).
-    throw new OpenXmlSchemaError(
-      `worksheet: Date cells require the date-format integration (deferred to §5.5); cell ${ref}`,
-    );
+    // Excel stores dates as serial numbers under the workbook epoch.
+    // The cell shows as a date only if the styleId points at a number-
+    // format with a date code — caller-managed; openpyxl behaves the
+    // same way. We just emit the serial.
+    const serial = dateToExcel(value, { epoch: ctx.date1904 ? 'mac' : 'windows' });
+    return `<c r="${ref}"${styleAttr}><v>${serializeNumber(serial)}</v></c>`;
   }
   if (typeof value === 'object' && value !== null && (value as { kind?: string }).kind === 'duration') {
-    // Same comment as Date — deferred.
-    throw new OpenXmlSchemaError(
-      `worksheet: duration cells require the duration-format integration (deferred); cell ${ref}`,
-    );
+    const ms = (value as { kind: 'duration'; ms: number }).ms;
+    const serial = durationToExcel(ms);
+    return `<c r="${ref}"${styleAttr}><v>${serializeNumber(serial)}</v></c>`;
   }
   throw new OpenXmlSchemaError(`worksheet: unsupported cell value kind at ${ref}: ${describeValue(value)}`);
 };
