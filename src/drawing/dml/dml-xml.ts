@@ -38,6 +38,31 @@ import type {
 } from './geometry';
 import type { LineCap, LineCompound, LineEnd, LineEndSize, LineEndType, LineProperties, PresetDash } from './line';
 import type { BlackWhiteMode, Point2D, PositiveSize2D, ShapeProperties, Transform2D } from './shape-properties';
+import type {
+  AutoFit,
+  BulletProperties,
+  FontAlign,
+  HyperlinkInfo,
+  ParagraphAlign,
+  ParagraphProperties,
+  RunProperties,
+  TabStop,
+  TextAnchor,
+  TextBody,
+  TextBodyProperties,
+  TextCap,
+  TextFont,
+  TextHorzOverflow,
+  TextListStyle,
+  TextOverflow,
+  TextParagraph,
+  TextRun,
+  TextSpacing,
+  TextStrike,
+  TextUnderline,
+  TextVertical,
+  TextWrap,
+} from './text';
 
 const A = (local: string): string => `{${DRAWING_NS}}${local}`;
 
@@ -1154,6 +1179,659 @@ export const serializeEffects = (e: EffectsRef): string => {
     )
     .join('');
   return `<a:effectDag>${inner}</a:effectDag>`;
+};
+
+// ---- Text ------------------------------------------------------------------
+
+const VALID_UNDERLINE: ReadonlyArray<string> = [
+  'none',
+  'words',
+  'sng',
+  'dbl',
+  'heavy',
+  'dotted',
+  'dottedHeavy',
+  'dash',
+  'dashHeavy',
+  'dashLong',
+  'dashLongHeavy',
+  'dotDash',
+  'dotDashHeavy',
+  'dotDotDash',
+  'dotDotDashHeavy',
+  'wavy',
+  'wavyHeavy',
+  'wavyDbl',
+];
+const VALID_STRIKE: ReadonlyArray<string> = ['noStrike', 'sngStrike', 'dblStrike'];
+const VALID_TEXT_CAP: ReadonlyArray<string> = ['none', 'small', 'all'];
+const VALID_PARA_ALIGN: ReadonlyArray<string> = ['l', 'ctr', 'r', 'just', 'justLow', 'dist', 'thaiDist'];
+const VALID_FONT_ALIGN: ReadonlyArray<string> = ['auto', 't', 'ctr', 'base', 'b'];
+const VALID_TEXT_OVERFLOW: ReadonlyArray<string> = ['overflow', 'ellipsis', 'clip'];
+const VALID_HORZ_OVERFLOW: ReadonlyArray<string> = ['overflow', 'clip'];
+const VALID_VERTICAL: ReadonlyArray<string> = [
+  'horz',
+  'vert',
+  'vert270',
+  'wordArtVert',
+  'eaVert',
+  'mongolianVert',
+  'wordArtVertRtl',
+];
+const VALID_WRAP: ReadonlyArray<string> = ['none', 'square'];
+const VALID_ANCHOR: ReadonlyArray<string> = ['t', 'ctr', 'b', 'just', 'dist'];
+const VALID_TAB_ALGN: ReadonlyArray<string> = ['l', 'ctr', 'r', 'dec'];
+
+const parseTextFont = (el: XmlNode): TextFont => {
+  const out: TextFont = { typeface: el.attrs['typeface'] ?? '' };
+  if (el.attrs['panose'] !== undefined) out.panose = el.attrs['panose'];
+  const pf = intAttr(el, 'pitchFamily');
+  if (pf !== undefined) out.pitchFamily = pf;
+  const cs = intAttr(el, 'charset');
+  if (cs !== undefined) out.charset = cs;
+  return out;
+};
+
+const serializeTextFont = (tag: string, f: TextFont): string => {
+  const a: string[] = [`typeface="${escapeAttr(f.typeface)}"`];
+  if (f.panose !== undefined) a.push(`panose="${escapeAttr(f.panose)}"`);
+  if (f.pitchFamily !== undefined) a.push(`pitchFamily="${f.pitchFamily}"`);
+  if (f.charset !== undefined) a.push(`charset="${f.charset}"`);
+  return `<${tag} ${a.join(' ')}/>`;
+};
+
+const parseHyperlinkInfo = (el: XmlNode): HyperlinkInfo => {
+  const out: HyperlinkInfo = {};
+  const r = el.attrs[`{${REL_NS}}id`];
+  if (r !== undefined) out.rId = r;
+  if (el.attrs['invalidUrl'] !== undefined) out.invalidUrl = el.attrs['invalidUrl'];
+  if (el.attrs['action'] !== undefined) out.action = el.attrs['action'];
+  if (el.attrs['tgtFrame'] !== undefined) out.tgtFrame = el.attrs['tgtFrame'];
+  if (el.attrs['tooltip'] !== undefined) out.tooltip = el.attrs['tooltip'];
+  const history = boolAttr(el, 'history');
+  const highlightClick = boolAttr(el, 'highlightClick');
+  const endSnd = boolAttr(el, 'endSnd');
+  if (history !== undefined) out.history = history;
+  if (highlightClick !== undefined) out.highlightClick = highlightClick;
+  if (endSnd !== undefined) out.endSnd = endSnd;
+  return out;
+};
+
+const serializeHyperlinkInfo = (tag: string, h: HyperlinkInfo): string => {
+  const a: string[] = [];
+  if (h.rId !== undefined) a.push(`r:id="${escapeAttr(h.rId)}"`);
+  if (h.invalidUrl !== undefined) a.push(`invalidUrl="${escapeAttr(h.invalidUrl)}"`);
+  if (h.action !== undefined) a.push(`action="${escapeAttr(h.action)}"`);
+  if (h.tgtFrame !== undefined) a.push(`tgtFrame="${escapeAttr(h.tgtFrame)}"`);
+  if (h.tooltip !== undefined) a.push(`tooltip="${escapeAttr(h.tooltip)}"`);
+  if (h.history !== undefined) a.push(`history="${h.history ? '1' : '0'}"`);
+  if (h.highlightClick !== undefined) a.push(`highlightClick="${h.highlightClick ? '1' : '0'}"`);
+  if (h.endSnd !== undefined) a.push(`endSnd="${h.endSnd ? '1' : '0'}"`);
+  return `<${tag}${a.length > 0 ? ` ${a.join(' ')}` : ''}/>`;
+};
+
+const parseTextSpacing = (el: XmlNode): TextSpacing | undefined => {
+  const pct = findChild(el, A('spcPct'));
+  if (pct) {
+    const v = intAttr(pct, 'val');
+    if (v !== undefined) return { kind: 'pct', val: v };
+  }
+  const pts = findChild(el, A('spcPts'));
+  if (pts) {
+    const v = intAttr(pts, 'val');
+    if (v !== undefined) return { kind: 'pts', val: v };
+  }
+  return undefined;
+};
+
+const serializeTextSpacing = (tag: string, s: TextSpacing): string =>
+  s.kind === 'pct' ? `<${tag}><a:spcPct val="${s.val}"/></${tag}>` : `<${tag}><a:spcPts val="${s.val}"/></${tag}>`;
+
+const parseRunProperties = (el: XmlNode): RunProperties => {
+  const out: RunProperties = {};
+  const a = el.attrs;
+  const kumimoji = boolAttr(el, 'kumimoji');
+  if (kumimoji !== undefined) out.kumimoji = kumimoji;
+  if (a['lang'] !== undefined) out.lang = a['lang'];
+  if (a['altLang'] !== undefined) out.altLang = a['altLang'];
+  const sz = intAttr(el, 'sz');
+  if (sz !== undefined) out.sz = sz;
+  const b = boolAttr(el, 'b');
+  if (b !== undefined) out.b = b;
+  const i = boolAttr(el, 'i');
+  if (i !== undefined) out.i = i;
+  const u = a['u'];
+  if (u && VALID_UNDERLINE.includes(u)) out.u = u as TextUnderline;
+  const strike = a['strike'];
+  if (strike && VALID_STRIKE.includes(strike)) out.strike = strike as TextStrike;
+  const kern = intAttr(el, 'kern');
+  if (kern !== undefined) out.kern = kern;
+  const cap = a['cap'];
+  if (cap && VALID_TEXT_CAP.includes(cap)) out.cap = cap as TextCap;
+  const spc = intAttr(el, 'spc');
+  if (spc !== undefined) out.spc = spc;
+  const normalizeH = boolAttr(el, 'normalizeH');
+  if (normalizeH !== undefined) out.normalizeH = normalizeH;
+  const baseline = intAttr(el, 'baseline');
+  if (baseline !== undefined) out.baseline = baseline;
+  const noProof = boolAttr(el, 'noProof');
+  if (noProof !== undefined) out.noProof = noProof;
+  const dirty = boolAttr(el, 'dirty');
+  if (dirty !== undefined) out.dirty = dirty;
+  const err = boolAttr(el, 'err');
+  if (err !== undefined) out.err = err;
+  const smtClean = boolAttr(el, 'smtClean');
+  if (smtClean !== undefined) out.smtClean = smtClean;
+  const smtId = intAttr(el, 'smtId');
+  if (smtId !== undefined) out.smtId = smtId;
+  if (a['bmk'] !== undefined) out.bmk = a['bmk'];
+  // The `rtl` attribute is on rPr per ECMA-376.
+  // Some files keep rtl on pPr; we accept both.
+  const rtl = boolAttr(el, 'rtl');
+  if (rtl !== undefined) out.rtl = rtl;
+  // Nested elements.
+  const lnEl = findChild(el, A('ln'));
+  if (lnEl) out.ln = parseLine(lnEl);
+  const fill = parseFill(el);
+  if (fill) out.fill = fill;
+  const effects = parseEffects(el);
+  if (effects) out.effects = effects;
+  const highlight = findChild(el, A('highlight'));
+  if (highlight) {
+    const c = parseDmlColor(highlight);
+    if (c) out.highlight = c;
+  }
+  // uLn / uLnTx
+  if (findChild(el, A('uLnTx'))) out.uLn = 'follow';
+  else {
+    const uLn = findChild(el, A('uLn'));
+    if (uLn) out.uLn = parseLine(uLn);
+  }
+  // uFill / uFillTx
+  if (findChild(el, A('uFillTx'))) out.uFill = 'follow';
+  else {
+    const uFill = findChild(el, A('uFill'));
+    if (uFill) {
+      const f = parseFill(uFill);
+      if (f) out.uFill = f;
+    }
+  }
+  const latin = findChild(el, A('latin'));
+  if (latin) out.latin = parseTextFont(latin);
+  const ea = findChild(el, A('ea'));
+  if (ea) out.ea = parseTextFont(ea);
+  const cs = findChild(el, A('cs'));
+  if (cs) out.cs = parseTextFont(cs);
+  const sym = findChild(el, A('sym'));
+  if (sym) out.sym = parseTextFont(sym);
+  const hlinkClick = findChild(el, A('hlinkClick'));
+  if (hlinkClick) out.hlinkClick = parseHyperlinkInfo(hlinkClick);
+  const hlinkMouseOver = findChild(el, A('hlinkMouseOver'));
+  if (hlinkMouseOver) out.hlinkMouseOver = parseHyperlinkInfo(hlinkMouseOver);
+  return out;
+};
+
+const serializeRunProperties = (tag: string, p: RunProperties): string => {
+  const a: string[] = [];
+  if (p.kumimoji !== undefined) a.push(`kumimoji="${p.kumimoji ? '1' : '0'}"`);
+  if (p.lang !== undefined) a.push(`lang="${escapeAttr(p.lang)}"`);
+  if (p.altLang !== undefined) a.push(`altLang="${escapeAttr(p.altLang)}"`);
+  if (p.sz !== undefined) a.push(`sz="${p.sz}"`);
+  if (p.b !== undefined) a.push(`b="${p.b ? '1' : '0'}"`);
+  if (p.i !== undefined) a.push(`i="${p.i ? '1' : '0'}"`);
+  if (p.u) a.push(`u="${p.u}"`);
+  if (p.strike) a.push(`strike="${p.strike}"`);
+  if (p.kern !== undefined) a.push(`kern="${p.kern}"`);
+  if (p.cap) a.push(`cap="${p.cap}"`);
+  if (p.spc !== undefined) a.push(`spc="${p.spc}"`);
+  if (p.normalizeH !== undefined) a.push(`normalizeH="${p.normalizeH ? '1' : '0'}"`);
+  if (p.baseline !== undefined) a.push(`baseline="${p.baseline}"`);
+  if (p.noProof !== undefined) a.push(`noProof="${p.noProof ? '1' : '0'}"`);
+  if (p.dirty !== undefined) a.push(`dirty="${p.dirty ? '1' : '0'}"`);
+  if (p.err !== undefined) a.push(`err="${p.err ? '1' : '0'}"`);
+  if (p.smtClean !== undefined) a.push(`smtClean="${p.smtClean ? '1' : '0'}"`);
+  if (p.smtId !== undefined) a.push(`smtId="${p.smtId}"`);
+  if (p.bmk !== undefined) a.push(`bmk="${escapeAttr(p.bmk)}"`);
+  if (p.rtl !== undefined) a.push(`rtl="${p.rtl ? '1' : '0'}"`);
+  const inner: string[] = [];
+  if (p.ln) inner.push(serializeLine(p.ln));
+  if (p.fill) inner.push(serializeFill(p.fill));
+  if (p.effects) inner.push(serializeEffects(p.effects));
+  if (p.highlight) inner.push(`<a:highlight>${serializeDmlColor(p.highlight)}</a:highlight>`);
+  if (p.uLn === 'follow') inner.push('<a:uLnTx/>');
+  else if (p.uLn) {
+    // uLn re-uses the line schema with <a:uLn> wrapper. The serializeLine
+    // helper emits <a:ln>; substitute the tag for uLn.
+    inner.push(
+      serializeLine(p.uLn)
+        .replace(/^<a:ln/, '<a:uLn')
+        .replace(/<\/a:ln>$/, '</a:uLn>'),
+    );
+  }
+  if (p.uFill === 'follow') inner.push('<a:uFillTx/>');
+  else if (p.uFill) inner.push(`<a:uFill>${serializeFill(p.uFill)}</a:uFill>`);
+  if (p.latin) inner.push(serializeTextFont('a:latin', p.latin));
+  if (p.ea) inner.push(serializeTextFont('a:ea', p.ea));
+  if (p.cs) inner.push(serializeTextFont('a:cs', p.cs));
+  if (p.sym) inner.push(serializeTextFont('a:sym', p.sym));
+  if (p.hlinkClick) inner.push(serializeHyperlinkInfo('a:hlinkClick', p.hlinkClick));
+  if (p.hlinkMouseOver) inner.push(serializeHyperlinkInfo('a:hlinkMouseOver', p.hlinkMouseOver));
+  const open = `<${tag}${a.length > 0 ? ` ${a.join(' ')}` : ''}`;
+  return inner.length === 0 ? `${open}/>` : `${open}>${inner.join('')}</${tag}>`;
+};
+
+const parseBullet = (el: XmlNode): BulletProperties | undefined => {
+  if (findChild(el, A('buNone'))) return { kind: 'none' };
+  const buChar = findChild(el, A('buChar'));
+  if (buChar) return { kind: 'char', char: buChar.attrs['char'] ?? '' };
+  const buAuto = findChild(el, A('buAutoNum'));
+  if (buAuto) {
+    const t = buAuto.attrs['type'] ?? 'arabicPlain';
+    const startAt = intAttr(buAuto, 'startAt');
+    return { kind: 'autoNum', type: t, ...(startAt !== undefined ? { startAt } : {}) };
+  }
+  const buBlip = findChild(el, A('buBlip'));
+  if (buBlip) {
+    const blip = findChild(buBlip, A('blip'));
+    const out: BulletProperties = { kind: 'blip' };
+    if (blip) {
+      const e = blip.attrs[`{${REL_NS}}embed`];
+      const l = blip.attrs[`{${REL_NS}}link`];
+      if (e) (out as { embedRId?: string }).embedRId = e;
+      if (l) (out as { linkRId?: string }).linkRId = l;
+    }
+    return out;
+  }
+  return undefined;
+};
+
+const serializeBullet = (b: BulletProperties): string => {
+  switch (b.kind) {
+    case 'none':
+      return '<a:buNone/>';
+    case 'char':
+      return `<a:buChar char="${escapeAttr(b.char)}"/>`;
+    case 'autoNum': {
+      const sa = b.startAt !== undefined ? ` startAt="${b.startAt}"` : '';
+      return `<a:buAutoNum type="${b.type}"${sa}/>`;
+    }
+    case 'blip': {
+      const a: string[] = [];
+      if (b.embedRId) a.push(`r:embed="${escapeAttr(b.embedRId)}"`);
+      if (b.linkRId) a.push(`r:link="${escapeAttr(b.linkRId)}"`);
+      return `<a:buBlip><a:blip${a.length > 0 ? ` ${a.join(' ')}` : ''}/></a:buBlip>`;
+    }
+  }
+};
+
+const parseTabStops = (el: XmlNode): TabStop[] => {
+  const out: TabStop[] = [];
+  for (const t of findChildren(el, A('tab'))) {
+    const pos = intAttr(t, 'pos');
+    if (pos === undefined) continue;
+    const algnRaw = t.attrs['algn'];
+    const algn = algnRaw && VALID_TAB_ALGN.includes(algnRaw) ? (algnRaw as TabStop['algn']) : undefined;
+    out.push({ pos, ...(algn ? { algn } : {}) });
+  }
+  return out;
+};
+
+const parseParagraphProperties = (el: XmlNode): ParagraphProperties => {
+  const out: ParagraphProperties = {};
+  const marL = intAttr(el, 'marL');
+  const marR = intAttr(el, 'marR');
+  const lvl = intAttr(el, 'lvl');
+  const indent = intAttr(el, 'indent');
+  const algn = el.attrs['algn'];
+  const defTabSz = intAttr(el, 'defTabSz');
+  const rtl = boolAttr(el, 'rtl');
+  const eaLnBrk = boolAttr(el, 'eaLnBrk');
+  const fontAlgn = el.attrs['fontAlgn'];
+  const latinLnBrk = boolAttr(el, 'latinLnBrk');
+  const hangingPunct = boolAttr(el, 'hangingPunct');
+  if (marL !== undefined) out.marL = marL;
+  if (marR !== undefined) out.marR = marR;
+  if (lvl !== undefined) out.lvl = lvl;
+  if (indent !== undefined) out.indent = indent;
+  if (algn && VALID_PARA_ALIGN.includes(algn)) out.algn = algn as ParagraphAlign;
+  if (defTabSz !== undefined) out.defTabSz = defTabSz;
+  if (rtl !== undefined) out.rtl = rtl;
+  if (eaLnBrk !== undefined) out.eaLnBrk = eaLnBrk;
+  if (fontAlgn && VALID_FONT_ALIGN.includes(fontAlgn)) out.fontAlgn = fontAlgn as FontAlign;
+  if (latinLnBrk !== undefined) out.latinLnBrk = latinLnBrk;
+  if (hangingPunct !== undefined) out.hangingPunct = hangingPunct;
+  const lnSpc = findChild(el, A('lnSpc'));
+  if (lnSpc) {
+    const s = parseTextSpacing(lnSpc);
+    if (s) out.lnSpc = s;
+  }
+  const spcBef = findChild(el, A('spcBef'));
+  if (spcBef) {
+    const s = parseTextSpacing(spcBef);
+    if (s) out.spcBef = s;
+  }
+  const spcAft = findChild(el, A('spcAft'));
+  if (spcAft) {
+    const s = parseTextSpacing(spcAft);
+    if (s) out.spcAft = s;
+  }
+  const tabLst = findChild(el, A('tabLst'));
+  if (tabLst) {
+    const tabs = parseTabStops(tabLst);
+    if (tabs.length > 0) out.tabLst = tabs;
+  }
+  const defRPr = findChild(el, A('defRPr'));
+  if (defRPr) out.defRPr = parseRunProperties(defRPr);
+  const bullet = parseBullet(el);
+  if (bullet) out.bullet = bullet;
+  // buFont / buFontTx
+  if (findChild(el, A('buFontTx'))) out.buFont = 'follow';
+  else {
+    const buFont = findChild(el, A('buFont'));
+    if (buFont) out.buFont = parseTextFont(buFont);
+  }
+  // buClr / buClrTx
+  if (findChild(el, A('buClrTx'))) out.buClr = 'follow';
+  else {
+    const buClr = findChild(el, A('buClr'));
+    if (buClr) {
+      const c = parseDmlColor(buClr);
+      if (c) out.buClr = c;
+    }
+  }
+  // buSzTx / buSzPct / buSzPts
+  if (findChild(el, A('buSzTx'))) out.buSz = 'follow';
+  else {
+    const buSzPct = findChild(el, A('buSzPct'));
+    const buSzPts = findChild(el, A('buSzPts'));
+    if (buSzPct) {
+      const v = intAttr(buSzPct, 'val');
+      if (v !== undefined) out.buSz = { kind: 'pct', val: v };
+    } else if (buSzPts) {
+      const v = intAttr(buSzPts, 'val');
+      if (v !== undefined) out.buSz = { kind: 'pts', val: v };
+    }
+  }
+  return out;
+};
+
+const serializeTabStops = (tabs: TabStop[]): string => {
+  const inner = tabs.map((t) => `<a:tab pos="${t.pos}"${t.algn ? ` algn="${t.algn}"` : ''}/>`).join('');
+  return `<a:tabLst>${inner}</a:tabLst>`;
+};
+
+const serializeParagraphProperties = (tag: string, p: ParagraphProperties): string => {
+  const a: string[] = [];
+  if (p.marL !== undefined) a.push(`marL="${p.marL}"`);
+  if (p.marR !== undefined) a.push(`marR="${p.marR}"`);
+  if (p.lvl !== undefined) a.push(`lvl="${p.lvl}"`);
+  if (p.indent !== undefined) a.push(`indent="${p.indent}"`);
+  if (p.algn) a.push(`algn="${p.algn}"`);
+  if (p.defTabSz !== undefined) a.push(`defTabSz="${p.defTabSz}"`);
+  if (p.rtl !== undefined) a.push(`rtl="${p.rtl ? '1' : '0'}"`);
+  if (p.eaLnBrk !== undefined) a.push(`eaLnBrk="${p.eaLnBrk ? '1' : '0'}"`);
+  if (p.fontAlgn) a.push(`fontAlgn="${p.fontAlgn}"`);
+  if (p.latinLnBrk !== undefined) a.push(`latinLnBrk="${p.latinLnBrk ? '1' : '0'}"`);
+  if (p.hangingPunct !== undefined) a.push(`hangingPunct="${p.hangingPunct ? '1' : '0'}"`);
+  const inner: string[] = [];
+  if (p.lnSpc) inner.push(serializeTextSpacing('a:lnSpc', p.lnSpc));
+  if (p.spcBef) inner.push(serializeTextSpacing('a:spcBef', p.spcBef));
+  if (p.spcAft) inner.push(serializeTextSpacing('a:spcAft', p.spcAft));
+  if (p.buClr === 'follow') inner.push('<a:buClrTx/>');
+  else if (p.buClr) inner.push(`<a:buClr>${serializeDmlColor(p.buClr)}</a:buClr>`);
+  if (p.buSz === 'follow') inner.push('<a:buSzTx/>');
+  else if (p.buSz?.kind === 'pct') inner.push(`<a:buSzPct val="${p.buSz.val}"/>`);
+  else if (p.buSz?.kind === 'pts') inner.push(`<a:buSzPts val="${p.buSz.val}"/>`);
+  if (p.buFont === 'follow') inner.push('<a:buFontTx/>');
+  else if (p.buFont) inner.push(serializeTextFont('a:buFont', p.buFont));
+  if (p.bullet) inner.push(serializeBullet(p.bullet));
+  if (p.tabLst && p.tabLst.length > 0) inner.push(serializeTabStops(p.tabLst));
+  if (p.defRPr) inner.push(serializeRunProperties('a:defRPr', p.defRPr));
+  const open = `<${tag}${a.length > 0 ? ` ${a.join(' ')}` : ''}`;
+  return inner.length === 0 ? `${open}/>` : `${open}>${inner.join('')}</${tag}>`;
+};
+
+const parseTextRun = (el: XmlNode): TextRun | undefined => {
+  const local = el.name.split('}').pop() ?? el.name;
+  if (local === 'r') {
+    const rPrEl = findChild(el, A('rPr'));
+    const tEl = findChild(el, A('t'));
+    return {
+      kind: 'r',
+      ...(rPrEl ? { rPr: parseRunProperties(rPrEl) } : {}),
+      t: tEl?.text ?? '',
+    };
+  }
+  if (local === 'br') {
+    const rPrEl = findChild(el, A('rPr'));
+    return { kind: 'br', ...(rPrEl ? { rPr: parseRunProperties(rPrEl) } : {}) };
+  }
+  if (local === 'fld') {
+    const id = el.attrs['id'] ?? '';
+    const t = el.attrs['type'];
+    const rPrEl = findChild(el, A('rPr'));
+    const pPrEl = findChild(el, A('pPr'));
+    const tEl = findChild(el, A('t'));
+    return {
+      kind: 'fld',
+      id,
+      ...(t !== undefined ? { type: t } : {}),
+      ...(rPrEl ? { rPr: parseRunProperties(rPrEl) } : {}),
+      ...(pPrEl ? { pPr: parseParagraphProperties(pPrEl) } : {}),
+      ...(tEl?.text !== undefined ? { t: tEl.text } : {}),
+    };
+  }
+  return undefined;
+};
+
+const serializeTextRun = (r: TextRun): string => {
+  switch (r.kind) {
+    case 'r': {
+      const rPr = r.rPr ? serializeRunProperties('a:rPr', r.rPr) : '';
+      return `<a:r>${rPr}<a:t>${escapeText(r.t)}</a:t></a:r>`;
+    }
+    case 'br': {
+      const rPr = r.rPr ? serializeRunProperties('a:rPr', r.rPr) : '';
+      return rPr === '' ? '<a:br/>' : `<a:br>${rPr}</a:br>`;
+    }
+    case 'fld': {
+      const a: string[] = [`id="${escapeAttr(r.id)}"`];
+      if (r.type !== undefined) a.push(`type="${escapeAttr(r.type)}"`);
+      const rPr = r.rPr ? serializeRunProperties('a:rPr', r.rPr) : '';
+      const pPr = r.pPr ? serializeParagraphProperties('a:pPr', r.pPr) : '';
+      const t = r.t !== undefined ? `<a:t>${escapeText(r.t)}</a:t>` : '';
+      return `<a:fld ${a.join(' ')}>${rPr}${pPr}${t}</a:fld>`;
+    }
+  }
+};
+
+const parseTextParagraph = (el: XmlNode): TextParagraph => {
+  const out: TextParagraph = { runs: [] };
+  const pPrEl = findChild(el, A('pPr'));
+  if (pPrEl) out.pPr = parseParagraphProperties(pPrEl);
+  for (const c of el.children) {
+    if (typeof c === 'string') continue;
+    const local = c.name.split('}').pop() ?? c.name;
+    if (local === 'r' || local === 'br' || local === 'fld') {
+      const run = parseTextRun(c);
+      if (run) out.runs.push(run);
+    }
+  }
+  const endEl = findChild(el, A('endParaRPr'));
+  if (endEl) out.endParaRPr = parseRunProperties(endEl);
+  return out;
+};
+
+const serializeTextParagraph = (p: TextParagraph): string => {
+  const parts: string[] = ['<a:p>'];
+  if (p.pPr) parts.push(serializeParagraphProperties('a:pPr', p.pPr));
+  for (const r of p.runs) parts.push(serializeTextRun(r));
+  if (p.endParaRPr) parts.push(serializeRunProperties('a:endParaRPr', p.endParaRPr));
+  parts.push('</a:p>');
+  return parts.join('');
+};
+
+const parseAutoFit = (el: XmlNode): AutoFit | undefined => {
+  if (findChild(el, A('noAutofit'))) return { kind: 'noAutofit' };
+  const norm = findChild(el, A('normAutofit'));
+  if (norm) {
+    const fontScale = intAttr(norm, 'fontScale');
+    const lnSpcReduction = intAttr(norm, 'lnSpcReduction');
+    return {
+      kind: 'normAutofit',
+      ...(fontScale !== undefined ? { fontScale } : {}),
+      ...(lnSpcReduction !== undefined ? { lnSpcReduction } : {}),
+    };
+  }
+  if (findChild(el, A('spAutoFit'))) return { kind: 'spAutoFit' };
+  return undefined;
+};
+
+const serializeAutoFit = (a: AutoFit): string => {
+  switch (a.kind) {
+    case 'noAutofit':
+      return '<a:noAutofit/>';
+    case 'spAutoFit':
+      return '<a:spAutoFit/>';
+    case 'normAutofit': {
+      const attrs: string[] = [];
+      if (a.fontScale !== undefined) attrs.push(`fontScale="${a.fontScale}"`);
+      if (a.lnSpcReduction !== undefined) attrs.push(`lnSpcReduction="${a.lnSpcReduction}"`);
+      return `<a:normAutofit${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}/>`;
+    }
+  }
+};
+
+export const parseTextBodyProperties = (el: XmlNode): TextBodyProperties => {
+  const out: TextBodyProperties = {};
+  const rot = intAttr(el, 'rot');
+  if (rot !== undefined) out.rot = rot;
+  const spcFirstLastPara = boolAttr(el, 'spcFirstLastPara');
+  if (spcFirstLastPara !== undefined) out.spcFirstLastPara = spcFirstLastPara;
+  const vo = el.attrs['vertOverflow'];
+  if (vo && VALID_TEXT_OVERFLOW.includes(vo)) out.vertOverflow = vo as TextOverflow;
+  const ho = el.attrs['horzOverflow'];
+  if (ho && VALID_HORZ_OVERFLOW.includes(ho)) out.horzOverflow = ho as TextHorzOverflow;
+  const v = el.attrs['vert'];
+  if (v && VALID_VERTICAL.includes(v)) out.vert = v as TextVertical;
+  const w = el.attrs['wrap'];
+  if (w && VALID_WRAP.includes(w)) out.wrap = w as TextWrap;
+  const lIns = intAttr(el, 'lIns');
+  const tIns = intAttr(el, 'tIns');
+  const rIns = intAttr(el, 'rIns');
+  const bIns = intAttr(el, 'bIns');
+  const numCol = intAttr(el, 'numCol');
+  const spcCol = intAttr(el, 'spcCol');
+  if (lIns !== undefined) out.lIns = lIns;
+  if (tIns !== undefined) out.tIns = tIns;
+  if (rIns !== undefined) out.rIns = rIns;
+  if (bIns !== undefined) out.bIns = bIns;
+  if (numCol !== undefined) out.numCol = numCol;
+  if (spcCol !== undefined) out.spcCol = spcCol;
+  const rtlCol = boolAttr(el, 'rtlCol');
+  const fromWordArt = boolAttr(el, 'fromWordArt');
+  if (rtlCol !== undefined) out.rtlCol = rtlCol;
+  if (fromWordArt !== undefined) out.fromWordArt = fromWordArt;
+  const anchor = el.attrs['anchor'];
+  if (anchor && VALID_ANCHOR.includes(anchor)) out.anchor = anchor as TextAnchor;
+  const anchorCtr = boolAttr(el, 'anchorCtr');
+  const forceAA = boolAttr(el, 'forceAA');
+  const upright = boolAttr(el, 'upright');
+  const compatLnSpc = boolAttr(el, 'compatLnSpc');
+  if (anchorCtr !== undefined) out.anchorCtr = anchorCtr;
+  if (forceAA !== undefined) out.forceAA = forceAA;
+  if (upright !== undefined) out.upright = upright;
+  if (compatLnSpc !== undefined) out.compatLnSpc = compatLnSpc;
+  const af = parseAutoFit(el);
+  if (af) out.autoFit = af;
+  const flatTx = findChild(el, A('flatTx'));
+  if (flatTx) {
+    const z = intAttr(flatTx, 'z');
+    if (z !== undefined) out.flatTxZ = z;
+  }
+  return out;
+};
+
+export const serializeTextBodyProperties = (tag: string, p: TextBodyProperties): string => {
+  const a: string[] = [];
+  if (p.rot !== undefined) a.push(`rot="${p.rot}"`);
+  if (p.spcFirstLastPara !== undefined) a.push(`spcFirstLastPara="${p.spcFirstLastPara ? '1' : '0'}"`);
+  if (p.vertOverflow) a.push(`vertOverflow="${p.vertOverflow}"`);
+  if (p.horzOverflow) a.push(`horzOverflow="${p.horzOverflow}"`);
+  if (p.vert) a.push(`vert="${p.vert}"`);
+  if (p.wrap) a.push(`wrap="${p.wrap}"`);
+  if (p.lIns !== undefined) a.push(`lIns="${p.lIns}"`);
+  if (p.tIns !== undefined) a.push(`tIns="${p.tIns}"`);
+  if (p.rIns !== undefined) a.push(`rIns="${p.rIns}"`);
+  if (p.bIns !== undefined) a.push(`bIns="${p.bIns}"`);
+  if (p.numCol !== undefined) a.push(`numCol="${p.numCol}"`);
+  if (p.spcCol !== undefined) a.push(`spcCol="${p.spcCol}"`);
+  if (p.rtlCol !== undefined) a.push(`rtlCol="${p.rtlCol ? '1' : '0'}"`);
+  if (p.fromWordArt !== undefined) a.push(`fromWordArt="${p.fromWordArt ? '1' : '0'}"`);
+  if (p.anchor) a.push(`anchor="${p.anchor}"`);
+  if (p.anchorCtr !== undefined) a.push(`anchorCtr="${p.anchorCtr ? '1' : '0'}"`);
+  if (p.forceAA !== undefined) a.push(`forceAA="${p.forceAA ? '1' : '0'}"`);
+  if (p.upright !== undefined) a.push(`upright="${p.upright ? '1' : '0'}"`);
+  if (p.compatLnSpc !== undefined) a.push(`compatLnSpc="${p.compatLnSpc ? '1' : '0'}"`);
+  const inner: string[] = [];
+  if (p.autoFit) inner.push(serializeAutoFit(p.autoFit));
+  if (p.flatTxZ !== undefined) inner.push(`<a:flatTx z="${p.flatTxZ}"/>`);
+  const open = `<${tag}${a.length > 0 ? ` ${a.join(' ')}` : ''}`;
+  return inner.length === 0 ? `${open}/>` : `${open}>${inner.join('')}</${tag}>`;
+};
+
+const LIST_STYLE_LEVELS: ReadonlyArray<keyof TextListStyle> = [
+  'defPPr',
+  'lvl1pPr',
+  'lvl2pPr',
+  'lvl3pPr',
+  'lvl4pPr',
+  'lvl5pPr',
+  'lvl6pPr',
+  'lvl7pPr',
+  'lvl8pPr',
+  'lvl9pPr',
+];
+
+const parseListStyle = (el: XmlNode): TextListStyle => {
+  const out: TextListStyle = {};
+  for (const lvl of LIST_STYLE_LEVELS) {
+    const child = findChild(el, A(lvl));
+    if (child) out[lvl] = parseParagraphProperties(child);
+  }
+  return out;
+};
+
+const serializeListStyle = (l: TextListStyle): string => {
+  const parts: string[] = ['<a:lstStyle>'];
+  for (const lvl of LIST_STYLE_LEVELS) {
+    const pp = l[lvl];
+    if (pp) parts.push(serializeParagraphProperties(`a:${lvl}`, pp));
+  }
+  parts.push('</a:lstStyle>');
+  return parts.join('');
+};
+
+/** Parse an `<a:txBody>` (or `<c:txPr>` / `<cdr:txBody>`) element. */
+export const parseTextBody = (el: XmlNode): TextBody => {
+  const bodyPrEl = findChild(el, A('bodyPr'));
+  const bodyPr = bodyPrEl ? parseTextBodyProperties(bodyPrEl) : {};
+  const lstStyleEl = findChild(el, A('lstStyle'));
+  const lstStyle = lstStyleEl ? parseListStyle(lstStyleEl) : undefined;
+  const paragraphs: TextParagraph[] = [];
+  for (const p of findChildren(el, A('p'))) paragraphs.push(parseTextParagraph(p));
+  return { bodyPr, ...(lstStyle ? { lstStyle } : {}), paragraphs };
+};
+
+/** Serialise a TextBody. Wrapper defaults to `<c:txPr>` to match chart usage. */
+export const serializeTextBody = (body: TextBody, wrapperTag = 'c:txPr'): string => {
+  const parts: string[] = [`<${wrapperTag}>`];
+  parts.push(serializeTextBodyProperties('a:bodyPr', body.bodyPr));
+  if (body.lstStyle) parts.push(serializeListStyle(body.lstStyle));
+  else parts.push('<a:lstStyle/>');
+  for (const p of body.paragraphs) parts.push(serializeTextParagraph(p));
+  parts.push(`</${wrapperTag}>`);
+  return parts.join('');
 };
 
 // ---- ShapeProperties -------------------------------------------------------
