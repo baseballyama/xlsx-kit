@@ -5,8 +5,8 @@
 
 ## カレント
 
-- **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §8 compat（小規模、numbers / singleton 程度）→ §9 phase-1 テストの一通りまとめ → §10 完了条件確認。フェーズ1 完了が見えてきた。compat は Python の dynamic typing 補助なので最小（`isFiniteNumber` / `isInteger` 等）に留め、§9 は既存テストの整理（fixtures helper の整備）で済ませる方向。
+- **フェーズ**: フェーズ1 完了 → **フェーズ2 着手**
+- **次のタスク**: フェーズ2 §3 styles の値オブジェクト群から着手（[04-core-model.md](docs/plan/04-core-model.md) §3）。最初に `Color` (rgb/theme/indexed/auto + tint) と `Font` を実装し、続いて `Side`/`Border`、`PatternFill`/`GradientFill`/`Fill`、`Alignment`、`Protection`、`NumberFormat`。すべて plain object + `make*` (`Object.freeze`) で immutable に統一、Schema 経由で round-trip。BUILTIN_FORMATS は openpyxl `styles/numbers.py` の id 0〜163 をフルコピー。`isDateFormat` / `isTimedeltaFormat` の正規表現ヒューリスティクスも移植。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
@@ -33,11 +33,24 @@
 - [x] §5 XmlStreamWriter（buffered モード：`createXmlStreamWriter(opts?): XmlStreamWriter`、API は `start`/`text`/`writeNode`/`writeRaw`/`end`/`flush`/`result`、Clark 名 → prefix 変換は writer 生成時の `prefixMap`（DEFAULT_PREFIXES + ユーザ override + `xml` 予約 binding）、auto-flush 閾値 64KB、self-closing 最適化、unclosed / post-result でエラー。100k `<c>` を `writeRaw` 経由で吐き 1MB 越えのバイト列が parseXml で N=100k 子要素として戻る。141 tests pass。残：streaming (`WritableStream<Uint8Array>`) 対応は phase 4 写表 writer と一緒に）
 - [x] §6 packaging 層（manifest + relationships + docProps/core.xml + docProps/app.xml + docProps/custom.xml 完了：CustomProperties は schema を使わず手書き（`<property>` の attrs + 子 1 個の vt: typed value）。`make*Value` / `read*Value` ヘルパで lpwstr / lpstr / bstr / i4/i2/i1/uint / r4/r8/decimal/cy / bool / filetime / date を相互変換。pid 自動採番（>= 2、衝突回避）、`appendCustomProperty` / `findCustomPropertyByName`、malformed (missing pid / value-less) は OpenXmlSchemaError。183 tests pass）
 - [x] §7 utils (coordinate + datetime + units + inference + escape 完了：units は EMU constants (914400/360000/9525/12700) + 各単位 (px/cm/inch/pt) との相互変換 + DPI 換算 (point↔pixel)、inference は openpyxl `_TYPES` / ERROR_CODES 互換の `inferCellType(value): CellDataType` (`'n'|'s'|'b'|'d'|'f'|'e'`)、escape は openpyxl `escape_xml_value` 互換の `_xHHHH_` 形式エスケープ・既存パターンの leading underscore 保護・`\\t \\n \\r` などの XML 1.0 で許される control chars を保持。285 tests pass。`utils/exceptions.ts` は §1 で実装済み)
-- [ ] §8 compat
-- [ ] §9 phase-1 テスト群
-- [ ] §10 フェーズ1 完了条件
+- [x] §8 compat（最小：`isFiniteNumber` / `isInteger` / `isTypedArray` の type guard。openpyxl の Singleton metaclass や NUMERIC_TYPES tuple は TS 不要）
+- [x] §9 phase-1 テスト群（各 §1〜§8 で per-feature テストを書いた。e2e は phase-1/e2e-minimal.test.ts で「openpyxl genuine/empty.xlsx を openZip → manifest+rels を schema 経由で再生成 → 残り entries は raw 通過 → ZipWriter で再 zip → 再 read で全 entry が一致」を検証）
+- [x] §10 フェーズ1 完了条件（typecheck / lint / vitest / build すべて green。`pnpm build` で dist/index.mjs (56KB) + .d.ts 生成。`src/index.ts` から phase-1 surface（IO / ZIP / XML / Schema / Packaging / Utils / Compat）を named export で提供。**Workbook 等の高レベル API は phase 2 から**）
 
-### フェーズ2 以降は到達時に展開する。
+### フェーズ2: コアモデル ([04-core-model.md](docs/plan/04-core-model.md))
+
+- [ ] §2 Cell (CellValue 型, makeCell, getCoordinate, bindValue, RichText, MergedCell)
+- [ ] §3 Style (Color, Font, Side, Border, Fill, Alignment, Protection, NumberFormat, BUILTIN_FORMATS)
+- [ ] §3.4 Stylesheet (プール + dedup + StyleArray index)
+- [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
+- [ ] §3.7 Built-in NamedStyles
+- [ ] §3.8 DifferentialStyle (DXF)
+- [ ] §4 Workbook / Worksheet データモデル
+- [ ] §4.5 cell-range / multi-cell-range
+- [ ] §5 Formula tokenizer + translator
+- [ ] §6 JSON round-trip テスト
+- [ ] §7 phase-2 テスト群
+- [ ] §8 phase-2 完了条件
 
 ## 1 ターンの流れ
 
