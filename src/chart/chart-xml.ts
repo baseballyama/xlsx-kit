@@ -10,20 +10,38 @@ import { CHART_NS, REL_NS, SHEET_DRAWING_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import {
+  type AreaChart,
   type BarChart,
   type BarDirection,
   type BarSeries,
   type CategoryAxis,
   type CategoryRef,
+  type ChartKind,
   type ChartSpace,
+  type DoughnutChart,
   type GroupingType,
   type Legend,
   type LegendPosition,
+  type LineChart,
+  type LineSeries,
+  makeAreaChart,
   makeBarChart,
   makeBarSeries,
   makeChartSpace,
+  makeDoughnutChart,
+  makeLineChart,
+  makePieChart,
+  makeRadarChart,
+  makeScatterChart,
+  makeScatterSeries,
   type NumericRef,
+  type PieChart,
   type PlotArea,
+  type RadarChart,
+  type RadarStyle,
+  type ScatterChart,
+  type ScatterSeries,
+  type ScatterStyle,
   type ValueAxis,
 } from './chart';
 
@@ -55,6 +73,19 @@ const VARY_COLORS_TAG = `{${CHART_NS}}varyColors`;
 const GAP_WIDTH_TAG = `{${CHART_NS}}gapWidth`;
 const AX_ID_TAG = `{${CHART_NS}}axId`;
 const DELETE_TAG = `{${CHART_NS}}delete`;
+const LINE_CHART_TAG = `{${CHART_NS}}lineChart`;
+const AREA_CHART_TAG = `{${CHART_NS}}areaChart`;
+const PIE_CHART_TAG = `{${CHART_NS}}pieChart`;
+const DOUGHNUT_CHART_TAG = `{${CHART_NS}}doughnutChart`;
+const SCATTER_CHART_TAG = `{${CHART_NS}}scatterChart`;
+const RADAR_CHART_TAG = `{${CHART_NS}}radarChart`;
+const SMOOTH_TAG = `{${CHART_NS}}smooth`;
+const HOLE_SIZE_TAG = `{${CHART_NS}}holeSize`;
+const FIRST_SLICE_ANG_TAG = `{${CHART_NS}}firstSliceAng`;
+const SCATTER_STYLE_TAG = `{${CHART_NS}}scatterStyle`;
+const RADAR_STYLE_TAG = `{${CHART_NS}}radarStyle`;
+const X_VAL_TAG = `{${CHART_NS}}xVal`;
+const Y_VAL_TAG = `{${CHART_NS}}yVal`;
 const AX_POS_TAG = `{${CHART_NS}}axPos`;
 const CROSS_AX_TAG = `{${CHART_NS}}crossAx`;
 const MAJOR_GRIDLINES_TAG = `{${CHART_NS}}majorGridlines`;
@@ -177,26 +208,149 @@ const parseSeries = (serEl: XmlNode): BarSeries | undefined => {
   return makeBarSeries(opts);
 };
 
+const parseAxIds = (chartEl: XmlNode): [number, number] => {
+  const axIdNodes = findChildren(chartEl, AX_ID_TAG);
+  return [intVal(axIdNodes[0]) ?? 1, intVal(axIdNodes[1]) ?? 2];
+};
+
+const parseBarSeriesList = (chartEl: XmlNode): BarSeries[] => {
+  const series: BarSeries[] = [];
+  for (const ser of findChildren(chartEl, SER_TAG)) {
+    const s = parseSeries(ser);
+    if (s) series.push(s);
+  }
+  return series;
+};
+
 const parseBarChart = (barEl: XmlNode): BarChart => {
   const barDir = (valAttr(findChild(barEl, BAR_DIR_TAG)) ?? 'col') as BarDirection;
   const grouping = (valAttr(findChild(barEl, GROUPING_TAG)) ?? 'clustered') as GroupingType;
   const varyColors = boolVal(findChild(barEl, VARY_COLORS_TAG));
   const gapWidth = intVal(findChild(barEl, GAP_WIDTH_TAG));
-  const series: BarSeries[] = [];
-  for (const ser of findChildren(barEl, SER_TAG)) {
-    const s = parseSeries(ser);
-    if (s) series.push(s);
-  }
-  const axIdNodes = findChildren(barEl, AX_ID_TAG);
-  const axIds: [number, number] = [intVal(axIdNodes[0]) ?? 1, intVal(axIdNodes[1]) ?? 2];
   return makeBarChart({
     barDir,
     grouping,
-    series,
-    axIds,
+    series: parseBarSeriesList(barEl),
+    axIds: parseAxIds(barEl),
     ...(varyColors !== undefined ? { varyColors } : {}),
     ...(gapWidth !== undefined ? { gapWidth } : {}),
   });
+};
+
+const parseLineSeries = (serEl: XmlNode): LineSeries | undefined => {
+  const base = parseSeries(serEl);
+  if (!base) return undefined;
+  const smooth = boolVal(findChild(serEl, SMOOTH_TAG));
+  return smooth !== undefined ? { ...base, smooth } : base;
+};
+
+const parseLineChart = (lineEl: XmlNode): LineChart => {
+  const grouping = (valAttr(findChild(lineEl, GROUPING_TAG)) ?? 'standard') as GroupingType;
+  const varyColors = boolVal(findChild(lineEl, VARY_COLORS_TAG));
+  const smooth = boolVal(findChild(lineEl, SMOOTH_TAG));
+  const series: LineSeries[] = [];
+  for (const ser of findChildren(lineEl, SER_TAG)) {
+    const s = parseLineSeries(ser);
+    if (s) series.push(s);
+  }
+  return makeLineChart({
+    grouping,
+    series,
+    axIds: parseAxIds(lineEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+    ...(smooth !== undefined ? { smooth } : {}),
+  });
+};
+
+const parseAreaChart = (areaEl: XmlNode): AreaChart => {
+  const grouping = (valAttr(findChild(areaEl, GROUPING_TAG)) ?? 'standard') as GroupingType;
+  const varyColors = boolVal(findChild(areaEl, VARY_COLORS_TAG));
+  return makeAreaChart({
+    grouping,
+    series: parseBarSeriesList(areaEl),
+    axIds: parseAxIds(areaEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+  });
+};
+
+const parsePieChart = (pieEl: XmlNode): PieChart => {
+  const varyColors = boolVal(findChild(pieEl, VARY_COLORS_TAG));
+  return makePieChart({
+    series: parseBarSeriesList(pieEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+  });
+};
+
+const parseDoughnutChart = (donutEl: XmlNode): DoughnutChart => {
+  const varyColors = boolVal(findChild(donutEl, VARY_COLORS_TAG));
+  const holeSize = intVal(findChild(donutEl, HOLE_SIZE_TAG));
+  const firstSliceAng = intVal(findChild(donutEl, FIRST_SLICE_ANG_TAG));
+  return makeDoughnutChart({
+    series: parseBarSeriesList(donutEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+    ...(holeSize !== undefined ? { holeSize } : {}),
+    ...(firstSliceAng !== undefined ? { firstSliceAng } : {}),
+  });
+};
+
+const parseScatterSeries = (serEl: XmlNode): ScatterSeries | undefined => {
+  const idx = intVal(findChild(serEl, IDX_TAG));
+  const order = intVal(findChild(serEl, ORDER_TAG));
+  if (idx === undefined) return undefined;
+  const yVal = parseNumericRef(serEl, Y_VAL_TAG);
+  if (!yVal) return undefined;
+  const xVal = parseNumericRef(serEl, X_VAL_TAG);
+  const smooth = boolVal(findChild(serEl, SMOOTH_TAG));
+  const opts: Parameters<typeof makeScatterSeries>[0] = { idx, yVal };
+  if (order !== undefined) opts.order = order;
+  if (xVal) opts.xVal = xVal;
+  if (smooth !== undefined) opts.smooth = smooth;
+  return makeScatterSeries(opts);
+};
+
+const parseScatterChart = (scatterEl: XmlNode): ScatterChart => {
+  const scatterStyle = (valAttr(findChild(scatterEl, SCATTER_STYLE_TAG)) ?? 'lineMarker') as ScatterStyle;
+  const varyColors = boolVal(findChild(scatterEl, VARY_COLORS_TAG));
+  const series: ScatterSeries[] = [];
+  for (const ser of findChildren(scatterEl, SER_TAG)) {
+    const s = parseScatterSeries(ser);
+    if (s) series.push(s);
+  }
+  return makeScatterChart({
+    scatterStyle,
+    series,
+    axIds: parseAxIds(scatterEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+  });
+};
+
+const parseRadarChart = (radarEl: XmlNode): RadarChart => {
+  const radarStyle = (valAttr(findChild(radarEl, RADAR_STYLE_TAG)) ?? 'standard') as RadarStyle;
+  const varyColors = boolVal(findChild(radarEl, VARY_COLORS_TAG));
+  return makeRadarChart({
+    radarStyle,
+    series: parseBarSeriesList(radarEl),
+    axIds: parseAxIds(radarEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+  });
+};
+
+const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
+  const bar = findChild(plotAreaEl, BAR_CHART_TAG);
+  if (bar) return parseBarChart(bar);
+  const line = findChild(plotAreaEl, LINE_CHART_TAG);
+  if (line) return parseLineChart(line);
+  const area = findChild(plotAreaEl, AREA_CHART_TAG);
+  if (area) return parseAreaChart(area);
+  const pie = findChild(plotAreaEl, PIE_CHART_TAG);
+  if (pie) return parsePieChart(pie);
+  const donut = findChild(plotAreaEl, DOUGHNUT_CHART_TAG);
+  if (donut) return parseDoughnutChart(donut);
+  const scatter = findChild(plotAreaEl, SCATTER_CHART_TAG);
+  if (scatter) return parseScatterChart(scatter);
+  const radar = findChild(plotAreaEl, RADAR_CHART_TAG);
+  if (radar) return parseRadarChart(radar);
+  throw new OpenXmlSchemaError('parseChartXml: no supported chart kind found inside <plotArea>');
 };
 
 const parseAxis = (
@@ -227,9 +381,7 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
   if (!chartEl) throw new OpenXmlSchemaError('parseChartXml: <chartSpace> missing <chart>');
   const plotAreaEl = findChild(chartEl, PLOT_AREA_TAG);
   if (!plotAreaEl) throw new OpenXmlSchemaError('parseChartXml: <chart> missing <plotArea>');
-  const barEl = findChild(plotAreaEl, BAR_CHART_TAG);
-  if (!barEl) throw new OpenXmlSchemaError('parseChartXml: stage-1 only supports <barChart>');
-  const chart = parseBarChart(barEl);
+  const chart = parsePlotChart(plotAreaEl);
   const catAxEl = findChild(plotAreaEl, CAT_AX_TAG);
   const valAxEl = findChild(plotAreaEl, VAL_AX_TAG);
   const plotArea: PlotArea = {
@@ -326,6 +478,88 @@ const serializeBarChart = (chart: BarChart): string => {
   return parts.join('');
 };
 
+const serializeLineSeries = (s: LineSeries): string => {
+  const base = serializeSeries(s);
+  if (s.smooth === undefined) return base;
+  // Inject smooth before </c:ser> (cheap inline patch).
+  return base.replace('</c:ser>', `<c:smooth val="${s.smooth ? '1' : '0'}"/></c:ser>`);
+};
+
+const serializeLineChart = (chart: LineChart): string => {
+  const parts: string[] = ['<c:lineChart>', `<c:grouping val="${chart.grouping}"/>`];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeLineSeries(s));
+  if (chart.smooth !== undefined) parts.push(`<c:smooth val="${chart.smooth ? '1' : '0'}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push('</c:lineChart>');
+  return parts.join('');
+};
+
+const serializeAreaChart = (chart: AreaChart): string => {
+  const parts: string[] = ['<c:areaChart>', `<c:grouping val="${chart.grouping}"/>`];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push('</c:areaChart>');
+  return parts.join('');
+};
+
+const serializePieChart = (chart: PieChart): string => {
+  const parts: string[] = ['<c:pieChart>'];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  parts.push('</c:pieChart>');
+  return parts.join('');
+};
+
+const serializeDoughnutChart = (chart: DoughnutChart): string => {
+  const parts: string[] = ['<c:doughnutChart>'];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  if (chart.firstSliceAng !== undefined) parts.push(`<c:firstSliceAng val="${chart.firstSliceAng}"/>`);
+  if (chart.holeSize !== undefined) parts.push(`<c:holeSize val="${chart.holeSize}"/>`);
+  parts.push('</c:doughnutChart>');
+  return parts.join('');
+};
+
+const serializeScatterSeries = (s: ScatterSeries): string => {
+  const parts: string[] = ['<c:ser>', `<c:idx val="${s.idx}"/>`, `<c:order val="${s.order}"/>`];
+  if (s.tx) {
+    if (s.tx.kind === 'literal') {
+      parts.push(`<c:tx><c:strRef><c:f></c:f>${serializeStrCache([s.tx.value])}</c:strRef></c:tx>`);
+    } else {
+      parts.push(`<c:tx><c:strRef><c:f>${escapeText(s.tx.ref)}</c:f></c:strRef></c:tx>`);
+    }
+  }
+  if (s.xVal) parts.push(serializeNumericRef('xVal', s.xVal));
+  parts.push(serializeNumericRef('yVal', s.yVal));
+  if (s.smooth !== undefined) parts.push(`<c:smooth val="${s.smooth ? '1' : '0'}"/>`);
+  parts.push('</c:ser>');
+  return parts.join('');
+};
+
+const serializeScatterChart = (chart: ScatterChart): string => {
+  const parts: string[] = ['<c:scatterChart>', `<c:scatterStyle val="${chart.scatterStyle}"/>`];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeScatterSeries(s));
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push('</c:scatterChart>');
+  return parts.join('');
+};
+
+const serializeRadarChart = (chart: RadarChart): string => {
+  const parts: string[] = ['<c:radarChart>', `<c:radarStyle val="${chart.radarStyle}"/>`];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push('</c:radarChart>');
+  return parts.join('');
+};
+
 const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): string => {
   const parts: string[] = [
     `<c:${tag}>`,
@@ -354,9 +588,28 @@ const serializeTitle = (title: string): string =>
     '</c:title>',
   ].join('');
 
+const serializeChartKind = (chart: ChartKind): string => {
+  switch (chart.kind) {
+    case 'bar':
+      return serializeBarChart(chart);
+    case 'line':
+      return serializeLineChart(chart);
+    case 'area':
+      return serializeAreaChart(chart);
+    case 'pie':
+      return serializePieChart(chart);
+    case 'doughnut':
+      return serializeDoughnutChart(chart);
+    case 'scatter':
+      return serializeScatterChart(chart);
+    case 'radar':
+      return serializeRadarChart(chart);
+  }
+};
+
 const serializePlotArea = (plotArea: PlotArea): string => {
   const parts: string[] = ['<c:plotArea>', '<c:layout/>'];
-  if (plotArea.chart.kind === 'bar') parts.push(serializeBarChart(plotArea.chart));
+  parts.push(serializeChartKind(plotArea.chart));
   if (plotArea.catAx) parts.push(serializeAxis('catAx', plotArea.catAx));
   if (plotArea.valAx) parts.push(serializeAxis('valAx', plotArea.valAx));
   parts.push('</c:plotArea>');

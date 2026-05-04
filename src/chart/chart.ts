@@ -67,8 +67,77 @@ export interface BarChart {
   axIds: [number, number];
 }
 
-/** Discriminator for chart kinds — only `bar` for stage-1. */
-export type ChartKind = BarChart;
+export interface LineSeries extends BarSeries {
+  /** Per-series smoothing toggle. */
+  smooth?: boolean;
+}
+
+export interface LineChart {
+  kind: 'line';
+  grouping: GroupingType;
+  varyColors?: boolean;
+  series: LineSeries[];
+  /** Whether to round corners between data points (chart-level default). */
+  smooth?: boolean;
+  axIds: [number, number];
+}
+
+export interface AreaChart {
+  kind: 'area';
+  grouping: GroupingType;
+  varyColors?: boolean;
+  series: BarSeries[];
+  axIds: [number, number];
+}
+
+export interface PieChart {
+  kind: 'pie';
+  varyColors?: boolean;
+  /** Pie / Doughnut have a single ring of slices — but Excel allows multiple series; we mirror that. */
+  series: BarSeries[];
+}
+
+export interface DoughnutChart {
+  kind: 'doughnut';
+  varyColors?: boolean;
+  series: BarSeries[];
+  /** Hole size in % of outer radius (10..90, Excel default 50). */
+  holeSize?: number;
+  /** First-slice rotation angle in degrees. */
+  firstSliceAng?: number;
+}
+
+export type ScatterStyle = 'line' | 'lineMarker' | 'marker' | 'none' | 'smooth' | 'smoothMarker';
+
+export interface ScatterSeries {
+  idx: number;
+  order: number;
+  tx?: BarSeries['tx'];
+  xVal?: NumericRef;
+  yVal: NumericRef;
+  smooth?: boolean;
+}
+
+export interface ScatterChart {
+  kind: 'scatter';
+  scatterStyle: ScatterStyle;
+  varyColors?: boolean;
+  series: ScatterSeries[];
+  axIds: [number, number];
+}
+
+export type RadarStyle = 'standard' | 'marker' | 'filled';
+
+export interface RadarChart {
+  kind: 'radar';
+  radarStyle: RadarStyle;
+  varyColors?: boolean;
+  series: BarSeries[];
+  axIds: [number, number];
+}
+
+/** Discriminator union of all stage-1 chart kinds. */
+export type ChartKind = BarChart | LineChart | AreaChart | PieChart | DoughnutChart | ScatterChart | RadarChart;
 
 export interface CategoryAxis {
   axId: number;
@@ -156,5 +225,108 @@ export function makeChartSpace(opts: {
     ...(opts.legend ? { legend: opts.legend } : {}),
     ...(opts.plotVisOnly !== undefined ? { plotVisOnly: opts.plotVisOnly } : {}),
     ...(opts.dispBlanksAs !== undefined ? { dispBlanksAs: opts.dispBlanksAs } : {}),
+  };
+}
+
+export function makeLineChart(opts: {
+  grouping?: GroupingType;
+  series?: LineSeries[];
+  axIds?: [number, number];
+  varyColors?: boolean;
+  smooth?: boolean;
+}): LineChart {
+  return {
+    kind: 'line',
+    grouping: opts.grouping ?? 'standard',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+    ...(opts.smooth !== undefined ? { smooth: opts.smooth } : {}),
+  };
+}
+
+export function makeAreaChart(opts: {
+  grouping?: GroupingType;
+  series?: BarSeries[];
+  axIds?: [number, number];
+  varyColors?: boolean;
+}): AreaChart {
+  return {
+    kind: 'area',
+    grouping: opts.grouping ?? 'standard',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+  };
+}
+
+export function makePieChart(opts: { series?: BarSeries[]; varyColors?: boolean }): PieChart {
+  return {
+    kind: 'pie',
+    series: opts.series ?? [],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+  };
+}
+
+export function makeDoughnutChart(opts: {
+  series?: BarSeries[];
+  varyColors?: boolean;
+  holeSize?: number;
+  firstSliceAng?: number;
+}): DoughnutChart {
+  return {
+    kind: 'doughnut',
+    series: opts.series ?? [],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+    ...(opts.holeSize !== undefined ? { holeSize: opts.holeSize } : {}),
+    ...(opts.firstSliceAng !== undefined ? { firstSliceAng: opts.firstSliceAng } : {}),
+  };
+}
+
+export function makeScatterChart(opts: {
+  scatterStyle?: ScatterStyle;
+  series?: ScatterSeries[];
+  axIds?: [number, number];
+  varyColors?: boolean;
+}): ScatterChart {
+  return {
+    kind: 'scatter',
+    scatterStyle: opts.scatterStyle ?? 'lineMarker',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+  };
+}
+
+export function makeScatterSeries(opts: {
+  idx: number;
+  order?: number;
+  tx?: BarSeries['tx'];
+  xVal?: NumericRef;
+  yVal: NumericRef;
+  smooth?: boolean;
+}): ScatterSeries {
+  return {
+    idx: opts.idx,
+    order: opts.order ?? opts.idx,
+    yVal: opts.yVal,
+    ...(opts.tx ? { tx: opts.tx } : {}),
+    ...(opts.xVal ? { xVal: opts.xVal } : {}),
+    ...(opts.smooth !== undefined ? { smooth: opts.smooth } : {}),
+  };
+}
+
+export function makeRadarChart(opts: {
+  radarStyle?: RadarStyle;
+  series?: BarSeries[];
+  axIds?: [number, number];
+  varyColors?: boolean;
+}): RadarChart {
+  return {
+    kind: 'radar',
+    radarStyle: opts.radarStyle ?? 'standard',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
   };
 }

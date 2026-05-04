@@ -45,7 +45,7 @@ describe('chart-xml round-trip — BarChart', () => {
     expect(back.title).toBe('Quarterly Sales');
     expect(back.legend?.position).toBe('r');
     const bar = back.plotArea.chart;
-    expect(bar.kind).toBe('bar');
+    if (bar.kind !== 'bar') throw new Error('expected bar chart');
     expect(bar.barDir).toBe('col');
     expect(bar.grouping).toBe('clustered');
     expect(bar.series.length).toBe(1);
@@ -75,9 +75,11 @@ describe('chart-xml round-trip — BarChart', () => {
         }),
       ),
     );
-    expect(back.plotArea.chart.barDir).toBe('bar');
-    expect(back.plotArea.chart.grouping).toBe('stacked');
-    expect(back.plotArea.chart.series.length).toBe(2);
+    const bar = back.plotArea.chart;
+    if (bar.kind !== 'bar') throw new Error('expected bar chart');
+    expect(bar.barDir).toBe('bar');
+    expect(bar.grouping).toBe('stacked');
+    expect(bar.series.length).toBe(2);
   });
 
   it('rejects a non-chartSpace root', () => {
@@ -124,9 +126,11 @@ describe('full chart round-trip through saveWorkbook → loadWorkbook', () => {
     if (item?.content.kind === 'chart') {
       const back = item.content.chart.space as ChartSpace;
       expect(back.title).toBe('Test');
-      expect(back.plotArea.chart.barDir).toBe('col');
-      expect(back.plotArea.chart.series[0]?.val.ref).toBe('Charts!$B$1:$B$3');
-      expect(back.plotArea.chart.series[0]?.val.cache).toEqual([1, 2, 3]);
+      const barBack = back.plotArea.chart;
+      if (barBack.kind !== 'bar') throw new Error('expected bar chart');
+      expect(barBack.barDir).toBe('col');
+      expect(barBack.series[0]?.val.ref).toBe('Charts!$B$1:$B$3');
+      expect(barBack.series[0]?.val.cache).toEqual([1, 2, 3]);
     }
   });
 
