@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
-- **次のタスク**: フェーズ5 worksheet 追加機能の続き — **freezePanes / sheetView**。`Worksheet.views: SheetView[]` (initially length 1, default activeCell + workbookViewId=0) を追加、`setFreezePanes(ws, ref)` で `pane` オブジェクトを生成して view に注入。worksheet reader/writer の `<sheetViews>/<sheetView>/<pane>` 対応。次は dimension の正確化、columnDimensions / rowDimensions、SheetFormatProperties。
+- **次のタスク**: フェーズ5 worksheet 追加機能の続き — **columnDimensions / rowDimensions / SheetFormatProperties**。`<cols><col min max width customWidth bestFit/></cols>` を `Worksheet.columnDimensions: ColumnDimension[]` に、`<row r="N" ht="… " customHeight="1" hidden="1">` の row 属性を `Worksheet.rowDimensions: Map<row, RowDimension>` に。reader / writer 両対応。`setColumnWidth(ws, col, width)` / `setRowHeight(ws, row, height)` / `hideColumn` / `hideRow` の API も。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -69,7 +69,7 @@
 
 ### フェーズ5: rich features ([07-rich-features.md](docs/plan/07-rich-features.md))
 
-- [~] §1 worksheet 拡張：**mergedCells** 完了 (`src/worksheet/worksheet.ts` の `mergeCells` / `unmergeCells` / `getMergedCells` / `isMergedCell`、`Worksheet.mergedCells: CellRange[]` 追加)。mergeCells は openpyxl `MergedCellRange.format()` 準拠で top-left 以外のセルを `ws.rows` から drop、既存 merge と重なる場合は throw、同一 range は冪等。reader が `<mergeCells><mergeCell ref="…"/>` を `parseRange` で `mergedCells` に load (source の overlap check はせず信用)、writer は `</sheetData>` 直後に `<mergeCells count="N">` block を emit (なければ省略)。8 tests で API + save → load round-trip 確認。795 tests pass。残：freezePanes / sheetView / columnDimensions / rowDimensions / SheetFormatProperties。
+- [~] §1 worksheet 拡張：**mergedCells** + **sheetView/freezePanes** 完了。`mergedCells`: openpyxl `MergedCellRange.format()` 準拠 (`mergeCells` / `unmergeCells` / `getMergedCells` / `isMergedCell`、reader/writer は `<mergeCells>` block 対応)。`sheetView/freezePanes` (`src/worksheet/views.ts`): SheetView/Pane/Selection 型 + `makeSheetView` / `makeFreezePane(ref)` (B2 → bottomRight, A2 → bottomLeft, B1 → topRight, A1 → throw) / `freezePaneRef(view)`。`Worksheet.views: SheetView[]` + `setFreezePanes(ws, ref|undefined)` / `getFreezePanes(ws)`。reader が `<sheetViews>/<sheetView>/<pane>/<selection>` を float/int/bool 属性込みで全部復元、writer は `<dimension>` 直後に block を emit、空なら省略。12 + 8 = 20 tests、`empty-with-styles.xlsx` の `tabSelected=1` `activeCell=A3` も実機読込で確認。807 tests pass。残：columnDimensions / rowDimensions / SheetFormatProperties。
 - [ ] §2 hyperlinks / comments / dataValidations / conditionalFormatting / autoFilter / tables
 - [ ] §3 named ranges / defined names / external links
 
