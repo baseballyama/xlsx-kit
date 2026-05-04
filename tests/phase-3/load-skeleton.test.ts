@@ -75,6 +75,57 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     for (const ref of wb.sheets) expect(ref.sheet.rows.size).toBe(0);
   });
 
+  it('reads sheet content cells through the worksheet reader', async () => {
+    // Build a synthetic single-sheet xlsx with one number cell.
+    const { createZipWriter } = await import('../../src/zip/writer');
+    const { toBuffer } = await import('../../src/io/node');
+    const sink = toBuffer();
+    const w = createZipWriter(sink);
+    const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s);
+    await w.addEntry(
+      '[Content_Types].xml',
+      utf8(
+        '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
+      ),
+    );
+    await w.addEntry(
+      '_rels/.rels',
+      utf8(
+        '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+      ),
+    );
+    await w.addEntry(
+      'xl/workbook.xml',
+      utf8(
+        '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets></workbook>',
+      ),
+    );
+    await w.addEntry(
+      'xl/_rels/workbook.xml.rels',
+      utf8(
+        '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>',
+      ),
+    );
+    await w.addEntry(
+      'xl/worksheets/sheet1.xml',
+      utf8(
+        '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>42</v></c><c r="B1" t="b"><v>1</v></c></row><row r="3"><c r="C3"><f>1+2</f><v>3</v></c></row></sheetData></worksheet>',
+      ),
+    );
+    await w.finalize();
+    const wb = await loadWorkbook(fromBuffer(sink.result()));
+    const ws = wb.sheets[0]?.sheet;
+    if (!ws) throw new Error('expected one sheet');
+    expect(ws.title).toBe('Data');
+    const { getCell } = await import('../../src/worksheet/worksheet');
+    expect(getCell(ws, 1, 1)?.value).toBe(42);
+    expect(getCell(ws, 1, 2)?.value).toBe(true);
+    const f = getCell(ws, 3, 3)?.value as { kind: string; formula: string; cachedValue: number };
+    expect(f.kind).toBe('formula');
+    expect(f.formula).toBe('1+2');
+    expect(f.cachedValue).toBe(3);
+  });
+
   it('rejects an archive missing [Content_Types].xml', async () => {
     const { createZipWriter } = await import('../../src/zip/writer');
     const { toBuffer } = await import('../../src/io/node');

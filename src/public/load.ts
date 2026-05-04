@@ -15,7 +15,7 @@ import { manifestFromBytes } from '../packaging/manifest';
 import { findById, relsFromBytes } from '../packaging/relationships';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { createWorkbook, type SheetRef, type SheetState, type Workbook } from '../workbook/workbook';
-import { makeWorksheet } from '../worksheet/worksheet';
+import { parseWorksheetXml } from '../worksheet/reader';
 import { ARC_CONTENT_TYPES, ARC_ROOT_RELS, ARC_WORKBOOK, parseQName, REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
@@ -190,9 +190,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     if (!archive.has(sheetPath)) {
       throw new OpenXmlSchemaError(`loadWorkbook: sheet part "${sheetPath}" not found in archive`);
     }
-    // Sheet content is read in a later iteration. For the skeleton we just
-    // attach an empty Worksheet shell.
-    const ws = makeWorksheet(entry.name);
+    const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, { sharedStrings: [] });
     const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
     wb.sheets.push(ref);
   }

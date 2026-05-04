@@ -1,0 +1,273 @@
+// Worksheet XML reader. Per docs/plan/05-read-write.md §5.1.
+//
+// **Stage 1**: DOM-based reader for `<sheetData>/<row>/<c>` covering
+// the common cell-value shapes — number / shared-string / boolean /
+// error / inline string / formula. SAX iterparse + dimension /
+// sheetView / mergeCells / hyperlinks etc. land in later iterations
+// of the loop. The function signature is stable so the SAX swap won't
+// break downstream callers.
+
+import {
+  type Cell,
+  type ExcelErrorCode,
+  type FormulaKind,
+  setArrayFormula,
+  setFormula,
+  setSharedFormula,
+} from '../cell/cell';
+import { translateFormula } from '../formula/translate';
+import { coordinateToTuple, tupleToCoordinate } from '../utils/coordinate';
+import { OpenXmlSchemaError } from '../utils/exceptions';
+import { ERROR_CODES } from '../utils/inference';
+import { SHEET_MAIN_NS } from '../xml/namespaces';
+import { parseXml } from '../xml/parser';
+import { findChild, findChildren, type XmlNode } from '../xml/tree';
+import { makeWorksheet, setCell, type Worksheet } from './worksheet';
+
+const WORKSHEET_TAG = `{${SHEET_MAIN_NS}}worksheet`;
+const SHEETDATA_TAG = `{${SHEET_MAIN_NS}}sheetData`;
+const ROW_TAG = `{${SHEET_MAIN_NS}}row`;
+const C_TAG = `{${SHEET_MAIN_NS}}c`;
+const V_TAG = `{${SHEET_MAIN_NS}}v`;
+const F_TAG = `{${SHEET_MAIN_NS}}f`;
+const IS_TAG = `{${SHEET_MAIN_NS}}is`;
+const T_TAG = `{${SHEET_MAIN_NS}}t`;
+
+/** Inputs the worksheet reader needs from the surrounding workbook context. */
+export interface WorksheetReadContext {
+  /** Resolved shared-strings table. Pass `[]` when no sst is present. */
+  sharedStrings: ReadonlyArray<string>;
+}
+
+/** Per-worksheet state for shared-formula expansion. */
+interface SharedFormulaCache {
+  origin: string;
+  formula: string;
+}
+
+/**
+ * Parse a `xl/worksheets/sheetN.xml` payload into a fully-populated
+ * Worksheet. The returned worksheet's `title` matches the `title`
+ * argument; the XML doesn't carry the sheet name (it lives in
+ * `workbook.xml`).
+ */
+export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx: WorksheetReadContext): Worksheet {
+  const root = parseXml(bytes);
+  if (root.name !== WORKSHEET_TAG) {
+    throw new OpenXmlSchemaError(`parseWorksheetXml: root is "${root.name}", expected worksheet`);
+  }
+  const ws = makeWorksheet(title);
+  const sheetData = findChild(root, SHEETDATA_TAG);
+  if (!sheetData) return ws;
+
+  const sharedFormulas = new Map<number, SharedFormulaCache>();
+  for (const rowNode of findChildren(sheetData, ROW_TAG)) {
+    const rowIdx = parseRowIndex(rowNode);
+    let nextCol = 1;
+    for (const cNode of findChildren(rowNode, C_TAG)) {
+      const coord = parseCellCoord(cNode, rowIdx, nextCol);
+      readCell(ws, cNode, coord, ctx, sharedFormulas);
+      nextCol = coord.col + 1;
+    }
+  }
+  return ws;
+}
+
+const parseRowIndex = (rowNode: XmlNode): number => {
+  const rAttr = rowNode.attrs['r'];
+  if (rAttr === undefined) {
+    throw new OpenXmlSchemaError('worksheet: <row> missing required @r');
+  }
+  const r = Number.parseInt(rAttr, 10);
+  if (!Number.isInteger(r) || r < 1) {
+    throw new OpenXmlSchemaError(`worksheet: <row r="${rAttr}"> is not a positive integer`);
+  }
+  return r;
+};
+
+const parseCellCoord = (cNode: XmlNode, rowIdx: number, fallbackCol: number): { row: number; col: number } => {
+  const rAttr = cNode.attrs['r'];
+  if (rAttr === undefined) {
+    // Cells without @r take the next column slot in the current row.
+    return { row: rowIdx, col: fallbackCol };
+  }
+  const t = coordinateToTuple(rAttr);
+  if (t.row !== rowIdx) {
+    throw new OpenXmlSchemaError(`worksheet: <c r="${rAttr}"> row ${t.row} disagrees with <row r="${rowIdx}">`);
+  }
+  return { row: t.row, col: t.col };
+};
+
+const readCell = (
+  ws: Worksheet,
+  cNode: XmlNode,
+  coord: { row: number; col: number },
+  ctx: WorksheetReadContext,
+  sharedFormulas: Map<number, SharedFormulaCache>,
+): void => {
+  const t = cNode.attrs['t'] ?? 'n';
+  const styleAttr = cNode.attrs['s'];
+  const styleId = styleAttr === undefined ? 0 : parseStyleId(styleAttr);
+
+  const fNode = findChild(cNode, F_TAG);
+  const vNode = findChild(cNode, V_TAG);
+  const isNode = findChild(cNode, IS_TAG);
+
+  // ---- formula path ------------------------------------------------------
+  if (fNode) {
+    const cell = setCell(ws, coord.row, coord.col, null, styleId);
+    const cachedRaw = vNode?.text;
+    const cached = decodeCachedValue(cachedRaw, t);
+    handleFormula(cell, fNode, coord, cached, sharedFormulas);
+    return;
+  }
+
+  // ---- non-formula values ------------------------------------------------
+  let value: number | string | boolean | { kind: 'error'; code: ExcelErrorCode } | null = null;
+  switch (t) {
+    case 'n':
+      value = vNode?.text !== undefined && vNode.text !== '' ? Number.parseFloat(vNode.text) : null;
+      break;
+    case 's': {
+      if (vNode?.text === undefined) {
+        throw new OpenXmlSchemaError('worksheet: <c t="s"> missing <v>');
+      }
+      const idx = Number.parseInt(vNode.text, 10);
+      if (!Number.isInteger(idx) || idx < 0) {
+        throw new OpenXmlSchemaError(`worksheet: <c t="s"><v>${vNode.text}</v> is not a valid index`);
+      }
+      const sst = ctx.sharedStrings[idx];
+      if (sst === undefined) {
+        throw new OpenXmlSchemaError(
+          `worksheet: shared-string index ${idx} out of range [0, ${ctx.sharedStrings.length})`,
+        );
+      }
+      value = sst;
+      break;
+    }
+    case 'b':
+      value = vNode?.text === '1';
+      break;
+    case 'e': {
+      const code = vNode?.text;
+      if (code === undefined || !ERROR_CODES.has(code)) {
+        throw new OpenXmlSchemaError(`worksheet: unknown error code "${code}" in <c t="e">`);
+      }
+      value = { kind: 'error', code: code as ExcelErrorCode };
+      break;
+    }
+    case 'str':
+      value = vNode?.text ?? '';
+      break;
+    case 'inlineStr':
+      value = readInlineString(isNode);
+      break;
+    default:
+      throw new OpenXmlSchemaError(`worksheet: unknown cell type t="${t}"`);
+  }
+  setCell(ws, coord.row, coord.col, value, styleId);
+};
+
+const parseStyleId = (raw: string): number => {
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isInteger(n) || n < 0) {
+    throw new OpenXmlSchemaError(`worksheet: <c s="${raw}"> is not a non-negative integer`);
+  }
+  return n;
+};
+
+/** Inline-string body — concatenates `<is>/<t>` text runs. Rich runs lose formatting in stage-1. */
+const readInlineString = (isNode: XmlNode | undefined): string => {
+  if (!isNode) return '';
+  const direct = findChild(isNode, T_TAG);
+  if (direct) return direct.text ?? '';
+  // Rich inline string — concatenate every <r>/<t>.
+  let out = '';
+  for (const child of isNode.children) {
+    const t = findChild(child, T_TAG);
+    if (t?.text) out += t.text;
+  }
+  return out;
+};
+
+const decodeCachedValue = (raw: string | undefined, t: string): number | string | boolean | undefined => {
+  if (raw === undefined || raw === '') return undefined;
+  switch (t) {
+    case 'n':
+      return Number.parseFloat(raw);
+    case 'b':
+      return raw === '1';
+    case 'str':
+      return raw;
+    case 'e':
+      return raw;
+    case 's':
+      // Cached value of a formula resolving to a shared string is rare; keep as-is.
+      return raw;
+    default:
+      return raw;
+  }
+};
+
+const handleFormula = (
+  cell: Cell,
+  fNode: XmlNode,
+  coord: { row: number; col: number },
+  cached: number | string | boolean | undefined,
+  sharedFormulas: Map<number, SharedFormulaCache>,
+): void => {
+  const tAttr = fNode.attrs['t'] ?? 'normal';
+  const formula = fNode.text ?? '';
+  const opts = cached !== undefined ? { cachedValue: cached } : undefined;
+  switch (tAttr as FormulaKind) {
+    case 'normal':
+      setFormula(cell, formula, opts);
+      return;
+    case 'array': {
+      const ref = fNode.attrs['ref'];
+      if (!ref) {
+        throw new OpenXmlSchemaError('worksheet: <f t="array"> missing @ref');
+      }
+      setArrayFormula(cell, ref, formula, opts);
+      return;
+    }
+    case 'shared': {
+      const siRaw = fNode.attrs['si'];
+      if (siRaw === undefined) {
+        throw new OpenXmlSchemaError('worksheet: <f t="shared"> missing @si');
+      }
+      const si = Number.parseInt(siRaw, 10);
+      if (!Number.isInteger(si) || si < 0) {
+        throw new OpenXmlSchemaError(`worksheet: <f t="shared" si="${siRaw}"> is not a valid index`);
+      }
+      const ref = fNode.attrs['ref'];
+      if (formula.length > 0) {
+        // Origin / first occurrence of the shared formula. The ref is required
+        // by Excel but we accept its absence for resilience.
+        sharedFormulas.set(si, { origin: tupleToCoordinate(coord.col, coord.row), formula });
+        setSharedFormula(cell, si, formula, ref, opts);
+        return;
+      }
+      // Subsequent reference — translate the cached origin formula.
+      const cache = sharedFormulas.get(si);
+      if (!cache) {
+        throw new OpenXmlSchemaError(`worksheet: <f t="shared" si="${si}"/> with no preceding origin formula`);
+      }
+      const dest = tupleToCoordinate(coord.col, coord.row);
+      // OOXML shared-formula text omits the leading '='; the translator
+      // treats unprefixed input as a LITERAL and skips ref shifting, so we
+      // re-prefix before translating and strip again on the way out.
+      const translated = translateFormula(`=${cache.formula}`, cache.origin, { dest });
+      const stripped = translated.startsWith('=') ? translated.slice(1) : translated;
+      setSharedFormula(cell, si, stripped, undefined, opts);
+      return;
+    }
+    case 'dataTable':
+      // dataTable formulas are read in §5.5 (deferred). Drop the formula but
+      // preserve the cached value so cells aren't lost on round-trip.
+      setFormula(cell, formula, opts);
+      return;
+    default:
+      throw new OpenXmlSchemaError(`worksheet: <f t="${tAttr}"> unknown formula kind`);
+  }
+};
