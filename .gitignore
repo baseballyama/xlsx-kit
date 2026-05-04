@@ -1,3 +1,6 @@
+# Claude Code session state (never commit)
+.claude/
+
 # Logs
 logs
 *.log
