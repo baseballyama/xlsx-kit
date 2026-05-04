@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ2 (コアモデル)
-- **次のタスク**: フェーズ2 §2 Cell モデル + §4 Workbook / Worksheet データ。Cell は plain object（`{ row, col, value, styleId }`）で `makeCell` / `getCoordinate` / `setCellValue` / `bindValue` (型推論) / `setFormula` / `setArrayFormula` / `setSharedFormula`。Workbook はプール (Stylesheet) を保持しつつ Worksheet 配列、Worksheet は `rows: Map<rowIndex, Map<colIndex, Cell>>` の sparse 構造で `getCell` / `setCell` / `appendRow` / `iterRows` / `mergeCells` / `setColumnWidth` / `setRowHeight` 等。続いて §4.5 cell-range / multi-cell-range、§5 Formula tokenizer / translator、§6 JSON round-trip テスト。
+- **次のタスク**: フェーズ2 §4 Workbook / Worksheet データモデル。`Workbook = { sheets: SheetRef[], styles: Stylesheet, properties, ... }` + `createWorkbook` / `addWorksheet` / `removeSheet` / `getSheet` / `setActiveSheet` / `defineName`。`Worksheet = { title, rows: Map<row, Map<col, Cell>>, columnDimensions, rowDimensions, mergedCells, views, ... }` + `getCell` / `setCell` / `appendRow` / `iterRows` / `mergeCells` / `setColumnWidth` / `setRowHeight` / `setFreezePanes`。Worksheet → Workbook back-ref (mutate 用)、JSON.stringify replacer で循環参照対策。続けて §4.5 cell-range / multi-cell-range、§5 Formula tokenizer / translator。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -37,7 +37,7 @@
 
 ### フェーズ2: コアモデル ([04-core-model.md](docs/plan/04-core-model.md))
 
-- [ ] §2 Cell (CellValue 型, makeCell, getCoordinate, bindValue, RichText, MergedCell)
+- [x] §2 Cell (CellValue 型 + makeCell/getCoordinate/setCellValue/bindValue/setFormula/setArrayFormula/setSharedFormula、makeErrorValue/makeDurationValue、isFormulaCell/isRichTextCell/isEmptyCell discriminator、RichText (`InlineFont` の OOXML 短名 sz/b/i/u + `TextRun` + `makeRichText`/`makeTextRun`/`richTextToString`)、Cell は mutable で hot-path 性能優先、座標 1..MAX_ROW/MAX_COL の range enforce)。476 tests pass。
 - [x] §3 Style 値オブジェクト群 (Color + Side + Border + Fill + Alignment + Protection + NumberFormat + Font 完了)。Font は openpyxl の "nested-with-val-attr" パターンに合わせて Schema に `nested` ElementDef 種別を追加 (`<sz val="11"/>` を primitive で運ぶ)。`empty` 種別の fromTree も「absent → undefined / present → true」semantics に変更（false/未設定の round-trip 整合性のため）。Font は name/charset/family/size/color/bold/italic/strike/outline/shadow/condense/extend/underline/vertAlign/scheme の 15 フィールド、`DEFAULT_FONT = Calibri 11 minor scheme theme=1`。413 tests pass。
 - [x] §3.4 Stylesheet (プール + dedup 完了)：`utils/stable-stringify.ts` で順序非依存 JSON 正規化、`Stylesheet` 型 (fonts/fills/borders/numFmts/cellXfs/cellStyleXfs + 各 _IdByKey 内部 dedup map)、`makeStylesheet` は Excel 必須 default (DEFAULT_FONT / DEFAULT_EMPTY_FILL + DEFAULT_GRAY_FILL / DEFAULT_BORDER) を pre-populate、`addFont` / `addFill` / `addBorder` / `addNumFmt` / `addCellXf` / `addCellStyleXf` は idempotent (1000× 同値 add → 1 entry)、numFmt は built-in code → canonical id、custom code は 164 から自動採番、CellXf は ref 範囲チェック (font/fill/border/xfId) + insertion-order 非依存 dedup。`defaultCellXf()` / `getCustomNumFmts()` ヘルパ。434 tests pass。
 - [ ] §3.6 cell ↔ stylesheet bridge (`getCellFont` / `setCellFont` 等の free function)
