@@ -10,6 +10,7 @@
 // `genuine/empty.xlsx` fixture (3 empty sheets) and to give the rest of
 // phase 3 a stable scaffolding to layer onto.
 
+import { parseChartXml } from '../chart/chart-xml';
 import { parseDrawingXml } from '../drawing/drawing-xml';
 import type { XlsxSource } from '../io/source';
 import { corePropsFromBytes } from '../packaging/core';
@@ -322,7 +323,24 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
           if (!dRel) return undefined;
           const dPath = resolveRelTarget(sheetPath, dRel.target);
           if (!archive.has(dPath)) return undefined;
-          return parseDrawingXml(archive.read(dPath));
+          const drawing = parseDrawingXml(archive.read(dPath));
+          // Phase-2: resolve drawing-rels to populate chart payloads.
+          const dRelsPath = relsPathFor(dPath);
+          if (archive.has(dRelsPath)) {
+            const dRels = relsFromBytes(archive.read(dRelsPath));
+            for (const item of drawing.items) {
+              if (item.content.kind !== 'chart') continue;
+              const chartRId = item.content.chart.rId;
+              if (!chartRId) continue;
+              const chartRel = dRels.rels.find((r) => r.id === chartRId);
+              if (!chartRel) continue;
+              const chartPath = resolveRelTarget(dPath, chartRel.target);
+              if (archive.has(chartPath)) {
+                item.content.chart.space = parseChartXml(archive.read(chartPath));
+              }
+            }
+          }
+          return drawing;
         }
       : undefined;
     const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, {

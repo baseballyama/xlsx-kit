@@ -7,12 +7,18 @@
 // later iterations); picture / shape / connector / group are reserved
 // for later.
 
+import type { ChartSpace } from '../chart/chart';
 import type { DrawingAnchor } from './anchor';
 
-/** Reference to a chart part — the chart's worksheet-rels rId resolves to xl/charts/chartN.xml. */
+/** Reference to a chart part — the chart's drawing-rels rId resolves to xl/charts/chartN.xml. */
 export interface ChartReference {
-  /** Worksheet-rels rId pointing at the chart part. Populated on read; the writer assigns its own. */
+  /** Drawing-rels rId pointing at the chart part. Populated on read; the writer assigns its own. */
   rId?: string;
+  /**
+   * The actual chart payload. Stage-1 supports BarChart end-to-end; other
+   * chart kinds populate this field as their parsers / writers land.
+   */
+  space?: ChartSpace;
 }
 
 export interface DrawingItem {

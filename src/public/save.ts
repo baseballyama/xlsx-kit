@@ -14,7 +14,8 @@
 // docProps / theme / VBA / drawings / charts are reserved for later
 // iterations — load tolerates their absence.
 
-import type { Drawing } from '../drawing/drawing';
+import { chartToBytes } from '../chart/chart-xml';
+import type { Drawing, DrawingItem } from '../drawing/drawing';
 import { drawingToBytes } from '../drawing/drawing-xml';
 import type { XlsxSink } from '../io/sink';
 import { corePropsToBytes } from '../packaging/core';
@@ -68,6 +69,8 @@ const COMMENTS_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheet
 const VML_DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.vmlDrawing';
 const DRAWING_REL = `${REL_NS}/drawing`;
 const DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.drawing+xml';
+const CHART_REL = `${REL_NS}/chart`;
+const CHART_TYPE = 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml';
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -108,9 +111,20 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   const commentEmits: CommentEmit[] = [];
   let nextCommentsId = 1;
-  // Drawings: workbook-global drawingN counter for xl/drawings/drawingN.xml.
-  const drawingEmits: Array<{ id: number; bytes: Uint8Array }> = [];
+  // Drawings: workbook-global drawingN counter for xl/drawings/drawingN.xml +
+  // matching drawing-rels file (when chart items are present).
+  interface DrawingEmit {
+    id: number;
+    bytes: Uint8Array;
+    /** Drawing rels — when non-empty we also emit the rels file. */
+    rels?: Relationships;
+  }
+  const drawingEmits: DrawingEmit[] = [];
   let nextDrawingId = 1;
+  // Chart parts share a workbook-global counter so xl/charts/chartN.xml
+  // ids stay unique.
+  const chartEmits: Array<{ id: number; bytes: Uint8Array }> = [];
+  let nextChartId = 1;
   wb.sheets.forEach((ref, i) => {
     const target = `worksheets/sheet${i + 1}.xml`;
     const sheetRels = makeRelationships();
@@ -157,7 +171,33 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
         type: DRAWING_REL,
         target: `../drawings/drawing${id}.xml`,
       });
-      drawingEmits.push({ id, bytes: drawingToBytes(drawing) });
+      // Walk drawing items: for each chart with a payload, allocate a
+      // workbook-global chartN id and a per-drawing rId. Emit the chart
+      // part + collect a drawing-rels entry so drawing.xml's
+      // <c:chart r:id> resolves.
+      const drawingRels = makeRelationships();
+      const itemsForXml: DrawingItem[] = [];
+      for (const item of drawing.items) {
+        if (item.content.kind === 'chart' && item.content.chart.space) {
+          const chartId = nextChartId++;
+          const chartRId = `rId${drawingRels.rels.length + 1}`;
+          drawingRels.rels.push({
+            id: chartRId,
+            type: CHART_REL,
+            target: `../charts/chart${chartId}.xml`,
+          });
+          chartEmits.push({ id: chartId, bytes: chartToBytes(item.content.chart.space) });
+          itemsForXml.push({
+            anchor: item.anchor,
+            content: { kind: 'chart', chart: { rId: chartRId } },
+          });
+        } else {
+          itemsForXml.push(item);
+        }
+      }
+      const emit: DrawingEmit = { id, bytes: drawingToBytes({ items: itemsForXml }) };
+      if (drawingRels.rels.length > 0) emit.rels = drawingRels;
+      drawingEmits.push(emit);
       return { rId };
     };
     const bytes = worksheetToBytes(ref.sheet, {
@@ -231,9 +271,17 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     await writer.addEntry(`xl/drawings/vmlDrawing${c.id}.vml`, c.vmlBytes);
   }
 
-  // ---- 4d. drawings ------------------------------------------------------
+  // ---- 4d. drawings + their rels (when charts are embedded) -------------
   for (const d of drawingEmits) {
     await writer.addEntry(`xl/drawings/drawing${d.id}.xml`, d.bytes);
+    if (d.rels) {
+      await writer.addEntry(`xl/drawings/_rels/drawing${d.id}.xml.rels`, relsToBytes(d.rels));
+    }
+  }
+
+  // ---- 4e. chart parts ---------------------------------------------------
+  for (const c of chartEmits) {
+    await writer.addEntry(`xl/charts/chart${c.id}.xml`, c.bytes);
   }
 
   // ---- 5. styles.xml + sharedStrings.xml (if any) -------------------------
@@ -305,6 +353,9 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   for (const d of drawingEmits) {
     addOverride(manifest, `/xl/drawings/drawing${d.id}.xml`, DRAWING_TYPE);
+  }
+  for (const c of chartEmits) {
+    addOverride(manifest, `/xl/charts/chart${c.id}.xml`, CHART_TYPE);
   }
   if (wb.properties) addOverride(manifest, `/${ARC_CORE}`, CORE_PROPS_TYPE);
   if (wb.appProperties) addOverride(manifest, `/${ARC_APP}`, EXT_PROPS_TYPE);
