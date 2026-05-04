@@ -144,9 +144,11 @@ describe('RadarChart round-trip', () => {
 
 describe('Unknown chart kind rejection', () => {
   it('throws when no supported chart child is found', () => {
-    // surface3D + ofPie are not yet modelled — they should error out cleanly.
+    // chartex namespace kinds (sunburst etc) are not yet wired into the c:
+    // namespace dispatcher — we use a fictitious tag to verify the failure
+    // path stays clean.
     const xml =
-      '<?xml version="1.0"?><c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:chart><c:plotArea><c:layout/><c:surface3DChart/></c:plotArea></c:chart></c:chartSpace>';
+      '<?xml version="1.0"?><c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:chart><c:plotArea><c:layout/><c:fancyChart/></c:plotArea></c:chart></c:chartSpace>';
     expect(() => parseChartXml(xml)).toThrowError(/no supported chart kind/);
   });
 });

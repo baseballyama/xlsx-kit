@@ -180,6 +180,77 @@ export interface SurfaceChart {
   axIds: [number, number, number];
 }
 
+export type OfPieType = 'bar' | 'pie';
+export type SplitType = 'auto' | 'cust' | 'percent' | 'pos' | 'val';
+
+export interface OfPieChart {
+  kind: 'ofPie';
+  /** `bar` for "Bar of Pie", `pie` for "Pie of Pie". */
+  ofPieType: OfPieType;
+  varyColors?: boolean;
+  series: BarSeries[];
+  gapWidth?: number;
+  splitType?: SplitType;
+  /** Position threshold paired with `splitType='pos'`. */
+  splitPos?: number;
+  /** Indices of data points moved to the secondary plot when `splitType='cust'`. */
+  custSplit?: number[];
+  /** Secondary plot size as % of primary (5..200). */
+  secondPieSize?: number;
+}
+
+// ---- 3-D chart variants ---------------------------------------------------
+//
+// 3-D charts share most of their attributes with their 2-D counterparts but
+// land on different XML tag names (<c:bar3DChart>, etc) and use 3 axes
+// (cat / val / ser). We keep them as distinct discriminated-union variants
+// so the chart kind stays type-narrowable.
+
+export interface Bar3DChart {
+  kind: 'bar3D';
+  barDir: BarDirection;
+  grouping: GroupingType;
+  varyColors?: boolean;
+  series: BarSeries[];
+  gapWidth?: number;
+  /** Bar 3-D adds a `gapDepth` attribute. */
+  gapDepth?: number;
+  /** Cluster | percentStacked | stacked … plus 'standard' which 2-D doesn't take. */
+  shape?: 'cone' | 'coneToMax' | 'box' | 'cylinder' | 'pyramid' | 'pyramidToMax';
+  axIds: [number, number, number];
+}
+
+export interface Line3DChart {
+  kind: 'line3D';
+  grouping: GroupingType;
+  varyColors?: boolean;
+  series: LineSeries[];
+  gapDepth?: number;
+  axIds: [number, number, number];
+}
+
+export interface Pie3DChart {
+  kind: 'pie3D';
+  varyColors?: boolean;
+  series: BarSeries[];
+}
+
+export interface Area3DChart {
+  kind: 'area3D';
+  grouping: GroupingType;
+  varyColors?: boolean;
+  series: BarSeries[];
+  gapDepth?: number;
+  axIds: [number, number, number];
+}
+
+export interface Surface3DChart {
+  kind: 'surface3D';
+  series: BarSeries[];
+  wireframe?: boolean;
+  axIds: [number, number, number];
+}
+
 /** Discriminator union of all SpreadsheetML chart kinds modelled so far. */
 export type ChartKind =
   | BarChart
@@ -191,7 +262,13 @@ export type ChartKind =
   | RadarChart
   | BubbleChart
   | StockChart
-  | SurfaceChart;
+  | SurfaceChart
+  | OfPieChart
+  | Bar3DChart
+  | Line3DChart
+  | Pie3DChart
+  | Area3DChart
+  | Surface3DChart;
 
 export interface CategoryAxis {
   axId: number;
@@ -448,6 +525,107 @@ export function makeSurfaceChart(opts: {
 }): SurfaceChart {
   return {
     kind: 'surface',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2, 3],
+    ...(opts.wireframe !== undefined ? { wireframe: opts.wireframe } : {}),
+  };
+}
+
+export function makeOfPieChart(opts: {
+  ofPieType?: OfPieType;
+  series?: BarSeries[];
+  varyColors?: boolean;
+  gapWidth?: number;
+  splitType?: SplitType;
+  splitPos?: number;
+  custSplit?: number[];
+  secondPieSize?: number;
+}): OfPieChart {
+  return {
+    kind: 'ofPie',
+    ofPieType: opts.ofPieType ?? 'pie',
+    series: opts.series ?? [],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+    ...(opts.gapWidth !== undefined ? { gapWidth: opts.gapWidth } : {}),
+    ...(opts.splitType !== undefined ? { splitType: opts.splitType } : {}),
+    ...(opts.splitPos !== undefined ? { splitPos: opts.splitPos } : {}),
+    ...(opts.custSplit ? { custSplit: opts.custSplit } : {}),
+    ...(opts.secondPieSize !== undefined ? { secondPieSize: opts.secondPieSize } : {}),
+  };
+}
+
+export function makeBar3DChart(opts: {
+  barDir?: BarDirection;
+  grouping?: GroupingType;
+  series?: BarSeries[];
+  axIds?: [number, number, number];
+  varyColors?: boolean;
+  gapWidth?: number;
+  gapDepth?: number;
+  shape?: Bar3DChart['shape'];
+}): Bar3DChart {
+  return {
+    kind: 'bar3D',
+    barDir: opts.barDir ?? 'col',
+    grouping: opts.grouping ?? 'clustered',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2, 3],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+    ...(opts.gapWidth !== undefined ? { gapWidth: opts.gapWidth } : {}),
+    ...(opts.gapDepth !== undefined ? { gapDepth: opts.gapDepth } : {}),
+    ...(opts.shape !== undefined ? { shape: opts.shape } : {}),
+  };
+}
+
+export function makeLine3DChart(opts: {
+  grouping?: GroupingType;
+  series?: LineSeries[];
+  axIds?: [number, number, number];
+  varyColors?: boolean;
+  gapDepth?: number;
+}): Line3DChart {
+  return {
+    kind: 'line3D',
+    grouping: opts.grouping ?? 'standard',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2, 3],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+    ...(opts.gapDepth !== undefined ? { gapDepth: opts.gapDepth } : {}),
+  };
+}
+
+export function makePie3DChart(opts: { series?: BarSeries[]; varyColors?: boolean }): Pie3DChart {
+  return {
+    kind: 'pie3D',
+    series: opts.series ?? [],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+  };
+}
+
+export function makeArea3DChart(opts: {
+  grouping?: GroupingType;
+  series?: BarSeries[];
+  axIds?: [number, number, number];
+  varyColors?: boolean;
+  gapDepth?: number;
+}): Area3DChart {
+  return {
+    kind: 'area3D',
+    grouping: opts.grouping ?? 'standard',
+    series: opts.series ?? [],
+    axIds: opts.axIds ?? [1, 2, 3],
+    ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
+    ...(opts.gapDepth !== undefined ? { gapDepth: opts.gapDepth } : {}),
+  };
+}
+
+export function makeSurface3DChart(opts: {
+  series?: BarSeries[];
+  wireframe?: boolean;
+  axIds?: [number, number, number];
+}): Surface3DChart {
+  return {
+    kind: 'surface3D',
     series: opts.series ?? [],
     axIds: opts.axIds ?? [1, 2, 3],
     ...(opts.wireframe !== undefined ? { wireframe: opts.wireframe } : {}),

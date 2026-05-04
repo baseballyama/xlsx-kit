@@ -10,7 +10,9 @@ import { CHART_NS, REL_NS, SHEET_DRAWING_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import {
+  type Area3DChart,
   type AreaChart,
+  type Bar3DChart,
   type BarChart,
   type BarDirection,
   type BarSeries,
@@ -25,23 +27,33 @@ import {
   type GroupingType,
   type Legend,
   type LegendPosition,
+  type Line3DChart,
   type LineChart,
   type LineSeries,
+  makeArea3DChart,
   makeAreaChart,
+  makeBar3DChart,
   makeBarChart,
   makeBarSeries,
   makeBubbleChart,
   makeBubbleSeries,
   makeChartSpace,
   makeDoughnutChart,
+  makeLine3DChart,
   makeLineChart,
+  makeOfPieChart,
+  makePie3DChart,
   makePieChart,
   makeRadarChart,
   makeScatterChart,
   makeScatterSeries,
   makeStockChart,
+  makeSurface3DChart,
   makeSurfaceChart,
   type NumericRef,
+  type OfPieChart,
+  type OfPieType,
+  type Pie3DChart,
   type PieChart,
   type PlotArea,
   type RadarChart,
@@ -49,7 +61,9 @@ import {
   type ScatterChart,
   type ScatterSeries,
   type ScatterStyle,
+  type SplitType,
   type StockChart,
+  type Surface3DChart,
   type SurfaceChart,
   type ValueAxis,
 } from './chart';
@@ -106,6 +120,20 @@ const SIZE_REPRESENTS_TAG = `{${CHART_NS}}sizeRepresents`;
 const HI_LOW_LINES_TAG = `{${CHART_NS}}hiLowLines`;
 const UP_DOWN_BARS_TAG = `{${CHART_NS}}upDownBars`;
 const WIREFRAME_TAG = `{${CHART_NS}}wireframe`;
+const OF_PIE_CHART_TAG = `{${CHART_NS}}ofPieChart`;
+const OF_PIE_TYPE_TAG = `{${CHART_NS}}ofPieType`;
+const SPLIT_TYPE_TAG = `{${CHART_NS}}splitType`;
+const SPLIT_POS_TAG = `{${CHART_NS}}splitPos`;
+const CUST_SPLIT_TAG = `{${CHART_NS}}custSplit`;
+const SECOND_PIE_SIZE_TAG = `{${CHART_NS}}secondPieSize`;
+const SEC_BLOCK_PT_TAG = `{${CHART_NS}}secondaryPt`;
+const BAR3D_CHART_TAG = `{${CHART_NS}}bar3DChart`;
+const LINE3D_CHART_TAG = `{${CHART_NS}}line3DChart`;
+const PIE3D_CHART_TAG = `{${CHART_NS}}pie3DChart`;
+const AREA3D_CHART_TAG = `{${CHART_NS}}area3DChart`;
+const SURFACE3D_CHART_TAG = `{${CHART_NS}}surface3DChart`;
+const GAP_DEPTH_TAG = `{${CHART_NS}}gapDepth`;
+const SHAPE_TAG = `{${CHART_NS}}shape`;
 const AX_POS_TAG = `{${CHART_NS}}axPos`;
 const CROSS_AX_TAG = `{${CHART_NS}}crossAx`;
 const MAJOR_GRIDLINES_TAG = `{${CHART_NS}}majorGridlines`;
@@ -410,17 +438,120 @@ const parseStockChart = (stockEl: XmlNode): StockChart => {
 
 const parseSurfaceChart = (surfaceEl: XmlNode): SurfaceChart => {
   const wireframe = boolVal(findChild(surfaceEl, WIREFRAME_TAG));
-  // Surfaces have 3 axes; reuse parseAxIds for the first two and read the
-  // third explicitly.
-  const axIdNodes = findChildren(surfaceEl, AX_ID_TAG);
-  const axIds: [number, number, number] = [
-    intVal(axIdNodes[0]) ?? 1,
-    intVal(axIdNodes[1]) ?? 2,
-    intVal(axIdNodes[2]) ?? 3,
-  ];
+  const axIds3 = parseAxIds3(surfaceEl);
   return makeSurfaceChart({
     series: parseBarSeriesList(surfaceEl),
-    axIds,
+    axIds: axIds3,
+    ...(wireframe !== undefined ? { wireframe } : {}),
+  });
+};
+
+const parseAxIds3 = (chartEl: XmlNode): [number, number, number] => {
+  const axIdNodes = findChildren(chartEl, AX_ID_TAG);
+  return [intVal(axIdNodes[0]) ?? 1, intVal(axIdNodes[1]) ?? 2, intVal(axIdNodes[2]) ?? 3];
+};
+
+const SPLIT_TYPES: ReadonlyArray<SplitType> = ['auto', 'cust', 'percent', 'pos', 'val'];
+
+const parseOfPieChart = (ofPieEl: XmlNode): OfPieChart => {
+  const ofPieType = (valAttr(findChild(ofPieEl, OF_PIE_TYPE_TAG)) ?? 'pie') as OfPieType;
+  const varyColors = boolVal(findChild(ofPieEl, VARY_COLORS_TAG));
+  const gapWidth = intVal(findChild(ofPieEl, GAP_WIDTH_TAG));
+  const splitTypeRaw = valAttr(findChild(ofPieEl, SPLIT_TYPE_TAG));
+  const splitType =
+    splitTypeRaw && (SPLIT_TYPES as ReadonlyArray<string>).includes(splitTypeRaw)
+      ? (splitTypeRaw as SplitType)
+      : undefined;
+  const splitPos = intVal(findChild(ofPieEl, SPLIT_POS_TAG));
+  const secondPieSize = intVal(findChild(ofPieEl, SECOND_PIE_SIZE_TAG));
+  // <c:custSplit> contains <c:secondaryPt idx=N/> entries.
+  let custSplit: number[] | undefined;
+  const custSplitEl = findChild(ofPieEl, CUST_SPLIT_TAG);
+  if (custSplitEl) {
+    const points: number[] = [];
+    for (const pt of findChildren(custSplitEl, SEC_BLOCK_PT_TAG)) {
+      const idx = Number.parseInt(pt.attrs['idx'] ?? '', 10);
+      if (Number.isInteger(idx)) points.push(idx);
+    }
+    custSplit = points;
+  }
+  return makeOfPieChart({
+    ofPieType,
+    series: parseBarSeriesList(ofPieEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+    ...(gapWidth !== undefined ? { gapWidth } : {}),
+    ...(splitType !== undefined ? { splitType } : {}),
+    ...(splitPos !== undefined ? { splitPos } : {}),
+    ...(custSplit !== undefined ? { custSplit } : {}),
+    ...(secondPieSize !== undefined ? { secondPieSize } : {}),
+  });
+};
+
+// 3-D parsers — reuse 2-D helpers where the shape matches.
+
+const parseBar3DChart = (barEl: XmlNode): Bar3DChart => {
+  const barDir = (valAttr(findChild(barEl, BAR_DIR_TAG)) ?? 'col') as BarDirection;
+  const grouping = (valAttr(findChild(barEl, GROUPING_TAG)) ?? 'clustered') as GroupingType;
+  const varyColors = boolVal(findChild(barEl, VARY_COLORS_TAG));
+  const gapWidth = intVal(findChild(barEl, GAP_WIDTH_TAG));
+  const gapDepth = intVal(findChild(barEl, GAP_DEPTH_TAG));
+  const shape = valAttr(findChild(barEl, SHAPE_TAG)) as Bar3DChart['shape'] | undefined;
+  return makeBar3DChart({
+    barDir,
+    grouping,
+    series: parseBarSeriesList(barEl),
+    axIds: parseAxIds3(barEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+    ...(gapWidth !== undefined ? { gapWidth } : {}),
+    ...(gapDepth !== undefined ? { gapDepth } : {}),
+    ...(shape !== undefined ? { shape } : {}),
+  });
+};
+
+const parseLine3DChart = (lineEl: XmlNode): Line3DChart => {
+  const grouping = (valAttr(findChild(lineEl, GROUPING_TAG)) ?? 'standard') as GroupingType;
+  const varyColors = boolVal(findChild(lineEl, VARY_COLORS_TAG));
+  const gapDepth = intVal(findChild(lineEl, GAP_DEPTH_TAG));
+  const series: LineSeries[] = [];
+  for (const ser of findChildren(lineEl, SER_TAG)) {
+    const s = parseLineSeries(ser);
+    if (s) series.push(s);
+  }
+  return makeLine3DChart({
+    grouping,
+    series,
+    axIds: parseAxIds3(lineEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+    ...(gapDepth !== undefined ? { gapDepth } : {}),
+  });
+};
+
+const parsePie3DChart = (pieEl: XmlNode): Pie3DChart => {
+  const varyColors = boolVal(findChild(pieEl, VARY_COLORS_TAG));
+  return makePie3DChart({
+    series: parseBarSeriesList(pieEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+  });
+};
+
+const parseArea3DChart = (areaEl: XmlNode): Area3DChart => {
+  const grouping = (valAttr(findChild(areaEl, GROUPING_TAG)) ?? 'standard') as GroupingType;
+  const varyColors = boolVal(findChild(areaEl, VARY_COLORS_TAG));
+  const gapDepth = intVal(findChild(areaEl, GAP_DEPTH_TAG));
+  return makeArea3DChart({
+    grouping,
+    series: parseBarSeriesList(areaEl),
+    axIds: parseAxIds3(areaEl),
+    ...(varyColors !== undefined ? { varyColors } : {}),
+    ...(gapDepth !== undefined ? { gapDepth } : {}),
+  });
+};
+
+const parseSurface3DChart = (surfaceEl: XmlNode): Surface3DChart => {
+  const wireframe = boolVal(findChild(surfaceEl, WIREFRAME_TAG));
+  return makeSurface3DChart({
+    series: parseBarSeriesList(surfaceEl),
+    axIds: parseAxIds3(surfaceEl),
     ...(wireframe !== undefined ? { wireframe } : {}),
   });
 };
@@ -446,6 +577,18 @@ const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
   if (stock) return parseStockChart(stock);
   const surface = findChild(plotAreaEl, SURFACE_CHART_TAG);
   if (surface) return parseSurfaceChart(surface);
+  const ofPie = findChild(plotAreaEl, OF_PIE_CHART_TAG);
+  if (ofPie) return parseOfPieChart(ofPie);
+  const bar3D = findChild(plotAreaEl, BAR3D_CHART_TAG);
+  if (bar3D) return parseBar3DChart(bar3D);
+  const line3D = findChild(plotAreaEl, LINE3D_CHART_TAG);
+  if (line3D) return parseLine3DChart(line3D);
+  const pie3D = findChild(plotAreaEl, PIE3D_CHART_TAG);
+  if (pie3D) return parsePie3DChart(pie3D);
+  const area3D = findChild(plotAreaEl, AREA3D_CHART_TAG);
+  if (area3D) return parseArea3DChart(area3D);
+  const surface3D = findChild(plotAreaEl, SURFACE3D_CHART_TAG);
+  if (surface3D) return parseSurface3DChart(surface3D);
   throw new OpenXmlSchemaError('parseChartXml: no supported chart kind found inside <plotArea>');
 };
 
@@ -709,6 +852,84 @@ const serializeSurfaceChart = (chart: SurfaceChart): string => {
   return parts.join('');
 };
 
+const serializeOfPieChart = (chart: OfPieChart): string => {
+  const parts: string[] = ['<c:ofPieChart>', `<c:ofPieType val="${chart.ofPieType}"/>`];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  if (chart.gapWidth !== undefined) parts.push(`<c:gapWidth val="${chart.gapWidth}"/>`);
+  if (chart.splitType !== undefined) parts.push(`<c:splitType val="${chart.splitType}"/>`);
+  if (chart.splitPos !== undefined) parts.push(`<c:splitPos val="${chart.splitPos}"/>`);
+  if (chart.custSplit !== undefined) {
+    parts.push('<c:custSplit>');
+    for (const idx of chart.custSplit) parts.push(`<c:secondaryPt idx="${idx}"/>`);
+    parts.push('</c:custSplit>');
+  }
+  if (chart.secondPieSize !== undefined) parts.push(`<c:secondPieSize val="${chart.secondPieSize}"/>`);
+  parts.push('</c:ofPieChart>');
+  return parts.join('');
+};
+
+const serializeBar3DChart = (chart: Bar3DChart): string => {
+  const parts: string[] = [
+    '<c:bar3DChart>',
+    `<c:barDir val="${chart.barDir}"/>`,
+    `<c:grouping val="${chart.grouping}"/>`,
+  ];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  if (chart.gapWidth !== undefined) parts.push(`<c:gapWidth val="${chart.gapWidth}"/>`);
+  if (chart.gapDepth !== undefined) parts.push(`<c:gapDepth val="${chart.gapDepth}"/>`);
+  if (chart.shape !== undefined) parts.push(`<c:shape val="${chart.shape}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[2]}"/>`);
+  parts.push('</c:bar3DChart>');
+  return parts.join('');
+};
+
+const serializeLine3DChart = (chart: Line3DChart): string => {
+  const parts: string[] = ['<c:line3DChart>', `<c:grouping val="${chart.grouping}"/>`];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeLineSeries(s));
+  if (chart.gapDepth !== undefined) parts.push(`<c:gapDepth val="${chart.gapDepth}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[2]}"/>`);
+  parts.push('</c:line3DChart>');
+  return parts.join('');
+};
+
+const serializePie3DChart = (chart: Pie3DChart): string => {
+  const parts: string[] = ['<c:pie3DChart>'];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  parts.push('</c:pie3DChart>');
+  return parts.join('');
+};
+
+const serializeArea3DChart = (chart: Area3DChart): string => {
+  const parts: string[] = ['<c:area3DChart>', `<c:grouping val="${chart.grouping}"/>`];
+  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  if (chart.gapDepth !== undefined) parts.push(`<c:gapDepth val="${chart.gapDepth}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[2]}"/>`);
+  parts.push('</c:area3DChart>');
+  return parts.join('');
+};
+
+const serializeSurface3DChart = (chart: Surface3DChart): string => {
+  const parts: string[] = ['<c:surface3DChart>'];
+  if (chart.wireframe !== undefined) parts.push(`<c:wireframe val="${chart.wireframe ? '1' : '0'}"/>`);
+  for (const s of chart.series) parts.push(serializeSeries(s));
+  parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
+  parts.push(`<c:axId val="${chart.axIds[2]}"/>`);
+  parts.push('</c:surface3DChart>');
+  return parts.join('');
+};
+
 const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): string => {
   const parts: string[] = [
     `<c:${tag}>`,
@@ -759,6 +980,18 @@ const serializeChartKind = (chart: ChartKind): string => {
       return serializeStockChart(chart);
     case 'surface':
       return serializeSurfaceChart(chart);
+    case 'ofPie':
+      return serializeOfPieChart(chart);
+    case 'bar3D':
+      return serializeBar3DChart(chart);
+    case 'line3D':
+      return serializeLine3DChart(chart);
+    case 'pie3D':
+      return serializePie3DChart(chart);
+    case 'area3D':
+      return serializeArea3DChart(chart);
+    case 'surface3D':
+      return serializeSurface3DChart(chart);
   }
 };
 
