@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts** 着手準備
-- **次のタスク**: フェーズ6 §5 ChartML 続き — **BubbleChart** (`<c:bubbleChart>` + bubble3D + bubbleScale + sizeRepresentsArea + bubble size ref) / **StockChart** / **Surface / Surface3D / SurfaceChart** など残りの SpreadsheetML chart kinds を追加。続いて chartex namespace の 8 種 (Sunburst / Treemap / Waterfall / Histogram / Pareto / Funnel / BoxWhisker / Map)。BubbleChart は ScatterChart に近い形式 (xVal/yVal/bubbleSize 3-ref 構成)。
+- **次のタスク**: フェーズ6 §5 ChartML 残り — **OfPieChart** (`<c:ofPieChart ofPieType="bar"|"pie">` + secondPieSize + splitType / splitPos / custSplit) / **3D series** (`<c:bar3DChart>` / `<c:line3DChart>` / `<c:pie3DChart>` / `<c:area3DChart>` / `<c:surface3DChart>`)。次いで §6 chartex namespace の 8 種 (Sunburst / Treemap / Waterfall / Histogram / Pareto / Funnel / BoxWhisker / Map) を `xl/charts/chartN.xml` (cx namespace) で。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -79,7 +79,7 @@
 - [~] §3 anchor + part-level scaffolding + **worksheet ↔ drawing wiring** 完了。`src/drawing/{anchor,drawing,drawing-xml}.ts` で DrawingAnchor (absolute/oneCell/twoCell)、Drawing { items[] }、parseDrawingXml/drawingToBytes (anchor document order 保持、chart rId 抽出)。`Worksheet.drawing?: Drawing` 追加、reader/writer に `loadDrawing` / `registerDrawing` callback、saveWorkbook で workbook-global drawingN counter + per-sheet rels の `${REL_NS}/drawing` rel + manifest `drawing+xml` Override + worksheet inline `<drawing r:id>`、loadWorkbook が逆方向に解決。9 + 4 = 13 tests。882 total。残：画像、ChartML フル実装 (BarChart 等 17+8 chartex 種)、cfvo/colors/3D 等 DrawingML primitive、Stage-1 chart placeholder の実物化。
 - [ ] §2 image / loadImage
 - [ ] §4 DrawingML primitives (colors / fill / line / effect / geometry / text / shape-properties)
-- [~] §5 ChartML 7 chart kinds 完了 (Bar/Line/Area/Pie/Doughnut/Scatter/Radar)。`ChartKind` discriminated union を 7 variant に拡張、各 kind 専用 parser/writer (`parsePlotChart` / `serializeChartKind` で kind 別 dispatch)。LineChart は chart-level + per-series smooth、ScatterChart は xVal/yVal pair + scatterStyle、DoughnutChart は holeSize + firstSliceAng、Pie/Doughnut は wrapper の axes 省略 (axes-less chart kinds)。`ChartReference.space?: ChartSpace` で saveWorkbook が chartN.xml + drawing-rels emit (`{REL_NS}/chart` rel + manifest `drawingml.chart+xml` Override)、loadWorkbook が drawing-rels phase-2 で接続。5 + 7 = 12 tests。894 tests pass。残：BubbleChart / StockChart / Surface / Surface3D / Bubble / chartex 8 種 (Sunburst / Treemap / Waterfall / Histogram / Pareto / Funnel / BoxWhisker / Map) / data label / trendline / errorBars / 3D 系。
+- [~] §5 ChartML 10 chart kinds 完了 (Bar/Line/Area/Pie/Doughnut/Scatter/Radar/Bubble/Stock/Surface)。`ChartKind` discriminated union 10 variant、各 kind 専用 parser/writer。BubbleChart は xVal/yVal/bubbleSize triple ref + bubble3D + bubbleScale + sizeRepresents (area|w) + showNegBubbles。StockChart は 4 series (open/high/low/close) + hiLowLines / upDownBars 要素存在 flag。SurfaceChart は wireframe + 3 axIds (cat/val/ser)。`ChartReference.space?: ChartSpace` で saveWorkbook chartN.xml + drawing-rels emit、loadWorkbook drawing-rels phase-2 で接続。5 + 7 + 4 = 16 tests。898 tests pass。残：OfPie / Bar3D/Line3D/Pie3D/Area3D/Surface3D の 3D 系 / chartex 8 種 (Sunburst / Treemap / Waterfall / Histogram / Pareto / Funnel / BoxWhisker / Map) / data label / trendline / errorBars。
 - [ ] §6 chartex namespace の 8 種 (Sunburst / Treemap / Waterfall / Histogram / Pareto / Funnel / BoxWhisker / Map)
 - [ ] §7 受け入れ条件
 
