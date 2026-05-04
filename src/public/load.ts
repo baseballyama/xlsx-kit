@@ -10,8 +10,9 @@
 // `genuine/empty.xlsx` fixture (3 empty sheets) and to give the rest of
 // phase 3 a stable scaffolding to layer onto.
 
-import { parseChartXml } from '../chart/chart-xml';
+import { findUserShapesRId, parseChartXml } from '../chart/chart-xml';
 import { isChartExBytes, parseChartExXml } from '../chart/cx/chartex-xml';
+import { parseUserShapesXml } from '../chart/user-shapes-xml';
 import { parseChartsheetXml } from '../chartsheet/chartsheet-xml';
 import { parseDrawingXml } from '../drawing/drawing-xml';
 import { loadImage } from '../drawing/image';
@@ -343,7 +344,30 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
                   if (isChartExBytes(chartBytes)) {
                     item.content.chart.cxSpace = parseChartExXml(chartBytes);
                   } else {
-                    item.content.chart.space = parseChartXml(chartBytes);
+                    const space = parseChartXml(chartBytes);
+                    // Resolve <c:userShapes r:id="..."> via the chart's
+                    // own rels file (xl/charts/_rels/chartN.xml.rels).
+                    const userShapesRId = findUserShapesRId(chartBytes);
+                    if (userShapesRId) {
+                      const chartRelsPath = relsPathFor(chartPath);
+                      if (archive.has(chartRelsPath)) {
+                        const chartRelsObj = relsFromBytes(archive.read(chartRelsPath));
+                        const usRel = chartRelsObj.rels.find((r) => r.id === userShapesRId);
+                        if (usRel) {
+                          const usPath = resolveRelTarget(chartPath, usRel.target);
+                          if (archive.has(usPath)) {
+                            try {
+                              space.userShapes = parseUserShapesXml(archive.read(usPath));
+                            } catch {
+                              // Tolerate parse failures (Excel sometimes
+                              // emits chartDrawing parts with namespaces /
+                              // shapes outside our model).
+                            }
+                          }
+                        }
+                      }
+                    }
+                    item.content.chart.space = space;
                   }
                 }
               } else if (item.content.kind === 'picture') {

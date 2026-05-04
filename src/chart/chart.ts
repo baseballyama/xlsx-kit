@@ -1,5 +1,6 @@
 import type { ShapeProperties } from '../drawing/dml/shape-properties';
 import type { TextBody } from '../drawing/dml/text';
+import type { ChartDrawing } from './user-shapes';
 
 // ChartML data model. Per docs/plan/08-charts-drawings.md §5.
 //
@@ -447,6 +448,8 @@ export interface ChartSpace {
   spPr?: ShapeProperties;
   /** Chart-space level default text properties. */
   txPr?: TextBody;
+  /** Annotations / text boxes / arrows drawn over the chart. Serialised as `xl/drawings/chartDrawingN.xml`. */
+  userShapes?: ChartDrawing;
 }
 
 export function makeBarChart(opts: {

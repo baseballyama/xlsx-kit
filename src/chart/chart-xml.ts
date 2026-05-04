@@ -163,6 +163,7 @@ const DISP_BLANKS_AS_TAG = `{${CHART_NS}}dispBlanksAs`;
 const SP_PR_TAG = `{${CHART_NS}}spPr`;
 const TX_PR_TAG = `{${CHART_NS}}txPr`;
 const OVERLAY_TAG = `{${CHART_NS}}overlay`;
+const USER_SHAPES_TAG = `{${CHART_NS}}userShapes`;
 const D_LBLS_TAG = `{${CHART_NS}}dLbls`;
 const D_LBL_TAG = `{${CHART_NS}}dLbl`;
 const NUM_FMT_TAG = `{${CHART_NS}}numFmt`;
@@ -1460,12 +1461,30 @@ const serializeLegend = (legend: Legend): string => {
   return parts.join('');
 };
 
-/** Serialise a ChartSpace to its `xl/charts/chartN.xml` bytes. */
-export function chartToBytes(space: ChartSpace): Uint8Array {
-  return new TextEncoder().encode(serializeChartSpace(space));
+/**
+ * Inspect a parsed chart-space root and return the rId referenced by
+ * `<c:userShapes r:id="...">` if any. The loader calls this after parsing
+ * the chart so it can resolve the chartDrawing part via the chart's rels.
+ */
+export function findUserShapesRId(bytes: Uint8Array | string): string | undefined {
+  const root = parseXml(bytes);
+  if (root.name !== CHART_SPACE_TAG) return undefined;
+  const us = findChild(root, USER_SHAPES_TAG);
+  return us?.attrs[`{${REL_NS}}id`];
 }
 
-export function serializeChartSpace(space: ChartSpace): string {
+/** Optional rels rIds the writer resolves before bytes are emitted. */
+export interface ChartSerializeOptions {
+  /** Drawing-rels id for the `<c:userShapes r:id="...">` reference. */
+  userShapesRId?: string;
+}
+
+/** Serialise a ChartSpace to its `xl/charts/chartN.xml` bytes. */
+export function chartToBytes(space: ChartSpace, opts: ChartSerializeOptions = {}): Uint8Array {
+  return new TextEncoder().encode(serializeChartSpace(space, opts));
+}
+
+export function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptions = {}): string {
   const parts: string[] = [
     XML_HEADER,
     `<c:chartSpace xmlns:c="${CHART_NS}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL_NS}">`,
@@ -1482,6 +1501,10 @@ export function serializeChartSpace(space: ChartSpace): string {
   // chartSpace-level spPr / txPr are siblings of <c:chart>, emitted after.
   if (space.spPr) parts.push(serializeShapeProperties(space.spPr));
   if (space.txPr) parts.push(serializeTextBody(space.txPr, 'c:txPr'));
+  // <c:userShapes r:id="..."> sits at the very end of <c:chartSpace>.
+  if (opts.userShapesRId !== undefined) {
+    parts.push(`<c:userShapes r:id="${opts.userShapesRId}"/>`);
+  }
   parts.push('</c:chartSpace>');
   return parts.join('');
 }

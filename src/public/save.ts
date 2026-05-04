@@ -16,6 +16,7 @@
 
 import { chartToBytes } from '../chart/chart-xml';
 import { chartExToBytes } from '../chart/cx/chartex-xml';
+import { userShapesToBytes } from '../chart/user-shapes-xml';
 import { chartsheetToBytes } from '../chartsheet/chartsheet-xml';
 import type { Drawing, DrawingItem } from '../drawing/drawing';
 import { drawingToBytes } from '../drawing/drawing-xml';
@@ -77,6 +78,7 @@ const CHART_TYPE = 'application/vnd.openxmlformats-officedocument.drawingml.char
 const IMAGE_REL = `${REL_NS}/image`;
 const CHARTSHEET_REL = `${REL_NS}/chartsheet`;
 const CHARTSHEET_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.chartsheet+xml';
+const CHART_USER_SHAPES_REL = `${REL_NS}/chartUserShapes`;
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -135,8 +137,18 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   let nextDrawingId = 1;
   // Chart parts share a workbook-global counter so xl/charts/chartN.xml
   // ids stay unique.
-  const chartEmits: Array<{ id: number; bytes: Uint8Array; isCx: boolean }> = [];
+  const chartEmits: Array<{
+    id: number;
+    bytes: Uint8Array;
+    isCx: boolean;
+    /** Per-chart rels file (only emitted when chart.userShapes is set). */
+    rels?: Relationships;
+  }> = [];
   let nextChartId = 1;
+  // Workbook-global counter for chartDrawing parts. Each chart with
+  // userShapes set produces one xl/drawings/chartDrawingN.xml entry.
+  const userShapeEmits: Array<{ id: number; bytes: Uint8Array }> = [];
+  let nextUserShapesId = 1;
   // Workbook-global counter for image media parts. Excel uses
   // xl/media/imageN.{ext} where N is shared across the package.
   interface ImageEmit {
@@ -227,11 +239,33 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
               isCx: true,
             });
           } else if (item.content.chart.space) {
-            chartEmits.push({
+            const space = item.content.chart.space;
+            // If the chart carries user shapes, allocate the chartDrawingN
+            // part + a per-chart rels file referencing it, then bake the
+            // resulting r:id into the chart's <c:userShapes> element.
+            let userShapesRId: string | undefined;
+            let chartRelsFile: Relationships | undefined;
+            if (space.userShapes && space.userShapes.shapes.length > 0) {
+              const userShapesId = nextUserShapesId++;
+              userShapesRId = 'rId1';
+              chartRelsFile = makeRelationships();
+              chartRelsFile.rels.push({
+                id: userShapesRId,
+                type: CHART_USER_SHAPES_REL,
+                target: `../drawings/chartDrawing${userShapesId}.xml`,
+              });
+              userShapeEmits.push({
+                id: userShapesId,
+                bytes: userShapesToBytes(space.userShapes),
+              });
+            }
+            const chartEmit: typeof chartEmits[number] = {
               id: chartId,
-              bytes: chartToBytes(item.content.chart.space),
+              bytes: chartToBytes(space, userShapesRId !== undefined ? { userShapesRId } : {}),
               isCx: false,
-            });
+            };
+            if (chartRelsFile) chartEmit.rels = chartRelsFile;
+            chartEmits.push(chartEmit);
           }
           itemsForXml.push({
             anchor: item.anchor,
@@ -368,12 +402,20 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     }
   }
 
-  // ---- 4e. chart parts ---------------------------------------------------
+  // ---- 4e. chart parts (and per-chart rels when user shapes attach) -----
   for (const c of chartEmits) {
     await writer.addEntry(`xl/charts/chart${c.id}.xml`, c.bytes);
+    if (c.rels) {
+      await writer.addEntry(`xl/charts/_rels/chart${c.id}.xml.rels`, relsToBytes(c.rels));
+    }
   }
 
-  // ---- 4f. embedded images (xl/media/imageN.{ext}) ----------------------
+  // ---- 4f. user-shape drawings (xl/drawings/chartDrawingN.xml) ----------
+  for (const us of userShapeEmits) {
+    await writer.addEntry(`xl/drawings/chartDrawing${us.id}.xml`, us.bytes);
+  }
+
+  // ---- 4g. embedded images (xl/media/imageN.{ext}) ----------------------
   for (const img of imageEmits) {
     await writer.addEntry(`xl/media/image${img.id}.${img.ext}`, img.bytes);
   }
@@ -450,6 +492,9 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   for (const c of chartEmits) {
     addOverride(manifest, `/xl/charts/chart${c.id}.xml`, c.isCx ? CHARTEX_TYPE : CHART_TYPE);
+  }
+  for (const us of userShapeEmits) {
+    addOverride(manifest, `/xl/drawings/chartDrawing${us.id}.xml`, DRAWING_TYPE);
   }
   // Each unique image extension gets a Default entry (`<Default Extension="png" ContentType="image/png"/>`).
   for (const ext of imageExts) {
