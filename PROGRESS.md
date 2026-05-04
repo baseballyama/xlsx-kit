@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §3 XML 層の続き：`src/xml/serializer.ts` で `serializeXml(node): Uint8Array`。Clark 表記の `XmlNode` を逆変換し、`DEFAULT_PREFIXES` を優先しつつ未登録 NS は `ns0`/`ns1`... を auto。属性順は元 source の順番を尊重しなくてよい（決定的なら OK）。テキスト・属性のエスケープ（`& < > " '` のみ。XML control chars は別件）。`parseXml → serializeXml → parseXml` で同型 tree を確認。次々ターンで iterparse (saxes) と canonicalize helper。
+- **次のタスク**: フェーズ1 §3 XML 層の続き：iterparse SAX。`src/xml/iterparse.ts` で `iterParse(stream | bytes): AsyncIterableIterator<SaxEvent>` を `saxes` ベースで実装。SaxEvent は `{ kind: 'start' | 'end' | 'text', name?, attrs?, text? }` でよい。namespace 解決は parser と同等の挙動（Clark）。phase 4 の read-only worksheet で消費される。受け入れ条件は 1k 行 sheetData の全 cell カウントが一致するスモークテスト。saxes が dynamic import で済むなら `openxml-js` のメインエントリには載せず streaming サブパス側に隔離。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -26,7 +26,7 @@
 
 - [~] §1 I/O 抽象（メモリ経路のみ完了：`XlsxSource` / `XlsxSink` / `BufferedSinkWriter` の interface、`OpenXmlError` 階層、Node の `fromBuffer` / `toBuffer`、ブラウザの `fromBlob` / `fromFile` / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`、30 tests pass。残：filesystem / Readable / Writable / Response 経路は §2 ZIP streaming と同時に）
 - [~] §2 ZIP 層（reader / writer メモリ経路完了：`fflate.unzipSync` の `openZip` + `fflate.zipSync` の `createZipWriter`。`empty.xlsx` の 11 エントリを writer に流して再 zip → 再 read で全 path・全 bytes が一致。STORE 圧縮の compress: false パス、duplicate / post-finalize / ReadableStream 入力は OpenXmlIoError。47 tests pass。残：streaming reader / streaming writer / ZIP64 read/write）
-- [~] §3 XML 層（namespaces / tree / parser DOM 完了：fast-xml-parser 5.7 ベース `parseXml(bytes | string): XmlNode`、namespace stack で Clark 表記化、`xmlns:*` 宣言は attrs から落とす、`xml` prefix は固定 binding、未宣言 prefix は OpenXmlSchemaError、DOCTYPE / `<!ENTITY` は事前バイト走査で reject、混合内容も reject、`xl/workbook.xml` の root + 3 sheets が期待値どおり、`[Content_Types].xml` も parse OK。87 tests pass。残：serializer DOM / iterparse SAX / canonical compare helper / 大規模 round-trip）
+- [~] §3 XML 層（namespaces / tree / parser DOM / serializer DOM 完了：`serializeXml(node, opts?): Uint8Array`、Clark 表記から prefix 復元（DEFAULT_PREFIXES → 未登録 NS は `ns{N}`）、`xml` prefix は予約・宣言不要、root NS が DEFAULT で `''` の時のみ default として emit、attr は never default、`& < > " ' \\r \\n \\t` のエスケープ、XML 宣言は opt 切替可。`parseXml → serializeXml → parseXml` で `xl/workbook.xml` / `[Content_Types].xml` / `_rels/.rels` の round-trip pass。105 tests pass。残：iterparse SAX / canonical compare helper / 大規模 round-trip）
 - [ ] §4 Schema 層（Schema 型 + `toTree`/`fromTree`）
 - [ ] §5 XmlStreamWriter
 - [ ] §6 packaging 層（manifest, relationships, doc properties）
