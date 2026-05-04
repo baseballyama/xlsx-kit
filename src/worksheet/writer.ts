@@ -17,6 +17,7 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
 import { addSharedString } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
+import { rangeToString } from './cell-range';
 import type { Worksheet } from './worksheet';
 
 export interface WorksheetWriteContext {
@@ -56,7 +57,15 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     }
     parts.push('</row>');
   }
-  parts.push('</sheetData></worksheet>');
+  parts.push('</sheetData>');
+  if (ws.mergedCells.length > 0) {
+    parts.push(`<mergeCells count="${ws.mergedCells.length}">`);
+    for (const range of ws.mergedCells) {
+      parts.push(`<mergeCell ref="${rangeToString(range)}"/>`);
+    }
+    parts.push('</mergeCells>');
+  }
+  parts.push('</worksheet>');
   return parts.join('');
 }
 

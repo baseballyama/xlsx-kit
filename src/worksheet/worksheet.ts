@@ -10,6 +10,7 @@ import type { CellValue } from '../cell/cell';
 import { type Cell, makeCell } from '../cell/cell';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
 
 export interface Worksheet {
   title: string;
@@ -21,6 +22,13 @@ export interface Worksheet {
    * may move the actual maximum elsewhere.
    */
   _appendRowCursor: number;
+  /**
+   * Merged cell ranges. The top-left cell holds the value; the rest are
+   * mostly invisible to Excel until unmerge restores them. We persist the
+   * list as plain CellRange[] so mergeCells / unmergeCells can mutate it
+   * without rebuilding any helper structures.
+   */
+  mergedCells: CellRange[];
 }
 
 /** Build a Worksheet shell. */
@@ -32,6 +40,7 @@ export function makeWorksheet(title: string): Worksheet {
     title,
     rows: new Map(),
     _appendRowCursor: 0,
+    mergedCells: [],
   };
 }
 
@@ -179,4 +188,61 @@ export function getCellByCoord(ws: Worksheet, coord: string): Cell | undefined {
   // biome-ignore lint/style/noNonNullAssertion: matched regex
   const row = Number.parseInt(m[2]!, 10);
   return getCell(ws, row, col);
+}
+
+// ---- merged cells ---------------------------------------------------------
+
+const toCellRange = (refOrRange: string | CellRange): CellRange =>
+  typeof refOrRange === 'string' ? parseRange(refOrRange) : refOrRange;
+
+/**
+ * Merge a range. The top-left cell keeps its value; every other cell in
+ * the range is dropped from `ws.rows` so the on-wire `<sheetData>` won't
+ * carry phantom cells underneath the merge. Mirrors openpyxl's
+ * `MergedCellRange.format()`. Idempotent for an identical range, throws
+ * when the range overlaps an existing merge.
+ */
+export function mergeCells(ws: Worksheet, refOrRange: string | CellRange): CellRange {
+  const range = toCellRange(refOrRange);
+  for (const existing of ws.mergedCells) {
+    if (rangeToString(existing) === rangeToString(range)) return existing;
+    if (rangesOverlap(existing, range)) {
+      throw new OpenXmlSchemaError(
+        `mergeCells: range ${rangeToString(range)} overlaps existing merged range ${rangeToString(existing)}`,
+      );
+    }
+  }
+  // Drop every cell except the top-left from the sparse store.
+  for (let r = range.minRow; r <= range.maxRow; r++) {
+    for (let c = range.minCol; c <= range.maxCol; c++) {
+      if (r === range.minRow && c === range.minCol) continue;
+      ws.rows.get(r)?.delete(c);
+      const row = ws.rows.get(r);
+      if (row && row.size === 0) ws.rows.delete(r);
+    }
+  }
+  ws.mergedCells.push(range);
+  return range;
+}
+
+/** Drop a previously-merged range. No-op if the range isn't registered. */
+export function unmergeCells(ws: Worksheet, refOrRange: string | CellRange): boolean {
+  const target = rangeToString(toCellRange(refOrRange));
+  const idx = ws.mergedCells.findIndex((r) => rangeToString(r) === target);
+  if (idx < 0) return false;
+  ws.mergedCells.splice(idx, 1);
+  return true;
+}
+
+/** Read-only iterator over the worksheet's merged ranges. */
+export function getMergedCells(ws: Worksheet): ReadonlyArray<CellRange> {
+  return ws.mergedCells;
+}
+
+/** True iff (row, col) sits inside any merged range — top-left included. */
+export function isMergedCell(ws: Worksheet, row: number, col: number): boolean {
+  for (const range of ws.mergedCells) {
+    if (rangeContainsCell(range, row, col)) return true;
+  }
+  return false;
 }

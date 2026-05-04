@@ -22,6 +22,7 @@ import { ERROR_CODES } from '../utils/inference';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
+import { parseRange } from './cell-range';
 import { makeWorksheet, setCell, type Worksheet } from './worksheet';
 
 const WORKSHEET_TAG = `{${SHEET_MAIN_NS}}worksheet`;
@@ -32,6 +33,8 @@ const V_TAG = `{${SHEET_MAIN_NS}}v`;
 const F_TAG = `{${SHEET_MAIN_NS}}f`;
 const IS_TAG = `{${SHEET_MAIN_NS}}is`;
 const T_TAG = `{${SHEET_MAIN_NS}}t`;
+const MERGE_CELLS_TAG = `{${SHEET_MAIN_NS}}mergeCells`;
+const MERGE_CELL_TAG = `{${SHEET_MAIN_NS}}mergeCell`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -58,16 +61,29 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   }
   const ws = makeWorksheet(title);
   const sheetData = findChild(root, SHEETDATA_TAG);
-  if (!sheetData) return ws;
+  if (sheetData) {
+    const sharedFormulas = new Map<number, SharedFormulaCache>();
+    for (const rowNode of findChildren(sheetData, ROW_TAG)) {
+      const rowIdx = parseRowIndex(rowNode);
+      let nextCol = 1;
+      for (const cNode of findChildren(rowNode, C_TAG)) {
+        const coord = parseCellCoord(cNode, rowIdx, nextCol);
+        readCell(ws, cNode, coord, ctx, sharedFormulas);
+        nextCol = coord.col + 1;
+      }
+    }
+  }
 
-  const sharedFormulas = new Map<number, SharedFormulaCache>();
-  for (const rowNode of findChildren(sheetData, ROW_TAG)) {
-    const rowIdx = parseRowIndex(rowNode);
-    let nextCol = 1;
-    for (const cNode of findChildren(rowNode, C_TAG)) {
-      const coord = parseCellCoord(cNode, rowIdx, nextCol);
-      readCell(ws, cNode, coord, ctx, sharedFormulas);
-      nextCol = coord.col + 1;
+  // <mergeCells> sits as a sibling of <sheetData>; pull each <mergeCell ref="…"/>
+  // straight onto the worksheet's mergedCells list. We don't go through
+  // mergeCells() here because its overlap check is for *new* merges; the
+  // source xlsx is assumed valid.
+  const mergeCellsEl = findChild(root, MERGE_CELLS_TAG);
+  if (mergeCellsEl) {
+    for (const m of findChildren(mergeCellsEl, MERGE_CELL_TAG)) {
+      const ref = m.attrs['ref'];
+      if (!ref) throw new OpenXmlSchemaError('worksheet: <mergeCell> missing @ref');
+      ws.mergedCells.push(parseRange(ref));
     }
   }
   return ws;
