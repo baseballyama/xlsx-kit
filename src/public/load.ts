@@ -23,6 +23,7 @@ import { makeDefinedName } from '../workbook/defined-names';
 import { parseSharedStringsXml, type SharedStringsTable } from '../workbook/shared-strings';
 import { createWorkbook, type SheetRef, type SheetState, type Workbook } from '../workbook/workbook';
 import { parseWorksheetXml } from '../worksheet/reader';
+import { parseTableXml } from '../worksheet/table-xml';
 import {
   ARC_APP,
   ARC_CONTENT_TYPES,
@@ -295,9 +296,19 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     }
     const sheetRelsPath = relsPathFor(sheetPath);
     const sheetRels = archive.has(sheetRelsPath) ? relsFromBytes(archive.read(sheetRelsPath)) : undefined;
+    const loadTable = sheetRels
+      ? (relId: string) => {
+          const tRel = sheetRels.rels.find((r) => r.id === relId);
+          if (!tRel) return undefined;
+          const tablePath = resolveRelTarget(sheetPath, tRel.target);
+          if (!archive.has(tablePath)) return undefined;
+          return parseTableXml(archive.read(tablePath));
+        }
+      : undefined;
     const ws = parseWorksheetXml(archive.read(sheetPath), entry.name, {
       sharedStrings: sst,
       ...(sheetRels ? { rels: sheetRels } : {}),
+      ...(loadTable ? { loadTable } : {}),
     });
     const ref: SheetRef = { kind: 'worksheet', sheet: ws, sheetId: entry.sheetId, state: entry.state };
     wb.sheets.push(ref);

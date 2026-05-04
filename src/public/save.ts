@@ -23,6 +23,8 @@ import { makeRelationships, type Relationships, relsToBytes } from '../packaging
 import { stylesheetToBytes } from '../styles/stylesheet-writer';
 import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-strings';
 import type { Workbook } from '../workbook/workbook';
+import type { TableDefinition } from '../worksheet/table';
+import { tableToBytes } from '../worksheet/table-xml';
 import { worksheetToBytes } from '../worksheet/writer';
 import {
   ARC_APP,
@@ -54,6 +56,8 @@ const CORE_PROPS_REL = `${PKG_REL_NS}/metadata/core-properties`;
 const EXT_PROPS_REL = `${REL_NS}/extended-properties`;
 const CUSTOM_PROPS_REL = `${REL_NS}/custom-properties`;
 const THEME_REL = `${REL_NS}/theme`;
+const TABLE_REL = `${REL_NS}/table`;
+const TABLE_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml';
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -82,10 +86,27 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     rels?: Relationships;
   }
   const sheetEmits: SheetEmit[] = [];
+  // Workbook-global table counter so xl/tables/tableN.xml ids stay unique.
+  const tableEmits: Array<{ id: number; bytes: Uint8Array }> = [];
+  let nextTableId = 1;
   wb.sheets.forEach((ref, i) => {
     const target = `worksheets/sheet${i + 1}.xml`;
     const sheetRels = makeRelationships();
-    const bytes = worksheetToBytes(ref.sheet, { sharedStrings: sst, rels: sheetRels });
+    const registerTable = (table: TableDefinition): { rId: string } => {
+      const tableId = nextTableId++;
+      // Allocate a fresh worksheet-rels rId; numbering is local to this sheet.
+      const rId = `rId${sheetRels.rels.length + 1}`;
+      sheetRels.rels.push({
+        id: rId,
+        type: TABLE_REL,
+        target: `../tables/table${tableId}.xml`,
+      });
+      // Emit the table part with its workbook-global id baked in.
+      const xmlTable: TableDefinition = { ...table, id: tableId };
+      tableEmits.push({ id: tableId, bytes: tableToBytes(xmlTable) });
+      return { rId };
+    };
+    const bytes = worksheetToBytes(ref.sheet, { sharedStrings: sst, rels: sheetRels, registerTable });
     const emit: SheetEmit = { id: `rId${i + 1}`, target, bytes };
     if (sheetRels.rels.length > 0) emit.rels = sheetRels;
     sheetEmits.push(emit);
@@ -137,6 +158,11 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     if (e.rels) {
       await writer.addEntry(`${PACKAGE_WORKSHEETS}/_rels/sheet${i + 1}.xml.rels`, relsToBytes(e.rels));
     }
+  }
+
+  // ---- 4b. table parts ----------------------------------------------------
+  for (const t of tableEmits) {
+    await writer.addEntry(`xl/tables/table${t.id}.xml`, t.bytes);
   }
 
   // ---- 5. styles.xml + sharedStrings.xml (if any) -------------------------
@@ -197,6 +223,9 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     addOverride(manifest, `/${ARC_SHARED_STRINGS}`, SHARED_STRINGS_TYPE);
   }
   if (wb.themeXml) addOverride(manifest, `/${ARC_THEME}`, THEME_TYPE);
+  for (const t of tableEmits) {
+    addOverride(manifest, `/xl/tables/table${t.id}.xml`, TABLE_TYPE);
+  }
   if (wb.properties) addOverride(manifest, `/${ARC_CORE}`, CORE_PROPS_TYPE);
   if (wb.appProperties) addOverride(manifest, `/${ARC_APP}`, EXT_PROPS_TYPE);
   if (wb.customProperties) addOverride(manifest, `/${ARC_CUSTOM}`, CPROPS_TYPE);

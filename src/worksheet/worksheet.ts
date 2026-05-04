@@ -15,6 +15,7 @@ import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToSt
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
+import type { TableDefinition } from './table';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
 
 export interface Worksheet {
@@ -58,6 +59,8 @@ export interface Worksheet {
   dataValidations: DataValidation[];
   /** AutoFilter — at most one per sheet. Excel reuses the `_xlnm._FilterDatabase` defined name. */
   autoFilter?: AutoFilter;
+  /** Excel Table objects. Each lives in its own xl/tables/tableN.xml part. */
+  tables: TableDefinition[];
 }
 
 /** Build a Worksheet shell. */
@@ -75,6 +78,7 @@ export function makeWorksheet(title: string): Worksheet {
     rowDimensions: new Map(),
     hyperlinks: [],
     dataValidations: [],
+    tables: [],
   };
 }
 
@@ -449,4 +453,25 @@ export function setAutoFilter(ws: Worksheet, filter: AutoFilter | undefined): vo
 /** Read the current AutoFilter, if any. */
 export function getAutoFilter(ws: Worksheet): AutoFilter | undefined {
   return ws.autoFilter;
+}
+
+// ---- tables --------------------------------------------------------------
+
+/** Append a table. The id and displayName must be workbook-unique — the caller is responsible. */
+export function addTable(ws: Worksheet, table: TableDefinition): TableDefinition {
+  ws.tables.push(table);
+  return table;
+}
+
+/** Look up a table by displayName. */
+export function getTable(ws: Worksheet, displayName: string): TableDefinition | undefined {
+  return ws.tables.find((t) => t.displayName === displayName);
+}
+
+/** Drop a table by displayName. Returns true when something was removed. */
+export function removeTable(ws: Worksheet, displayName: string): boolean {
+  const i = ws.tables.findIndex((t) => t.displayName === displayName);
+  if (i < 0) return false;
+  ws.tables.splice(i, 1);
+  return true;
 }

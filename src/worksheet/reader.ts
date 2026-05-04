@@ -37,6 +37,7 @@ import type { ColumnDimension, RowDimension } from './dimensions';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
 import { makeHyperlink } from './hyperlinks';
+import type { TableDefinition } from './table';
 import type { Pane, PaneState, PaneType, Selection, SheetView, SheetViewMode } from './views';
 import { makeSheetView } from './views';
 import { makeWorksheet, setCell, type Worksheet } from './worksheet';
@@ -68,13 +69,17 @@ const AUTOFILTER_TAG = `{${SHEET_MAIN_NS}}autoFilter`;
 const FILTER_COLUMN_TAG = `{${SHEET_MAIN_NS}}filterColumn`;
 const FILTERS_TAG = `{${SHEET_MAIN_NS}}filters`;
 const FILTER_TAG = `{${SHEET_MAIN_NS}}filter`;
+const TABLE_PARTS_TAG = `{${SHEET_MAIN_NS}}tableParts`;
+const TABLE_PART_TAG = `{${SHEET_MAIN_NS}}tablePart`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
   /** Resolved shared-strings table. Pass `[]` when no sst is present. */
   sharedStrings: ReadonlyArray<string>;
-  /** This worksheet's `_rels/sheetN.xml.rels`. Used to resolve external hyperlink targets. */
+  /** This worksheet's `_rels/sheetN.xml.rels`. Used to resolve external hyperlink targets and table parts. */
   rels?: Relationships;
+  /** Resolves a worksheet-rels rId pointing at xl/tables/tableN.xml into a parsed TableDefinition. */
+  loadTable?: (relId: string) => TableDefinition | undefined;
 }
 
 /** Per-worksheet state for shared-formula expansion. */
@@ -173,6 +178,21 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (autoFilterEl) {
     const filter = parseAutoFilter(autoFilterEl);
     if (filter) ws.autoFilter = filter;
+  }
+
+  // <tableParts><tablePart r:id="rIdN"/></tableParts> — resolved through the
+  // ctx.loadTable callback (load.ts threads the archive in).
+  const tablePartsEl = findChild(root, TABLE_PARTS_TAG);
+  if (tablePartsEl && ctx.loadTable) {
+    for (const tp of findChildren(tablePartsEl, TABLE_PART_TAG)) {
+      const rId = tp.attrs[`{${REL_NS}}id`];
+      if (!rId) continue;
+      const table = ctx.loadTable(rId);
+      if (table) {
+        table.rId = rId;
+        ws.tables.push(table);
+      }
+    }
   }
   return ws;
 }

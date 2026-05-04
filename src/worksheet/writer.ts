@@ -33,10 +33,17 @@ export interface WorksheetWriteContext {
   sharedStrings: SharedStringsTable;
   /**
    * Worksheet rels collector. The writer pushes a rel per external
-   * hyperlink, allocating ids `rId1..rIdN`. Caller emits the resulting
-   * relationships file alongside the worksheet part.
+   * hyperlink and per Table, allocating ids `rId1..rIdN`. Caller emits
+   * the resulting relationships file alongside the worksheet part.
    */
   rels?: Relationships;
+  /**
+   * Table rel allocator. saveWorkbook hands in a callback that registers
+   * a table part under a workbook-global tableN counter and returns the
+   * relPath ("../tables/tableN.xml") + the worksheet-rels rId. Called
+   * once per `ws.tables` entry while serialising.
+   */
+  registerTable?: (table: import('./table').TableDefinition) => { rId: string };
 }
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
@@ -101,6 +108,14 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   }
   if (ws.hyperlinks.length > 0) {
     parts.push(serializeHyperlinks(ws.hyperlinks, ctx.rels));
+  }
+  if (ws.tables.length > 0 && ctx.registerTable) {
+    parts.push(`<tableParts count="${ws.tables.length}">`);
+    for (const t of ws.tables) {
+      const { rId } = ctx.registerTable(t);
+      parts.push(`<tablePart r:id="${escapeXmlAttr(rId)}"/>`);
+    }
+    parts.push('</tableParts>');
   }
   parts.push('</worksheet>');
   return parts.join('');
