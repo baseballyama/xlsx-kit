@@ -76,6 +76,13 @@ export interface Worksheet {
    * `<drawing r:id>`.
    */
   drawing?: Drawing;
+  /**
+   * Per-sheet rels entries we don't model (pivotTable / queryTable /
+   * slicer / printerSettings / customProperty / oleObject etc.). Re-emitted
+   * verbatim so Excel still resolves the captured passthrough parts after
+   * a round-trip.
+   */
+  relsExtras?: ReadonlyArray<{ id: string; type: string; target: string }>;
 }
 
 /** Build a Worksheet shell. */

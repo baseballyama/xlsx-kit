@@ -99,6 +99,29 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     expect(wbRels).toMatch(relPattern);
   });
 
+  it('preserves the sheet1 → pivotTable rel chain (worksheet relsExtras)', async () => {
+    const original = readFileSync(FIXTURE);
+    const wb = await loadWorkbook(fromBuffer(original));
+
+    // sheet1 ("ptsheet") originally points at xl/pivotTables/pivotTable1.xml
+    // through xl/worksheets/_rels/sheet1.xml.rels. Capture surfaces this
+    // on Worksheet.relsExtras.
+    const sheet1 = wb.sheets[0];
+    expect(sheet1?.kind).toBe('worksheet');
+    if (sheet1?.kind !== 'worksheet') return;
+    const pivotRel = sheet1.sheet.relsExtras?.find((r) => r.type.endsWith('/pivotTable'));
+    expect(pivotRel).toBeDefined();
+    expect(pivotRel?.target).toBe('../pivotTables/pivotTable1.xml');
+
+    // Round-trip: the rels file emerges with the pivotTable rel preserved.
+    const bytes = await workbookToBytes(wb);
+    const { unzipSync } = await import('fflate');
+    const entries = unzipSync(bytes);
+    const sheet1Rels = new TextDecoder().decode(entries['xl/worksheets/_rels/sheet1.xml.rels']);
+    expect(sheet1Rels).toContain('Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable"');
+    expect(sheet1Rels).toContain('Target="../pivotTables/pivotTable1.xml"');
+  });
+
   it('preserves the workbook-extras (fileVersion / workbookPr / bookViews / calcPr / extLst)', async () => {
     const original = readFileSync(FIXTURE);
     const wb = await loadWorkbook(fromBuffer(original));

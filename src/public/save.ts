@@ -201,10 +201,26 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     if (isChartsheet) nextChartsheetId++;
     else nextWorksheetId++;
     const sheetRels = makeRelationships();
+    // Pre-claim every captured relsExtras rId so freshly allocated modeled
+    // rels never clash. The extras themselves are appended to sheetRels at
+    // the end so any rId already used inside the worksheet body (drawing /
+    // hyperlink refs) keeps pointing at our newly emitted rel.
+    const sheetRelsClaimed = new Set<string>();
+    const sheetRelsExtras = ref.kind === 'worksheet' ? (ref.sheet.relsExtras ?? []) : [];
+    for (const e of sheetRelsExtras) sheetRelsClaimed.add(e.id);
+    let sheetRIdCursor = 1;
+    const allocateSheetRId = (): string => {
+      let id = `rId${sheetRIdCursor}`;
+      while (sheetRelsClaimed.has(id) || sheetRels.rels.some((r) => r.id === id)) {
+        sheetRIdCursor++;
+        id = `rId${sheetRIdCursor}`;
+      }
+      sheetRIdCursor++;
+      return id;
+    };
     const registerTable = (table: TableDefinition): { rId: string } => {
       const tableId = nextTableId++;
-      // Allocate a fresh worksheet-rels rId; numbering is local to this sheet.
-      const rId = `rId${sheetRels.rels.length + 1}`;
+      const rId = allocateSheetRId();
       sheetRels.rels.push({
         id: rId,
         type: TABLE_REL,
@@ -217,13 +233,13 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     };
     const registerComments = (comments: ReadonlyArray<LegacyComment>): { vmlRelId: string } => {
       const id = nextCommentsId++;
-      const commentsRelId = `rId${sheetRels.rels.length + 1}`;
+      const commentsRelId = allocateSheetRId();
       sheetRels.rels.push({
         id: commentsRelId,
         type: COMMENTS_REL,
         target: `../comments${id}.xml`,
       });
-      const vmlRelId = `rId${sheetRels.rels.length + 1}`;
+      const vmlRelId = allocateSheetRId();
       sheetRels.rels.push({
         id: vmlRelId,
         type: VML_DRAWING_REL,
@@ -238,7 +254,7 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     };
     const registerDrawing = (drawing: Drawing): { rId: string } => {
       const id = nextDrawingId++;
-      const rId = `rId${sheetRels.rels.length + 1}`;
+      const rId = allocateSheetRId();
       sheetRels.rels.push({
         id: rId,
         type: DRAWING_REL,
@@ -347,6 +363,13 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       let drawingRId: string | undefined;
       if (ref.sheet.drawing) drawingRId = registerDrawing(ref.sheet.drawing).rId;
       bytes = chartsheetToBytes(ref.sheet, drawingRId !== undefined ? { drawingRId } : {});
+    }
+    // Append captured per-sheet rels passthrough (pivotTable / queryTable
+    // / printerSettings / oleObject / customProperty / threadedComment …)
+    // verbatim. Their original rIds were pre-claimed so the modeled
+    // allocations above never collide with them.
+    for (const e of sheetRelsExtras) {
+      sheetRels.rels.push({ id: e.id, type: e.type, target: e.target });
     }
     const sheetRId = ref.rId ?? allocateRId();
     const emit: SheetEmit = {

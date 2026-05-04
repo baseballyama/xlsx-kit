@@ -421,6 +421,10 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
       ...(loadComments ? { loadComments } : {}),
       ...(loadDrawing ? { loadDrawing } : {}),
     });
+    if (sheetRels) {
+      const extras = captureSheetRelsExtras(sheetRels);
+      if (extras.length > 0) ws.relsExtras = extras;
+    }
     const ref: SheetRef = {
       kind: 'worksheet',
       sheet: ws,
@@ -438,6 +442,32 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   // OLE / customUI / customXml / etc.) so re-saving doesn't drop them.
   capturePassthrough(archive, manifest, wb);
   return wb;
+}
+
+const SHEET_MODELED_REL_TYPES: ReadonlySet<string> = new Set([
+  `${REL_NS}/hyperlink`,
+  `${REL_NS}/table`,
+  `${REL_NS}/comments`,
+  `${REL_NS}/vmlDrawing`,
+  `${REL_NS}/drawing`,
+]);
+
+/**
+ * Capture per-sheet rels entries that don't match a modeled type. The
+ * writer re-emits these verbatim alongside the freshly allocated modeled
+ * rels so captured passthrough parts (pivotTable / queryTable / slicer /
+ * printerSettings / oleObject / customProperty / threadedComment) remain
+ * reachable from the worksheet after a round-trip.
+ */
+function captureSheetRelsExtras(
+  sheetRels: import('../packaging/relationships').Relationships,
+): Array<{ id: string; type: string; target: string }> {
+  const extras: Array<{ id: string; type: string; target: string }> = [];
+  for (const rel of sheetRels.rels) {
+    if (SHEET_MODELED_REL_TYPES.has(rel.type)) continue;
+    extras.push({ id: rel.id, type: rel.type, target: rel.target });
+  }
+  return extras;
 }
 
 /**

@@ -456,7 +456,15 @@ const serializeHyperlinks = (links: ReadonlyArray<Hyperlink>, rels: Relationship
       if (rels) {
         let rId = link.rId;
         if (!rId) {
-          rId = `rId${rels.rels.length + 1}`;
+          // Find the next free rIdN that doesn't already exist on this
+          // sheet's rels. Pre-loaded relsExtras can occupy low-numbered
+          // ids; a naive `rId${len+1}` would collide.
+          let n = rels.rels.length + 1;
+          rId = `rId${n}`;
+          while (rels.rels.some((r) => r.id === rId)) {
+            n++;
+            rId = `rId${n}`;
+          }
         }
         // Add rel only if no entry already targets this URL (conservative).
         if (!rels.rels.some((r) => r.id === rId)) {
