@@ -90,6 +90,50 @@ describe('createZipWriter (basic)', () => {
   });
 });
 
+describe('createZipWriter (streaming behaviour)', () => {
+  it('writes chunks to the sink as addEntry runs, not all at once on finalize', async () => {
+    // Use a custom sink that reports each write timing relative to finalize.
+    let finalizeStarted = false;
+    const writes: Array<{ during: 'addEntry' | 'finalize'; size: number }> = [];
+    const customSink: Parameters<typeof createZipWriter>[0] = {
+      toBytes() {
+        const chunks: Uint8Array[] = [];
+        return {
+          write(chunk) {
+            writes.push({ during: finalizeStarted ? 'finalize' : 'addEntry', size: chunk.byteLength });
+            chunks.push(chunk);
+          },
+          async finish() {
+            let total = 0;
+            for (const c of chunks) total += c.byteLength;
+            const out = new Uint8Array(total);
+            let off = 0;
+            for (const c of chunks) {
+              out.set(c, off);
+              off += c.byteLength;
+            }
+            return out;
+          },
+        };
+      },
+    };
+
+    const writer = createZipWriter(customSink);
+    // Each entry deflates and emits chunks as the local file header + data
+    // are built — those writes must land before finalize is even called.
+    const big = new Uint8Array(64 * 1024);
+    for (let i = 0; i < big.byteLength; i++) big[i] = i & 0xff;
+    await writer.addEntry('a.bin', big, { compress: false });
+    await writer.addEntry('b.bin', big, { compress: true });
+    expect(writes.some((w) => w.during === 'addEntry')).toBe(true);
+
+    finalizeStarted = true;
+    await writer.finalize();
+    // Final central directory chunk arrives during finalize.
+    expect(writes.some((w) => w.during === 'finalize')).toBe(true);
+  });
+});
+
 describe('createZipWriter (round-trip via openZip)', () => {
   it('every entry of empty.xlsx round-trips byte-identically through the writer', async () => {
     const original = await openZip(fromBuffer(readFileSync(EMPTY_XLSX)));

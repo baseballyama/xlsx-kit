@@ -1,18 +1,14 @@
-// ZIP write layer. Phase-1 §2: in-memory deflate via fflate.zipSync.
-//
-// The plan calls for the eventual writer to use fflate's streaming `Zip`
-// API with per-entry ZipDeflate / ZipPassThrough choice
-// (docs/plan/03-foundations.md §2.2). That lands when the write-only
-// worksheet path needs it (phase 4). For now a buffered all-at-once
-// writer is enough to round-trip xlsx files in tests.
+// ZIP write layer. Per docs/plan/03-foundations.md §2.2 / docs/plan/06-
+// streaming.md §3.4: streaming-deflate via fflate's `Zip` + per-entry
+// `ZipDeflate` / `ZipPassThrough` so the writer never holds the whole
+// archive in memory. Each addEntry pushes its bytes through the deflate
+// stream and the resulting ZIP chunks land on the sink one at a time —
+// the buffered `toBytes()` sink concatenates them on finish, while a
+// streaming sink can flush them as they arrive.
 
-import { type DeflateOptions, type ZipAttributes, zipSync } from 'fflate';
+import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import type { XlsxSink } from '../io/sink';
 import { OpenXmlIoError } from '../utils/exceptions';
-
-// fflate accepts per-entry options as the union of ZipAttributes and
-// DeflateOptions; `level: 0` selects STORE, otherwise deflate is used.
-type EntryOptions = ZipAttributes & DeflateOptions;
 
 export interface ZipWriter {
   /**
@@ -34,17 +30,38 @@ export interface ZipWriter {
 }
 
 /**
- * Buffered ZIP writer over an XlsxSink. The sink must expose a buffered
- * `toBytes()` factory; streaming sinks will be supported alongside the
- * streaming writer.
+ * ZIP writer backed by fflate's streaming `Zip` class. Entries are
+ * pushed through `ZipDeflate` / `ZipPassThrough` streams as they arrive,
+ * so peak memory stays at the size of the in-flight entry plus the
+ * output buffer rather than the full archive.
  */
 export function createZipWriter(sink: XlsxSink): ZipWriter {
   if (!sink.toBytes) {
     throw new OpenXmlIoError('createZipWriter: sink does not expose a buffered toBytes() factory');
   }
   const writer = sink.toBytes();
-  const entries: Record<string, Uint8Array | [Uint8Array, EntryOptions]> = {};
   let finalised: Promise<Uint8Array> | undefined;
+  let endCalled = false;
+  const seen = new Set<string>();
+  const errors: Error[] = [];
+  let zipFinishResolve: (() => void) | undefined;
+  const zipFinishPromise = new Promise<void>((resolve) => {
+    zipFinishResolve = resolve;
+  });
+
+  const zip = new Zip((err, chunk, final) => {
+    if (err) {
+      errors.push(err instanceof Error ? err : new Error(String(err)));
+      return;
+    }
+    // ZipDeflate emits an empty trailer chunk on the final callback even
+    // when there are no bytes; guard against pushing an undefined chunk.
+    if (chunk && chunk.byteLength > 0) writer.write(chunk);
+    if (final && zipFinishResolve) {
+      zipFinishResolve();
+      zipFinishResolve = undefined;
+    }
+  });
 
   return {
     async addEntry(path, bytes, opts) {
@@ -56,25 +73,38 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
           'createZipWriter: ReadableStream entries are not yet supported (deferred to streaming writer)',
         );
       }
-      if (Object.hasOwn(entries, path)) {
+      if (seen.has(path)) {
         throw new OpenXmlIoError(`createZipWriter: duplicate entry "${path}"`);
       }
+      seen.add(path);
       const compress = opts?.compress ?? true;
-      // fflate compression: level 0 = STORE (no compression).
-      // Default (omitting `level`) is deflate with reasonable settings.
-      entries[path] = compress ? bytes : [bytes, { level: 0 }];
+      const file = compress ? new ZipDeflate(path) : new ZipPassThrough(path);
+      try {
+        zip.add(file);
+        file.push(bytes, /* final */ true);
+      } catch (cause) {
+        throw new OpenXmlIoError(`createZipWriter: failed to add entry "${path}"`, { cause });
+      }
+      if (errors.length > 0) {
+        throw new OpenXmlIoError('createZipWriter: stream error during addEntry', { cause: errors[0] });
+      }
     },
 
     async finalize() {
       if (finalised !== undefined) return finalised;
       finalised = (async () => {
-        let zipped: Uint8Array;
         try {
-          zipped = zipSync(entries);
+          if (!endCalled) {
+            zip.end();
+            endCalled = true;
+          }
         } catch (cause) {
-          throw new OpenXmlIoError('createZipWriter: failed to assemble zip archive', { cause });
+          throw new OpenXmlIoError('createZipWriter: failed to finalize zip archive', { cause });
         }
-        writer.write(zipped);
+        await zipFinishPromise;
+        if (errors.length > 0) {
+          throw new OpenXmlIoError('createZipWriter: stream error during finalize', { cause: errors[0] });
+        }
         return writer.finish();
       })();
       return finalised;
