@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §5 XmlStreamWriter。`src/xml/stream-writer.ts` で `createXmlStreamWriter(target): XmlStreamWriter { start, text, writeNode, end, finalize }`。チャンク Uint8Array 配列にためて、namespace prefix map は writer 生成時に固定渡し。最小ベンチで 100k cell の `<row>/<c>` テンプレート出力を確認できる程度のスモークまで。次々ターンで packaging 層 (`§6`) → utils (`§7`)。
+- **次のタスク**: フェーズ1 §6 packaging 層。`src/packaging/manifest.ts` で `[Content_Types].xml` の `Manifest`（Default + Override）を Schema 経由で round-trip。`src/packaging/relationships.ts` で `*.rels` の `Relationships` (`makeRelationships` / `appendRel` / `findByType` / `relsToBytes` / `relsFromBytes`)。`docProps/core.xml` 等は次々ターン。openpyxl `genuine/empty.xlsx` の `[Content_Types].xml` と `_rels/.rels` で round-trip 一致。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -28,7 +28,7 @@
 - [~] §2 ZIP 層（reader / writer メモリ経路完了：`fflate.unzipSync` の `openZip` + `fflate.zipSync` の `createZipWriter`。`empty.xlsx` の 11 エントリを writer に流して再 zip → 再 read で全 path・全 bytes が一致。STORE 圧縮の compress: false パス、duplicate / post-finalize / ReadableStream 入力は OpenXmlIoError。47 tests pass。残：streaming reader / streaming writer / ZIP64 read/write）
 - [x] §3 XML 層（namespaces / tree / parser DOM / serializer DOM / iterParse SAX 完了：saxes 6 ベース `iterParse(SaxInput): AsyncIterableIterator<SaxEvent>`、入力は `Uint8Array | string | ReadableStream<Uint8Array>`、SaxEvent は start/end/text の discriminated union（Clark 表記名）、xmlns 宣言は attrs から落とす、DOCTYPE は事前バイト走査 + saxes の doctype event でも reject、ストリームは TextDecoder で stream:true デコード、prologue 256 文字バッファで DOCTYPE 検査、openpyxl `genuine/sample.xlsx` の `xl/worksheets/sheet1.xml` で row/cell 数 + start/end ネスト整合確認。117 tests pass。残：canonical compare helper / 大規模 round-trip は §10 testing helper の領分）
 - [x] §4 Schema 層（クラス不使用：`Schema<T>` は plain object、`AttrDef` は string/int/float/bool/enum + min/max + xmlName/xmlNs、`ElementDef` は text/object/sequence/empty の discriminated union（lazy schema getter で循環解決）、`defineSchema<T>(s)` は inference pin、`toTree<T>(value, schema): XmlNode` / `fromTree<T>(node, schema): T` は switch on kind の純粋関数。Border + Side で round-trip、bool は OOXML の `1`/`0`、loose に `true/false/t/f/0/1` を受理、`preSerialize`/`postParse` フック動作、required attribute / 範囲外 enum で OpenXmlSchemaError、container 付き sequence の `count` 属性も round-trip。127 tests pass）
-- [ ] §5 XmlStreamWriter
+- [x] §5 XmlStreamWriter（buffered モード：`createXmlStreamWriter(opts?): XmlStreamWriter`、API は `start`/`text`/`writeNode`/`writeRaw`/`end`/`flush`/`result`、Clark 名 → prefix 変換は writer 生成時の `prefixMap`（DEFAULT_PREFIXES + ユーザ override + `xml` 予約 binding）、auto-flush 閾値 64KB、self-closing 最適化、unclosed / post-result でエラー。100k `<c>` を `writeRaw` 経由で吐き 1MB 越えのバイト列が parseXml で N=100k 子要素として戻る。141 tests pass。残：streaming (`WritableStream<Uint8Array>`) 対応は phase 4 写表 writer と一緒に）
 - [ ] §6 packaging 層（manifest, relationships, doc properties）
 - [ ] §7 utils（coordinate, datetime, units, inference, escape, exceptions）
 - [ ] §8 compat

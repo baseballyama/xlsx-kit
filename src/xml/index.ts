@@ -89,5 +89,7 @@ export {
 export { parseXml } from './parser';
 export type { SerializeOptions } from './serializer';
 export { serializeXml } from './serializer';
+export type { XmlStreamWriter, XmlStreamWriterOptions } from './stream-writer';
+export { createXmlStreamWriter } from './stream-writer';
 export type { XmlNode } from './tree';
 export { appendChild, el, elNs, findChild, findChildren } from './tree';
