@@ -7,7 +7,7 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts** 着手準備
-- **次のタスク**: フェーズ6 §3 続き — **worksheet ↔ drawing wiring** + 単純 BarChart モデル化を始める。`Worksheet.drawing?: Drawing` を追加、saveWorkbook が drawingN.xml を emit + worksheet rels の Type=`{REL_NS}/drawing` rel + worksheet inline `<drawing r:id>` emit + manifest Override (`drawingml.spreadsheetDrawing+xml`)。loadWorkbook で逆方向に。次に最小 BarChart モデル — series / categoryAxis / valueAxis / title — を `xl/charts/chartN.xml` で round-trip。ECMA-376 §17.16 を refer。
+- **次のタスク**: フェーズ6 §5 ChartML フル実装の **stage-1**: 最小 BarChart モデル。`src/chart/{chart-space.ts, chart-base.ts, bar-chart.ts}` で `ChartSpace { lang?, plotArea }` / `BarChart { barDir: 'bar'|'col', grouping, series: BarSeries[], catAx?, valAx? }` / `BarSeries { idx, order, tx?, val: { ref, numCache?: number[] }, cat?: { ref, strCache? } }` を作る。`parseChartXml` / `chartToBytes` で `xl/charts/chartN.xml` 読み書き。drawing の chart content variant に `chart?: ChartContainer` を追加して saveWorkbook が chart 部品を emit + manifest Override (`drawingml.chart+xml`) + drawing-rels に chart rel 追加。worksheet ↔ drawing wiring の chart placeholder を実物に置き換え。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
@@ -76,7 +76,7 @@
 
 ### フェーズ6: drawing / charts ([08-charts-drawings.md](docs/plan/08-charts-drawings.md))
 
-- [~] §3 anchor + part-level scaffolding 完了：`src/drawing/{anchor,drawing,drawing-xml}.ts`。`DrawingAnchor` (`absolute`/`oneCell`/`twoCell` discriminated union)、`AnchorMarker { col, colOff, row, rowOff }` (0-based)、`Point2D` / `PositiveSize2D` (EMU)、`anchorMarkerFromCellRef('A1')` / `makeAbsoluteAnchor` / `makeOneCellAnchor` / `makeTwoCellAnchor`。`Drawing { items: DrawingItem[] }` — content は `chart` (rels-only) か `unsupported` (placeholder for picture/shape/connector/group)。`parseDrawingXml` / `drawingToBytes` が `xl/drawings/drawingN.xml` を round-trip (anchor の document order を保持、`<c:chart r:id>` から rId 抽出)。9 tests pass。878 total。残：worksheet ↔ drawing wiring (load/save)、画像、ChartML フル実装、cfvo/colors/3D等 DrawingML primitive。
+- [~] §3 anchor + part-level scaffolding + **worksheet ↔ drawing wiring** 完了。`src/drawing/{anchor,drawing,drawing-xml}.ts` で DrawingAnchor (absolute/oneCell/twoCell)、Drawing { items[] }、parseDrawingXml/drawingToBytes (anchor document order 保持、chart rId 抽出)。`Worksheet.drawing?: Drawing` 追加、reader/writer に `loadDrawing` / `registerDrawing` callback、saveWorkbook で workbook-global drawingN counter + per-sheet rels の `${REL_NS}/drawing` rel + manifest `drawing+xml` Override + worksheet inline `<drawing r:id>`、loadWorkbook が逆方向に解決。9 + 4 = 13 tests。882 total。残：画像、ChartML フル実装 (BarChart 等 17+8 chartex 種)、cfvo/colors/3D 等 DrawingML primitive、Stage-1 chart placeholder の実物化。
 - [ ] §2 image / loadImage
 - [ ] §4 DrawingML primitives (colors / fill / line / effect / geometry / text / shape-properties)
 - [ ] §5 ChartML フル実装 (chartSpace / plotArea / 各 chart kind / series / data point / labels / trendline / errorBars / axes / legend / title / 3D)
