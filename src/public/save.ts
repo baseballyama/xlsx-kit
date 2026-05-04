@@ -18,6 +18,7 @@ import { chartToBytes } from '../chart/chart-xml';
 import { chartExToBytes } from '../chart/cx/chartex-xml';
 import type { Drawing, DrawingItem } from '../drawing/drawing';
 import { drawingToBytes } from '../drawing/drawing-xml';
+import { IMAGE_FORMAT_EXTENSION, IMAGE_FORMAT_MIME, type XlsxImageFormat } from '../drawing/image';
 import type { XlsxSink } from '../io/sink';
 import { corePropsToBytes } from '../packaging/core';
 import { customPropsToBytes } from '../packaging/custom';
@@ -73,6 +74,7 @@ const DRAWING_REL = `${REL_NS}/drawing`;
 const DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.drawing+xml';
 const CHART_REL = `${REL_NS}/chart`;
 const CHART_TYPE = 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml';
+const IMAGE_REL = `${REL_NS}/image`;
 
 export interface SaveOptions {
   /** Reserved — passes through to the underlying ZIP writer when implemented. */
@@ -127,6 +129,17 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   // ids stay unique.
   const chartEmits: Array<{ id: number; bytes: Uint8Array; isCx: boolean }> = [];
   let nextChartId = 1;
+  // Workbook-global counter for image media parts. Excel uses
+  // xl/media/imageN.{ext} where N is shared across the package.
+  interface ImageEmit {
+    id: number;
+    /** File extension (without the dot) — also drives the manifest Default. */
+    ext: string;
+    bytes: Uint8Array;
+  }
+  const imageEmits: ImageEmit[] = [];
+  const imageExts = new Set<string>();
+  let nextImageId = 1;
   wb.sheets.forEach((ref, i) => {
     const target = `worksheets/sheet${i + 1}.xml`;
     const sheetRels = makeRelationships();
@@ -204,6 +217,31 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
           itemsForXml.push({
             anchor: item.anchor,
             content: { kind: 'chart', chart: { rId: chartRId } },
+          });
+        } else if (item.content.kind === 'picture' && item.content.picture.image) {
+          const img = item.content.picture.image;
+          const ext = IMAGE_FORMAT_EXTENSION[img.format];
+          const imageId = nextImageId++;
+          const picRId = `rId${drawingRels.rels.length + 1}`;
+          drawingRels.rels.push({
+            id: picRId,
+            type: IMAGE_REL,
+            target: `../media/image${imageId}.${ext}`,
+          });
+          imageEmits.push({ id: imageId, ext, bytes: img.bytes });
+          imageExts.add(ext);
+          itemsForXml.push({
+            anchor: item.anchor,
+            content: {
+              kind: 'picture',
+              picture: {
+                rId: picRId,
+                ...(item.content.picture.name !== undefined ? { name: item.content.picture.name } : {}),
+                ...(item.content.picture.descr !== undefined ? { descr: item.content.picture.descr } : {}),
+                ...(item.content.picture.hidden !== undefined ? { hidden: item.content.picture.hidden } : {}),
+                ...(item.content.picture.spPr ? { spPr: item.content.picture.spPr } : {}),
+              },
+            },
           });
         } else {
           itemsForXml.push(item);
@@ -298,6 +336,11 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     await writer.addEntry(`xl/charts/chart${c.id}.xml`, c.bytes);
   }
 
+  // ---- 4f. embedded images (xl/media/imageN.{ext}) ----------------------
+  for (const img of imageEmits) {
+    await writer.addEntry(`xl/media/image${img.id}.${img.ext}`, img.bytes);
+  }
+
   // ---- 5. styles.xml + sharedStrings.xml (if any) -------------------------
   await writer.addEntry(ARC_STYLE, stylesheetToBytes(wb.styles));
   if (sst.entries.length > 0) {
@@ -370,6 +413,13 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   for (const c of chartEmits) {
     addOverride(manifest, `/xl/charts/chart${c.id}.xml`, c.isCx ? CHARTEX_TYPE : CHART_TYPE);
+  }
+  // Each unique image extension gets a Default entry (`<Default Extension="png" ContentType="image/png"/>`).
+  for (const ext of imageExts) {
+    const fmt = (Object.entries(IMAGE_FORMAT_EXTENSION).find(([, e]) => e === ext) ?? [])[0] as
+      | XlsxImageFormat
+      | undefined;
+    if (fmt) addDefault(manifest, ext, IMAGE_FORMAT_MIME[fmt]);
   }
   if (wb.properties) addOverride(manifest, `/${ARC_CORE}`, CORE_PROPS_TYPE);
   if (wb.appProperties) addOverride(manifest, `/${ARC_APP}`, EXT_PROPS_TYPE);

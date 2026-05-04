@@ -13,6 +13,7 @@
 import { parseChartXml } from '../chart/chart-xml';
 import { isChartExBytes, parseChartExXml } from '../chart/cx/chartex-xml';
 import { parseDrawingXml } from '../drawing/drawing-xml';
+import { loadImage } from '../drawing/image';
 import type { XlsxSource } from '../io/source';
 import { corePropsFromBytes } from '../packaging/core';
 import { customPropsFromBytes } from '../packaging/custom';
@@ -330,18 +331,33 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
           if (archive.has(dRelsPath)) {
             const dRels = relsFromBytes(archive.read(dRelsPath));
             for (const item of drawing.items) {
-              if (item.content.kind !== 'chart') continue;
-              const chartRId = item.content.chart.rId;
-              if (!chartRId) continue;
-              const chartRel = dRels.rels.find((r) => r.id === chartRId);
-              if (!chartRel) continue;
-              const chartPath = resolveRelTarget(dPath, chartRel.target);
-              if (archive.has(chartPath)) {
-                const chartBytes = archive.read(chartPath);
-                if (isChartExBytes(chartBytes)) {
-                  item.content.chart.cxSpace = parseChartExXml(chartBytes);
-                } else {
-                  item.content.chart.space = parseChartXml(chartBytes);
+              if (item.content.kind === 'chart') {
+                const chartRId = item.content.chart.rId;
+                if (!chartRId) continue;
+                const chartRel = dRels.rels.find((r) => r.id === chartRId);
+                if (!chartRel) continue;
+                const chartPath = resolveRelTarget(dPath, chartRel.target);
+                if (archive.has(chartPath)) {
+                  const chartBytes = archive.read(chartPath);
+                  if (isChartExBytes(chartBytes)) {
+                    item.content.chart.cxSpace = parseChartExXml(chartBytes);
+                  } else {
+                    item.content.chart.space = parseChartXml(chartBytes);
+                  }
+                }
+              } else if (item.content.kind === 'picture') {
+                const picRId = item.content.picture.rId;
+                if (!picRId) continue;
+                const picRel = dRels.rels.find((r) => r.id === picRId);
+                if (!picRel) continue;
+                const imgPath = resolveRelTarget(dPath, picRel.target);
+                if (archive.has(imgPath)) {
+                  try {
+                    item.content.picture.image = loadImage(archive.read(imgPath));
+                  } catch {
+                    // Unknown / unsupported format — leave bytes-less; callers can read
+                    // via the rId + archive directly if they need the raw payload.
+                  }
                 }
               }
             }

@@ -3,11 +3,12 @@
 // group remain unsupported placeholders for later iterations.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { REL_NS, SHEET_DRAWING_NS } from '../xml/namespaces';
+import { DRAWING_NS, REL_NS, SHEET_DRAWING_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, type XmlNode } from '../xml/tree';
 import type { AnchorMarker, DrawingAnchor, Point2D, PositiveSize2D } from './anchor';
-import { type ChartReference, type Drawing, type DrawingItem, makeDrawing } from './drawing';
+import { parseShapeProperties, serializeShapeProperties } from './dml/dml-xml';
+import { type ChartReference, type Drawing, type DrawingItem, makeDrawing, type PictureReference } from './drawing';
 
 const WS_DRAWING_TAG = `{${SHEET_DRAWING_NS}}wsDr`;
 const ABSOLUTE_ANCHOR_TAG = `{${SHEET_DRAWING_NS}}absoluteAnchor`;
@@ -27,6 +28,12 @@ const CLIENT_DATA_TAG = `{${SHEET_DRAWING_NS}}clientData`;
 const A_GRAPHIC_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}graphic';
 const A_GRAPHIC_DATA_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}graphicData';
 const C_CHART_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/chart}chart';
+const PIC_TAG = `{${SHEET_DRAWING_NS}}pic`;
+const PIC_NV_PR_TAG = `{${SHEET_DRAWING_NS}}nvPicPr`;
+const C_NV_PR_TAG = `{${SHEET_DRAWING_NS}}cNvPr`;
+const BLIP_FILL_TAG = `{${SHEET_DRAWING_NS}}blipFill`;
+const PIC_SP_PR_TAG = `{${SHEET_DRAWING_NS}}spPr`;
+const A_BLIP_TAG = `{${DRAWING_NS}}blip`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -65,6 +72,31 @@ const parsePositiveSize2D = (node: XmlNode): PositiveSize2D | undefined => {
   const cyn = Number.parseInt(cy, 10);
   if (!Number.isFinite(cxn) || !Number.isFinite(cyn)) return undefined;
   return { cx: cxn, cy: cyn };
+};
+
+const parsePictureReference = (node: XmlNode): PictureReference | undefined => {
+  const pic = findChild(node, PIC_TAG);
+  if (!pic) return undefined;
+  const out: PictureReference = {};
+  const nvPicPr = findChild(pic, PIC_NV_PR_TAG);
+  if (nvPicPr) {
+    const cNvPr = findChild(nvPicPr, C_NV_PR_TAG);
+    if (cNvPr) {
+      if (cNvPr.attrs['name'] !== undefined) out.name = cNvPr.attrs['name'];
+      if (cNvPr.attrs['descr'] !== undefined) out.descr = cNvPr.attrs['descr'];
+      const hiddenRaw = cNvPr.attrs['hidden'];
+      if (hiddenRaw === '1' || hiddenRaw === 'true') out.hidden = true;
+    }
+  }
+  const blipFill = findChild(pic, BLIP_FILL_TAG);
+  if (blipFill) {
+    const blip = findChild(blipFill, A_BLIP_TAG);
+    const embed = blip?.attrs[`{${REL_NS}}embed`];
+    if (embed) out.rId = embed;
+  }
+  const spPrEl = findChild(pic, PIC_SP_PR_TAG);
+  if (spPrEl) out.spPr = parseShapeProperties(spPrEl);
+  return out;
 };
 
 const parseChartReference = (node: XmlNode): ChartReference | undefined => {
@@ -113,11 +145,15 @@ const parseAnchor = (node: XmlNode): DrawingItem | undefined => {
     return undefined;
   }
 
-  // Detect content kind. Stage-1 only models charts; everything else is
-  // tagged "unsupported" with the original child tag name.
+  // Detect content kind in priority order: chart graphic frame first,
+  // then picture; everything else is tagged "unsupported".
   const chart = parseChartReference(node);
   if (chart) {
     return { anchor, content: { kind: 'chart', chart } };
+  }
+  const picture = parsePictureReference(node);
+  if (picture) {
+    return { anchor, content: { kind: 'picture', picture } };
   }
   // Find the first child that isn't a marker/pos/ext/clientData.
   const skip = new Set([FROM_TAG, TO_TAG, POS_TAG, EXT_TAG, CLIENT_DATA_TAG]);
@@ -150,6 +186,30 @@ export function parseDrawingXml(bytes: Uint8Array | string): Drawing {
 const serializeMarker = (tag: string, m: AnchorMarker): string =>
   `<xdr:${tag}><xdr:col>${m.col}</xdr:col><xdr:colOff>${m.colOff}</xdr:colOff><xdr:row>${m.row}</xdr:row><xdr:rowOff>${m.rowOff}</xdr:rowOff></xdr:${tag}>`;
 
+const serializePictureFrame = (picture: PictureReference, anchorIdx: number): string => {
+  const rId = picture.rId ?? '';
+  const idAttr = `id="${anchorIdx + 2}"`;
+  const nameAttr = `name="${escapeAttr(picture.name ?? `Picture ${anchorIdx + 1}`)}"`;
+  const descrAttr = picture.descr !== undefined ? ` descr="${escapeAttr(picture.descr)}"` : '';
+  const hiddenAttr = picture.hidden ? ' hidden="1"' : '';
+  const spPr = picture.spPr
+    ? serializeShapeProperties(picture.spPr, 'xdr:spPr')
+    : '<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>';
+  return [
+    '<xdr:pic>',
+    '<xdr:nvPicPr>',
+    `<xdr:cNvPr ${idAttr} ${nameAttr}${descrAttr}${hiddenAttr}/>`,
+    '<xdr:cNvPicPr/>',
+    '</xdr:nvPicPr>',
+    '<xdr:blipFill>',
+    `<a:blip xmlns:r="${REL_NS}" r:embed="${escapeAttr(rId)}"/>`,
+    '<a:stretch><a:fillRect/></a:stretch>',
+    '</xdr:blipFill>',
+    spPr,
+    '</xdr:pic>',
+  ].join('');
+};
+
 const serializeChartGraphicFrame = (chart: ChartReference, anchorIdx: number): string => {
   const rId = chart.rId ?? '';
   return [
@@ -176,6 +236,8 @@ const serializeAnchor = (item: DrawingItem, idx: number): string => {
   let content = '';
   if (item.content.kind === 'chart') {
     content = serializeChartGraphicFrame(item.content.chart, idx);
+  } else if (item.content.kind === 'picture') {
+    content = serializePictureFrame(item.content.picture, idx);
   } else {
     // Unsupported content: emit a graphicFrame with an empty chart ref so
     // Excel doesn't choke. Re-emitting unknown content verbatim is the

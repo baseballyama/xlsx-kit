@@ -10,6 +10,8 @@
 import type { ChartSpace } from '../chart/chart';
 import type { CxChartSpace } from '../chart/cx/chartex';
 import type { DrawingAnchor } from './anchor';
+import type { ShapeProperties } from './dml/shape-properties';
+import type { XlsxImage } from './image';
 
 /** Reference to a chart part — the chart's drawing-rels rId resolves to xl/charts/chartN.xml. */
 export interface ChartReference {
@@ -29,9 +31,28 @@ export interface ChartReference {
   cxSpace?: CxChartSpace;
 }
 
+/** Reference to an embedded picture inside a worksheet drawing. */
+export interface PictureReference {
+  /** Drawing-rels rId pointing at the embedded image. Populated on read; the writer assigns its own. */
+  rId?: string;
+  /** Resolved image bytes + metadata. Populated on read; the writer reads it back. */
+  image?: XlsxImage;
+  /** Picture display name (`<xdr:cNvPr name="...">`). */
+  name?: string;
+  /** Optional alt-text description. */
+  descr?: string;
+  /** Hidden flag (`<xdr:cNvPr hidden="1"/>`). */
+  hidden?: boolean;
+  /** Per-picture shape properties (extra fill / line / rotation). */
+  spPr?: ShapeProperties;
+}
+
 export interface DrawingItem {
   anchor: DrawingAnchor;
-  content: { kind: 'chart'; chart: ChartReference } | { kind: 'unsupported'; rawTag: string };
+  content:
+    | { kind: 'chart'; chart: ChartReference }
+    | { kind: 'picture'; picture: PictureReference }
+    | { kind: 'unsupported'; rawTag: string };
 }
 
 export interface Drawing {
@@ -44,4 +65,11 @@ export function makeDrawing(items: DrawingItem[] = []): Drawing {
 
 export function makeChartDrawingItem(anchor: DrawingAnchor, chart: ChartReference = {}): DrawingItem {
   return { anchor, content: { kind: 'chart', chart } };
+}
+
+export function makePictureDrawingItem(anchor: DrawingAnchor, picture: PictureReference | XlsxImage): DrawingItem {
+  // Distinguish raw image bytes from a full PictureReference by checking the
+  // discriminator: XlsxImage carries `format`, PictureReference doesn't.
+  const ref: PictureReference = 'format' in picture ? { image: picture as XlsxImage } : (picture as PictureReference);
+  return { anchor, content: { kind: 'picture', picture: ref } };
 }
