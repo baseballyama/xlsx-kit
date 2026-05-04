@@ -133,25 +133,22 @@ interface WorkbookState {
   hasOpenWorksheet: boolean;
 }
 
-class WriteOnlyWorksheetImpl implements WriteOnlyWorksheet {
-  private readonly state: WorkbookState;
-  private readonly sheet: Worksheet;
-  /** Next free row index (1-based). appendRow pushes to it then increments. */
-  private nextRow = 1;
-  private closed = false;
-  public readonly title: string;
-  /** Pending column widths to set before serialisation. */
-  private columnWidths = new Map<number, number>();
+/**
+ * Factory: build a {@link WriteOnlyWorksheet} that closes over the
+ * shared {@link WorkbookState}. The worksheet captures `nextRow` /
+ * `closed` / `columnWidths` in the closure rather than instance fields
+ * — `WriteOnlyWorksheet` is a plain object per the project-wide "no
+ * classes" rule (see CLAUDE.md / docs/plan/01-architecture.md).
+ */
+const makeWriteOnlyWorksheet = (state: WorkbookState, title: string): WriteOnlyWorksheet => {
+  const sheet: Worksheet = makeWorksheet(title);
+  let nextRow = 1;
+  let closed = false;
+  const columnWidths = new Map<number, number>();
 
-  constructor(state: WorkbookState, title: string) {
-    this.state = state;
-    this.title = title;
-    this.sheet = makeWorksheet(title);
-  }
-
-  async appendRow(row: WriteOnlyRowItem[]): Promise<void> {
-    if (this.closed) throw new OpenXmlIoError('appendRow: worksheet already closed');
-    const r = this.nextRow++;
+  const appendRow = async (row: WriteOnlyRowItem[]): Promise<void> => {
+    if (closed) throw new OpenXmlIoError('appendRow: worksheet already closed');
+    const r = nextRow++;
     for (let i = 0; i < row.length; i++) {
       const item = row[i];
       if (item === undefined || item === null) continue;
@@ -165,27 +162,26 @@ class WriteOnlyWorksheetImpl implements WriteOnlyWorksheet {
       } else {
         value = item as CellValue;
       }
-      const styleId = style ? allocateXfId(this.state.styles, style) : 0;
-      setCell(this.sheet, r, col, value, styleId);
+      const styleId = style ? allocateXfId(state.styles, style) : 0;
+      setCell(sheet, r, col, value, styleId);
     }
-  }
+  };
 
-  setColumnWidth(col: number, width: number): void {
-    if (this.closed) throw new OpenXmlIoError('setColumnWidth: worksheet already closed');
-    this.columnWidths.set(col, width);
-  }
+  const setColumnWidth = (col: number, width: number): void => {
+    if (closed) throw new OpenXmlIoError('setColumnWidth: worksheet already closed');
+    columnWidths.set(col, width);
+  };
 
-  async close(): Promise<void> {
-    if (this.closed) return;
-    this.closed = true;
-    // Apply pending column widths.
-    for (const [col, width] of this.columnWidths) {
-      this.sheet.columnDimensions.set(col, { min: col, max: col, width, customWidth: true });
+  const close = async (): Promise<void> => {
+    if (closed) return;
+    closed = true;
+    for (const [col, width] of columnWidths) {
+      sheet.columnDimensions.set(col, { min: col, max: col, width, customWidth: true });
     }
     // Serialise via the regular worksheet writer. SharedStrings dedup is
     // performed in-place by the writer.
-    const bytes = worksheetToBytes(this.sheet, {
-      sharedStrings: this.state.sst,
+    const bytes = worksheetToBytes(sheet, {
+      sharedStrings: state.sst,
       rels: makeRelationships(),
       registerTable: () => {
         throw new OpenXmlIoError('write-only: table support is not yet wired');
@@ -197,86 +193,85 @@ class WriteOnlyWorksheetImpl implements WriteOnlyWorksheet {
         throw new OpenXmlIoError('write-only: drawings support is not yet wired');
       },
     });
-    const sheetId = this.state.sheets.length + 1;
-    this.state.sheets.push({ title: this.title, sheetId, bytes });
-    this.state.hasOpenWorksheet = false;
-  }
-}
+    const sheetId = state.sheets.length + 1;
+    state.sheets.push({ title, sheetId, bytes });
+    state.hasOpenWorksheet = false;
+  };
 
-class WriteOnlyWorkbookImpl implements WriteOnlyWorkbook {
-  private readonly sink: XlsxSink;
-  private readonly state: WorkbookState;
+  return { title, appendRow, setColumnWidth, close };
+};
 
-  constructor(sink: XlsxSink) {
-    this.sink = sink;
-    const styles = makeStylesheet();
-    // Reserve cellXfs[0] for the default (no apply* flags). Unstyled
-    // cells point at this slot via styleId=0; user-styled cells start at
-    // index 1 so the writer emits an `s="N"` attribute for them.
-    addCellXf(styles, defaultCellXf());
-    this.state = {
-      styles,
-      sst: makeSharedStrings(),
-      sheets: [],
-      finalised: false,
-      hasOpenWorksheet: false,
-    };
-  }
+/**
+ * Factory: build a {@link WriteOnlyWorkbook} from a sink. State lives
+ * in a closure rather than on a class instance per the project-wide
+ * "no classes" rule (CLAUDE.md / docs/plan/01-architecture.md).
+ */
+const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
+  const styles = makeStylesheet();
+  // Reserve cellXfs[0] for the default (no apply* flags). Unstyled cells
+  // point at this slot via styleId=0; user-styled cells start at index
+  // 1 so the writer emits an `s="N"` attribute for them.
+  addCellXf(styles, defaultCellXf());
+  const state: WorkbookState = {
+    styles,
+    sst: makeSharedStrings(),
+    sheets: [],
+    finalised: false,
+    hasOpenWorksheet: false,
+  };
 
-  async addWorksheet(title: string): Promise<WriteOnlyWorksheet> {
-    if (this.state.finalised) {
+  const addWorksheet = async (title: string): Promise<WriteOnlyWorksheet> => {
+    if (state.finalised) {
       throw new OpenXmlIoError('addWorksheet: workbook already finalised');
     }
-    if (this.state.hasOpenWorksheet) {
+    if (state.hasOpenWorksheet) {
       throw new OpenXmlIoError(
         'addWorksheet: previous worksheet still open — call close() before opening the next one',
       );
     }
-    const taken = new Set(this.state.sheets.map((s) => s.title));
+    const taken = new Set(state.sheets.map((s) => s.title));
     validateTitle(title, taken);
-    this.state.hasOpenWorksheet = true;
-    return new WriteOnlyWorksheetImpl(this.state, title);
-  }
+    state.hasOpenWorksheet = true;
+    return makeWriteOnlyWorksheet(state, title);
+  };
 
-  async finalize(): Promise<void> {
-    if (this.state.finalised) {
+  const finalize = async (): Promise<void> => {
+    if (state.finalised) {
       throw new OpenXmlIoError('finalize: already finalised');
     }
-    if (this.state.hasOpenWorksheet) {
-      throw new OpenXmlIoError(
-        'finalize: a worksheet is still open — call close() before finalising',
-      );
+    if (state.hasOpenWorksheet) {
+      throw new OpenXmlIoError('finalize: a worksheet is still open — call close() before finalising');
     }
-    this.state.finalised = true;
-    const writer = createZipWriter(this.sink);
+    state.finalised = true;
+    const writer = createZipWriter(sink);
 
     // 1. Worksheets.
-    for (const s of this.state.sheets) {
+    for (const s of state.sheets) {
       await writer.addEntry(`xl/worksheets/sheet${s.sheetId}.xml`, s.bytes);
     }
 
     // 2. Stylesheet.
-    await writer.addEntry(ARC_STYLE, stylesheetToBytes(this.state.styles));
+    await writer.addEntry(ARC_STYLE, stylesheetToBytes(state.styles));
 
     // 3. SharedStrings (only when non-empty).
-    if (this.state.sst.entries.length > 0) {
-      await writer.addEntry(ARC_SHARED_STRINGS, sharedStringsToBytes(this.state.sst));
+    if (state.sst.entries.length > 0) {
+      await writer.addEntry(ARC_SHARED_STRINGS, sharedStringsToBytes(state.sst));
     }
 
     // 4. workbook.xml.
-    const workbookXml = serializeWorkbookXml(this.state.sheets);
+    const workbookXml = serializeWorkbookXml(state.sheets);
     await writer.addEntry(ARC_WORKBOOK, new TextEncoder().encode(workbookXml));
 
     // 5. workbook.xml.rels.
     const wbRels = makeRelationships();
-    this.state.sheets.forEach((s, i) => {
+    state.sheets.forEach((s, i) => {
       wbRels.rels.push({
         id: `rId${i + 1}`,
         type: `${REL_NS}/worksheet`,
         target: `worksheets/sheet${s.sheetId}.xml`,
       });
     });
-    if (this.state.sst.entries.length > 0) {
+    if (state.sst.entries.length > 0) {
       wbRels.rels.push({
         id: `rId${wbRels.rels.length + 1}`,
         type: `${REL_NS}/sharedStrings`,
@@ -303,18 +298,20 @@ class WriteOnlyWorkbookImpl implements WriteOnlyWorkbook {
     // 7. [Content_Types].xml.
     const manifest = makeManifest();
     addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
-    for (const s of this.state.sheets) {
+    for (const s of state.sheets) {
       addOverride(manifest, `/xl/worksheets/sheet${s.sheetId}.xml`, WORKSHEET_TYPE);
     }
     addOverride(manifest, `/${ARC_STYLE}`, STYLES_TYPE);
-    if (this.state.sst.entries.length > 0) {
+    if (state.sst.entries.length > 0) {
       addOverride(manifest, `/${ARC_SHARED_STRINGS}`, SHARED_STRINGS_TYPE);
     }
     await writer.addEntry(ARC_CONTENT_TYPES, manifestToBytes(manifest));
 
     await writer.finalize();
-  }
-}
+  };
+
+  return { addWorksheet, finalize };
+};
 
 const serializeWorkbookXml = (
   sheets: ReadonlyArray<{ title: string; sheetId: number }>,
@@ -338,11 +335,10 @@ export async function createWriteOnlyWorkbook(
   sink: XlsxSink,
   _opts: WriteOnlyOptions = {},
 ): Promise<WriteOnlyWorkbook> {
-  // The buffered ZIP writer is created lazily inside finalize() so the
-  // caller can compose multiple sheets without an early commit. The
-  // current implementation accumulates worksheet bytes in memory; the
-  // streaming-deflate rewrite (per docs/plan/06-streaming.md §3.4
-  // acceptance — 100M cells in 1GB heap) lands as a follow-up.
-  return new WriteOnlyWorkbookImpl(sink);
+  // The streaming-deflate ZIP writer is created lazily inside finalize()
+  // so the caller can compose multiple sheets without an early commit.
+  // Worksheet bytes accumulate in `state.sheets` until finalize streams
+  // them through fflate's `Zip` + `ZipDeflate` (see src/zip/writer.ts).
+  return makeWriteOnlyWorkbook(sink);
 }
 

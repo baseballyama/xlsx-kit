@@ -246,47 +246,57 @@ async function* iterSheetRows(
   void currentRowAttrs;
 }
 
-class StreamingReadOnlyWorksheet implements ReadOnlyWorksheet {
-  constructor(
-    public readonly title: string,
-    private readonly archive: ZipArchive,
-    private readonly partPath: string,
-    private readonly sst: ReadonlyArray<string>,
-  ) {}
-
-  iterRows(opts: IterRowsOptions = {}): AsyncIterableIterator<ReadOnlyCell[]> {
-    const bytes = this.archive.read(this.partPath);
-    return iterSheetRows(bytes, this.sst, opts);
-  }
-
-  async *iterValues(opts: IterRowsOptions = {}): AsyncIterableIterator<CellValue[]> {
-    for await (const row of this.iterRows(opts)) {
+/**
+ * Factory: build a {@link ReadOnlyWorksheet} bound to a single
+ * worksheet part inside an opened archive. SAX iteration runs lazily
+ * — `iterRows` re-reads the part bytes each time so the caller can
+ * iterate the same sheet repeatedly without keeping a buffered
+ * decoder around.
+ */
+const makeStreamingReadOnlyWorksheet = (
+  title: string,
+  archive: ZipArchive,
+  partPath: string,
+  sst: ReadonlyArray<string>,
+): ReadOnlyWorksheet => {
+  const iterRows = (opts: IterRowsOptions = {}): AsyncIterableIterator<ReadOnlyCell[]> => {
+    const bytes = archive.read(partPath);
+    return iterSheetRows(bytes, sst, opts);
+  };
+  const iterValues = async function* (opts: IterRowsOptions = {}): AsyncIterableIterator<CellValue[]> {
+    for await (const row of iterRows(opts)) {
       yield row.map((c) => c.value);
     }
-  }
-}
+  };
+  return { title, iterRows, iterValues };
+};
 
-class StreamingReadOnlyWorkbook implements ReadOnlyWorkbook {
-  constructor(
-    public readonly sheetNames: string[],
-    public readonly styles: Stylesheet,
-    private readonly archive: ZipArchive,
-    private readonly entries: ReadonlyMap<string, SheetEntry>,
-    private readonly sst: ReadonlyArray<string>,
-  ) {}
-
-  openWorksheet(name: string): ReadOnlyWorksheet {
-    const entry = this.entries.get(name);
+/**
+ * Factory: build a {@link ReadOnlyWorkbook} from an opened archive +
+ * pre-parsed sheet list / styles / shared strings. Per the project-
+ * wide "no classes" rule (CLAUDE.md / docs/plan/01-architecture.md),
+ * the workbook is a plain object closing over the archive handle.
+ */
+const makeStreamingReadOnlyWorkbook = (
+  sheetNames: string[],
+  styles: Stylesheet,
+  archive: ZipArchive,
+  entries: ReadonlyMap<string, SheetEntry>,
+  sst: ReadonlyArray<string>,
+): ReadOnlyWorkbook => ({
+  sheetNames,
+  styles,
+  openWorksheet(name) {
+    const entry = entries.get(name);
     if (!entry) {
       throw new OpenXmlSchemaError(`loadWorkbookStream: no worksheet named "${name}"`);
     }
-    return new StreamingReadOnlyWorksheet(name, this.archive, entry.partPath, this.sst);
-  }
-
-  async close(): Promise<void> {
-    this.archive.close();
-  }
-}
+    return makeStreamingReadOnlyWorksheet(name, archive, entry.partPath, sst);
+  },
+  async close() {
+    archive.close();
+  },
+});
 
 /** Open an xlsx for read-only streaming access. */
 export async function loadWorkbookStream(source: XlsxSource): Promise<ReadOnlyWorkbook> {
@@ -323,7 +333,7 @@ export async function loadWorkbookStream(source: XlsxSource): Promise<ReadOnlyWo
     styles = parseStylesheetXml(archive.read(ARC_STYLE));
   }
 
-  return new StreamingReadOnlyWorkbook(
+  return makeStreamingReadOnlyWorkbook(
     sheetEntries.map((e) => e.name),
     styles,
     archive,
