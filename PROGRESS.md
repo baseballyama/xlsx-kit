@@ -6,7 +6,7 @@
 ## カレント
 
 - **フェーズ**: フェーズ1（基盤層）
-- **次のタスク**: フェーズ1 §2 ZIP 層（`fflate` ベースの reader / writer）。`src/zip/reader.ts` の `openZip(source): { list, read, readAsync, close }` から着手し、フィクスチャ（`reference/openpyxl/openpyxl/tests/data/genuine/empty.xlsx`）でメモリ展開の往復が成立することまで。streaming は §1 IO の Readable/Writable 経路と組み合わせる次々ターン。
+- **次のタスク**: フェーズ1 §2 ZIP writer。`createZipWriter(sink: XlsxSink): { addEntry, finalize }` を `fflate.zipSync` ベースで実装し、`openZip → list/read → 同じ entries で writer に流して再 zip → 再 openZip で path/size 同型`を成立させる。`xl/media/*` などの STORE 圧縮指定パスも考慮。streaming writer / ZIP64 対応はさらに先。
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
 ## 完了履歴
@@ -25,7 +25,7 @@
 ### フェーズ1: 基盤層（[03-foundations.md](docs/plan/03-foundations.md)）
 
 - [~] §1 I/O 抽象（メモリ経路のみ完了：`XlsxSource` / `XlsxSink` / `BufferedSinkWriter` の interface、`OpenXmlError` 階層、Node の `fromBuffer` / `toBuffer`、ブラウザの `fromBlob` / `fromFile` / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`、30 tests pass。残：filesystem / Readable / Writable / Response 経路は §2 ZIP streaming と同時に）
-- [ ] §2 ZIP 層（fflate ベース reader/writer、ストリーミング）
+- [~] §2 ZIP 層（reader メモリ経路完了：`fflate.unzipSync` 経由 `openZip(source) → ZipArchive { list, has, read, readAsync, close }`、`empty.xlsx` フィクスチャで 11 entries の path / 解凍サイズ一致、garbage 入力は OpenXmlIoError、close 後 read もエラー。残：streaming reader / writer / ZIP64）
 - [ ] §3 XML 層（fast-xml-parser DOM + saxes SAX + namespace 定数）
 - [ ] §4 Schema 層（Schema 型 + `toTree`/`fromTree`）
 - [ ] §5 XmlStreamWriter
