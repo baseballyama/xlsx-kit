@@ -12,6 +12,7 @@ import {
   type ExcelErrorCode,
   type FormulaKind,
   setArrayFormula,
+  setDataTableFormula,
   setFormula,
   setSharedFormula,
 } from '../cell/cell';
@@ -568,14 +569,39 @@ const handleFormula = (
       setSharedFormula(cell, si, stripped, undefined, opts);
       return;
     }
-    case 'dataTable':
-      // dataTable formulas are read in §5.5 (deferred). Drop the formula but
-      // preserve the cached value so cells aren't lost on round-trip.
-      setFormula(cell, formula, opts);
+    case 'dataTable': {
+      // Data-Table formula (What-if Analysis output). Preserve every
+      // dt-specific attribute so the writer re-emits the exact same
+      // <f t="dataTable" r1="…" /> shape and Excel keeps treating the
+      // cell as a Data Table cell.
+      const ref = fNode.attrs['ref'];
+      if (!ref) {
+        throw new OpenXmlSchemaError('worksheet: <f t="dataTable"> missing @ref');
+      }
+      const dtOpts: import('../cell/cell').DataTableFormulaOpts = {
+        ref,
+        ...(cached !== undefined ? { cachedValue: cached } : {}),
+        ...(fNode.attrs['r1'] !== undefined ? { r1: fNode.attrs['r1'] } : {}),
+        ...(fNode.attrs['r2'] !== undefined ? { r2: fNode.attrs['r2'] } : {}),
+        ...(parseDataTableBool(fNode.attrs['dt2D']) ? { dt2D: true } : {}),
+        ...(parseDataTableBool(fNode.attrs['dtr']) ? { dtr: true } : {}),
+        ...(parseDataTableBool(fNode.attrs['del1']) ? { del1: true } : {}),
+        ...(parseDataTableBool(fNode.attrs['del2']) ? { del2: true } : {}),
+        ...(parseDataTableBool(fNode.attrs['aca']) ? { aca: true } : {}),
+        ...(parseDataTableBool(fNode.attrs['ca']) ? { ca: true } : {}),
+      };
+      setDataTableFormula(cell, formula, dtOpts);
       return;
+    }
     default:
       throw new OpenXmlSchemaError(`worksheet: <f t="${tAttr}"> unknown formula kind`);
   }
+};
+
+const parseDataTableBool = (raw: string | undefined): boolean => {
+  // Excel emits these as the OOXML truthy values "1" or "true".
+  if (raw === undefined) return false;
+  return raw === '1' || raw === 'true';
 };
 
 const parseColumnDimension = (node: XmlNode): ColumnDimension => {

@@ -288,6 +288,15 @@ const serializeFormulaCell = (ref: string, styleAttr: string, f: FormulaValue): 
   if (f.t !== 'normal') fAttrs.push(`t="${f.t}"`);
   if (f.ref !== undefined) fAttrs.push(`ref="${escapeXmlAttr(f.ref)}"`);
   if (f.si !== undefined) fAttrs.push(`si="${f.si}"`);
+  // Data-table formula attrs — only relevant when t === 'dataTable'.
+  if (f.r1 !== undefined) fAttrs.push(`r1="${escapeXmlAttr(f.r1)}"`);
+  if (f.r2 !== undefined) fAttrs.push(`r2="${escapeXmlAttr(f.r2)}"`);
+  if (f.dt2D) fAttrs.push('dt2D="1"');
+  if (f.dtr) fAttrs.push('dtr="1"');
+  if (f.del1) fAttrs.push('del1="1"');
+  if (f.del2) fAttrs.push('del2="1"');
+  if (f.aca) fAttrs.push('aca="1"');
+  if (f.ca) fAttrs.push('ca="1"');
   const fAttrStr = fAttrs.length > 0 ? ` ${fAttrs.join(' ')}` : '';
   const formulaText = escapeXmlText(escapeCellString(f.formula));
   const fEl = formulaText.length > 0 ? `<f${fAttrStr}>${formulaText}</f>` : `<f${fAttrStr}/>`;

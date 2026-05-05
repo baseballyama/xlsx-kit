@@ -22,9 +22,9 @@ describe('phase-3 §5.5 — Date / Duration cell write', () => {
 
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
-    const ws2 = wb2.sheets[0]?.sheet;
-    const cell = ws2?.kind === undefined && ws2 ? ws2.rows.get(1)?.get(1) : undefined;
-    expect(cell?.value).toBe(expectedSerial);
+    const ref0 = wb2.sheets[0];
+    if (ref0?.kind !== 'worksheet') throw new Error('expected worksheet');
+    expect(ref0.sheet.rows.get(1)?.get(1)?.value).toBe(expectedSerial);
   });
 
   it('honours wb.date1904 when emitting Date serials', async () => {
@@ -36,9 +36,9 @@ describe('phase-3 §5.5 — Date / Duration cell write', () => {
 
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
-    const ws2 = wb2.sheets[0]?.sheet;
-    const cell = ws2?.rows.get(1)?.get(1);
-    expect(cell?.value).toBe(expectedSerial);
+    const ref0 = wb2.sheets[0];
+    if (ref0?.kind !== 'worksheet') throw new Error('expected worksheet');
+    expect(ref0.sheet.rows.get(1)?.get(1)?.value).toBe(expectedSerial);
   });
 
   it('writes a Duration cell as a fraction-of-day serial', async () => {
@@ -51,8 +51,8 @@ describe('phase-3 §5.5 — Date / Duration cell write', () => {
 
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
-    const ws2 = wb2.sheets[0]?.sheet;
-    const cell = ws2?.rows.get(1)?.get(1);
-    expect(cell?.value).toBe(expectedSerial);
+    const ref0 = wb2.sheets[0];
+    if (ref0?.kind !== 'worksheet') throw new Error('expected worksheet');
+    expect(ref0.sheet.rows.get(1)?.get(1)?.value).toBe(expectedSerial);
   });
 });

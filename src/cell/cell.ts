@@ -181,6 +181,58 @@ export function setSharedFormula(
   c.value = v;
 }
 
+/**
+ * Excel data-table formula (`<f t="dataTable">`). These appear as the
+ * "What-if Analysis → Data Table" feature output: a 1- or 2-variable
+ * sensitivity grid where the formula references one or two input
+ * cells. The wire format mirrors openpyxl's `DataTableFormula`:
+ *
+ * - `ref`     — inclusive cell range the formula spans.
+ * - `r1`, `r2`— input cell coordinates ("$A$1" etc.).
+ * - `dt2D`    — true for two-variable tables (uses both r1 and r2).
+ * - `dtr`     — row-direction flag (true) vs column-direction (false).
+ * - `del1`/`del2` — Excel marks one of these true when the
+ *   corresponding input cell has been deleted; the formula keeps
+ *   round-tripping so Excel can show the warning state.
+ * - `aca`/`ca` — alwaysCalculate / calculate flags.
+ */
+export interface DataTableFormulaOpts {
+  ref: string;
+  r1?: string;
+  r2?: string;
+  dt2D?: boolean;
+  dtr?: boolean;
+  del1?: boolean;
+  del2?: boolean;
+  aca?: boolean;
+  ca?: boolean;
+  cachedValue?: FormulaValue['cachedValue'];
+}
+
+/**
+ * Set a data-table formula on a cell. Preserves all the dt-specific
+ * attributes so the writer can re-emit `<f t="dataTable" r1="..." />`
+ * verbatim and Excel keeps treating the cell as a Data Table cell.
+ */
+export function setDataTableFormula(c: Cell, formula: string, opts: DataTableFormulaOpts): void {
+  const v: FormulaValue = {
+    kind: 'formula',
+    t: 'dataTable',
+    formula,
+    ref: opts.ref,
+    ...(opts.r1 !== undefined ? { r1: opts.r1 } : {}),
+    ...(opts.r2 !== undefined ? { r2: opts.r2 } : {}),
+    ...(opts.dt2D !== undefined ? { dt2D: opts.dt2D } : {}),
+    ...(opts.dtr !== undefined ? { dtr: opts.dtr } : {}),
+    ...(opts.del1 !== undefined ? { del1: opts.del1 } : {}),
+    ...(opts.del2 !== undefined ? { del2: opts.del2 } : {}),
+    ...(opts.aca !== undefined ? { aca: opts.aca } : {}),
+    ...(opts.ca !== undefined ? { ca: opts.ca } : {}),
+    ...(opts.cachedValue !== undefined ? { cachedValue: opts.cachedValue } : {}),
+  };
+  c.value = v;
+}
+
 // ---- value-shape helpers ---------------------------------------------------
 
 /** Build a `{ kind: 'error', code }` cell value. */
