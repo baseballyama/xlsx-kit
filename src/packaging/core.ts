@@ -100,3 +100,47 @@ export function corePropsToBytes(p: CoreProperties): Uint8Array {
 export function corePropsFromBytes(bytes: Uint8Array | string): CoreProperties {
   return fromTree(parseXml(bytes), CorePropertiesSchema);
 }
+
+// ---- Workbook ergonomic helpers ----------------------------------------
+
+import type { Workbook } from '../workbook/workbook';
+
+const ensureCoreProperties = (wb: Workbook): CoreProperties => {
+  if (!wb.properties) wb.properties = {};
+  return wb.properties;
+};
+
+/** Set the document author (Excel "File → Properties → Author"). */
+export const setWorkbookCreator = (wb: Workbook, creator: string): void => {
+  ensureCoreProperties(wb).creator = creator;
+};
+
+/** Set the document title. */
+export const setWorkbookTitle = (wb: Workbook, title: string): void => {
+  ensureCoreProperties(wb).title = title;
+};
+
+/** Set the document subject. */
+export const setWorkbookSubject = (wb: Workbook, subject: string): void => {
+  ensureCoreProperties(wb).subject = subject;
+};
+
+/** Set the document description / abstract. */
+export const setWorkbookDescription = (wb: Workbook, description: string): void => {
+  ensureCoreProperties(wb).description = description;
+};
+
+/** Set comma- or semicolon-separated keywords. */
+export const setWorkbookKeywords = (wb: Workbook, keywords: string): void => {
+  ensureCoreProperties(wb).keywords = keywords;
+};
+
+/** Set the "last modified by" name (defaults to creator if absent). */
+export const setWorkbookLastModifiedBy = (wb: Workbook, name: string): void => {
+  ensureCoreProperties(wb).lastModifiedBy = name;
+};
+
+/** Set the document category (e.g. "Reports", "Drafts"). */
+export const setWorkbookCategory = (wb: Workbook, category: string): void => {
+  ensureCoreProperties(wb).category = category;
+};

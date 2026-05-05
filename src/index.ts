@@ -59,6 +59,13 @@ export {
   readStringValue,
   relsFromBytes,
   relsToBytes,
+  setWorkbookCategory,
+  setWorkbookCreator,
+  setWorkbookDescription,
+  setWorkbookKeywords,
+  setWorkbookLastModifiedBy,
+  setWorkbookSubject,
+  setWorkbookTitle,
 } from './packaging';
 // Phase 3 (read / write). Currently the loadWorkbook minimum skeleton —
 // reads manifest + workbook.xml + sheet rels and produces a Workbook

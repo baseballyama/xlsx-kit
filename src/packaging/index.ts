@@ -3,7 +3,18 @@
 // app, custom) follow in the next bootstrap-style turn.
 
 export type { CoreProperties } from './core';
-export { corePropsFromBytes, corePropsToBytes, makeCoreProperties } from './core';
+export {
+  corePropsFromBytes,
+  corePropsToBytes,
+  makeCoreProperties,
+  setWorkbookCategory,
+  setWorkbookCreator,
+  setWorkbookDescription,
+  setWorkbookKeywords,
+  setWorkbookLastModifiedBy,
+  setWorkbookSubject,
+  setWorkbookTitle,
+} from './core';
 export type { CustomProperties, CustomProperty } from './custom';
 export {
   appendCustomProperty,
