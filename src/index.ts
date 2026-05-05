@@ -216,8 +216,19 @@ export type {
   Protection,
   Side,
 } from './styles';
+export type { DifferentialStyle, NamedStyle, StylesheetNamedStyle } from './styles';
 export {
+  addBorder,
+  addCellStyleXf,
+  addCellXf,
+  addDxf,
+  addFill,
+  addFont,
+  addNamedStyle,
+  addNumFmt,
+  BUILTIN_NAMED_STYLES,
   defaultCellXf,
+  ensureBuiltinStyle,
   getCellAlignment,
   getCellBorder,
   getCellFill,
@@ -227,6 +238,7 @@ export {
   makeAlignment,
   makeBorder,
   makeColor,
+  makeDifferentialStyle,
   makeFill,
   makeFont,
   makeGradientFill,

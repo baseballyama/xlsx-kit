@@ -1,0 +1,2 @@
+# Output directory for E2E-generated xlsx files. Tracked so the dir
+# exists; the .xlsx files themselves are gitignored.

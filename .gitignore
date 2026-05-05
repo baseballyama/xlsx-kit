@@ -149,3 +149,7 @@ result-*
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# E2E-generated xlsx files (rebuild with `pnpm test:e2e`)
+tests/e2e/output/*.xlsx
+tests/e2e/output/*.xlsm

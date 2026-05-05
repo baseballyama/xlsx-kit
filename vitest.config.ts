@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
-    exclude: ['tests/browser/**', 'tests/perf/**', 'node_modules', 'dist', 'reference'],
+    exclude: ['tests/browser/**', 'tests/perf/**', 'tests/e2e/**', 'node_modules', 'dist', 'reference'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

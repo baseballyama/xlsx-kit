@@ -36,6 +36,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:perf": "vitest run --config vitest.perf.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "bench": "vitest bench --run tests/perf/throughput.bench.ts",
     "build": "tsdown && tsc -p tsconfig.build.json",
     "build:js": "tsdown",
