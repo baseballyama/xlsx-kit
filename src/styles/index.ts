@@ -55,7 +55,15 @@ export { addDxf, makeDifferentialStyle } from './differential';
 export type { NamedStyle, StylesheetNamedStyle } from './named-styles';
 export { addNamedStyle, BUILTIN_NAMED_STYLES, ensureBuiltinStyle } from './named-styles';
 export type { Color } from './colors';
-export { makeColor, normaliseRgb, resolveIndexedColor, rgbColor } from './colors';
+export {
+  contrastRatio,
+  luminance,
+  makeColor,
+  normaliseRgb,
+  pickReadableTextColor,
+  resolveIndexedColor,
+  rgbColor,
+} from './colors';
 export type { Fill, GradientFill, GradientFillType, GradientStop, PatternFill, PatternType } from './fills';
 export { makeFill, makeGradientFill, makeGradientStop, makePatternFill } from './fills';
 export type { Font, FontScheme, UnderlineStyle, VertAlign } from './fonts';

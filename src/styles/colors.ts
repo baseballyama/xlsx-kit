@@ -168,5 +168,42 @@ export function rgbColor(hex: string): Color {
   return makeColor({ rgb: hex });
 }
 
+/**
+ * Compute the relative luminance of an ARGB / RGB hex string per
+ * the WCAG 2.x formula. Returns a value in `[0, 1]` where 0 is
+ * black and 1 is white. The alpha channel (if present) is ignored.
+ */
+export function luminance(hex: string): number {
+  const rgb = normaliseRgb(hex); // 8-char AARRGGBB upper-case
+  const r = Number.parseInt(rgb.slice(2, 4), 16) / 255;
+  const g = Number.parseInt(rgb.slice(4, 6), 16) / 255;
+  const b = Number.parseInt(rgb.slice(6, 8), 16) / 255;
+  const lin = (c: number): number => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/**
+ * WCAG contrast ratio between two ARGB hex colors. Returns a value
+ * in `[1, 21]`; 1 = identical luminance, 21 = pure black on pure
+ * white. The order of arguments doesn't matter.
+ */
+export function contrastRatio(hexA: string, hexB: string): number {
+  const lA = luminance(hexA);
+  const lB = luminance(hexB);
+  const [hi, lo] = lA >= lB ? [lA, lB] : [lB, lA];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * Pick the higher-contrast text color (`'FF000000'` black or
+ * `'FFFFFFFF'` white) for a background hex. Useful when applying a
+ * solid fill and wanting the cell text to stay readable.
+ */
+export function pickReadableTextColor(backgroundHex: string): 'FF000000' | 'FFFFFFFF' {
+  // WCAG midpoint of 0.179 splits "near-black bg → white text"
+  // from "lighter bg → black text".
+  return luminance(backgroundHex) < 0.179 ? 'FFFFFFFF' : 'FF000000';
+}
+
 // Internal mutable mirror used inside `make*` constructors. Never leaks.
 type Mutable<T> = { -readonly [P in keyof T]: T[P] };
