@@ -91,6 +91,19 @@ export const listDefinedNames = (
 };
 
 /**
+ * Bulk-remove every defined name matching `predicate`. Returns the
+ * count removed. Mirrors {@link removeDataValidations} on worksheets.
+ */
+export const removeDefinedNames = (
+  wb: Workbook,
+  predicate: (d: DefinedName) => boolean,
+): number => {
+  const before = wb.definedNames.length;
+  wb.definedNames = wb.definedNames.filter((d) => !predicate(d));
+  return before - wb.definedNames.length;
+};
+
+/**
  * Define the print-area for a given sheet. Excel uses the built-in
  * `_xlnm.Print_Area` defined name with sheet scope.
  */
