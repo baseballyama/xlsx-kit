@@ -18,6 +18,7 @@ import {
 } from '../worksheet/writer';
 import {
   type Chartsheet,
+  type ChartsheetCustomSheetView,
   type ChartsheetDrawingHF,
   type ChartsheetProperties,
   type ChartsheetProtection,
@@ -41,6 +42,8 @@ const DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}drawingHF`;
 const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
 const WEB_PUBLISH_ITEMS_TAG = `{${SHEET_MAIN_NS}}webPublishItems`;
 const WEB_PUBLISH_ITEM_TAG = `{${SHEET_MAIN_NS}}webPublishItem`;
+const CUSTOM_SHEET_VIEWS_TAG = `{${SHEET_MAIN_NS}}customSheetViews`;
+const CUSTOM_SHEET_VIEW_TAG = `{${SHEET_MAIN_NS}}customSheetView`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
@@ -124,6 +127,14 @@ export function parseChartsheetXml(bytes: Uint8Array | string, title: string): C
   const protectionEl = findChild(root, SHEET_PROTECTION_TAG);
   if (protectionEl) cs.protection = parseSheetProtection(protectionEl);
 
+  const csvEl = findChild(root, CUSTOM_SHEET_VIEWS_TAG);
+  if (csvEl) {
+    for (const v of findChildren(csvEl, CUSTOM_SHEET_VIEW_TAG)) {
+      const view = parseChartsheetCustomSheetView(v);
+      if (view) cs.customSheetViews.push(view);
+    }
+  }
+
   const pmEl = findChild(root, PAGE_MARGINS_TAG);
   if (pmEl) {
     const pm = parsePageMargins(pmEl);
@@ -171,6 +182,47 @@ export function parseChartsheetXml(bytes: Uint8Array | string, title: string): C
   // Drawing reference — the actual rId / drawing payload is resolved by the loader.
   return cs;
 }
+
+const CSV_STATE_VALUES: ReadonlyArray<NonNullable<ChartsheetCustomSheetView['state']>> = [
+  'visible',
+  'hidden',
+  'veryHidden',
+];
+
+const parseChartsheetCustomSheetView = (
+  el: XmlNode,
+): ChartsheetCustomSheetView | undefined => {
+  const guid = el.attrs['guid'];
+  if (!guid) return undefined;
+  const out: ChartsheetCustomSheetView = { guid };
+  const scale = parseInt10(el.attrs['scale']);
+  if (scale !== undefined) out.scale = scale;
+  const stateRaw = el.attrs['state'];
+  if (
+    stateRaw &&
+    CSV_STATE_VALUES.includes(stateRaw as NonNullable<ChartsheetCustomSheetView['state']>)
+  ) {
+    out.state = stateRaw as NonNullable<ChartsheetCustomSheetView['state']>;
+  }
+  const ztf = parseBool(el.attrs['zoomToFit']);
+  if (ztf !== undefined) out.zoomToFit = ztf;
+  const pmEl = findChild(el, PAGE_MARGINS_TAG);
+  if (pmEl) {
+    const pm = parsePageMargins(pmEl);
+    if (pm) out.pageMargins = pm;
+  }
+  const psEl = findChild(el, PAGE_SETUP_TAG);
+  if (psEl) {
+    const ps = parsePageSetup(psEl);
+    if (ps) out.pageSetup = ps;
+  }
+  const hfEl = findChild(el, HEADER_FOOTER_TAG);
+  if (hfEl) {
+    const hf = parseHeaderFooter(hfEl);
+    if (hf) out.headerFooter = hf;
+  }
+  return out;
+};
 
 const DRAWING_HF_INT_KEYS = [
   'lho',
@@ -251,6 +303,7 @@ export function serializeChartsheet(cs: Chartsheet, opts: ChartsheetSerializeOpt
   for (const v of cs.views) parts.push(serializeSheetView(v));
   parts.push('</sheetViews>');
   if (cs.protection) parts.push(serializeSheetProtection(cs.protection));
+  if (cs.customSheetViews.length > 0) parts.push(serializeChartsheetCustomSheetViews(cs.customSheetViews));
   if (cs.pageMargins) parts.push(serializePageMargins(cs.pageMargins));
   if (cs.pageSetup) {
     const ps = serializePageSetup(cs.pageSetup);
@@ -279,6 +332,33 @@ export function serializeChartsheet(cs: Chartsheet, opts: ChartsheetSerializeOpt
   parts.push('</chartsheet>');
   return parts.join('');
 }
+
+const serializeChartsheetCustomSheetViews = (
+  views: ReadonlyArray<ChartsheetCustomSheetView>,
+): string => {
+  const parts: string[] = ['<customSheetViews>'];
+  for (const v of views) {
+    let attrs = ` guid="${escapeAttr(v.guid)}"`;
+    if (v.scale !== undefined) attrs += ` scale="${v.scale}"`;
+    if (v.state !== undefined) attrs += ` state="${v.state}"`;
+    if (v.zoomToFit !== undefined) attrs += ` zoomToFit="${v.zoomToFit ? '1' : '0'}"`;
+
+    const inner: string[] = [];
+    if (v.pageMargins) inner.push(serializePageMargins(v.pageMargins));
+    if (v.pageSetup) {
+      const ps = serializePageSetup(v.pageSetup);
+      if (ps) inner.push(ps);
+    }
+    if (v.headerFooter) {
+      const hf = serializeHeaderFooter(v.headerFooter);
+      if (hf) inner.push(hf);
+    }
+    if (inner.length === 0) parts.push(`<customSheetView${attrs}/>`);
+    else parts.push(`<customSheetView${attrs}>${inner.join('')}</customSheetView>`);
+  }
+  parts.push('</customSheetViews>');
+  return parts.join('');
+};
 
 const serializeDrawingHF = (dhf: ChartsheetDrawingHF): string => {
   let attrs = ` r:id="${escapeAttr(dhf.rId)}"`;

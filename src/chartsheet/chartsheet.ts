@@ -72,7 +72,36 @@ export interface Chartsheet {
   backgroundPictureRId?: string;
   /** `<webPublishItems>` — Excel 2007 "Publish to web" entries (rare on chartsheets). */
   webPublishItems: WebPublishItem[];
+  /**
+   * `<customSheetViews>` — saved per-user view presets for this
+   * chartsheet (Shared Workbook era). Each entry can carry its own
+   * page margins / setup / header-footer.
+   */
+  customSheetViews: ChartsheetCustomSheetView[];
 }
+
+/** One `<customSheetView>` entry inside a chartsheet. */
+export interface ChartsheetCustomSheetView {
+  guid: string;
+  scale?: number;
+  state?: 'visible' | 'hidden' | 'veryHidden';
+  zoomToFit?: boolean;
+  pageMargins?: PageMargins;
+  pageSetup?: PageSetup;
+  headerFooter?: HeaderFooter;
+}
+
+export const makeChartsheetCustomSheetView = (
+  opts: Partial<ChartsheetCustomSheetView> & { guid: string },
+): ChartsheetCustomSheetView => ({
+  guid: opts.guid,
+  ...(opts.scale !== undefined ? { scale: opts.scale } : {}),
+  ...(opts.state !== undefined ? { state: opts.state } : {}),
+  ...(opts.zoomToFit !== undefined ? { zoomToFit: opts.zoomToFit } : {}),
+  ...(opts.pageMargins !== undefined ? { pageMargins: opts.pageMargins } : {}),
+  ...(opts.pageSetup !== undefined ? { pageSetup: opts.pageSetup } : {}),
+  ...(opts.headerFooter !== undefined ? { headerFooter: opts.headerFooter } : {}),
+});
 
 /**
  * `<drawingHF>` — per-section image-index map for the header/footer
@@ -112,4 +141,5 @@ export const makeChartsheet = (title: string): Chartsheet => ({
   title,
   views: [{ workbookViewId: 0, zoomToFit: true }],
   webPublishItems: [],
+  customSheetViews: [],
 });
