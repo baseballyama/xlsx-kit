@@ -652,8 +652,15 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     const cp = serializeCalcProperties(wb.calcProperties);
     if (cp) parts.push(cp);
   }
+  if (wb.oleSize !== undefined) {
+    parts.push(`<oleSize ref="${escapeAttr(wb.oleSize)}"/>`);
+  }
   if (wb.workbookXmlExtras?.afterSheets) {
     for (const node of wb.workbookXmlExtras.afterSheets) parts.push(serializeChildNode(node));
+  }
+  if (wb.fileRecoveryPr) {
+    const fp = serializeFileRecoveryPr(wb.fileRecoveryPr);
+    if (fp) parts.push(fp);
   }
   parts.push('</workbook>');
   return parts.join('');
@@ -678,6 +685,18 @@ function serializeCalcProperties(
   if (cp.forceFullCalc !== undefined) attrs += ` forceFullCalc="${cp.forceFullCalc ? '1' : '0'}"`;
   if (attrs.length === 0) return undefined;
   return `<calcPr${attrs}/>`;
+}
+
+function serializeFileRecoveryPr(
+  fp: import('../workbook/file-recovery').FileRecoveryProperties,
+): string | undefined {
+  let attrs = '';
+  if (fp.autoRecover !== undefined) attrs += ` autoRecover="${fp.autoRecover ? '1' : '0'}"`;
+  if (fp.crashSave !== undefined) attrs += ` crashSave="${fp.crashSave ? '1' : '0'}"`;
+  if (fp.dataExtractLoad !== undefined) attrs += ` dataExtractLoad="${fp.dataExtractLoad ? '1' : '0'}"`;
+  if (fp.repairLoad !== undefined) attrs += ` repairLoad="${fp.repairLoad ? '1' : '0'}"`;
+  if (attrs.length === 0) return undefined;
+  return `<fileRecoveryPr${attrs}/>`;
 }
 
 function serializeFileSharing(

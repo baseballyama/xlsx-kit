@@ -148,6 +148,8 @@ const WORKBOOK_VIEW_TAG = `{${SHEET_MAIN_NS}}workbookView`;
 const CALC_PR_TAG = `{${SHEET_MAIN_NS}}calcPr`;
 const FILE_VERSION_TAG = `{${SHEET_MAIN_NS}}fileVersion`;
 const FILE_SHARING_TAG = `{${SHEET_MAIN_NS}}fileSharing`;
+const OLE_SIZE_TAG = `{${SHEET_MAIN_NS}}oleSize`;
+const FILE_RECOVERY_PR_TAG = `{${SHEET_MAIN_NS}}fileRecoveryPr`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -567,6 +569,32 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     if (child.name === CALC_PR_TAG) {
       const cp = parseCalcProperties(child);
       if (cp) wb.calcProperties = cp;
+      continue;
+    }
+    // Lift <oleSize ref="…"/> as a single typed string attribute.
+    if (child.name === OLE_SIZE_TAG) {
+      const ref = child.attrs['ref'];
+      if (ref) wb.oleSize = ref;
+      continue;
+    }
+    // Lift <fileRecoveryPr> into the typed workbook field.
+    if (child.name === FILE_RECOVERY_PR_TAG) {
+      const fp: import('../workbook/file-recovery').FileRecoveryProperties = {};
+      const a = child.attrs;
+      const flag = (raw: string | undefined): boolean | undefined => {
+        if (raw === '1' || raw === 'true') return true;
+        if (raw === '0' || raw === 'false') return false;
+        return undefined;
+      };
+      const ar = flag(a['autoRecover']);
+      if (ar !== undefined) fp.autoRecover = ar;
+      const cs = flag(a['crashSave']);
+      if (cs !== undefined) fp.crashSave = cs;
+      const del = flag(a['dataExtractLoad']);
+      if (del !== undefined) fp.dataExtractLoad = del;
+      const rl = flag(a['repairLoad']);
+      if (rl !== undefined) fp.repairLoad = rl;
+      if (Object.keys(fp).length > 0) wb.fileRecoveryPr = fp;
       continue;
     }
     if (seenSheets) afterSheets.push(child);

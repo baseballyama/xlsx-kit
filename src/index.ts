@@ -359,3 +359,5 @@ export type { FileVersion } from './workbook/file-version';
 export { makeFileVersion } from './workbook/file-version';
 export type { FileSharing } from './workbook/file-sharing';
 export { makeFileSharing } from './workbook/file-sharing';
+export type { FileRecoveryProperties } from './workbook/file-recovery';
+export { makeFileRecoveryProperties } from './workbook/file-recovery';

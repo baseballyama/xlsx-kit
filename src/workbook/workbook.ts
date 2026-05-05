@@ -104,6 +104,13 @@ export interface Workbook {
   /** `<fileSharing>` — read-only-recommended toggle + write-protection password. */
   fileSharing?: import('./file-sharing').FileSharing;
   /**
+   * `<oleSize ref="…">` — bounding range Excel uses when the workbook is
+   * embedded as an OLE object inside another Office document.
+   */
+  oleSize?: string;
+  /** `<fileRecoveryPr>` — autoRecover-style flags Excel writes after a recovery save. */
+  fileRecoveryPr?: import('./file-recovery').FileRecoveryProperties;
+  /**
    * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
    * prompt mode, etc. `date1904` is mirrored here for completeness but
    * the canonical source remains `wb.date1904`.
