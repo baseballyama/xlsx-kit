@@ -240,6 +240,7 @@ export {
   removeSheetTabColor,
   removeTable,
   renameCommentAuthor,
+  replaceCellValues,
   applyToRange,
   autofitColumn,
   autofitColumns,

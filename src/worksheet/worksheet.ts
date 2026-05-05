@@ -460,6 +460,35 @@ export function findFirstCell(
 }
 
 /**
+ * Find-and-replace across populated string cells. `search` matches
+ * either an exact-string equal (when given a string) or every cell
+ * whose value satisfies the predicate (when given a function).
+ * `replacement` is the new value for each match. Returns the count
+ * of cells changed. Non-string-valued cells are skipped when
+ * `search` is a string; predicate-based searches see every cell.
+ */
+export function replaceCellValues(
+  ws: Worksheet,
+  search: string | ((value: CellValue, cell: Cell) => boolean),
+  replacement: CellValue,
+): number {
+  let n = 0;
+  const matchFn =
+    typeof search === 'string'
+      ? (v: CellValue) => typeof v === 'string' && v === search
+      : (v: CellValue, c: Cell) => search(v, c);
+  for (const rowMap of ws.rows.values()) {
+    for (const cell of rowMap.values()) {
+      if (matchFn(cell.value, cell)) {
+        cell.value = replacement;
+        n++;
+      }
+    }
+  }
+  return n;
+}
+
+/**
  * Iterate the populated cells inside a rectangular range. Cells that
  * don't exist in the sparse store are skipped (no auto-allocate). Use
  * {@link applyToRange} when you need every coordinate visited
