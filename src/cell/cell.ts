@@ -266,6 +266,25 @@ export function isEmptyCell(c: Cell): boolean {
   return c.value === null;
 }
 
+/**
+ * Get the formula text from a formula-bearing cell, or `undefined`
+ * for non-formula cells. Equivalent to:
+ *   isFormulaValue(c.value) ? c.value.formula : undefined
+ * but spares callers the type-narrow + member access.
+ */
+export function getFormulaText(c: Cell): string | undefined {
+  return isFormulaValue(c.value) ? c.value.formula : undefined;
+}
+
+/**
+ * Get the cached value Excel last computed for a formula cell, or
+ * `undefined` for non-formula / uncached cells. Useful for `data_only`
+ * read paths that want the displayed result without re-evaluating.
+ */
+export function getCachedFormulaValue(c: Cell): number | string | boolean | undefined {
+  return isFormulaValue(c.value) ? c.value.cachedValue : undefined;
+}
+
 // ---- value-level type guards + coercion ----------------------------------
 
 /** True iff `v` is the formula variant. */
