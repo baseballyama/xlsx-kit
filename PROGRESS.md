@@ -7,7 +7,18 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts 全部完了**
-- **次のタスク**: **public API 整備 + README smoke + streaming reader 早期終了 + 追加 fixture acceptance 完了 (一括)**。本ターンで以下を順次実施: (1) phase-4 streaming reader (loadWorkbookStream + iterRows) の real-fixture acceptance を追加 (`tests/phase-4/read-only-genuine.test.ts` 2件 — `genuine/sample.xlsx` を SAX iter / eager loadWorkbook 両方で読んで {row, col} 座標一致を検証 + `empty-with-styles.xlsx` で minRow/maxRow band フィルタ動作)、(2) iterRows の SAX 早期終了 + cell-skip 最適化 (currentRow > maxRow で generator return、band 外 row の `<c>` attrs をパースしない)、(3) public API 露出を整備: src/index.ts に `setCell`, `addWorksheet`, `createWorkbook`, `setFormula`/`setArrayFormula`/`setSharedFormula`/`setDataTableFormula`, `makeRichText`/`makeTextRun`, Cell/Worksheet/Workbook 型 + helpers を追加 — README example が実際に動く状態に (`fromBuffer` は Node-only なので README 例を `openxml-js` + `openxml-js/node` の split import に修正)、(4) `tests/phase-3/readme-examples.test.ts` 5件で README の各例 (full lib round-trip / Node fromFile+toFile+saveWorkbook / browser fromResponse / streaming write createWriteOnlyWorkbook / streaming read loadWorkbookStream+iterRows) を public API に対して smoke-test、(5) edge-fixture deep-assert 4件追加 (comments / hyperlinks / datetime / legacy_drawing)。1139 tests pass (was 1128, +11 in this turn)、`pnpm size` full 81.7 KB / streaming 46.52 KB clean、lint / typecheck clean。残：random-access streaming reader for sub-sheet cell ranges (大規模 perf)、Excel 365 視覚 QA (人手)、ZIP64 write の正式対応 (fflate 上流)。
+- **次のタスク**: **長期 /loop 仕上げターン (public API + docs + edge-fixtures + perf 微調整 + UTF-8 + max-coord + migration guide) 完了**。本ターン (連続コミット 11 件) で以下を一括完遂:
+  1. phase-4 streaming reader real-fixture acceptance (`genuine/sample.xlsx` SAX iter ↔ eager loadWorkbook 座標一致 + `empty-with-styles.xlsx` minRow/maxRow band フィルタ) — `tests/phase-4/read-only-genuine.test.ts` 2件
+  2. iterRows 早期終了 + cell-skip 最適化 (currentRow > maxRow で generator return、band 外 row の `<c>` attrs パース skip)
+  3. public API 露出整備: `src/index.ts` に Cell / Worksheet / Workbook helpers + Style 値オブジェクト群 (`setCell` / `addWorksheet` / `createWorkbook` / formula helpers / `makeRichText` / `setCellFont` / `makeFont` / `makePatternFill` etc.) を re-export、`src/zip/index.ts` に `StreamingEntryWriter` 追加、`src/styles/index.ts` を新設
+  4. `README.md` 修正 (full-lib 例の `fromBuffer` を `openxml-js/node` から import するよう split)、`tests/phase-3/readme-examples.test.ts` 5件で 5 つの README 例を public API に対して smoke-test
+  5. edge-fixture deep-assert 4件追加: comments.xlsx (per-sheet legacyComments 数 6/0/1) / hyperlink.xlsx (外部 URL ref) / test_datetime.xlsx (numeric serial round-trip) / legacy_drawing.xlsm (control VML + ctrlProps セット)
+  6. UTF-8 round-trip テスト 2件 (`workbook_russian_code_name.xml` の `codeName="ЭтаКнига"` / synthetic 多言語 + emoji)
+  7. max-coord (XFD1048576) round-trip 2件 (単一最大セル + 4 隅の sparse spread)
+  8. THIRD_PARTY_NOTICES.md を実 runtime deps (fflate / saxes / fast-xml-parser) で更新、stale な `scripts/regenerate-notices.ts` 言及を削除
+  9. `docs/migrate-from-openpyxl.md` を新設 (loading / cells / styles / worksheets / streaming write&read / passthrough / known gaps をテーブル形式でカバー)、`tests/phase-3/migration-guide-examples.test.ts` 5件で例の API surface を smoke-test
+  
+  1148 tests pass (was 1128, +20 in this turn)、`pnpm size` full 81.7 KB / streaming 46.52 KB clean、lint / typecheck clean。**残**: random-access streaming reader for sub-sheet cell ranges (perf 最適化、ECMA-376 row-order 前提に row-offset index を作る案; 単独実装スプリント要)、Excel 365 視覚 QA (人手)、ZIP64 write の正式対応 (fflate 上流)。コア実装はフェーズ1-7 + streaming acceptance + docs + 多数の edge-fixture acceptance + public API 露出 + 全主要 perf gate clear すべて整備、1.0 候補レベル。
 
 - **ブランチ**: `main`（直接 commit 運用、squash 不要）
 
