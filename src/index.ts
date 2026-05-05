@@ -1,12 +1,10 @@
 // Public entry for openxml-js.
 //
-// Phase 1 surface: the foundation layer (IO, ZIP, XML, schema, packaging,
-// utils). Higher-level Workbook / Worksheet / Cell APIs land in phase 2+
-// per docs/plan/04-core-model.md.
-//
-// Sub-path entrypoints (openxml-js/io/node etc.) carry environment-
-// specific helpers; this top-level entry only re-exports environment-
-// neutral types so a single import works in both Node and the browser.
+// Top-level entry: environment-neutral surface (IO / ZIP / XML / schema
+// / packaging / utils foundations + the Workbook / Worksheet / Cell
+// data-model + load/save). Node-only and browser-only helpers live
+// behind `openxml-js/node` and `openxml-js/streaming` so this entry
+// stays clean of `node:fs` and `Blob`-only imports.
 
 // I/O abstractions (env-neutral types only — concrete helpers live in
 // openxml-js/io/node and openxml-js/io/browser).
@@ -147,5 +145,77 @@ export {
   serializeXml,
 } from './xml';
 // ZIP layer.
-export type { ZipArchive, ZipWriter } from './zip';
+export type { ZipArchive, ZipWriter, StreamingEntryWriter } from './zip';
 export { createZipWriter, openZip } from './zip';
+
+// Cell value-model and helpers.
+export type {
+  Cell,
+  CellValue,
+  DataTableFormulaOpts,
+  ExcelErrorCode,
+  FormulaKind,
+  FormulaValue,
+  MergedCell,
+} from './cell/cell';
+export {
+  bindValue,
+  getCoordinate,
+  isEmptyCell,
+  isFormulaCell,
+  isRichTextCell,
+  makeCell,
+  makeDurationValue,
+  makeErrorValue,
+  setArrayFormula,
+  setCellValue,
+  setDataTableFormula,
+  setFormula,
+  setSharedFormula,
+} from './cell/cell';
+// Inline rich-text helpers — composed inside CellValue when the cell
+// carries multi-format text (vs. plain string → sharedStrings).
+export type { InlineFont, RichText, TextRun } from './cell/rich-text';
+export { makeRichText, makeTextRun, richTextToString } from './cell/rich-text';
+
+// Worksheet model + helpers (mergeCells / freezePanes / dimensions /
+// hyperlinks / data-validations / autoFilter / tables / comments /
+// conditional-formatting are reachable through the Worksheet object).
+export type { Worksheet } from './worksheet/worksheet';
+export {
+  appendRow,
+  countCells,
+  deleteCell,
+  getCell,
+  getCellByCoord,
+  getMaxCol,
+  getMaxRow,
+  getMergedCells,
+  isMergedCell,
+  iterRows as iterWorksheetRows,
+  iterValues as iterWorksheetValues,
+  makeWorksheet,
+  mergeCells,
+  setCell,
+  setCellByCoord,
+  setFreezePanes,
+  unmergeCells,
+} from './worksheet/worksheet';
+
+// Workbook root model.
+export type { SheetRef, SheetState, Workbook } from './workbook/workbook';
+export {
+  addChartsheet,
+  addWorksheet,
+  createWorkbook,
+  getActiveSheet,
+  getChartsheet,
+  getSheet,
+  getSheetByIndex,
+  jsonReplacer,
+  jsonReviver,
+  listCustomXmlParts,
+  removeSheet,
+  setActiveSheet,
+  sheetNames,
+} from './workbook/workbook';

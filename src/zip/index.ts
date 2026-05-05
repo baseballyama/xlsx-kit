@@ -4,5 +4,5 @@
 
 export type { ZipArchive } from './reader';
 export { openZip } from './reader';
-export type { ZipWriter } from './writer';
+export type { StreamingEntryWriter, ZipWriter } from './writer';
 export { createZipWriter } from './writer';
