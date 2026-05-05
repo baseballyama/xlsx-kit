@@ -113,4 +113,79 @@ describe('phase-3 — additional genuine fixture round-trips', () => {
       /not a valid zip|too short|EOCD/i,
     );
   });
+
+  it('comments/tests/data/comments.xlsx: per-sheet legacyComments round-trip', async () => {
+    const original = readFileSync(
+      resolve(__dirname, '../../reference/openpyxl/openpyxl/comments/tests/data/comments.xlsx'),
+    );
+    const wb = await loadWorkbook(fromBuffer(original));
+    // Sheet1 carries 6 comments, Sheet2 zero, Sheet3 one — per the
+    // openpyxl reference fixture inventory.
+    const counts = wb.sheets.map((s) => ({
+      title: s.sheet.title,
+      n: s.kind === 'worksheet' ? s.sheet.legacyComments.length : 0,
+    }));
+    expect(counts).toEqual([
+      { title: 'Sheet1', n: 6 },
+      { title: 'Sheet2', n: 0 },
+      { title: 'Sheet3', n: 1 },
+    ]);
+
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    const counts2 = wb2.sheets.map((s) => ({
+      title: s.sheet.title,
+      n: s.kind === 'worksheet' ? s.sheet.legacyComments.length : 0,
+    }));
+    expect(counts2).toEqual(counts);
+  });
+
+  it('packaging/tests/data/hyperlink.xlsx: external URL round-trip', async () => {
+    const original = readFileSync(
+      resolve(__dirname, '../../reference/openpyxl/openpyxl/packaging/tests/data/hyperlink.xlsx'),
+    );
+    const wb = await loadWorkbook(fromBuffer(original));
+    const s0 = wb.sheets[0];
+    if (s0?.kind !== 'worksheet') throw new Error('expected worksheet');
+    expect(s0.sheet.hyperlinks).toHaveLength(1);
+    const link = s0.sheet.hyperlinks[0];
+    expect(link?.ref).toBe('A1');
+    expect(link?.target).toBe('http://www.readthedocs.org');
+
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    const s0b = wb2.sheets[0];
+    if (s0b?.kind !== 'worksheet') throw new Error('expected worksheet');
+    expect(s0b.sheet.hyperlinks[0]?.target).toBe('http://www.readthedocs.org');
+  });
+
+  it('worksheet/tests/data/test_datetime.xlsx: numeric date serials round-trip', async () => {
+    const original = readFileSync(
+      resolve(__dirname, '../../reference/openpyxl/openpyxl/worksheet/tests/data/test_datetime.xlsx'),
+    );
+    const wb = await loadWorkbook(fromBuffer(original));
+    expect(wb.date1904).toBe(false);
+    const s0 = wb.sheets[0];
+    if (s0?.kind !== 'worksheet') throw new Error('expected worksheet');
+    // First cell is the openpyxl test datetime serial (≈ 2.0987 days).
+    expect(s0.sheet.rows.get(1)?.get(1)?.value).toBeGreaterThan(0);
+
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    const s0b = wb2.sheets[0];
+    if (s0b?.kind !== 'worksheet') throw new Error('expected worksheet');
+    expect(s0b.sheet.rows.get(1)?.get(1)?.value).toEqual(s0.sheet.rows.get(1)?.get(1)?.value);
+  });
+
+  it('reader/legacy_drawing.xlsm: control-VML + ctrlProps survive', async () => {
+    const original = readFileSync(`${READER_TESTS_DATA}/legacy_drawing.xlsm`);
+    const wb = await loadWorkbook(fromBuffer(original));
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    // Both round-trips end up with the same ctrlProps + VML set.
+    const before = [...(wb.passthrough?.keys() ?? [])].sort();
+    const after = [...(wb2.passthrough?.keys() ?? [])].sort();
+    expect(after).toEqual(before);
+    expect(wb.sheets.length).toBe(wb2.sheets.length);
+  });
 });
