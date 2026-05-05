@@ -201,3 +201,35 @@ export const addColBreak = (ws: Worksheet, col: number): PageBreak => {
   ws.colBreaks.push(brk);
   return brk;
 };
+
+const ensurePrintOptions = (ws: Worksheet): PrintOptions => {
+  if (!ws.printOptions) ws.printOptions = {};
+  return ws.printOptions;
+};
+
+/** Toggle "Print gridlines". Mirrors Excel's "Page Layout → Sheet Options → Gridlines: Print". */
+export const setPrintGridLines = (ws: Worksheet, on: boolean): void => {
+  const po = ensurePrintOptions(ws);
+  po.gridLines = on;
+  // Excel pairs gridLines with the gridLinesSet companion flag.
+  po.gridLinesSet = on;
+};
+
+/** Toggle "Print row and column headings" (the A B C / 1 2 3 strips on the printed page). */
+export const setPrintHeadings = (ws: Worksheet, on: boolean): void => {
+  ensurePrintOptions(ws).headings = on;
+};
+
+/**
+ * Toggle horizontal / vertical centering on the printed page. Pass
+ * either field to leave the other untouched.
+ */
+export const setPrintCentered = (
+  ws: Worksheet,
+  opts: { horizontal?: boolean; vertical?: boolean },
+): void => {
+  const po = ensurePrintOptions(ws);
+  if (opts.horizontal !== undefined) po.horizontalCentered = opts.horizontal;
+  if (opts.vertical !== undefined) po.verticalCentered = opts.vertical;
+};
+
