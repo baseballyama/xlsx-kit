@@ -46,6 +46,7 @@ screenshot and file an issue against the matching scenario.
 | `22-grouping-outline.xlsx` | Budget | Outline buttons appear above column headers + left of row numbers. Rows 3..6 (Q1 detail) + 8..11 (Q2 detail) are level-1 grouped — clicking the "1" toggle collapses to subtotal-only view. Columns C/D are also level-1 grouped, column F is hidden (Format → Unhide to reveal). Custom widths on A/B/E. |
 | `23-page-setup.xlsx` | Report | File → Print preview shows landscape A4, 1in top/bot + 0.5in left/right margins, fitted to 1 page wide, gridlines on, horizontally centered. Header centre = "Quarterly Report — &P / &N". Footer left = `&F`, footer right = "Confidential". 80 rows of data so preview spans 2 pages. |
 | `24-multi-drawing.xlsx` | Combo | Three drawings on one sheet anchored at E2 (clustered bar "Quarterly Sales"), E20 (line chart "Trend"), N2 (the same tiny PNG fixture as scenario 18). All three should coexist after Excel re-saves the file. |
+| `25-alignment-numfmt.xlsx` | Align / NumFmt | "Align" tab demonstrates left/center/right horizontal, top/center vertical, wrapText (long line wrapped on row 5, height 60pt), indent=3, shrinkToFit, rotation 45°/90°/-45° (135) and vertical-stacked (255). "NumFmt" tab shows formatted values for 13 codes including `0.00`, `#,##0.00`, `0%`, `0.00E+00`, `"$"#,##0.00`, conditional `pos;neg;zero`, `[h]:mm:ss` (1.5 → 36:00:00), `m/d/yyyy`, fractions `# ?/?` / `# ??/??`. |
 
 ## Adding a new scenario
 
