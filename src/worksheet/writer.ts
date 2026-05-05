@@ -29,6 +29,7 @@ import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
 import type { DataConsolidate, DataReference } from './data-consolidate';
+import type { Scenario, ScenarioInputCell, ScenarioList } from './scenarios';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { WorksheetPhoneticProperties } from './phonetic';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
@@ -140,6 +141,10 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   if (ws.sheetProtection) {
     const sp = serializeSheetProtection(ws.sheetProtection);
     if (sp) parts.push(sp);
+  }
+  if (ws.scenarios) {
+    const sc = serializeScenarioList(ws.scenarios);
+    if (sc) parts.push(sc);
   }
   // Excel's element order: autoFilter sits between sheetData and mergeCells.
   if (ws.autoFilter) parts.push(serializeAutoFilter(ws.autoFilter));
@@ -604,6 +609,42 @@ const serializePageSetup = (ps: PageSetup): string | undefined => {
   if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
   if (attrs.length === 0) return undefined;
   return `<pageSetup${attrs}/>`;
+};
+
+const serializeScenarioList = (sl: ScenarioList): string | undefined => {
+  if (sl.scenarios.length === 0 && sl.current === undefined && sl.show === undefined && sl.sqref === undefined) {
+    return undefined;
+  }
+  let attrs = '';
+  if (sl.current !== undefined) attrs += ` current="${sl.current}"`;
+  if (sl.show !== undefined) attrs += ` show="${sl.show}"`;
+  if (sl.sqref !== undefined) attrs += ` sqref="${escapeXmlAttr(multiCellRangeToString(sl.sqref))}"`;
+  if (sl.scenarios.length === 0) return `<scenarios${attrs}/>`;
+  const inner: string[] = [];
+  for (const s of sl.scenarios) inner.push(serializeScenario(s));
+  return `<scenarios${attrs}>${inner.join('')}</scenarios>`;
+};
+
+const serializeScenario = (s: Scenario): string => {
+  let attrs = ` name="${escapeXmlAttr(s.name)}"`;
+  if (s.locked !== undefined) attrs += ` locked="${s.locked ? '1' : '0'}"`;
+  if (s.hidden !== undefined) attrs += ` hidden="${s.hidden ? '1' : '0'}"`;
+  attrs += ` count="${s.inputCells.length}"`;
+  if (s.user !== undefined) attrs += ` user="${escapeXmlAttr(s.user)}"`;
+  if (s.comment !== undefined) attrs += ` comment="${escapeXmlAttr(s.comment)}"`;
+  if (s.inputCells.length === 0) return `<scenario${attrs}/>`;
+  const inner: string[] = [];
+  for (const ic of s.inputCells) inner.push(serializeScenarioInputCell(ic));
+  return `<scenario${attrs}>${inner.join('')}</scenario>`;
+};
+
+const serializeScenarioInputCell = (ic: ScenarioInputCell): string => {
+  let attrs = ` r="${escapeXmlAttr(ic.ref)}"`;
+  if (ic.deleted !== undefined) attrs += ` deleted="${ic.deleted ? '1' : '0'}"`;
+  if (ic.undone !== undefined) attrs += ` undone="${ic.undone ? '1' : '0'}"`;
+  attrs += ` val="${escapeXmlAttr(ic.val)}"`;
+  if (ic.numFmtId !== undefined) attrs += ` numFmtId="${ic.numFmtId}"`;
+  return `<inputCells${attrs}/>`;
 };
 
 const serializeDataConsolidate = (dc: DataConsolidate): string | undefined => {

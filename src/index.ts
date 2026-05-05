@@ -269,6 +269,8 @@ export type {
   DataReference,
 } from './worksheet/data-consolidate';
 export { makeDataConsolidate } from './worksheet/data-consolidate';
+export type { Scenario, ScenarioInputCell, ScenarioList } from './worksheet/scenarios';
+export { makeScenario, makeScenarioInputCell, makeScenarioList } from './worksheet/scenarios';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.

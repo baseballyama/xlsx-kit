@@ -19,6 +19,7 @@ import type { ConditionalFormatting } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import type { DataConsolidate } from './data-consolidate';
+import type { ScenarioList } from './scenarios';
 import type { CellWatch, IgnoredError } from './errors';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { WorksheetPhoneticProperties } from './phonetic';
@@ -138,6 +139,8 @@ export interface Worksheet {
    * aggregation function and the source-range list.
    */
   dataConsolidate?: DataConsolidate;
+  /** `<scenarios>` — the Scenario Manager's saved input-cell overrides. */
+  scenarios?: ScenarioList;
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**

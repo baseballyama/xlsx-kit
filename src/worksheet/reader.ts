@@ -67,6 +67,7 @@ import type {
   DataConsolidateFunction,
   DataReference,
 } from './data-consolidate';
+import type { Scenario, ScenarioInputCell, ScenarioList } from './scenarios';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
@@ -136,6 +137,9 @@ const PHONETIC_PR_TAG = `{${SHEET_MAIN_NS}}phoneticPr`;
 const DATA_CONSOLIDATE_TAG = `{${SHEET_MAIN_NS}}dataConsolidate`;
 const DATA_REFS_TAG = `{${SHEET_MAIN_NS}}dataRefs`;
 const DATA_REF_TAG = `{${SHEET_MAIN_NS}}dataRef`;
+const SCENARIOS_TAG = `{${SHEET_MAIN_NS}}scenarios`;
+const SCENARIO_TAG = `{${SHEET_MAIN_NS}}scenario`;
+const INPUT_CELLS_TAG = `{${SHEET_MAIN_NS}}inputCells`;
 const ODD_HEADER_TAG = `{${SHEET_MAIN_NS}}oddHeader`;
 const ODD_FOOTER_TAG = `{${SHEET_MAIN_NS}}oddFooter`;
 const EVEN_HEADER_TAG = `{${SHEET_MAIN_NS}}evenHeader`;
@@ -409,6 +413,15 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     if (dc) ws.dataConsolidate = dc;
   }
 
+  // <scenarios current="…" show="…" sqref="…"><scenario name="…">
+  //   <inputCells r="…" val="…"/>
+  // </scenario></scenarios>
+  const scEl = findChild(root, SCENARIOS_TAG);
+  if (scEl) {
+    const sl = parseScenarioList(scEl);
+    if (sl) ws.scenarios = sl;
+  }
+
   // <cellWatches><cellWatch r="…"/></cellWatches>
   const cwWrap = findChild(root, CELL_WATCHES_TAG);
   if (cwWrap) {
@@ -429,6 +442,56 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const parseScenarioList = (node: XmlNode): ScenarioList | undefined => {
+  const out: ScenarioList = { scenarios: [] };
+  const current = parseIntegerAttr(node.attrs['current']);
+  if (current !== undefined) out.current = current;
+  const show = parseIntegerAttr(node.attrs['show']);
+  if (show !== undefined) out.show = show;
+  const sqref = node.attrs['sqref'];
+  if (sqref) out.sqref = parseMultiCellRange(sqref);
+
+  for (const sNode of findChildren(node, SCENARIO_TAG)) {
+    const s = parseScenario(sNode);
+    if (s) out.scenarios.push(s);
+  }
+  return out.scenarios.length > 0 || out.current !== undefined || out.show !== undefined || out.sqref !== undefined
+    ? out
+    : undefined;
+};
+
+const parseScenario = (node: XmlNode): Scenario | undefined => {
+  const name = node.attrs['name'];
+  if (!name) return undefined;
+  const out: Scenario = { name, inputCells: [] };
+  const locked = parseBoolXmlAttr(node.attrs['locked']);
+  if (locked !== undefined) out.locked = locked;
+  const hidden = parseBoolXmlAttr(node.attrs['hidden']);
+  if (hidden !== undefined) out.hidden = hidden;
+  if (node.attrs['user'] !== undefined) out.user = node.attrs['user'];
+  if (node.attrs['comment'] !== undefined) out.comment = node.attrs['comment'];
+
+  for (const ic of findChildren(node, INPUT_CELLS_TAG)) {
+    const cell = parseScenarioInputCell(ic);
+    if (cell) out.inputCells.push(cell);
+  }
+  return out;
+};
+
+const parseScenarioInputCell = (node: XmlNode): ScenarioInputCell | undefined => {
+  const ref = node.attrs['r'];
+  const val = node.attrs['val'];
+  if (!ref || val === undefined) return undefined;
+  const out: ScenarioInputCell = { ref, val };
+  const deleted = parseBoolXmlAttr(node.attrs['deleted']);
+  if (deleted !== undefined) out.deleted = deleted;
+  const undone = parseBoolXmlAttr(node.attrs['undone']);
+  if (undone !== undefined) out.undone = undone;
+  const numFmtId = parseIntegerAttr(node.attrs['numFmtId']);
+  if (numFmtId !== undefined) out.numFmtId = numFmtId;
+  return out;
+};
 
 const DATA_CONSOLIDATE_FUNCTIONS: ReadonlyArray<DataConsolidateFunction> = [
   'average',
@@ -857,6 +920,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   WEB_PUBLISH_ITEMS_TAG,
   PHONETIC_PR_TAG,
   DATA_CONSOLIDATE_TAG,
+  SCENARIOS_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,
