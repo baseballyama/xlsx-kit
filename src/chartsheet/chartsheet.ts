@@ -8,6 +8,7 @@
 
 import type { Drawing } from '../drawing/drawing';
 import type { HeaderFooter, PageMargins, PageSetup } from '../worksheet/page-setup';
+import type { WebPublishItem } from '../worksheet/web-publish';
 
 /** `<sheetView>` inside `<sheetViews>`. */
 export interface ChartsheetView {
@@ -69,6 +70,8 @@ export interface Chartsheet {
   drawingHF?: ChartsheetDrawingHF;
   /** `<picture r:id="…"/>` — chartsheet background image. */
   backgroundPictureRId?: string;
+  /** `<webPublishItems>` — Excel 2007 "Publish to web" entries (rare on chartsheets). */
+  webPublishItems: WebPublishItem[];
 }
 
 /**
@@ -108,4 +111,5 @@ export interface ChartsheetDrawingHF {
 export const makeChartsheet = (title: string): Chartsheet => ({
   title,
   views: [{ workbookViewId: 0, zoomToFit: true }],
+  webPublishItems: [],
 });

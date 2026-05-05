@@ -775,7 +775,7 @@ const serializeWorksheetCustomProperties = (
   return parts.join('');
 };
 
-const serializeWebPublishItems = (items: ReadonlyArray<WebPublishItem>): string => {
+export const serializeWebPublishItems = (items: ReadonlyArray<WebPublishItem>): string => {
   const parts: string[] = [`<webPublishItems count="${items.length}">`];
   for (const w of items) {
     let attrs =

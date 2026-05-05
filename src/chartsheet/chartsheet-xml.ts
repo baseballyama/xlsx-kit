@@ -4,8 +4,18 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
-import { parseHeaderFooter, parsePageMargins, parsePageSetup } from '../worksheet/reader';
-import { serializeHeaderFooter, serializePageMargins, serializePageSetup } from '../worksheet/writer';
+import {
+  parseHeaderFooter,
+  parsePageMargins,
+  parsePageSetup,
+  parseWebPublishItem,
+} from '../worksheet/reader';
+import {
+  serializeHeaderFooter,
+  serializePageMargins,
+  serializePageSetup,
+  serializeWebPublishItems,
+} from '../worksheet/writer';
 import {
   type Chartsheet,
   type ChartsheetDrawingHF,
@@ -29,6 +39,8 @@ const LEGACY_DRAWING_TAG = `{${SHEET_MAIN_NS}}legacyDrawing`;
 const LEGACY_DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}legacyDrawingHF`;
 const DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}drawingHF`;
 const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
+const WEB_PUBLISH_ITEMS_TAG = `{${SHEET_MAIN_NS}}webPublishItems`;
+const WEB_PUBLISH_ITEM_TAG = `{${SHEET_MAIN_NS}}webPublishItem`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
@@ -148,6 +160,13 @@ export function parseChartsheetXml(bytes: Uint8Array | string, title: string): C
     const rId = picEl.attrs[`{${REL_NS}}id`];
     if (rId) cs.backgroundPictureRId = rId;
   }
+  const wpEl = findChild(root, WEB_PUBLISH_ITEMS_TAG);
+  if (wpEl) {
+    for (const wp of findChildren(wpEl, WEB_PUBLISH_ITEM_TAG)) {
+      const item = parseWebPublishItem(wp);
+      if (item) cs.webPublishItems.push(item);
+    }
+  }
 
   // Drawing reference — the actual rId / drawing payload is resolved by the loader.
   return cs;
@@ -256,6 +275,7 @@ export function serializeChartsheet(cs: Chartsheet, opts: ChartsheetSerializeOpt
   if (cs.backgroundPictureRId !== undefined) {
     parts.push(`<picture r:id="${escapeAttr(cs.backgroundPictureRId)}"/>`);
   }
+  if (cs.webPublishItems.length > 0) parts.push(serializeWebPublishItems(cs.webPublishItems));
   parts.push('</chartsheet>');
   return parts.join('');
 }

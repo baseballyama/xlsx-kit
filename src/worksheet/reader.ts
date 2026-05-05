@@ -715,7 +715,7 @@ const VALID_WP_SOURCE_TYPES: ReadonlySet<WebPublishItem['sourceType']> = new Set
   'label',
 ]);
 
-const parseWebPublishItem = (node: XmlNode): WebPublishItem | undefined => {
+export const parseWebPublishItem = (node: XmlNode): WebPublishItem | undefined => {
   const idRaw = node.attrs['id'];
   if (!idRaw) return undefined;
   const id = Number.parseInt(idRaw, 10);
