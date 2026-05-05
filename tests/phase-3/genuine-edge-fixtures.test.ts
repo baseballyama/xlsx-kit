@@ -177,6 +177,16 @@ describe('phase-3 — additional genuine fixture round-trips', () => {
     expect(s0b.sheet.rows.get(1)?.get(1)?.value).toEqual(s0.sheet.rows.get(1)?.get(1)?.value);
   });
 
+  it('contains_chartsheets.xlsx: xl/calcChain.xml passthrough preserves the byte-identical entry', async () => {
+    const original = readFileSync(`${READER_TESTS_DATA}/contains_chartsheets.xlsx`);
+    const wb = await loadWorkbook(fromBuffer(original));
+    expect(wb.passthrough?.has('xl/calcChain.xml')).toBe(true);
+
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    expect(wb2.passthrough?.get('xl/calcChain.xml')).toEqual(wb.passthrough?.get('xl/calcChain.xml'));
+  });
+
   it('reader/legacy_drawing.xlsm: control-VML + ctrlProps survive', async () => {
     const original = readFileSync(`${READER_TESTS_DATA}/legacy_drawing.xlsm`);
     const wb = await loadWorkbook(fromBuffer(original));

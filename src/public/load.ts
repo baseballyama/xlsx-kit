@@ -554,6 +554,7 @@ const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
   'xl/ctrlProps/',
   'xl/embeddings/',
   'xl/externalLinks/',
+  'xl/persons/',
   'xl/pivotCache/',
   'xl/pivotTables/',
   'xl/printerSettings/',
@@ -578,7 +579,28 @@ const isControlVml = (path: string): boolean => {
   return !path.includes('/vmlDrawing');
 };
 
+/**
+ * Top-level xl/*.xml files that aren't modeled but Excel relies on
+ * (or harmlessly preserves). Captured by exact path; their content
+ * types come through the manifest Override map.
+ *
+ * - `xl/calcChain.xml`     — calculation order hint (Excel rebuilds
+ *   it on first open if missing, but losing it forces a full recalc).
+ * - `xl/connections.xml`   — external data connection metadata.
+ * - `xl/persons/`          — threaded-comment author registry
+ *   (Excel 365). Captured under the prefix list below.
+ * - `xl/metadata.xml`      — Excel 365 dynamic-array cell metadata.
+ * - `xl/SheetMetadata.xml` — variant casing of the same.
+ */
+const PASSTHROUGH_EXACT_PATHS: ReadonlySet<string> = new Set([
+  'xl/calcChain.xml',
+  'xl/connections.xml',
+  'xl/metadata.xml',
+  'xl/SheetMetadata.xml',
+]);
+
 const isPassthroughPath = (path: string): boolean => {
+  if (PASSTHROUGH_EXACT_PATHS.has(path)) return true;
   if (PASSTHROUGH_PREFIXES.some((p) => path.startsWith(p))) return true;
   return isControlVml(path);
 };
