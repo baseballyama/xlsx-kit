@@ -169,6 +169,10 @@ async function* iterSheetRows(
         }
         case 'c': {
           if (currentRow < 0) break;
+          // Skip cell-attr parsing entirely when the row is outside
+          // the requested band — saves the parseInt + coordinateToTuple
+          // hit on every cell of every excluded row.
+          if (currentRow < minRow || currentRow > maxRow) break;
           cellOpen = true;
           cellType = e.attrs['t'] ?? 'n';
           const sRaw = e.attrs['s'];
@@ -215,6 +219,13 @@ async function* iterSheetRows(
       case 'row': {
         if (currentRow >= minRow && currentRow <= maxRow && currentCells.length > 0) {
           yield currentCells;
+        }
+        // Once we've crossed maxRow there are no more rows to yield —
+        // every subsequent <row> would just be parsed and dropped.
+        // Stop iterating early. ECMA-376 emits rows in ascending order.
+        if (currentRow > maxRow) {
+          inSheetData = false;
+          return;
         }
         currentRow = -1;
         currentRowAttrs = null;
