@@ -587,6 +587,34 @@ export function isMergedCell(ws: Worksheet, row: number, col: number): boolean {
   return false;
 }
 
+/**
+ * Look up the merged range covering (row, col), or `undefined` if
+ * the coordinate isn't inside any merge. Lets callers introspect a
+ * merge without iterating `getMergedCells` themselves.
+ */
+export function getMergedRangeAt(ws: Worksheet, row: number, col: number): CellRange | undefined {
+  for (const range of ws.mergedCells) {
+    if (rangeContainsCell(range, row, col)) return range;
+  }
+  return undefined;
+}
+
+/**
+ * Drop the merge that contains (row, col), if any. Returns `true`
+ * when a merge was unregistered. Useful when callers know a cell
+ * coordinate but not the original merge bounds.
+ */
+export function unmergeCellsAt(ws: Worksheet, row: number, col: number): boolean {
+  for (let i = 0; i < ws.mergedCells.length; i++) {
+    const r = ws.mergedCells[i];
+    if (r && rangeContainsCell(r, row, col)) {
+      ws.mergedCells.splice(i, 1);
+      return true;
+    }
+  }
+  return false;
+}
+
 // ---- views / freezePanes --------------------------------------------------
 
 /** Lazily get-or-create the primary SheetView so view-mutating helpers don't have to branch. */

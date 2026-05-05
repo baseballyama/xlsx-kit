@@ -240,6 +240,7 @@ export {
   getMaxCol,
   getMaxRow,
   getMergedCells,
+  getMergedRangeAt,
   getRangeValues,
   getRowDimension,
   getRowValues,
@@ -307,6 +308,7 @@ export {
   unhideColumn,
   unhideRow,
   unmergeCells,
+  unmergeCellsAt,
 } from './worksheet/worksheet';
 export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
 export { makeColumnDimension, makeRowDimension } from './worksheet/dimensions';
