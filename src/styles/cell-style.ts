@@ -277,6 +277,47 @@ export function clearCellBackground(wb: Workbook, c: Cell): void {
   setCellFill(wb, c, DEFAULT_EMPTY_FILL);
 }
 
+/**
+ * Range-level shortcut for `setCellBackgroundColor`. Each cell in the
+ * range gets the same solid pattern fill via `setRangeStyle`, so the
+ * fill pool dedups to a single entry across the whole range.
+ */
+export function setRangeBackgroundColor(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  color: string | Partial<Color>,
+): void {
+  const colorObj = typeof color === 'string' ? makeColor({ rgb: color }) : makeColor(color);
+  setRangeStyle(wb, ws, range, {
+    fill: makePatternFill({ patternType: 'solid', fgColor: colorObj }),
+  });
+}
+
+/** Range-level shortcut for `setCellFont` (full Font replacement). */
+export function setRangeFont(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  font: Font,
+): void {
+  setRangeStyle(wb, ws, range, { font });
+}
+
+/**
+ * Range-level shortcut for `setCellNumberFormat`. Stamps the same
+ * format-code onto every cell in the range; the numFmt pool dedups
+ * the code so callers don't pay per-cell pool churn.
+ */
+export function setRangeNumberFormat(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  formatCode: string,
+): void {
+  setRangeStyle(wb, ws, range, { numberFormat: formatCode });
+}
+
 // ---- font presets -------------------------------------------------------
 
 const mergeFont = (current: Font, patch: Partial<Font>): Font => makeFont({ ...current, ...patch });

@@ -544,7 +544,10 @@ export {
   setCellNumberFormat,
   setCellProtection,
   setCellStyle,
+  setRangeBackgroundColor,
   setRangeBorderBox,
+  setRangeFont,
+  setRangeNumberFormat,
   setRangeStyle,
 } from './styles';
 

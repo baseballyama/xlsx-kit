@@ -44,7 +44,10 @@ export {
   setCellNumberFormat,
   setCellProtection,
   setCellStyle,
+  setRangeBackgroundColor,
   setRangeBorderBox,
+  setRangeFont,
+  setRangeNumberFormat,
   setRangeStyle,
 } from './cell-style';
 export type { DifferentialStyle } from './differential';
