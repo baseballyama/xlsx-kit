@@ -1040,6 +1040,77 @@ export function ungroupColumns(ws: Worksheet, fromCol: number, toCol: number): v
 }
 
 /**
+ * Collapse a row outline group: hide every row in `[fromRow, toRow]`
+ * and mark them `collapsed: true`. Mirrors Excel's `−` button on a
+ * grouped row strip. Rows must already carry an `outlineLevel` from
+ * {@link groupRows} for the collapse to render correctly.
+ */
+export function collapseRowGroup(ws: Worksheet, fromRow: number, toRow: number): void {
+  if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
+    throw new OpenXmlSchemaError(`collapseRowGroup: invalid row range [${fromRow}, ${toRow}]`);
+  }
+  for (let r = fromRow; r <= toRow; r++) {
+    const existing = getRowDimension(ws, r) ?? {};
+    setRowDimension(ws, r, { ...existing, hidden: true, collapsed: true });
+  }
+}
+
+/**
+ * Expand a row outline group: drop the `hidden` and `collapsed`
+ * flags on every row in `[fromRow, toRow]`. Leaves `outlineLevel`
+ * and other dimensions intact.
+ */
+export function expandRowGroup(ws: Worksheet, fromRow: number, toRow: number): void {
+  if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
+    throw new OpenXmlSchemaError(`expandRowGroup: invalid row range [${fromRow}, ${toRow}]`);
+  }
+  for (let r = fromRow; r <= toRow; r++) {
+    const existing = ws.rowDimensions.get(r);
+    if (!existing) continue;
+    const { hidden: _h, collapsed: _c, ...rest } = existing;
+    if (Object.keys(rest).length === 0) ws.rowDimensions.delete(r);
+    else ws.rowDimensions.set(r, rest);
+  }
+}
+
+/**
+ * Collapse a column outline group: hide + mark `collapsed: true` for
+ * every column in `[fromCol, toCol]`. Columns must already carry an
+ * `outlineLevel` from {@link groupColumns} for the collapse to
+ * render correctly.
+ */
+export function collapseColumnGroup(ws: Worksheet, fromCol: number, toCol: number): void {
+  if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
+    throw new OpenXmlSchemaError(`collapseColumnGroup: invalid column range [${fromCol}, ${toCol}]`);
+  }
+  for (let c = fromCol; c <= toCol; c++) {
+    const existing = getColumnDimension(ws, c);
+    setColumnDimension(ws, c, { ...existing, hidden: true, collapsed: true });
+  }
+}
+
+/**
+ * Expand a column outline group: drop `hidden` and `collapsed` from
+ * every column in `[fromCol, toCol]`. Leaves `outlineLevel` intact.
+ */
+export function expandColumnGroup(ws: Worksheet, fromCol: number, toCol: number): void {
+  if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
+    throw new OpenXmlSchemaError(`expandColumnGroup: invalid column range [${fromCol}, ${toCol}]`);
+  }
+  for (let c = fromCol; c <= toCol; c++) {
+    const existing = getColumnDimension(ws, c);
+    if (!existing) continue;
+    const { hidden: _h, collapsed: _coll, ...rest } = existing;
+    const { min: _min, max: _max, ...passthrough } = rest;
+    if (Object.keys(passthrough).length === 0) {
+      ws.columnDimensions.delete(existing.min);
+    } else {
+      setColumnDimension(ws, c, passthrough);
+    }
+  }
+}
+
+/**
  * Approximate autofit for a column. Scans every populated cell in
  * `col` (or in `[opts.minRow, opts.maxRow]`), measures `cellValueAsString`
  * length, and sets the column width to `max(length) + padding`,
