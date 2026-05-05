@@ -22,7 +22,8 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { Workbook } from '../workbook/workbook';
 import { parseRange } from '../worksheet/cell-range';
 import { setCell, type Worksheet } from '../worksheet/worksheet';
-import type { Alignment } from './alignment';
+import type { Alignment, HorizontalAlignment, VerticalAlignment } from './alignment';
+import { makeAlignment } from './alignment';
 import type { Border, SideStyle } from './borders';
 import { DEFAULT_BORDER, makeBorder, makeSide } from './borders';
 import type { Color } from './colors';
@@ -256,6 +257,56 @@ export function setCellStyle(
   }
   if (Object.keys(patch).length === 0) return;
   applyXfPatch(wb, c, patch as Partial<CellXf>);
+}
+
+// ---- alignment presets --------------------------------------------------
+
+const mergeAlignment = (current: Alignment | undefined, patch: Partial<Alignment>): Alignment => {
+  return makeAlignment({ ...current, ...patch });
+};
+
+/**
+ * Center a cell horizontally + vertically. Mirrors Excel's "Merge &
+ * Center" UI button (without the merge — see {@link mergeCells} for
+ * that). Preserves any other alignment fields already present.
+ */
+export function centerCell(wb: Workbook, c: Cell): void {
+  const cur = currentXf(wb.styles, c).alignment;
+  setCellAlignment(wb, c, mergeAlignment(cur, { horizontal: 'center', vertical: 'center' }));
+}
+
+/** Toggle "Wrap Text" on a cell, preserving other alignment fields. */
+export function wrapCellText(wb: Workbook, c: Cell, wrap = true): void {
+  const cur = currentXf(wb.styles, c).alignment;
+  setCellAlignment(wb, c, mergeAlignment(cur, { wrapText: wrap }));
+}
+
+/** Set the horizontal alignment in isolation. */
+export function alignCellHorizontal(wb: Workbook, c: Cell, horizontal: HorizontalAlignment): void {
+  const cur = currentXf(wb.styles, c).alignment;
+  setCellAlignment(wb, c, mergeAlignment(cur, { horizontal }));
+}
+
+/** Set the vertical alignment in isolation. */
+export function alignCellVertical(wb: Workbook, c: Cell, vertical: VerticalAlignment): void {
+  const cur = currentXf(wb.styles, c).alignment;
+  setCellAlignment(wb, c, mergeAlignment(cur, { vertical }));
+}
+
+/**
+ * Rotate the cell's text. `degrees` accepts 0..180 (clockwise) or 255
+ * for Excel's "vertical stacked" mode. Mirrors the rotate icons in
+ * the alignment ribbon.
+ */
+export function rotateCellText(wb: Workbook, c: Cell, degrees: number): void {
+  const cur = currentXf(wb.styles, c).alignment;
+  setCellAlignment(wb, c, mergeAlignment(cur, { textRotation: degrees }));
+}
+
+/** Set or clear the indent level (0..255). */
+export function indentCell(wb: Workbook, c: Cell, levels: number): void {
+  const cur = currentXf(wb.styles, c).alignment;
+  setCellAlignment(wb, c, mergeAlignment(cur, { indent: levels }));
 }
 
 // ---- format presets -----------------------------------------------------

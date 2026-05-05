@@ -8,9 +8,15 @@ export { makeAlignment } from './alignment';
 export type { Border, Side, SideStyle } from './borders';
 export { makeBorder, makeSide } from './borders';
 export {
+  alignCellHorizontal,
+  alignCellVertical,
   applyBuiltinStyle,
   applyNamedStyle,
+  centerCell,
   formatAsHeader,
+  indentCell,
+  rotateCellText,
+  wrapCellText,
   getCellAlignment,
   getCellBorder,
   getCellFill,
