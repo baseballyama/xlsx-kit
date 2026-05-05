@@ -233,6 +233,8 @@ export {
   removeSheetTabColor,
   removeTable,
   applyToRange,
+  autofitColumn,
+  autofitColumns,
   freezeColumns,
   freezePanes,
   freezeRows,

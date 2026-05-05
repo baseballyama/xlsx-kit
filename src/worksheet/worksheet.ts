@@ -7,7 +7,7 @@
 // for hot-path performance — see docs/plan/01-architecture.md §5.1.
 
 import type { CellValue } from '../cell/cell';
-import { type Cell, makeCell } from '../cell/cell';
+import { type Cell, cellValueAsString, makeCell } from '../cell/cell';
 import type { Drawing } from '../drawing/drawing';
 import { type Color, makeColor } from '../styles/colors';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
@@ -854,6 +854,68 @@ export function setColumnWidth(ws: Worksheet, col: number, width: number): Colum
 export function hideColumn(ws: Worksheet, col: number): ColumnDimension {
   const existing = getColumnDimension(ws, col);
   return setColumnDimension(ws, col, { ...existing, hidden: true });
+}
+
+/**
+ * Approximate autofit for a column. Scans every populated cell in
+ * `col` (or in `[opts.minRow, opts.maxRow]`), measures `cellValueAsString`
+ * length, and sets the column width to `max(length) + padding`,
+ * clamped to `[opts.min ?? 4, opts.max ?? 80]` and bounded above by
+ * Excel's hard limit of 255.
+ *
+ * Note: this is a string-length approximation — Excel sizes columns
+ * with the font's actual character-width metrics. For plain ASCII in
+ * the default Calibri 11 face the result is usually within ±1 width
+ * unit; CJK / wide glyphs need extra padding.
+ */
+export function autofitColumn(
+  ws: Worksheet,
+  col: number,
+  opts: { minRow?: number; maxRow?: number; padding?: number; min?: number; max?: number } = {},
+): ColumnDimension | undefined {
+  const padding = opts.padding ?? 2;
+  const minWidth = opts.min ?? 4;
+  const maxWidth = Math.min(opts.max ?? 80, 255);
+  const minRow = opts.minRow ?? 1;
+  const maxRow = opts.maxRow ?? getMaxRow(ws);
+  if (maxRow < minRow) return undefined;
+  let widest = 0;
+  for (let r = minRow; r <= maxRow; r++) {
+    const cell = ws.rows.get(r)?.get(col);
+    if (!cell) continue;
+    const s = cellValueAsString(cell.value);
+    if (s.length > widest) widest = s.length;
+  }
+  if (widest === 0) return undefined;
+  const width = Math.max(minWidth, Math.min(maxWidth, widest + padding));
+  return setColumnWidth(ws, col, width);
+}
+
+/**
+ * Approximate autofit for every column with at least one populated
+ * cell. Walks the worksheet once collecting per-column widest-length
+ * + applies {@link autofitColumn} per column. `opts` flows through
+ * unchanged.
+ */
+export function autofitColumns(
+  ws: Worksheet,
+  opts: { padding?: number; min?: number; max?: number } = {},
+): void {
+  const padding = opts.padding ?? 2;
+  const minWidth = opts.min ?? 4;
+  const maxWidth = Math.min(opts.max ?? 80, 255);
+  const widest = new Map<number, number>();
+  for (const rowMap of ws.rows.values()) {
+    for (const [col, cell] of rowMap) {
+      const s = cellValueAsString(cell.value);
+      const cur = widest.get(col) ?? 0;
+      if (s.length > cur) widest.set(col, s.length);
+    }
+  }
+  for (const [col, w] of widest) {
+    if (w === 0) continue;
+    setColumnWidth(ws, col, Math.max(minWidth, Math.min(maxWidth, w + padding)));
+  }
 }
 
 /**
