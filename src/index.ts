@@ -272,6 +272,7 @@ export {
   autofitColumns,
   clearAllCells,
   clearRange,
+  copyRange,
   collapseColumnGroup,
   collapseRowGroup,
   expandColumnGroup,

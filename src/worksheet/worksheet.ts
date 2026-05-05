@@ -892,6 +892,51 @@ export function getRangeValues(ws: Worksheet, range: string): (CellValue | null)
 }
 
 /**
+ * Copy every populated cell from `source` to `target` (within the
+ * same worksheet, or across worksheets via `targetWs`). Cells are
+ * shallow-cloned: `value` and `styleId` carry over but `row`/`col`
+ * are rewritten. The target's existing cells in the destination
+ * extent are overwritten; cells outside are untouched.
+ *
+ * The source and target ranges define the top-left corner — their
+ * dimensions need not match. If the target range is smaller than the
+ * source, only the cells that fit within the target's extent are
+ * copied; if larger, only the source's extent is filled.
+ *
+ * Returns the number of cells copied.
+ */
+export function copyRange(
+  ws: Worksheet,
+  source: string,
+  target: string,
+  opts: { targetWs?: Worksheet } = {},
+): number {
+  const dest = opts.targetWs ?? ws;
+  const src = parseRange(source);
+  const dst = parseRange(target);
+  const dr = dst.minRow - src.minRow;
+  const dc = dst.minCol - src.minCol;
+  const maxRowOffset = Math.min(src.maxRow - src.minRow, dst.maxRow - dst.minRow);
+  const maxColOffset = Math.min(src.maxCol - src.minCol, dst.maxCol - dst.minCol);
+  let n = 0;
+  for (let i = 0; i <= maxRowOffset; i++) {
+    const srcRow = ws.rows.get(src.minRow + i);
+    if (!srcRow) continue;
+    for (let j = 0; j <= maxColOffset; j++) {
+      const srcCell = srcRow.get(src.minCol + j);
+      if (!srcCell) continue;
+      const dstRow = src.minRow + i + dr;
+      const dstCol = src.minCol + j + dc;
+      const newCell = setCell(dest, dstRow, dstCol, srcCell.value, srcCell.styleId);
+      if (srcCell.hyperlinkId !== undefined) newCell.hyperlinkId = srcCell.hyperlinkId;
+      if (srcCell.commentId !== undefined) newCell.commentId = srcCell.commentId;
+      n++;
+    }
+  }
+  return n;
+}
+
+/**
  * Read all populated values in a single column. Returns one `(CellValue
  * | null)` per row in `[minRow, maxRow]` (defaults to row 1 ..
  * `getMaxRow(ws)`). Empty cells yield `null`. Returns `[]` when the
