@@ -30,7 +30,7 @@ import type { Color } from './colors';
 import { makeColor } from './colors';
 import type { Fill } from './fills';
 import { DEFAULT_EMPTY_FILL, makePatternFill } from './fills';
-import type { Font } from './fonts';
+import type { Font, UnderlineStyle } from './fonts';
 import { DEFAULT_FONT, makeFont } from './fonts';
 import { ensureBuiltinStyle } from './named-styles';
 import { builtinFormatCode } from './numbers';
@@ -257,6 +257,68 @@ export function setCellStyle(
   }
   if (Object.keys(patch).length === 0) return;
   applyXfPatch(wb, c, patch as Partial<CellXf>);
+}
+
+// ---- font presets -------------------------------------------------------
+
+const mergeFont = (current: Font, patch: Partial<Font>): Font => makeFont({ ...current, ...patch });
+
+/** Toggle bold on a cell. Preserves other font fields. */
+export function setBold(wb: Workbook, c: Cell, on = true): void {
+  setCellFont(wb, c, mergeFont(getCellFont(wb, c), { bold: on }));
+}
+
+/** Toggle italic on a cell. */
+export function setItalic(wb: Workbook, c: Cell, on = true): void {
+  setCellFont(wb, c, mergeFont(getCellFont(wb, c), { italic: on }));
+}
+
+/** Toggle strike-through on a cell. */
+export function setStrikethrough(wb: Workbook, c: Cell, on = true): void {
+  setCellFont(wb, c, mergeFont(getCellFont(wb, c), { strike: on }));
+}
+
+/**
+ * Set the underline style. Pass `false` to drop underline; pass
+ * `'single' | 'double' | 'singleAccounting' | 'doubleAccounting'` to
+ * apply that style; pass `true` for the most common single-line.
+ */
+export function setUnderline(
+  wb: Workbook,
+  c: Cell,
+  style: UnderlineStyle | boolean = 'single',
+): void {
+  const cur = getCellFont(wb, c);
+  // Strip the existing underline by spreading then overwriting; makeFont
+  // ignores `underline: undefined` so passing nothing for the off-case
+  // drops it entirely.
+  const { underline: _drop, ...rest } = cur;
+  if (style === false) {
+    setCellFont(wb, c, makeFont(rest));
+    return;
+  }
+  const u = style === true ? 'single' : style;
+  setCellFont(wb, c, makeFont({ ...rest, underline: u }));
+}
+
+/** Set the font size in points (e.g. 14). Preserves other fields. */
+export function setFontSize(wb: Workbook, c: Cell, size: number): void {
+  setCellFont(wb, c, mergeFont(getCellFont(wb, c), { size }));
+}
+
+/** Set the font family name (e.g. "Arial"). Preserves other fields. */
+export function setFontName(wb: Workbook, c: Cell, name: string): void {
+  setCellFont(wb, c, mergeFont(getCellFont(wb, c), { name }));
+}
+
+/**
+ * Set the font color. Accepts a hex string ("FFAA0033") or a partial
+ * `Color` object (`{ theme: 4, tint: 0.4 }`). Preserves other font
+ * fields.
+ */
+export function setFontColor(wb: Workbook, c: Cell, color: string | Partial<Color>): void {
+  const colorObj = typeof color === 'string' ? makeColor({ rgb: color }) : makeColor(color);
+  setCellFont(wb, c, mergeFont(getCellFont(wb, c), { color: colorObj }));
 }
 
 // ---- alignment presets --------------------------------------------------
