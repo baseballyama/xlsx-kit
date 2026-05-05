@@ -8,6 +8,7 @@
 
 import type { CellValue } from '../cell/cell';
 import { type Cell, cellValueAsString, makeCell } from '../cell/cell';
+import { type InlineFont, makeRichText, type TextRun } from '../cell/rich-text';
 import type { Drawing } from '../drawing/drawing';
 import { type Color, makeColor } from '../styles/colors';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
@@ -537,6 +538,22 @@ export function* getCellsInRange(ws: Worksheet, range: string): IterableIterator
       if (cell !== undefined) yield cell;
     }
   }
+}
+
+/**
+ * Set a cell's value to a rich-text run array. Accepts either a
+ * pre-built `RichText` (frozen array of TextRun) or a fresh
+ * `Array<{ text, font? }>` shape — `makeRichText` normalises and
+ * freezes the runs in either case. Returns the cell.
+ */
+export function setCellRichText(
+  ws: Worksheet,
+  row: number,
+  col: number,
+  runs: ReadonlyArray<TextRun | { text: string; font?: InlineFont }>,
+  styleId?: number,
+): Cell {
+  return setCell(ws, row, col, { kind: 'rich-text', runs: makeRichText(runs) }, styleId);
 }
 
 /** Resolve an "A1" coordinate to a numeric (col, row) pair on the sheet. */
