@@ -188,6 +188,71 @@ export const setFooter = (ws: Worksheet, section: HeaderFooterSection, text: str
   }
 };
 
+/**
+ * Excel's reserved header / footer code tokens. Drop these into the
+ * left / center / right text inputs of {@link buildHeaderFooterText}
+ * (or directly into a setHeader / setFooter string) to render dynamic
+ * values at print time.
+ */
+export const HEADER_FOOTER_CODES = Object.freeze({
+  /** Current page number. */
+  pageNumber: '&P',
+  /** Total number of pages. */
+  pageCount: '&N',
+  /** Print date. */
+  date: '&D',
+  /** Print time. */
+  time: '&T',
+  /** File path + name. */
+  filePath: '&Z&F',
+  /** File name only. */
+  fileName: '&F',
+  /** Sheet name. */
+  sheetName: '&A',
+  /** Embedded image (Excel inserts via "Insert Picture" — `&G` is the placeholder). */
+  picture: '&G',
+});
+
+/**
+ * Build a header / footer string from optional left / center / right
+ * fragments using Excel's `&L` / `&C` / `&R` markers. An empty fragment
+ * is omitted (no marker emitted) so a center-only header doesn't leave
+ * a stray `&L` prefix. Returns `''` when all three fragments are
+ * undefined.
+ */
+export const buildHeaderFooterText = (
+  parts: { left?: string; center?: string; right?: string },
+): string => {
+  let out = '';
+  if (parts.left !== undefined) out += `&L${parts.left}`;
+  if (parts.center !== undefined) out += `&C${parts.center}`;
+  if (parts.right !== undefined) out += `&R${parts.right}`;
+  return out;
+};
+
+/**
+ * Set a header by left / center / right parts. `section` defaults
+ * to `'odd'` (the standard pages); pass `'first'` or `'even'` to
+ * target the alternate sections (Excel auto-flips the corresponding
+ * differentOddEven / differentFirst flag).
+ */
+export const setHeaderText = (
+  ws: Worksheet,
+  parts: { left?: string; center?: string; right?: string },
+  section: HeaderFooterSection = 'odd',
+): void => {
+  setHeader(ws, section, buildHeaderFooterText(parts));
+};
+
+/** Same shape as {@link setHeaderText} but writes the corresponding footer slot. */
+export const setFooterText = (
+  ws: Worksheet,
+  parts: { left?: string; center?: string; right?: string },
+  section: HeaderFooterSection = 'odd',
+): void => {
+  setFooter(ws, section, buildHeaderFooterText(parts));
+};
+
 /** Push a manual horizontal page break above the given row (1-based). Defaults to `man=true`. */
 export const addRowBreak = (ws: Worksheet, row: number): PageBreak => {
   const brk: PageBreak = { id: row, man: true, max: 16383 };

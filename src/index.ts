@@ -385,6 +385,8 @@ export type {
 export {
   addColBreak,
   addRowBreak,
+  buildHeaderFooterText,
+  HEADER_FOOTER_CODES,
   makeHeaderFooter,
   makePageBreak,
   makePageMargins,
@@ -392,7 +394,9 @@ export {
   makePrintOptions,
   setFitToPage,
   setFooter,
+  setFooterText,
   setHeader,
+  setHeaderText,
   setPrintCentered,
   setPrintGridLines,
   setPrintHeadings,
