@@ -122,3 +122,37 @@ export function extendedPropsToBytes(p: ExtendedProperties): Uint8Array {
 export function extendedPropsFromBytes(bytes: Uint8Array | string): ExtendedProperties {
   return fromTree(parseXml(bytes), ExtendedSchema);
 }
+
+// ---- Workbook ergonomic helpers ----------------------------------------
+
+import type { Workbook } from '../workbook/workbook';
+
+const ensureAppProperties = (wb: Workbook): ExtendedProperties => {
+  if (!wb.appProperties) wb.appProperties = {};
+  return wb.appProperties;
+};
+
+/** Set the company name on docProps/app.xml. */
+export const setWorkbookCompany = (wb: Workbook, company: string): void => {
+  ensureAppProperties(wb).company = company;
+};
+
+/** Set the manager / supervisor name on docProps/app.xml. */
+export const setWorkbookManager = (wb: Workbook, manager: string): void => {
+  ensureAppProperties(wb).manager = manager;
+};
+
+/** Set the application name (e.g. `"Microsoft Excel"`). */
+export const setWorkbookApplication = (wb: Workbook, application: string): void => {
+  ensureAppProperties(wb).application = application;
+};
+
+/** Set the application version (typically `"16.0300"` for Excel 365). */
+export const setWorkbookAppVersion = (wb: Workbook, version: string): void => {
+  ensureAppProperties(wb).appVersion = version;
+};
+
+/** Set the hyperlink base URL — Excel uses this as a prefix for relative `&F` codes. */
+export const setWorkbookHyperlinkBase = (wb: Workbook, base: string): void => {
+  ensureAppProperties(wb).hyperlinkBase = base;
+};

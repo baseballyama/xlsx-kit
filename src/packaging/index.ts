@@ -36,7 +36,16 @@ export {
   readStringValue,
 } from './custom';
 export type { ExtendedProperties } from './extended';
-export { extendedPropsFromBytes, extendedPropsToBytes, makeExtendedProperties } from './extended';
+export {
+  extendedPropsFromBytes,
+  extendedPropsToBytes,
+  makeExtendedProperties,
+  setWorkbookAppVersion,
+  setWorkbookApplication,
+  setWorkbookCompany,
+  setWorkbookHyperlinkBase,
+  setWorkbookManager,
+} from './extended';
 export type { DefaultEntry, Manifest, OverrideEntry } from './manifest';
 export {
   addDefault,
