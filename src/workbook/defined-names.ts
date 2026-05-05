@@ -76,6 +76,21 @@ export const removeDefinedName = (wb: Workbook, name: string, scope?: number): b
 };
 
 /**
+ * Read-only snapshot of every defined name. Pass `{ scope }` to
+ * narrow to workbook-scope (`scope: undefined`) or one specific
+ * sheet (`scope: 0`) — omit the option entirely to list all.
+ */
+export const listDefinedNames = (
+  wb: Workbook,
+  opts: { scope?: number | 'workbook' | 'all' } = {},
+): ReadonlyArray<DefinedName> => {
+  const scope = opts.scope ?? 'all';
+  if (scope === 'all') return wb.definedNames;
+  if (scope === 'workbook') return wb.definedNames.filter((d) => d.scope === undefined);
+  return wb.definedNames.filter((d) => d.scope === scope);
+};
+
+/**
  * Define the print-area for a given sheet. Excel uses the built-in
  * `_xlnm.Print_Area` defined name with sheet scope.
  */

@@ -1073,6 +1073,11 @@ export function getHyperlink(ws: Worksheet, ref: string): Hyperlink | undefined 
   return ws.hyperlinks.find((h) => h.ref === ref);
 }
 
+/** Read-only snapshot of every hyperlink on the sheet. */
+export function listHyperlinks(ws: Worksheet): ReadonlyArray<Hyperlink> {
+  return ws.hyperlinks;
+}
+
 // ---- data validations ----------------------------------------------------
 
 /** Append a DataValidation entry. */
@@ -1086,6 +1091,11 @@ export function removeDataValidations(ws: Worksheet, predicate: (dv: DataValidat
   const before = ws.dataValidations.length;
   ws.dataValidations = ws.dataValidations.filter((dv) => !predicate(dv));
   return before - ws.dataValidations.length;
+}
+
+/** Read-only snapshot of every data validation block on the sheet. */
+export function listDataValidations(ws: Worksheet): ReadonlyArray<DataValidation> {
+  return ws.dataValidations;
 }
 
 // ---- autoFilter ----------------------------------------------------------
@@ -1115,6 +1125,11 @@ export function addTable(ws: Worksheet, table: TableDefinition): TableDefinition
 /** Look up a table by displayName. */
 export function getTable(ws: Worksheet, displayName: string): TableDefinition | undefined {
   return ws.tables.find((t) => t.displayName === displayName);
+}
+
+/** Read-only snapshot of every Excel table defined on the sheet. */
+export function listTables(ws: Worksheet): ReadonlyArray<TableDefinition> {
+  return ws.tables;
 }
 
 /** Drop a table by displayName. Returns true when something was removed. */

@@ -227,6 +227,9 @@ export {
   iterRows as iterWorksheetRows,
   iterValues as iterWorksheetValues,
   listComments,
+  listDataValidations,
+  listHyperlinks,
+  listTables,
   makeWorksheet,
   mergeCells,
   removeCellWatches,
@@ -528,6 +531,7 @@ export type { DefinedName } from './workbook/defined-names';
 export {
   addDefinedName,
   getDefinedName,
+  listDefinedNames,
   makeDefinedName,
   removeDefinedName,
   setPrintArea,
