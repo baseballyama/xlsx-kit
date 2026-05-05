@@ -264,6 +264,8 @@ export type {
   OleUpdateMode,
 } from './worksheet/ole-objects';
 export { makeFormControl, makeOleObject } from './worksheet/ole-objects';
+export type { CustomSheetView, CustomSheetViewState } from './worksheet/custom-sheet-views';
+export { makeCustomSheetView } from './worksheet/custom-sheet-views';
 export type {
   CellCommentMode,
   HeaderFooter,

@@ -73,6 +73,7 @@ import type { SheetProtection } from './protection';
 import type { ProtectedRange } from './protected-ranges';
 import type { SortBy, SortCondition, SortIconSet, SortMethod, SortState } from './sort-state';
 import type { FormControl, OleDvAspect, OleObject, OleUpdateMode } from './ole-objects';
+import type { CustomSheetView, CustomSheetViewState } from './custom-sheet-views';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { makeColor } from '../styles/colors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
@@ -131,6 +132,8 @@ const SORT_STATE_TAG = `{${SHEET_MAIN_NS}}sortState`;
 const SORT_CONDITION_TAG = `{${SHEET_MAIN_NS}}sortCondition`;
 const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
 const LEGACY_DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}legacyDrawingHF`;
+const CUSTOM_SHEET_VIEWS_TAG = `{${SHEET_MAIN_NS}}customSheetViews`;
+const CUSTOM_SHEET_VIEW_TAG = `{${SHEET_MAIN_NS}}customSheetView`;
 const OLE_OBJECTS_TAG = `{${SHEET_MAIN_NS}}oleObjects`;
 const OLE_OBJECT_TAG = `{${SHEET_MAIN_NS}}oleObject`;
 const OBJECT_PR_TAG = `{${SHEET_MAIN_NS}}objectPr`;
@@ -395,6 +398,15 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (lhfEl) {
     const rId = lhfEl.attrs[`{${REL_NS}}id`];
     if (rId) ws.legacyDrawingHFRId = rId;
+  }
+
+  // <customSheetViews><customSheetView guid="…" scale="…" …>...</customSheetView></customSheetViews>
+  const csvWrap = findChild(root, CUSTOM_SHEET_VIEWS_TAG);
+  if (csvWrap) {
+    for (const v of findChildren(csvWrap, CUSTOM_SHEET_VIEW_TAG)) {
+      const view = parseCustomSheetView(v);
+      if (view) ws.customSheetViews.push(view);
+    }
   }
 
   // <oleObjects><oleObject ...><objectPr.../></oleObject></oleObjects>
@@ -755,6 +767,100 @@ export const parseWebPublishItem = (node: XmlNode): WebPublishItem | undefined =
   if (node.attrs['title'] !== undefined) out.title = node.attrs['title'];
   const auto = parseBoolXmlAttr(node.attrs['autoRepublish']);
   if (auto !== undefined) out.autoRepublish = auto;
+  return out;
+};
+
+const CUSTOM_SHEET_VIEW_STATES: ReadonlyArray<CustomSheetViewState> = [
+  'visible',
+  'hidden',
+  'veryHidden',
+];
+
+const parseCustomSheetView = (node: XmlNode): CustomSheetView | undefined => {
+  const guid = node.attrs['guid'];
+  if (!guid) return undefined;
+  const out: CustomSheetView = { guid };
+  const intAttr = (k: string): number | undefined => {
+    const raw = node.attrs[k];
+    if (raw === undefined) return undefined;
+    const n = Number.parseInt(raw, 10);
+    return Number.isInteger(n) ? n : undefined;
+  };
+  const scale = intAttr('scale');
+  if (scale !== undefined) out.scale = scale;
+  const colorId = intAttr('colorId');
+  if (colorId !== undefined) out.colorId = colorId;
+
+  const boolKeys: ReadonlyArray<keyof CustomSheetView> = [
+    'showPageBreaks',
+    'showFormulas',
+    'showGridLines',
+    'showRowCol',
+    'outlineSymbols',
+    'zeroValues',
+    'fitToPage',
+    'printArea',
+    'filter',
+    'showAutoFilter',
+    'hiddenRows',
+    'hiddenColumns',
+    'filterUnique',
+    'showRuler',
+  ];
+  for (const k of boolKeys) {
+    const v = parseBoolXmlAttr(node.attrs[k as string]);
+    if (v !== undefined) (out as unknown as Record<string, unknown>)[k as string] = v;
+  }
+  const stateRaw = node.attrs['state'];
+  if (stateRaw && CUSTOM_SHEET_VIEW_STATES.includes(stateRaw as CustomSheetViewState)) {
+    out.state = stateRaw as CustomSheetViewState;
+  }
+  const viewRaw = node.attrs['view'];
+  if (viewRaw && SHEET_VIEW_MODES.includes(viewRaw as SheetViewMode)) {
+    out.view = viewRaw as SheetViewMode;
+  }
+  if (node.attrs['topLeftCell'] !== undefined) out.topLeftCell = node.attrs['topLeftCell'];
+
+  // Children — reuse existing parsers.
+  const paneEl = findChild(node, PANE_TAG);
+  if (paneEl) out.pane = parsePane(paneEl);
+  const selections: Selection[] = [];
+  for (const s of findChildren(node, SELECTION_TAG)) selections.push(parseSelection(s));
+  if (selections.length > 0) out.selections = selections;
+
+  const rbEl = findChild(node, ROW_BREAKS_TAG);
+  if (rbEl) {
+    const arr: PageBreak[] = [];
+    for (const brk of findChildren(rbEl, BRK_TAG)) arr.push(parsePageBreak(brk));
+    if (arr.length > 0) out.rowBreaks = arr;
+  }
+  const cbEl = findChild(node, COL_BREAKS_TAG);
+  if (cbEl) {
+    const arr: PageBreak[] = [];
+    for (const brk of findChildren(cbEl, BRK_TAG)) arr.push(parsePageBreak(brk));
+    if (arr.length > 0) out.colBreaks = arr;
+  }
+
+  const pmEl = findChild(node, PAGE_MARGINS_TAG);
+  if (pmEl) {
+    const pm = parsePageMargins(pmEl);
+    if (pm) out.pageMargins = pm;
+  }
+  const poEl = findChild(node, PRINT_OPTIONS_TAG);
+  if (poEl) {
+    const po = parsePrintOptions(poEl);
+    if (po) out.printOptions = po;
+  }
+  const psEl = findChild(node, PAGE_SETUP_TAG);
+  if (psEl) {
+    const ps = parsePageSetup(psEl);
+    if (ps) out.pageSetup = ps;
+  }
+  const hfEl = findChild(node, HEADER_FOOTER_TAG);
+  if (hfEl) {
+    const hf = parseHeaderFooter(hfEl);
+    if (hf) out.headerFooter = hf;
+  }
   return out;
 };
 
@@ -1123,6 +1229,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   OLE_OBJECTS_TAG,
   CONTROLS_TAG,
   SMART_TAGS_TAG,
+  CUSTOM_SHEET_VIEWS_TAG,
   PRINT_OPTIONS_TAG,
   PAGE_MARGINS_TAG,
   PAGE_SETUP_TAG,

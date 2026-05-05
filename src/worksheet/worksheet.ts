@@ -138,6 +138,13 @@ export interface Worksheet {
    */
   smartTags: import('./smart-tags').CellSmartTags[];
   /**
+   * `<customSheetViews>` — saved per-user view presets for this
+   * worksheet (Excel's "Custom Views" feature). Each entry snapshots
+   * zoom / gridline / formula / heading toggles plus its own page-
+   * setup block and break list.
+   */
+  customSheetViews: import('./custom-sheet-views').CustomSheetView[];
+  /**
    * `<oleObjects>` — embedded OLE objects (linked Word documents,
    * Equation editor formulas, etc.). The objectPr child is round-
    * tripped verbatim as an XmlNode.
@@ -249,6 +256,7 @@ export function makeWorksheet(title: string): Worksheet {
     webPublishItems: [],
     protectedRanges: [],
     smartTags: [],
+    customSheetViews: [],
     oleObjects: [],
     controls: [],
   };

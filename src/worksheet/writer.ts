@@ -38,6 +38,7 @@ import type { SheetProtection } from './protection';
 import type { ProtectedRange } from './protected-ranges';
 import type { SortCondition, SortState } from './sort-state';
 import type { FormControl, OleObject } from './ole-objects';
+import type { CustomSheetView } from './custom-sheet-views';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
 
@@ -164,6 +165,7 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     }
     parts.push('</mergeCells>');
   }
+  if (ws.customSheetViews.length > 0) parts.push(serializeCustomSheetViews(ws.customSheetViews));
   if (ws.phoneticPr) {
     const pp = serializePhoneticPr(ws.phoneticPr);
     if (pp) parts.push(pp);
@@ -995,6 +997,58 @@ const serializeRowDimensionAttrs = (dim: RowDimension): string => {
  */
 const serializeBodyExtraNode = (node: XmlNode): string =>
   new TextDecoder().decode(serializeXml(node, { xmlDeclaration: false }));
+
+const serializeCustomSheetViews = (views: ReadonlyArray<CustomSheetView>): string => {
+  const parts: string[] = ['<customSheetViews>'];
+  for (const v of views) {
+    let attrs = ` guid="${escapeXmlAttr(v.guid)}"`;
+    if (v.scale !== undefined) attrs += ` scale="${v.scale}"`;
+    if (v.colorId !== undefined) attrs += ` colorId="${v.colorId}"`;
+    const flag = (val: boolean | undefined, name: string): void => {
+      if (val !== undefined) attrs += ` ${name}="${val ? '1' : '0'}"`;
+    };
+    flag(v.showPageBreaks, 'showPageBreaks');
+    flag(v.showFormulas, 'showFormulas');
+    flag(v.showGridLines, 'showGridLines');
+    flag(v.showRowCol, 'showRowCol');
+    flag(v.outlineSymbols, 'outlineSymbols');
+    flag(v.zeroValues, 'zeroValues');
+    flag(v.fitToPage, 'fitToPage');
+    flag(v.printArea, 'printArea');
+    flag(v.filter, 'filter');
+    flag(v.showAutoFilter, 'showAutoFilter');
+    flag(v.hiddenRows, 'hiddenRows');
+    flag(v.hiddenColumns, 'hiddenColumns');
+    if (v.state !== undefined) attrs += ` state="${v.state}"`;
+    flag(v.filterUnique, 'filterUnique');
+    if (v.view !== undefined) attrs += ` view="${v.view}"`;
+    flag(v.showRuler, 'showRuler');
+    if (v.topLeftCell !== undefined) attrs += ` topLeftCell="${escapeXmlAttr(v.topLeftCell)}"`;
+
+    const inner: string[] = [];
+    if (v.pane) inner.push(serializePane(v.pane));
+    if (v.selections) for (const s of v.selections) inner.push(serializeSelection(s));
+    if (v.rowBreaks && v.rowBreaks.length > 0) inner.push(serializePageBreaks(v.rowBreaks, 'rowBreaks'));
+    if (v.colBreaks && v.colBreaks.length > 0) inner.push(serializePageBreaks(v.colBreaks, 'colBreaks'));
+    if (v.pageMargins) inner.push(serializePageMargins(v.pageMargins));
+    if (v.printOptions) {
+      const po = serializePrintOptions(v.printOptions);
+      if (po) inner.push(po);
+    }
+    if (v.pageSetup) {
+      const ps = serializePageSetup(v.pageSetup);
+      if (ps) inner.push(ps);
+    }
+    if (v.headerFooter) {
+      const hf = serializeHeaderFooter(v.headerFooter);
+      if (hf) inner.push(hf);
+    }
+    if (inner.length === 0) parts.push(`<customSheetView${attrs}/>`);
+    else parts.push(`<customSheetView${attrs}>${inner.join('')}</customSheetView>`);
+  }
+  parts.push('</customSheetViews>');
+  return parts.join('');
+};
 
 const serializeOleObjects = (objs: ReadonlyArray<OleObject>): string => {
   const parts: string[] = ['<oleObjects>'];
