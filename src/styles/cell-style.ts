@@ -259,6 +259,24 @@ export function setCellStyle(
   applyXfPatch(wb, c, patch as Partial<CellXf>);
 }
 
+// ---- fill presets -------------------------------------------------------
+
+/**
+ * Set the cell's background to a solid color. Accepts a hex string
+ * (`'FFAAFFAA'`) or a partial `Color` object (`{ theme: 4, tint: 0.4 }`).
+ * Equivalent to `setCellFill(wb, c, makePatternFill({ patternType:
+ * 'solid', fgColor: makeColor(...) }))`.
+ */
+export function setCellBackgroundColor(wb: Workbook, c: Cell, color: string | Partial<Color>): void {
+  const colorObj = typeof color === 'string' ? makeColor({ rgb: color }) : makeColor(color);
+  setCellFill(wb, c, makePatternFill({ patternType: 'solid', fgColor: colorObj }));
+}
+
+/** Strip the cell's background fill, returning it to the default. */
+export function clearCellBackground(wb: Workbook, c: Cell): void {
+  setCellFill(wb, c, DEFAULT_EMPTY_FILL);
+}
+
 // ---- font presets -------------------------------------------------------
 
 const mergeFont = (current: Font, patch: Partial<Font>): Font => makeFont({ ...current, ...patch });
