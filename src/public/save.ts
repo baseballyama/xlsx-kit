@@ -610,6 +610,10 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     const fv = serializeFileVersion(wb.fileVersion);
     if (fv) parts.push(fv);
   }
+  if (wb.fileSharing) {
+    const fs = serializeFileSharing(wb.fileSharing);
+    if (fs) parts.push(fs);
+  }
   if (wb.workbookXmlExtras?.beforeSheets) {
     for (const node of wb.workbookXmlExtras.beforeSheets) parts.push(serializeChildNode(node));
   }
@@ -674,6 +678,23 @@ function serializeCalcProperties(
   if (cp.forceFullCalc !== undefined) attrs += ` forceFullCalc="${cp.forceFullCalc ? '1' : '0'}"`;
   if (attrs.length === 0) return undefined;
   return `<calcPr${attrs}/>`;
+}
+
+function serializeFileSharing(
+  fs: import('../workbook/file-sharing').FileSharing,
+): string | undefined {
+  let attrs = '';
+  if (fs.readOnlyRecommended !== undefined)
+    attrs += ` readOnlyRecommended="${fs.readOnlyRecommended ? '1' : '0'}"`;
+  if (fs.userName !== undefined) attrs += ` userName="${escapeAttr(fs.userName)}"`;
+  if (fs.reservationPassword !== undefined)
+    attrs += ` reservationPassword="${escapeAttr(fs.reservationPassword)}"`;
+  if (fs.algorithmName !== undefined) attrs += ` algorithmName="${escapeAttr(fs.algorithmName)}"`;
+  if (fs.hashValue !== undefined) attrs += ` hashValue="${escapeAttr(fs.hashValue)}"`;
+  if (fs.saltValue !== undefined) attrs += ` saltValue="${escapeAttr(fs.saltValue)}"`;
+  if (fs.spinCount !== undefined) attrs += ` spinCount="${fs.spinCount}"`;
+  if (attrs.length === 0) return undefined;
+  return `<fileSharing${attrs}/>`;
 }
 
 function serializeFileVersion(

@@ -101,6 +101,8 @@ export interface Workbook {
   calcProperties?: import('./calc-properties').CalcProperties;
   /** `<fileVersion>` — Office app/version metadata Excel records on save. */
   fileVersion?: import('./file-version').FileVersion;
+  /** `<fileSharing>` — read-only-recommended toggle + write-protection password. */
+  fileSharing?: import('./file-sharing').FileSharing;
   /**
    * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
    * prompt mode, etc. `date1904` is mirrored here for completeness but

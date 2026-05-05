@@ -147,6 +147,7 @@ const BOOK_VIEWS_TAG = `{${SHEET_MAIN_NS}}bookViews`;
 const WORKBOOK_VIEW_TAG = `{${SHEET_MAIN_NS}}workbookView`;
 const CALC_PR_TAG = `{${SHEET_MAIN_NS}}calcPr`;
 const FILE_VERSION_TAG = `{${SHEET_MAIN_NS}}fileVersion`;
+const FILE_SHARING_TAG = `{${SHEET_MAIN_NS}}fileSharing`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -519,6 +520,29 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     if (child.name === WORKBOOK_PR_TAG) {
       const wp = parseWorkbookProperties(child);
       if (wp) wb.workbookProperties = wp;
+      continue;
+    }
+    // Lift <fileSharing> into the typed workbook field.
+    if (child.name === FILE_SHARING_TAG) {
+      const fs: import('../workbook/file-sharing').FileSharing = {};
+      const a = child.attrs;
+      const flag = (raw: string | undefined): boolean | undefined => {
+        if (raw === '1' || raw === 'true') return true;
+        if (raw === '0' || raw === 'false') return false;
+        return undefined;
+      };
+      const ror = flag(a['readOnlyRecommended']);
+      if (ror !== undefined) fs.readOnlyRecommended = ror;
+      if (a['userName'] !== undefined) fs.userName = a['userName'];
+      if (a['reservationPassword'] !== undefined) fs.reservationPassword = a['reservationPassword'];
+      if (a['algorithmName'] !== undefined) fs.algorithmName = a['algorithmName'];
+      if (a['hashValue'] !== undefined) fs.hashValue = a['hashValue'];
+      if (a['saltValue'] !== undefined) fs.saltValue = a['saltValue'];
+      if (a['spinCount'] !== undefined) {
+        const n = Number.parseInt(a['spinCount'], 10);
+        if (Number.isInteger(n)) fs.spinCount = n;
+      }
+      if (Object.keys(fs).length > 0) wb.fileSharing = fs;
       continue;
     }
     // Lift <fileVersion> into the typed workbook field.

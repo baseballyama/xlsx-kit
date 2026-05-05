@@ -21,7 +21,16 @@
   1148 tests pass (was 1128, +20 in this turn)、`pnpm size` full 81.7 KB / streaming 46.52 KB clean、lint / typecheck clean。**残**: random-access streaming reader for sub-sheet cell ranges (perf 最適化、ECMA-376 row-order 前提に row-offset index を作る案; 単独実装スプリント要)、Excel 365 視覚 QA (人手)、ZIP64 write の正式対応 (fflate 上流)。コア実装はフェーズ1-7 + streaming acceptance + docs + 多数の edge-fixture acceptance + public API 露出 + 全主要 perf gate clear すべて整備、1.0 候補レベル。
 - **次のタスク**: **フェーズ4 §2.x row-offset index for sub-sheet streaming reader 完了**。`makeStreamingReadOnlyWorksheet` に lazy-built `<row r="N">` byte-offset index + `</sheetData>` 終端位置の cache を追加。`iterRows({minRow > 1})` の経路で: (1) 初回呼出で `buildRowOffsetIndex(bytes)` を実行 (純 byte-level スキャン、`<row` ASCII pattern を見つけて attrs から `r="N"` を抽出、~50 ns/row)、(2) `firstRowAtOrAfter(index, minRow)` で binary search、(3) `sliceFromRow` で `[targetOffset, sheetDataEnd)` を切り出し、`<?xml ?><sheetData xmlns="...">SLICE</sheetData>` で wrap → saxes に渡す。これで minRow=999000 の 1M 行 sheet で saxes-walk が ~1000 行ぶんに圧縮。`minRow <= 1` は index を完全 skip (旧 path のまま)、`minRow > maxKnownRow` は空 generator を即返す。`tests/phase-4/row-offset-index.test.ts` 5 件: minRow only / minRow+maxRow band / out-of-range / index 再利用 (連続 band query) / SST + 数値混合の cell value 整合。1153 tests pass (was 1148)、bundle / lint / typecheck clean。残：Excel 365 視覚 QA (人手)、ZIP64 write の正式対応 (fflate 上流)。コア実装フェーズ1-7 + streaming acceptance + docs + edge-fixture acceptance + public API 露出 + 全主要 perf gate clear + sub-sheet random-access reader すべて整備、**docs target の機能要件は事実上完了**。
 - **次のタスク**: **row-offset index speedup の実機計測 完了**。`tests/perf/row-index.test.ts` を追加: 10k 行 × 5 列の sheet を 1 つ書き、tail 100 行を `iterRows({minRow: ROWS-99, maxRow: ROWS})` で 3 回計測 (warm-up + best-of-3) ↔ 同じ tail を no-min walk + count-cap で計測 (full-sheet saxes-walk)。**実機実測**: index path 12.1 ms、full-walk path 41,310 ms、**speedup 3415x**。`PERF_ROW_INDEX_GATE=1` で `>2x` を assert (gate-off default、observe-only)。stderr に `[perf-row-index] tail-100-of-10,000 rows: index 12.10ms, full 41310.54ms, speedup 3415.0x` を 1 行で記録。1153 default tests pass (perf スイートは別 config)、lint clean。残：Excel 365 視覚 QA (人手)、ZIP64 write の正式対応 (fflate 上流)。docs target の機能要件 + perf 実証すべて完了。
-- **次のタスク**: **workbook-level fileVersion を typed API に**。Office app/version metadata。
+- **次のタスク**: **workbook-level fileSharing を typed API に**。Save As → Tools → General Options の「Read-only recommended」+ write-protection password に対応:
+  1. `src/workbook/file-sharing.ts` 新設: `FileSharing { readOnlyRecommended? / userName? / reservationPassword? (legacy hex) / algorithmName? / hashValue? / saltValue? / spinCount? (modern hash quad) }` 全 7 attr + factory。
+  2. `Workbook.fileSharing?: FileSharing` 追加。
+  3. reader: `<fileSharing>` を `captureWorkbookXmlExtras` で typed lift (inline parse、boolean flag は 1/0/true/false 受理)。
+  4. writer: `<fileSharing>` は ECMA-376 §18.2.12 で fileVersion の直後 + workbookPr の前に emit。
+  5. `tests/phase-3/file-sharing.test.ts` 3 件: modern hash quad + readOnly+userName round-trip / legacy reservationPassword round-trip / undefined 時 emit ナシ。
+
+  empirical: 1221 tests pass (was 1218, +3)、e2e 32 件 pass、typecheck / lint clean。
+
+- **次のタスク (前回)**: **workbook-level fileVersion を typed API に**。Office app/version metadata。
   1. `src/workbook/file-version.ts` 新設: `FileVersion { appName / lastEdited / lowestEdited / rupBuild / codeName }` 全 5 attr (全て string)。
   2. `Workbook.fileVersion?: FileVersion` 追加。
   3. reader: `<fileVersion>` を `captureWorkbookXmlExtras` で typed lift。

@@ -357,3 +357,5 @@ export type {
 export { makeWorkbookProperties } from './workbook/workbook-properties';
 export type { FileVersion } from './workbook/file-version';
 export { makeFileVersion } from './workbook/file-version';
+export type { FileSharing } from './workbook/file-sharing';
+export { makeFileSharing } from './workbook/file-sharing';
