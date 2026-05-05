@@ -111,6 +111,13 @@ export interface Workbook {
   /** `<fileRecoveryPr>` — autoRecover-style flags Excel writes after a recovery save. */
   fileRecoveryPr?: import('./file-recovery').FileRecoveryProperties;
   /**
+   * `<pivotCaches>` — links from workbook root to xl/pivotCache parts.
+   * The underlying parts survive via the passthrough archive; this
+   * typed array preserves the cacheId ↔ rId mapping for consumers that
+   * want to introspect the pivot links.
+   */
+  pivotCaches?: ReadonlyArray<{ cacheId: number; rId: string }>;
+  /**
    * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
    * prompt mode, etc. `date1904` is mirrored here for completeness but
    * the canonical source remains `wb.date1904`.

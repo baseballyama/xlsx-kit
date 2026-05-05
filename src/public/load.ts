@@ -150,6 +150,8 @@ const FILE_VERSION_TAG = `{${SHEET_MAIN_NS}}fileVersion`;
 const FILE_SHARING_TAG = `{${SHEET_MAIN_NS}}fileSharing`;
 const OLE_SIZE_TAG = `{${SHEET_MAIN_NS}}oleSize`;
 const FILE_RECOVERY_PR_TAG = `{${SHEET_MAIN_NS}}fileRecoveryPr`;
+const PIVOT_CACHES_TAG = `{${SHEET_MAIN_NS}}pivotCaches`;
+const PIVOT_CACHE_TAG = `{${SHEET_MAIN_NS}}pivotCache`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -575,6 +577,20 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     if (child.name === OLE_SIZE_TAG) {
       const ref = child.attrs['ref'];
       if (ref) wb.oleSize = ref;
+      continue;
+    }
+    // Lift <pivotCaches><pivotCache cacheId=… r:id=…/></pivotCaches>.
+    if (child.name === PIVOT_CACHES_TAG) {
+      const caches: Array<{ cacheId: number; rId: string }> = [];
+      for (const pc of findChildren(child, PIVOT_CACHE_TAG)) {
+        const cacheIdAttr = pc.attrs['cacheId'];
+        const rId = pc.attrs[`{${REL_NS}}id`];
+        if (cacheIdAttr === undefined || !rId) continue;
+        const cacheId = Number.parseInt(cacheIdAttr, 10);
+        if (!Number.isInteger(cacheId)) continue;
+        caches.push({ cacheId, rId });
+      }
+      if (caches.length > 0) wb.pivotCaches = caches;
       continue;
     }
     // Lift <fileRecoveryPr> into the typed workbook field.

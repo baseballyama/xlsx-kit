@@ -648,6 +648,14 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     }
     parts.push('</definedNames>');
   }
+  if (wb.pivotCaches && wb.pivotCaches.length > 0) {
+    const inner: string[] = ['<pivotCaches>'];
+    for (const pc of wb.pivotCaches) {
+      inner.push(`<pivotCache cacheId="${pc.cacheId}" r:id="${escapeAttr(pc.rId)}"/>`);
+    }
+    inner.push('</pivotCaches>');
+    parts.push(inner.join(''));
+  }
   if (wb.calcProperties) {
     const cp = serializeCalcProperties(wb.calcProperties);
     if (cp) parts.push(cp);
