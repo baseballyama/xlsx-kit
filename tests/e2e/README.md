@@ -40,6 +40,9 @@ screenshot and file an issue against the matching scenario.
 | `16-streaming-large.xlsx` | Generated | ~50,000 rows × 6 cols. Should open in <1 s and scroll smoothly. Bottom row label = `even-50000` or `odd-50000`. File size in OS file manager should be a few MB at most. |
 | `17-utf8-edge.xlsx` | 売上 / مبيعات / Resumé | Tab labels render correctly across Japanese / Arabic (RTL) / accented Latin. `売上` A1 has emoji 😀 inside a multi-script string. `Resumé` has a cell at the *maximum* coord XFD1048576 ("corner") — press Ctrl+End to jump there. |
 | `18-images.xlsx` | Image | A tiny 4×4 PNG block scaled to 96×96 px anchored at C3. |
+| `19-charts-classic.xlsx` | Data | 5 months × 3 series (A/B/C). Six classic charts anchored at F2/F20/F38/O2/O20/O38: Line, Area (stacked), Pie (series A only), Doughnut (50% hole), Scatter (A vs B, lineMarker), Radar (standard). All should render with axis/legend visible. |
+| `20-charts-chartex.xlsx` | Data | Hierarchical categories (`North/Apples`, `North/Oranges`, ...) with 6 numeric values. Eight chartex (`cx:` namespace) charts: Sunburst, Treemap, Waterfall (subtotal at idx 3), Histogram, Pareto, Funnel, BoxWhisker, RegionMap — anchored across D/M/V columns. **Excel 2016+ required**; older Excel will refuse the namespace. |
+| `21-chart-decorations.xlsx` | Data | Top chart (column): each bar shows its value as a data label above the bar; a linear trendline (with equation + R²) cuts through. Bottom chart (scatter): exponential trendline + Y-axis ±10% percentage error bars on each point. |
 
 ## Adding a new scenario
 
