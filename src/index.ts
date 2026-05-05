@@ -592,6 +592,7 @@ export {
   getSheetByIndex,
   getSheetState,
   hideSheet,
+  isValidSheetTitle,
   iterAllCells,
   iterChartsheets,
   iterWorksheets,
@@ -607,6 +608,7 @@ export {
   setSheetState,
   sheetNames,
   showSheet,
+  validateSheetTitle,
   veryHideSheet,
 } from './workbook/workbook';
 export type { DefinedName } from './workbook/defined-names';

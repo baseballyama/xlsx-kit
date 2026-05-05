@@ -172,9 +172,38 @@ export function createWorkbook(opts?: { date1904?: boolean }): Workbook {
   };
 }
 
+/**
+ * Validate a sheet title against Excel's character + length rules.
+ * Returns the reason string when the title is rejected; `undefined`
+ * when valid. The same rules apply to worksheets and chartsheets.
+ *
+ * Rules:
+ *  - Type must be `string`; non-empty; length ≤ 31.
+ *  - May not contain any of `:`, `\`, `/`, `?`, `*`, `[`, `]`.
+ *  - May not start or end with an apostrophe `'`.
+ *  - May not be the literal `"History"` (case-insensitive — Excel
+ *    reserves that name for the change-tracking sheet).
+ *
+ * Uniqueness is **not** checked here; pass through `addWorksheet`
+ * / `renameSheet` for the workbook-aware duplicate check.
+ */
+export function validateSheetTitle(title: unknown): string | undefined {
+  if (typeof title !== 'string') return 'must be a string';
+  if (title.length === 0) return 'must be 1..31 chars';
+  if (title.length > 31) return 'must be 1..31 chars';
+  if (/[:\\/?*[\]]/.test(title)) return 'must not contain : \\ / ? * [ ]';
+  if (title.startsWith("'") || title.endsWith("'")) return 'must not start or end with an apostrophe';
+  if (title.toLowerCase() === 'history') return '"History" is reserved by Excel';
+  return undefined;
+}
+
+/** Boolean form of {@link validateSheetTitle}. */
+export const isValidSheetTitle = (title: unknown): title is string => validateSheetTitle(title) === undefined;
+
 const validateUniqueTitle = (wb: Workbook, title: string): void => {
-  if (typeof title !== 'string' || title.length === 0 || title.length > 31) {
-    throw new OpenXmlSchemaError(`Worksheet title must be 1..31 chars; got "${title}"`);
+  const reason = validateSheetTitle(title);
+  if (reason) {
+    throw new OpenXmlSchemaError(`Worksheet title "${title}": ${reason}`);
   }
   for (const s of wb.sheets) {
     if (s.sheet.title === title) {
