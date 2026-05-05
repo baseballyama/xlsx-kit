@@ -754,7 +754,7 @@ const parseBoolFlag = (raw: string | undefined): boolean | undefined => {
   return undefined;
 };
 
-const parsePrintOptions = (node: XmlNode): PrintOptions | undefined => {
+export const parsePrintOptions = (node: XmlNode): PrintOptions | undefined => {
   const out: PrintOptions = {};
   const hc = parseBoolFlag(node.attrs['horizontalCentered']);
   if (hc !== undefined) out.horizontalCentered = hc;
@@ -769,7 +769,7 @@ const parsePrintOptions = (node: XmlNode): PrintOptions | undefined => {
   return Object.keys(out).length > 0 ? out : undefined;
 };
 
-const parsePageMargins = (node: XmlNode): PageMargins | undefined => {
+export const parsePageMargins = (node: XmlNode): PageMargins | undefined => {
   const left = parseFloatAttr(node.attrs['left']);
   const right = parseFloatAttr(node.attrs['right']);
   const top = parseFloatAttr(node.attrs['top']);
@@ -794,7 +794,7 @@ const PAGE_ORDERS: ReadonlyArray<PageOrder> = ['downThenOver', 'overThenDown'];
 const CELL_COMMENT_MODES: ReadonlyArray<CellCommentMode> = ['none', 'asDisplayed', 'atEnd'];
 const PRINT_ERROR_MODES: ReadonlyArray<PrintErrorMode> = ['displayed', 'blank', 'dash', 'NA'];
 
-const parsePageSetup = (node: XmlNode): PageSetup | undefined => {
+export const parsePageSetup = (node: XmlNode): PageSetup | undefined => {
   const out: PageSetup = {};
   const intAttr = (k: string): void => {
     const v = parseIntegerAttr(node.attrs[k]);
@@ -835,7 +835,7 @@ const parsePageSetup = (node: XmlNode): PageSetup | undefined => {
   return Object.keys(out).length > 0 ? out : undefined;
 };
 
-const parseHeaderFooter = (node: XmlNode): HeaderFooter | undefined => {
+export const parseHeaderFooter = (node: XmlNode): HeaderFooter | undefined => {
   const out: HeaderFooter = {};
   const df = parseBoolFlag(node.attrs['differentFirst']);
   if (df !== undefined) out.differentFirst = df;

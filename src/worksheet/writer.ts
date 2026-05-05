@@ -578,7 +578,7 @@ const serializeDataValidation = (dv: DataValidation): string => {
 const boolAttr = (v: boolean | undefined, name: string): string =>
   v === undefined ? '' : ` ${name}="${v ? '1' : '0'}"`;
 
-const serializePrintOptions = (po: PrintOptions): string | undefined => {
+export const serializePrintOptions = (po: PrintOptions): string | undefined => {
   let attrs = '';
   attrs += boolAttr(po.horizontalCentered, 'horizontalCentered');
   attrs += boolAttr(po.verticalCentered, 'verticalCentered');
@@ -589,7 +589,7 @@ const serializePrintOptions = (po: PrintOptions): string | undefined => {
   return `<printOptions${attrs}/>`;
 };
 
-const serializePageMargins = (pm: PageMargins): string => {
+export const serializePageMargins = (pm: PageMargins): string => {
   return (
     `<pageMargins left="${pm.left}" right="${pm.right}"` +
     ` top="${pm.top}" bottom="${pm.bottom}"` +
@@ -597,7 +597,7 @@ const serializePageMargins = (pm: PageMargins): string => {
   );
 };
 
-const serializePageSetup = (ps: PageSetup): string | undefined => {
+export const serializePageSetup = (ps: PageSetup): string | undefined => {
   let attrs = '';
   if (ps.paperSize !== undefined) attrs += ` paperSize="${ps.paperSize}"`;
   if (ps.scale !== undefined) attrs += ` scale="${ps.scale}"`;
@@ -807,7 +807,7 @@ const serializePageBreaks = (breaks: ReadonlyArray<PageBreak>, kind: 'rowBreaks'
   return parts.join('');
 };
 
-const serializeHeaderFooter = (hf: HeaderFooter): string | undefined => {
+export const serializeHeaderFooter = (hf: HeaderFooter): string | undefined => {
   let attrs = '';
   attrs += boolAttr(hf.differentFirst, 'differentFirst');
   attrs += boolAttr(hf.differentOddEven, 'differentOddEven');

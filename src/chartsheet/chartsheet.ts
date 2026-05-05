@@ -7,6 +7,7 @@
 // `<drawing r:id="..."/>` carrying an absoluteAnchor with the chart.
 
 import type { Drawing } from '../drawing/drawing';
+import type { HeaderFooter, PageMargins, PageSetup } from '../worksheet/page-setup';
 
 /** `<sheetView>` inside `<sheetViews>`. */
 export interface ChartsheetView {
@@ -48,6 +49,12 @@ export interface Chartsheet {
    * helpers can be reused.
    */
   drawing?: Drawing;
+  /** `<pageMargins>` — six required margins in inches. */
+  pageMargins?: PageMargins;
+  /** `<pageSetup>` — paper size / orientation / scale / fitToPage. */
+  pageSetup?: PageSetup;
+  /** `<headerFooter>` — odd/even/first header + footer mini-format strings. */
+  headerFooter?: HeaderFooter;
 }
 
 export const makeChartsheet = (title: string): Chartsheet => ({

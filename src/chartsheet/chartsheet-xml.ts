@@ -4,6 +4,8 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
+import { parseHeaderFooter, parsePageMargins, parsePageSetup } from '../worksheet/reader';
+import { serializeHeaderFooter, serializePageMargins, serializePageSetup } from '../worksheet/writer';
 import {
   type Chartsheet,
   type ChartsheetProperties,
@@ -19,6 +21,9 @@ const SHEET_VIEW_TAG = `{${SHEET_MAIN_NS}}sheetView`;
 const SHEET_PROTECTION_TAG = `{${SHEET_MAIN_NS}}sheetProtection`;
 const TAB_COLOR_TAG = `{${SHEET_MAIN_NS}}tabColor`;
 const DRAWING_TAG = `{${SHEET_MAIN_NS}}drawing`;
+const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
+const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
+const HEADER_FOOTER_TAG = `{${SHEET_MAIN_NS}}headerFooter`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
@@ -101,6 +106,23 @@ export function parseChartsheetXml(bytes: Uint8Array | string, title: string): C
   }
   const protectionEl = findChild(root, SHEET_PROTECTION_TAG);
   if (protectionEl) cs.protection = parseSheetProtection(protectionEl);
+
+  const pmEl = findChild(root, PAGE_MARGINS_TAG);
+  if (pmEl) {
+    const pm = parsePageMargins(pmEl);
+    if (pm) cs.pageMargins = pm;
+  }
+  const psEl = findChild(root, PAGE_SETUP_TAG);
+  if (psEl) {
+    const ps = parsePageSetup(psEl);
+    if (ps) cs.pageSetup = ps;
+  }
+  const hfEl = findChild(root, HEADER_FOOTER_TAG);
+  if (hfEl) {
+    const hf = parseHeaderFooter(hfEl);
+    if (hf) cs.headerFooter = hf;
+  }
+
   // Drawing reference — the actual rId / drawing payload is resolved by the loader.
   return cs;
 }
@@ -150,6 +172,15 @@ export function serializeChartsheet(cs: Chartsheet, opts: ChartsheetSerializeOpt
   for (const v of cs.views) parts.push(serializeSheetView(v));
   parts.push('</sheetViews>');
   if (cs.protection) parts.push(serializeSheetProtection(cs.protection));
+  if (cs.pageMargins) parts.push(serializePageMargins(cs.pageMargins));
+  if (cs.pageSetup) {
+    const ps = serializePageSetup(cs.pageSetup);
+    if (ps) parts.push(ps);
+  }
+  if (cs.headerFooter) {
+    const hf = serializeHeaderFooter(cs.headerFooter);
+    if (hf) parts.push(hf);
+  }
   if (opts.drawingRId !== undefined) {
     parts.push(`<drawing r:id="${escapeAttr(opts.drawingRId)}"/>`);
   }
