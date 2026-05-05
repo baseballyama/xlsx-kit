@@ -610,6 +610,43 @@ export function setSheetViewMode(ws: Worksheet, mode: 'normal' | 'pageBreakPrevi
 }
 
 /**
+ * Set the active cell on the primary SheetView. The active cell is
+ * the one Excel highlights with the dark border when the sheet is
+ * opened. Updates the existing Selection; creates one if missing.
+ * Pass an "A1"-style ref.
+ */
+export function setActiveCell(ws: Worksheet, ref: string): void {
+  const view = ensurePrimaryView(ws);
+  const selection = view.selection ?? {};
+  // Excel typically also sets sqref to the same cell when a single
+  // cell is the active one. Only override sqref if it's missing or
+  // tracked the previous activeCell, so explicit selections survive.
+  const prevActive = selection.activeCell;
+  if (selection.sqref === undefined || selection.sqref === prevActive) {
+    selection.sqref = ref;
+  }
+  selection.activeCell = ref;
+  view.selection = selection;
+}
+
+/**
+ * Set the selected range (sqref) on the primary SheetView. Accepts
+ * a single cell ("A1"), a single range ("A1:B5"), or a multi-cell
+ * range string ("A1 C3:D4"). Leaves activeCell untouched unless
+ * absent — in which case it's set to the first ref of `sqref`.
+ */
+export function setSelectedRange(ws: Worksheet, sqref: string): void {
+  const view = ensurePrimaryView(ws);
+  const selection = view.selection ?? {};
+  selection.sqref = sqref;
+  if (selection.activeCell === undefined) {
+    const first = sqref.split(/\s+/)[0]?.split(':')[0];
+    if (first) selection.activeCell = first;
+  }
+  view.selection = selection;
+}
+
+/**
  * Set values across a rectangular range from a 2-D array. `rows[0]`
  * is laid down starting at the top-left of `range`; subsequent rows
  * follow. `null` / `undefined` entries skip the cell. Useful for
