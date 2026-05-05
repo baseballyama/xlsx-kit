@@ -355,8 +355,14 @@ export {
 } from './workbook/workbook';
 export type { WorkbookProtection } from './workbook/protection';
 export { makeWorkbookProtection } from './workbook/protection';
-export type { WorkbookView, WorkbookViewVisibility } from './workbook/views';
-export { makeWorkbookView } from './workbook/views';
+export type {
+  CustomViewShowComments,
+  CustomViewShowObjects,
+  CustomWorkbookView,
+  WorkbookView,
+  WorkbookViewVisibility,
+} from './workbook/views';
+export { makeCustomWorkbookView, makeWorkbookView } from './workbook/views';
 export type { CalcMode, CalcProperties, RefMode } from './workbook/calc-properties';
 export { makeCalcProperties } from './workbook/calc-properties';
 export type {

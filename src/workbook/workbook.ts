@@ -97,6 +97,12 @@ export interface Workbook {
    * Excel allows multiple views (rare).
    */
   bookViews?: import('./views').WorkbookView[];
+  /**
+   * `<customWorkbookViews>` — saved per-user view presets used by the
+   * deprecated "Shared Workbook" feature. Each entry carries its own
+   * window position, active sheet, and visibility toggles.
+   */
+  customWorkbookViews?: import('./views').CustomWorkbookView[];
   /** `<calcPr>` — calculation engine settings (calcMode / iterate / fullPrecision etc.). */
   calcProperties?: import('./calc-properties').CalcProperties;
   /** `<fileVersion>` — Office app/version metadata Excel records on save. */

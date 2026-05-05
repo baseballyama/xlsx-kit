@@ -675,6 +675,9 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   if (wb.oleSize !== undefined) {
     parts.push(`<oleSize ref="${escapeAttr(wb.oleSize)}"/>`);
   }
+  if (wb.customWorkbookViews && wb.customWorkbookViews.length > 0) {
+    parts.push(serializeCustomWorkbookViews(wb.customWorkbookViews));
+  }
   if (wb.smartTagPr) {
     const stp = serializeSmartTagPr(wb.smartTagPr);
     if (stp) parts.push(stp);
@@ -840,6 +843,43 @@ function serializeWorkbookProperties(
   if (wp.defaultThemeVersion !== undefined) attrs += ` defaultThemeVersion="${wp.defaultThemeVersion}"`;
   if (attrs.length === 0) return undefined;
   return `<workbookPr${attrs}/>`;
+}
+
+function serializeCustomWorkbookViews(
+  views: ReadonlyArray<import('../workbook/views').CustomWorkbookView>,
+): string {
+  const parts: string[] = ['<customWorkbookViews>'];
+  for (const v of views) {
+    let attrs = ` name="${escapeAttr(v.name)}" guid="${escapeAttr(v.guid)}"`;
+    if (v.autoUpdate !== undefined) attrs += ` autoUpdate="${v.autoUpdate ? '1' : '0'}"`;
+    if (v.mergeInterval !== undefined) attrs += ` mergeInterval="${v.mergeInterval}"`;
+    if (v.changesSavedWin !== undefined) attrs += ` changesSavedWin="${v.changesSavedWin ? '1' : '0'}"`;
+    if (v.onlySync !== undefined) attrs += ` onlySync="${v.onlySync ? '1' : '0'}"`;
+    if (v.personalView !== undefined) attrs += ` personalView="${v.personalView ? '1' : '0'}"`;
+    if (v.includePrintSettings !== undefined)
+      attrs += ` includePrintSettings="${v.includePrintSettings ? '1' : '0'}"`;
+    if (v.includeHiddenRowCol !== undefined)
+      attrs += ` includeHiddenRowCol="${v.includeHiddenRowCol ? '1' : '0'}"`;
+    if (v.maximized !== undefined) attrs += ` maximized="${v.maximized ? '1' : '0'}"`;
+    if (v.minimized !== undefined) attrs += ` minimized="${v.minimized ? '1' : '0'}"`;
+    if (v.showHorizontalScroll !== undefined)
+      attrs += ` showHorizontalScroll="${v.showHorizontalScroll ? '1' : '0'}"`;
+    if (v.showVerticalScroll !== undefined)
+      attrs += ` showVerticalScroll="${v.showVerticalScroll ? '1' : '0'}"`;
+    if (v.showSheetTabs !== undefined) attrs += ` showSheetTabs="${v.showSheetTabs ? '1' : '0'}"`;
+    if (v.xWindow !== undefined) attrs += ` xWindow="${v.xWindow}"`;
+    if (v.yWindow !== undefined) attrs += ` yWindow="${v.yWindow}"`;
+    attrs += ` windowWidth="${v.windowWidth}" windowHeight="${v.windowHeight}"`;
+    if (v.tabRatio !== undefined) attrs += ` tabRatio="${v.tabRatio}"`;
+    attrs += ` activeSheetId="${v.activeSheetId}"`;
+    if (v.showFormulaBar !== undefined) attrs += ` showFormulaBar="${v.showFormulaBar ? '1' : '0'}"`;
+    if (v.showStatusbar !== undefined) attrs += ` showStatusbar="${v.showStatusbar ? '1' : '0'}"`;
+    if (v.showComments !== undefined) attrs += ` showComments="${v.showComments}"`;
+    if (v.showObjects !== undefined) attrs += ` showObjects="${v.showObjects}"`;
+    parts.push(`<customWorkbookView${attrs}/>`);
+  }
+  parts.push('</customWorkbookViews>');
+  return parts.join('');
 }
 
 function serializeBookViews(views: ReadonlyArray<import('../workbook/views').WorkbookView>): string {

@@ -29,3 +29,41 @@ export interface WorkbookView {
 }
 
 export const makeWorkbookView = (opts: WorkbookView = {}): WorkbookView => ({ ...opts });
+
+export type CustomViewShowComments = 'commNone' | 'commIndicator' | 'commIndAndComment';
+export type CustomViewShowObjects = 'all' | 'placeholders' | 'none';
+
+export interface CustomWorkbookView {
+  name: string;
+  guid: string;
+  /** Window width in screen pixels — required when the element is present. */
+  windowWidth: number;
+  windowHeight: number;
+  /** Index (0-based) of the sheet active in this saved view. */
+  activeSheetId: number;
+  autoUpdate?: boolean;
+  /** Auto-merge interval in minutes (for shared workbooks). */
+  mergeInterval?: number;
+  changesSavedWin?: boolean;
+  onlySync?: boolean;
+  personalView?: boolean;
+  includePrintSettings?: boolean;
+  includeHiddenRowCol?: boolean;
+  maximized?: boolean;
+  minimized?: boolean;
+  showHorizontalScroll?: boolean;
+  showVerticalScroll?: boolean;
+  showSheetTabs?: boolean;
+  xWindow?: number;
+  yWindow?: number;
+  tabRatio?: number;
+  showFormulaBar?: boolean;
+  showStatusbar?: boolean;
+  showComments?: CustomViewShowComments;
+  showObjects?: CustomViewShowObjects;
+}
+
+export const makeCustomWorkbookView = (
+  opts: Pick<CustomWorkbookView, 'name' | 'guid' | 'windowWidth' | 'windowHeight' | 'activeSheetId'> &
+    Partial<CustomWorkbookView>,
+): CustomWorkbookView => ({ ...opts });

@@ -145,6 +145,8 @@ const WORKBOOK_PR_TAG = `{${SHEET_MAIN_NS}}workbookPr`;
 const WORKBOOK_PROTECTION_TAG = `{${SHEET_MAIN_NS}}workbookProtection`;
 const BOOK_VIEWS_TAG = `{${SHEET_MAIN_NS}}bookViews`;
 const WORKBOOK_VIEW_TAG = `{${SHEET_MAIN_NS}}workbookView`;
+const CUSTOM_WORKBOOK_VIEWS_TAG = `{${SHEET_MAIN_NS}}customWorkbookViews`;
+const CUSTOM_WORKBOOK_VIEW_TAG = `{${SHEET_MAIN_NS}}customWorkbookView`;
 const CALC_PR_TAG = `{${SHEET_MAIN_NS}}calcPr`;
 const FILE_VERSION_TAG = `{${SHEET_MAIN_NS}}fileVersion`;
 const FILE_SHARING_TAG = `{${SHEET_MAIN_NS}}fileSharing`;
@@ -574,6 +576,16 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       if (views.length > 0) wb.bookViews = views;
       continue;
     }
+    // Lift <customWorkbookViews> into the typed workbook field.
+    if (child.name === CUSTOM_WORKBOOK_VIEWS_TAG) {
+      const cws: import('../workbook/views').CustomWorkbookView[] = [];
+      for (const v of findChildren(child, CUSTOM_WORKBOOK_VIEW_TAG)) {
+        const parsed = parseCustomWorkbookView(v);
+        if (parsed) cws.push(parsed);
+      }
+      if (cws.length > 0) wb.customWorkbookViews = cws;
+      continue;
+    }
     // Lift <calcPr> into the typed workbook field.
     if (child.name === CALC_PR_TAG) {
       const cp = parseCalcProperties(child);
@@ -722,7 +734,7 @@ const parseWorkbookProperties = (
   ];
   for (const k of bools) {
     const v = flag(a[k]);
-    if (v !== undefined) (out as Record<string, unknown>)[k] = v;
+    if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v;
   }
 
   const showObjects = a['showObjects'];
@@ -800,6 +812,81 @@ const parseCalcProperties = (
   if (forceFullCalc !== undefined) out.forceFullCalc = forceFullCalc;
 
   return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const SHOW_COMMENTS_MODES: ReadonlyArray<import('../workbook/views').CustomViewShowComments> = [
+  'commNone',
+  'commIndicator',
+  'commIndAndComment',
+];
+const SHOW_OBJECTS_CV_MODES: ReadonlyArray<import('../workbook/views').CustomViewShowObjects> = [
+  'all',
+  'placeholders',
+  'none',
+];
+
+const parseCustomWorkbookView = (
+  node: XmlNode,
+): import('../workbook/views').CustomWorkbookView | undefined => {
+  const a = node.attrs;
+  const name = a['name'];
+  const guid = a['guid'];
+  if (!name || !guid) return undefined;
+  const flag = (raw: string | undefined): boolean | undefined => {
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+    return undefined;
+  };
+  const intAttr = (k: string): number | undefined => {
+    if (a[k] === undefined) return undefined;
+    const n = Number.parseInt(a[k], 10);
+    return Number.isInteger(n) ? n : undefined;
+  };
+  const ww = intAttr('windowWidth') ?? 0;
+  const wh = intAttr('windowHeight') ?? 0;
+  const asid = intAttr('activeSheetId') ?? 0;
+  const out: import('../workbook/views').CustomWorkbookView = {
+    name,
+    guid,
+    windowWidth: ww,
+    windowHeight: wh,
+    activeSheetId: asid,
+  };
+
+  const boolKeys = [
+    'autoUpdate',
+    'changesSavedWin',
+    'onlySync',
+    'personalView',
+    'includePrintSettings',
+    'includeHiddenRowCol',
+    'maximized',
+    'minimized',
+    'showHorizontalScroll',
+    'showVerticalScroll',
+    'showSheetTabs',
+    'showFormulaBar',
+    'showStatusbar',
+  ] as const;
+  for (const k of boolKeys) {
+    const v = flag(a[k]);
+    if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v;
+  }
+  const intKeys = ['mergeInterval', 'xWindow', 'yWindow', 'tabRatio'] as const;
+  for (const k of intKeys) {
+    const v = intAttr(k);
+    if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v;
+  }
+
+  const sc = a['showComments'];
+  if (sc && SHOW_COMMENTS_MODES.includes(sc as import('../workbook/views').CustomViewShowComments)) {
+    out.showComments = sc as import('../workbook/views').CustomViewShowComments;
+  }
+  const so = a['showObjects'];
+  if (so && SHOW_OBJECTS_CV_MODES.includes(so as import('../workbook/views').CustomViewShowObjects)) {
+    out.showObjects = so as import('../workbook/views').CustomViewShowObjects;
+  }
+  return out;
 };
 
 const VISIBILITIES: ReadonlyArray<import('../workbook/views').WorkbookViewVisibility> = [
