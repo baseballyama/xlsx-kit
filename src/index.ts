@@ -278,12 +278,22 @@ export type {
   PrintOptions,
 } from './worksheet/page-setup';
 export {
+  addColBreak,
+  addRowBreak,
   makeHeaderFooter,
   makePageBreak,
   makePageMargins,
   makePageSetup,
   makePrintOptions,
+  setFitToPage,
+  setFooter,
+  setHeader,
+  setPageMargins,
+  setPageOrientation,
+  setPaperSize,
+  setPrintScale,
 } from './worksheet/page-setup';
+export type { HeaderFooterSection } from './worksheet/page-setup';
 export type { WebPublishItem, WorksheetCustomProperty } from './worksheet/web-publish';
 export { makeWebPublishItem, makeWorksheetCustomProperty } from './worksheet/web-publish';
 export type {

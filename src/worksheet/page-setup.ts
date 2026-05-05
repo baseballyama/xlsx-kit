@@ -109,3 +109,95 @@ export interface PageBreak {
 }
 
 export const makePageBreak = (opts: PageBreak = {}): PageBreak => ({ ...opts });
+
+// ---- Worksheet ergonomic helpers ----------------------------------------
+// Operate on a Worksheet directly so callers don't have to allocate the
+// individual typed records up front.
+
+import type { Worksheet } from './worksheet';
+
+const ensurePageSetup = (ws: Worksheet): PageSetup => {
+  if (!ws.pageSetup) ws.pageSetup = {};
+  return ws.pageSetup;
+};
+
+const ensureHeaderFooter = (ws: Worksheet): HeaderFooter => {
+  if (!ws.headerFooter) ws.headerFooter = {};
+  return ws.headerFooter;
+};
+
+/** Set page orientation on `ws.pageSetup` (allocates if missing). */
+export const setPageOrientation = (ws: Worksheet, orientation: PageOrientation): void => {
+  ensurePageSetup(ws).orientation = orientation;
+};
+
+/** Set paper size code (Excel uses ECMA-376 §3.3 paper-size enums; 1=Letter, 9=A4 etc.). */
+export const setPaperSize = (ws: Worksheet, paperSize: number): void => {
+  ensurePageSetup(ws).paperSize = paperSize;
+};
+
+/** Set the print scale percentage (10..400). */
+export const setPrintScale = (ws: Worksheet, scale: number): void => {
+  ensurePageSetup(ws).scale = scale;
+};
+
+/** Set fitToWidth + fitToHeight (Excel "Fit to N pages wide × M tall" UI). */
+export const setFitToPage = (ws: Worksheet, opts: { width?: number; height?: number }): void => {
+  const ps = ensurePageSetup(ws);
+  if (opts.width !== undefined) ps.fitToWidth = opts.width;
+  if (opts.height !== undefined) ps.fitToHeight = opts.height;
+};
+
+/** Replace ws.pageMargins with the provided values (uses Excel defaults for missing axes). */
+export const setPageMargins = (ws: Worksheet, opts: Partial<PageMargins> = {}): void => {
+  ws.pageMargins = {
+    left: opts.left ?? 0.75,
+    right: opts.right ?? 0.75,
+    top: opts.top ?? 1,
+    bottom: opts.bottom ?? 1,
+    header: opts.header ?? 0.5,
+    footer: opts.footer ?? 0.5,
+  };
+};
+
+export type HeaderFooterSection = 'odd' | 'even' | 'first';
+
+/** Set the header text for a given section. Excel uses `&L` / `&C` / `&R` codes inside the string. */
+export const setHeader = (ws: Worksheet, section: HeaderFooterSection, text: string): void => {
+  const hf = ensureHeaderFooter(ws);
+  if (section === 'odd') hf.oddHeader = text;
+  else if (section === 'even') {
+    hf.evenHeader = text;
+    hf.differentOddEven = true;
+  } else {
+    hf.firstHeader = text;
+    hf.differentFirst = true;
+  }
+};
+
+/** Set the footer text for a given section. */
+export const setFooter = (ws: Worksheet, section: HeaderFooterSection, text: string): void => {
+  const hf = ensureHeaderFooter(ws);
+  if (section === 'odd') hf.oddFooter = text;
+  else if (section === 'even') {
+    hf.evenFooter = text;
+    hf.differentOddEven = true;
+  } else {
+    hf.firstFooter = text;
+    hf.differentFirst = true;
+  }
+};
+
+/** Push a manual horizontal page break above the given row (1-based). Defaults to `man=true`. */
+export const addRowBreak = (ws: Worksheet, row: number): PageBreak => {
+  const brk: PageBreak = { id: row, man: true, max: 16383 };
+  ws.rowBreaks.push(brk);
+  return brk;
+};
+
+/** Push a manual vertical page break to the left of the given column (1-based). Defaults to `man=true`. */
+export const addColBreak = (ws: Worksheet, col: number): PageBreak => {
+  const brk: PageBreak = { id: col, man: true, max: 1048575 };
+  ws.colBreaks.push(brk);
+  return brk;
+};
