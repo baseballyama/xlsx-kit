@@ -378,6 +378,78 @@ export function moveSheet(wb: Workbook, title: string, toIndex: number): void {
   }
 }
 
+/**
+ * Duplicate a worksheet end-to-end and append it as `newTitle`. Mirrors
+ * Excel's "Move or Copy → Create a copy" command. Cells, dimensions,
+ * styles (via shared cellXf ids), comments, hyperlinks, conditional
+ * formatting, page setup, etc. all carry over verbatim — only fields
+ * that must stay workbook-unique get rewritten:
+ *
+ *  - sheet `title` → `newTitle`
+ *  - sheet `sheetId` → freshly allocated
+ *  - each table's `id` → max(workbook table ids) + 1
+ *  - each table's `displayName` → suffixed with `opts.tableSuffix`
+ *    (default `"_2"`) so it doesn't collide with the original
+ *
+ * The new sheet is inserted at the optional `index` (default: appended).
+ */
+export function duplicateSheet(
+  wb: Workbook,
+  sourceTitle: string,
+  newTitle: string,
+  opts: { index?: number; state?: SheetState; tableSuffix?: string } = {},
+): Worksheet {
+  validateUniqueTitle(wb, newTitle);
+  const sourceRef = wb.sheets.find((s) => s.kind === 'worksheet' && s.sheet.title === sourceTitle);
+  if (!sourceRef || sourceRef.kind !== 'worksheet') {
+    throw new OpenXmlSchemaError(`duplicateSheet: no worksheet named "${sourceTitle}"`);
+  }
+  const cloned = structuredClone(sourceRef.sheet);
+  cloned.title = newTitle;
+
+  // Table id + displayName must stay workbook-unique. Walk every other
+  // sheet to find the next free id and renumber/rename in place.
+  const suffix = opts.tableSuffix ?? '_2';
+  let nextTableId = 0;
+  const usedDisplayNames = new Set<string>();
+  for (const s of wb.sheets) {
+    if (s.kind !== 'worksheet') continue;
+    for (const t of s.sheet.tables) {
+      if (t.id > nextTableId) nextTableId = t.id;
+      usedDisplayNames.add(t.displayName);
+    }
+  }
+  for (const t of cloned.tables) {
+    nextTableId += 1;
+    t.id = nextTableId;
+    let candidate = `${t.displayName}${suffix}`;
+    let n = 2;
+    while (usedDisplayNames.has(candidate)) {
+      candidate = `${t.displayName}${suffix}${n}`;
+      n += 1;
+    }
+    t.displayName = candidate;
+    if (t.name === undefined) t.name = candidate;
+    usedDisplayNames.add(candidate);
+  }
+
+  const ref: SheetRef = {
+    kind: 'worksheet',
+    sheet: cloned,
+    sheetId: allocateSheetId(wb),
+    state: opts.state ?? 'visible',
+  };
+  if (opts.index === undefined) {
+    wb.sheets.push(ref);
+  } else {
+    if (opts.index < 0 || opts.index > wb.sheets.length) {
+      throw new OpenXmlSchemaError(`duplicateSheet: index ${opts.index} out of range`);
+    }
+    wb.sheets.splice(opts.index, 0, ref);
+  }
+  return cloned;
+}
+
 /** Currently active sheet (worksheet only), or undefined if the active slot is empty or a chartsheet. */
 export function getActiveSheet(wb: Workbook): Worksheet | undefined {
   const ref = wb.sheets[wb.activeSheetIndex];

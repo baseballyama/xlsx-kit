@@ -535,6 +535,7 @@ export {
   addChartsheet,
   addWorksheet,
   createWorkbook,
+  duplicateSheet,
   getActiveSheet,
   getChartsheet,
   getSheet,
