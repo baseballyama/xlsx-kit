@@ -9,6 +9,7 @@
 import type { CellValue } from '../cell/cell';
 import { type Cell, makeCell } from '../cell/cell';
 import type { Drawing } from '../drawing/drawing';
+import { type Color, makeColor } from '../styles/colors';
 import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { AutoFilter } from './auto-filter';
@@ -23,7 +24,7 @@ import type { ScenarioList } from './scenarios';
 import type { CellWatch, IgnoredError } from './errors';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { WorksheetPhoneticProperties } from './phonetic';
-import type { SheetProperties } from './properties';
+import { makeSheetProperties, type SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { ProtectedRange } from './protected-ranges';
 import type { SortState } from './sort-state';
@@ -539,6 +540,74 @@ export function freezePanes(ws: Worksheet, rows: number, cols: number): void {
 export const unfreezePanes = (ws: Worksheet): void => {
   setFreezePanes(ws, undefined);
 };
+
+// ---- sheet view display helpers -------------------------------------------
+
+/** Lazily get-or-create `ws.sheetProperties` so tab-color helpers don't have to branch. */
+const ensureSheetProperties = (ws: Worksheet): SheetProperties => {
+  if (!ws.sheetProperties) ws.sheetProperties = makeSheetProperties();
+  return ws.sheetProperties;
+};
+
+const colorFrom = (input: string | Partial<Color>): Color =>
+  typeof input === 'string' ? makeColor({ rgb: input }) : makeColor(input);
+
+/**
+ * Set the sheet tab strip colour. Accepts either a hex string
+ * (`"FF0070C0"`) or a partial `Color` object (`{ theme: 4, tint: 0.4 }`).
+ */
+export function setSheetTabColor(ws: Worksheet, color: string | Partial<Color>): Color {
+  const c = colorFrom(color);
+  ensureSheetProperties(ws).tabColor = c;
+  return c;
+}
+
+/** Drop the sheet tab strip colour. */
+export function removeSheetTabColor(ws: Worksheet): void {
+  if (!ws.sheetProperties) return;
+  delete (ws.sheetProperties as { tabColor?: Color }).tabColor;
+}
+
+/** Toggle gridline display on the primary SheetView. */
+export function setShowGridLines(ws: Worksheet, show: boolean): void {
+  ensurePrimaryView(ws).showGridLines = show;
+}
+
+/** Toggle row + column header display on the primary SheetView. */
+export function setShowRowColHeaders(ws: Worksheet, show: boolean): void {
+  ensurePrimaryView(ws).showRowColHeaders = show;
+}
+
+/** Toggle "Show Formulas" mode on the primary SheetView. */
+export function setShowFormulas(ws: Worksheet, show: boolean): void {
+  ensurePrimaryView(ws).showFormulas = show;
+}
+
+/** Toggle "Show a zero in cells that have a zero value" on the primary SheetView. */
+export function setShowZeros(ws: Worksheet, show: boolean): void {
+  ensurePrimaryView(ws).showZeros = show;
+}
+
+/** Toggle right-to-left layout on the primary SheetView. */
+export function setRightToLeft(ws: Worksheet, rtl: boolean): void {
+  ensurePrimaryView(ws).rightToLeft = rtl;
+}
+
+/**
+ * Set the zoom scale (percent) on the primary SheetView. Excel accepts
+ * integer percentages in `[10, 400]`.
+ */
+export function setSheetZoom(ws: Worksheet, scale: number): void {
+  if (!Number.isInteger(scale) || scale < 10 || scale > 400) {
+    throw new OpenXmlSchemaError(`setSheetZoom: scale must be an integer in [10, 400]; got ${scale}`);
+  }
+  ensurePrimaryView(ws).zoomScale = scale;
+}
+
+/** Switch the sheet view between Excel's "Normal" / "Page Break Preview" / "Page Layout" modes. */
+export function setSheetViewMode(ws: Worksheet, mode: 'normal' | 'pageBreakPreview' | 'pageLayout'): void {
+  ensurePrimaryView(ws).view = mode;
+}
 
 /**
  * Set values across a rectangular range from a 2-D array. `rows[0]`
