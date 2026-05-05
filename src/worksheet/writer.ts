@@ -29,6 +29,7 @@ import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
+import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { Pane, Selection, SheetView } from './views';
@@ -179,6 +180,7 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   }
   if (ws.rowBreaks.length > 0) parts.push(serializePageBreaks(ws.rowBreaks, 'rowBreaks'));
   if (ws.colBreaks.length > 0) parts.push(serializePageBreaks(ws.colBreaks, 'colBreaks'));
+  if (ws.customProperties.length > 0) parts.push(serializeWorksheetCustomProperties(ws.customProperties));
   if (ws.bodyExtras?.afterSheetData) {
     for (const node of ws.bodyExtras.afterSheetData) parts.push(serializeBodyExtraNode(node));
   }
@@ -196,6 +198,7 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     const { vmlRelId } = ctx.registerComments(ws.legacyComments);
     parts.push(`<legacyDrawing r:id="${escapeXmlAttr(vmlRelId)}"/>`);
   }
+  if (ws.webPublishItems.length > 0) parts.push(serializeWebPublishItems(ws.webPublishItems));
   if (ws.tables.length > 0 && ctx.registerTable) {
     parts.push(`<tableParts count="${ws.tables.length}">`);
     for (const t of ws.tables) {
@@ -591,6 +594,35 @@ const serializePageSetup = (ps: PageSetup): string | undefined => {
   if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
   if (attrs.length === 0) return undefined;
   return `<pageSetup${attrs}/>`;
+};
+
+const serializeWorksheetCustomProperties = (
+  cps: ReadonlyArray<WorksheetCustomProperty>,
+): string => {
+  const parts: string[] = ['<customProperties>'];
+  for (const cp of cps) {
+    let attrs = ` name="${escapeXmlAttr(cp.name)}"`;
+    if (cp.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(cp.rId)}"`;
+    parts.push(`<customProperty${attrs}/>`);
+  }
+  parts.push('</customProperties>');
+  return parts.join('');
+};
+
+const serializeWebPublishItems = (items: ReadonlyArray<WebPublishItem>): string => {
+  const parts: string[] = [`<webPublishItems count="${items.length}">`];
+  for (const w of items) {
+    let attrs =
+      ` id="${w.id}" divId="${escapeXmlAttr(w.divId)}"` +
+      ` sourceType="${w.sourceType}" destinationFile="${escapeXmlAttr(w.destinationFile)}"`;
+    if (w.sourceRef !== undefined) attrs += ` sourceRef="${escapeXmlAttr(w.sourceRef)}"`;
+    if (w.sourceObject !== undefined) attrs += ` sourceObject="${escapeXmlAttr(w.sourceObject)}"`;
+    if (w.title !== undefined) attrs += ` title="${escapeXmlAttr(w.title)}"`;
+    if (w.autoRepublish !== undefined) attrs += ` autoRepublish="${w.autoRepublish ? '1' : '0'}"`;
+    parts.push(`<webPublishItem${attrs}/>`);
+  }
+  parts.push('</webPublishItems>');
+  return parts.join('');
 };
 
 const serializePageBreaks = (breaks: ReadonlyArray<PageBreak>, kind: 'rowBreaks' | 'colBreaks'): string => {

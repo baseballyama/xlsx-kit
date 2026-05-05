@@ -22,6 +22,7 @@ import type { CellWatch, IgnoredError } from './errors';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
+import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import type { TableDefinition } from './table';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
@@ -116,6 +117,15 @@ export interface Worksheet {
   rowBreaks: PageBreak[];
   /** Manual vertical page breaks (`<colBreaks>`). Each entry's `id` is the column to the left of which a new page begins. */
   colBreaks: PageBreak[];
+  /**
+   * Worksheet-level `<customProperties>` — per-sheet user metadata that
+   * SharePoint workflows attach (separate from the workbook-level
+   * `docProps/custom.xml` part). The `rId` points at a Custom XML part
+   * registered in the worksheet rels (already preserved via `relsExtras`).
+   */
+  customProperties: WorksheetCustomProperty[];
+  /** `<webPublishItems>` — Excel 2007's "Publish to web" entries. Almost always empty in modern files. */
+  webPublishItems: WebPublishItem[];
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**
@@ -179,6 +189,8 @@ export function makeWorksheet(title: string): Worksheet {
     ignoredErrors: [],
     rowBreaks: [],
     colBreaks: [],
+    customProperties: [],
+    webPublishItems: [],
   };
 }
 

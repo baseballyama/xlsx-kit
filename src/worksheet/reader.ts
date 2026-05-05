@@ -59,6 +59,7 @@ import type {
 } from './page-setup';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
+import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { makeColor } from '../styles/colors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
@@ -117,6 +118,10 @@ const HEADER_FOOTER_TAG = `{${SHEET_MAIN_NS}}headerFooter`;
 const ROW_BREAKS_TAG = `{${SHEET_MAIN_NS}}rowBreaks`;
 const COL_BREAKS_TAG = `{${SHEET_MAIN_NS}}colBreaks`;
 const BRK_TAG = `{${SHEET_MAIN_NS}}brk`;
+const CUSTOM_PROPERTIES_TAG = `{${SHEET_MAIN_NS}}customProperties`;
+const CUSTOM_PROPERTY_TAG = `{${SHEET_MAIN_NS}}customProperty`;
+const WEB_PUBLISH_ITEMS_TAG = `{${SHEET_MAIN_NS}}webPublishItems`;
+const WEB_PUBLISH_ITEM_TAG = `{${SHEET_MAIN_NS}}webPublishItem`;
 const ODD_HEADER_TAG = `{${SHEET_MAIN_NS}}oddHeader`;
 const ODD_FOOTER_TAG = `{${SHEET_MAIN_NS}}oddFooter`;
 const EVEN_HEADER_TAG = `{${SHEET_MAIN_NS}}evenHeader`;
@@ -354,6 +359,28 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     for (const brk of findChildren(cbEl, BRK_TAG)) ws.colBreaks.push(parsePageBreak(brk));
   }
 
+  // <customProperties><customProperty name="…" r:id="rIdN"/></customProperties>
+  const cpEl = findChild(root, CUSTOM_PROPERTIES_TAG);
+  if (cpEl) {
+    for (const cp of findChildren(cpEl, CUSTOM_PROPERTY_TAG)) {
+      const name = cp.attrs['name'];
+      if (!name) continue;
+      const entry: WorksheetCustomProperty = { name };
+      const rId = cp.attrs[`{${REL_NS}}id`];
+      if (rId) entry.rId = rId;
+      ws.customProperties.push(entry);
+    }
+  }
+
+  // <webPublishItems><webPublishItem .../></webPublishItems>
+  const wpEl = findChild(root, WEB_PUBLISH_ITEMS_TAG);
+  if (wpEl) {
+    for (const wp of findChildren(wpEl, WEB_PUBLISH_ITEM_TAG)) {
+      const item = parseWebPublishItem(wp);
+      if (item) ws.webPublishItems.push(item);
+    }
+  }
+
   // <cellWatches><cellWatch r="…"/></cellWatches>
   const cwWrap = findChild(root, CELL_WATCHES_TAG);
   if (cwWrap) {
@@ -374,6 +401,35 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const VALID_WP_SOURCE_TYPES: ReadonlySet<WebPublishItem['sourceType']> = new Set([
+  'sheet',
+  'printArea',
+  'autoFilter',
+  'range',
+  'chart',
+  'pivotTable',
+  'query',
+  'label',
+]);
+
+const parseWebPublishItem = (node: XmlNode): WebPublishItem | undefined => {
+  const idRaw = node.attrs['id'];
+  if (!idRaw) return undefined;
+  const id = Number.parseInt(idRaw, 10);
+  if (!Number.isInteger(id)) return undefined;
+  const divId = node.attrs['divId'];
+  const sourceType = node.attrs['sourceType'] as WebPublishItem['sourceType'] | undefined;
+  const destinationFile = node.attrs['destinationFile'];
+  if (!divId || !sourceType || !VALID_WP_SOURCE_TYPES.has(sourceType) || !destinationFile) return undefined;
+  const out: WebPublishItem = { id, divId, sourceType, destinationFile };
+  if (node.attrs['sourceRef'] !== undefined) out.sourceRef = node.attrs['sourceRef'];
+  if (node.attrs['sourceObject'] !== undefined) out.sourceObject = node.attrs['sourceObject'];
+  if (node.attrs['title'] !== undefined) out.title = node.attrs['title'];
+  const auto = parseBoolXmlAttr(node.attrs['autoRepublish']);
+  if (auto !== undefined) out.autoRepublish = auto;
+  return out;
+};
 
 const parsePageBreak = (node: XmlNode): PageBreak => {
   const out: PageBreak = {};
@@ -700,6 +756,8 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   HEADER_FOOTER_TAG,
   ROW_BREAKS_TAG,
   COL_BREAKS_TAG,
+  CUSTOM_PROPERTIES_TAG,
+  WEB_PUBLISH_ITEMS_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,

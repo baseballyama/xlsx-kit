@@ -255,6 +255,8 @@ export {
   makePageSetup,
   makePrintOptions,
 } from './worksheet/page-setup';
+export type { WebPublishItem, WorksheetCustomProperty } from './worksheet/web-publish';
+export { makeWebPublishItem, makeWorksheetCustomProperty } from './worksheet/web-publish';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.
