@@ -334,6 +334,31 @@ export function cellValueAsString(v: CellValue): string {
 }
 
 /**
+ * Coerce a CellValue to `boolean | undefined`. Booleans pass through;
+ * `'TRUE'` / `'true'` and `'FALSE'` / `'false'` (case-insensitive)
+ * parse to true / false; numbers yield `false` for 0 and `true` for
+ * any other finite value (matching Excel's truthy-number coercion);
+ * formula cells return their cached boolean if any. Everything else
+ * (null, Date, error, duration, rich-text, non-bool strings) yields
+ * `undefined`.
+ */
+export function cellValueAsBoolean(v: CellValue): boolean | undefined {
+  if (typeof v === 'boolean') return v;
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) return undefined;
+    return v !== 0;
+  }
+  if (typeof v === 'string') {
+    const lc = v.toLowerCase();
+    if (lc === 'true') return true;
+    if (lc === 'false') return false;
+    return undefined;
+  }
+  if (isFormulaValue(v) && typeof v.cachedValue === 'boolean') return v.cachedValue;
+  return undefined;
+}
+
+/**
  * Coerce a CellValue to a `Date` when one is meaningful. Pass-through
  * for `Date`-typed values; ISO-8601 strings (anything `new Date(s)`
  * parses to a finite time) round-trip; durations are interpreted as

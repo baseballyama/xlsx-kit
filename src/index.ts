@@ -179,6 +179,7 @@ export type {
 } from './cell/cell';
 export {
   bindValue,
+  cellValueAsBoolean,
   cellValueAsDate,
   cellValueAsNumber,
   cellValueAsString,
