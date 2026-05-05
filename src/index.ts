@@ -245,6 +245,24 @@ export {
   addNumberValidation,
   makeDataValidation,
 } from './worksheet/data-validations';
+export type {
+  CellIsOperator,
+  ConditionalFormatting,
+  ConditionalFormattingRule,
+  ConditionalFormattingRuleType,
+  TextOperator,
+  TimePeriod,
+} from './worksheet/conditional-formatting';
+export {
+  addAverageRule,
+  addCellIsRule,
+  addDuplicateValuesRule,
+  addFormulaRule,
+  addTextRule,
+  addTopNRule,
+  makeCfRule,
+  makeConditionalFormatting,
+} from './worksheet/conditional-formatting';
 export type { CellWatch, IgnoredError } from './worksheet/errors';
 export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
 export type { OutlineProperties, PageSetupProperties, SheetProperties } from './worksheet/properties';
