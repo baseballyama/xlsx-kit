@@ -1147,6 +1147,34 @@ export function removeComment(ws: Worksheet, ref: string): boolean {
   return true;
 }
 
+/** Read-only snapshot of every legacy comment on the sheet. */
+export function listComments(ws: Worksheet): ReadonlyArray<LegacyComment> {
+  return ws.legacyComments;
+}
+
+/**
+ * Rename every comment authored by `oldName` to `newName`. Returns
+ * the number of comments updated. Useful when consolidating comments
+ * after a team handoff (Excel's commentsN.xml dedups authors at save
+ * time, so a single rename collapses cleanly).
+ */
+export function renameCommentAuthor(ws: Worksheet, oldName: string, newName: string): number {
+  let n = 0;
+  for (let i = 0; i < ws.legacyComments.length; i++) {
+    const c = ws.legacyComments[i];
+    if (c && c.author === oldName) {
+      ws.legacyComments[i] = makeLegacyComment({ ref: c.ref, author: newName, text: c.text });
+      n++;
+    }
+  }
+  return n;
+}
+
+/** Filter every legacy comment by author. */
+export function findCommentsByAuthor(ws: Worksheet, author: string): ReadonlyArray<LegacyComment> {
+  return ws.legacyComments.filter((c) => c.author === author);
+}
+
 // ---- conditional formatting ----------------------------------------------
 
 /** Append a conditional formatting block. */
