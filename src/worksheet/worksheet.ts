@@ -7,7 +7,7 @@
 // for hot-path performance — see docs/plan/01-architecture.md §5.1.
 
 import type { CellValue } from '../cell/cell';
-import { type Cell, cellValueAsString, makeCell, setFormula } from '../cell/cell';
+import { type Cell, cellValueAsString, makeCell, setArrayFormula, setFormula } from '../cell/cell';
 import { type InlineFont, makeRichText, type TextRun } from '../cell/rich-text';
 import type { Drawing } from '../drawing/drawing';
 import { type Color, makeColor } from '../styles/colors';
@@ -571,6 +571,26 @@ export function setCellFormula(
   const expr = formula.startsWith('=') ? formula.slice(1) : formula;
   const cell = setCell(ws, row, col, undefined, opts?.styleId);
   setFormula(cell, expr, opts?.cachedValue !== undefined ? { cachedValue: opts.cachedValue } : undefined);
+  return cell;
+}
+
+/**
+ * Set a cell's value to an array (CSE) formula spanning `ref`. Lands
+ * the formula on the top-left cell of the range — Excel reads the
+ * `ref` attribute to know how far the result spreads. Equivalent to
+ * `setCell` + `setArrayFormula`. Leading `=` is stripped.
+ */
+export function setCellArrayFormula(
+  ws: Worksheet,
+  row: number,
+  col: number,
+  ref: string,
+  formula: string,
+  opts?: { cachedValue?: number | string | boolean; styleId?: number },
+): Cell {
+  const expr = formula.startsWith('=') ? formula.slice(1) : formula;
+  const cell = setCell(ws, row, col, undefined, opts?.styleId);
+  setArrayFormula(cell, ref, expr, opts?.cachedValue !== undefined ? { cachedValue: opts.cachedValue } : undefined);
   return cell;
 }
 

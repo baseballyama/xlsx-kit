@@ -286,6 +286,7 @@ export {
   setActiveCell,
   setAutoFilter,
   setCell,
+  setCellArrayFormula,
   setCellByCoord,
   setCellFormula,
   setCellRichText,
