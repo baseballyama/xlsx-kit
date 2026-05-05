@@ -267,6 +267,13 @@ export {
   makeCfRule,
   makeConditionalFormatting,
 } from './worksheet/conditional-formatting';
+export type { Hyperlink } from './worksheet/hyperlinks';
+export {
+  addInternalHyperlink,
+  addMailtoHyperlink,
+  addUrlHyperlink,
+  makeHyperlink,
+} from './worksheet/hyperlinks';
 export type { AutoFilter, FilterColumn } from './worksheet/auto-filter';
 export {
   addAutoFilter,
