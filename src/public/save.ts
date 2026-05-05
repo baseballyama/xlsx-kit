@@ -620,6 +620,7 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     const wp = serializeWorkbookProtection(wb.workbookProtection);
     if (wp) parts.push(wp);
   }
+  if (wb.bookViews && wb.bookViews.length > 0) parts.push(serializeBookViews(wb.bookViews));
   parts.push('<sheets>');
   wb.sheets.forEach((ref, i) => {
     const stateAttr = ref.state === 'visible' ? '' : ` state="${ref.state}"`;
@@ -642,6 +643,32 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     for (const node of wb.workbookXmlExtras.afterSheets) parts.push(serializeChildNode(node));
   }
   parts.push('</workbook>');
+  return parts.join('');
+}
+
+function serializeBookViews(views: ReadonlyArray<import('../workbook/views').WorkbookView>): string {
+  const parts: string[] = ['<bookViews>'];
+  for (const v of views) {
+    let attrs = '';
+    if (v.visibility !== undefined) attrs += ` visibility="${v.visibility}"`;
+    if (v.minimized !== undefined) attrs += ` minimized="${v.minimized ? '1' : '0'}"`;
+    if (v.showHorizontalScroll !== undefined)
+      attrs += ` showHorizontalScroll="${v.showHorizontalScroll ? '1' : '0'}"`;
+    if (v.showVerticalScroll !== undefined)
+      attrs += ` showVerticalScroll="${v.showVerticalScroll ? '1' : '0'}"`;
+    if (v.showSheetTabs !== undefined) attrs += ` showSheetTabs="${v.showSheetTabs ? '1' : '0'}"`;
+    if (v.xWindow !== undefined) attrs += ` xWindow="${v.xWindow}"`;
+    if (v.yWindow !== undefined) attrs += ` yWindow="${v.yWindow}"`;
+    if (v.windowWidth !== undefined) attrs += ` windowWidth="${v.windowWidth}"`;
+    if (v.windowHeight !== undefined) attrs += ` windowHeight="${v.windowHeight}"`;
+    if (v.tabRatio !== undefined) attrs += ` tabRatio="${v.tabRatio}"`;
+    if (v.firstSheet !== undefined) attrs += ` firstSheet="${v.firstSheet}"`;
+    if (v.activeTab !== undefined) attrs += ` activeTab="${v.activeTab}"`;
+    if (v.autoFilterDateGrouping !== undefined)
+      attrs += ` autoFilterDateGrouping="${v.autoFilterDateGrouping ? '1' : '0'}"`;
+    parts.push(`<workbookView${attrs}/>`);
+  }
+  parts.push('</bookViews>');
   return parts.join('');
 }
 

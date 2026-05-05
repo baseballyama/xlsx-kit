@@ -143,6 +143,8 @@ export function parseDefinedNames(workbookRoot: XmlNode): DefinedName[] {
 
 const WORKBOOK_PR_TAG = `{${SHEET_MAIN_NS}}workbookPr`;
 const WORKBOOK_PROTECTION_TAG = `{${SHEET_MAIN_NS}}workbookProtection`;
+const BOOK_VIEWS_TAG = `{${SHEET_MAIN_NS}}bookViews`;
+const WORKBOOK_VIEW_TAG = `{${SHEET_MAIN_NS}}workbookView`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -509,6 +511,13 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       wb.workbookProtection = parseWorkbookProtection(child);
       continue;
     }
+    // Lift <bookViews> into the typed workbook field.
+    if (child.name === BOOK_VIEWS_TAG) {
+      const views: import('../workbook/views').WorkbookView[] = [];
+      for (const v of findChildren(child, WORKBOOK_VIEW_TAG)) views.push(parseWorkbookView(v));
+      if (views.length > 0) wb.bookViews = views;
+      continue;
+    }
     if (seenSheets) afterSheets.push(child);
     else beforeSheets.push(child);
   }
@@ -516,6 +525,57 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     wb.workbookXmlExtras = { beforeSheets, afterSheets };
   }
 }
+
+const VISIBILITIES: ReadonlyArray<import('../workbook/views').WorkbookViewVisibility> = [
+  'visible',
+  'hidden',
+  'veryHidden',
+];
+
+const parseWorkbookView = (node: XmlNode): import('../workbook/views').WorkbookView => {
+  const out: import('../workbook/views').WorkbookView = {};
+  const a = node.attrs;
+  const flag = (raw: string | undefined): boolean | undefined => {
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+    return undefined;
+  };
+  const intAttr = (k: string): number | undefined => {
+    if (a[k] === undefined) return undefined;
+    const n = Number.parseInt(a[k], 10);
+    return Number.isInteger(n) ? n : undefined;
+  };
+
+  const visibility = a['visibility'];
+  if (visibility && VISIBILITIES.includes(visibility as import('../workbook/views').WorkbookViewVisibility)) {
+    out.visibility = visibility as import('../workbook/views').WorkbookViewVisibility;
+  }
+  const minimized = flag(a['minimized']);
+  if (minimized !== undefined) out.minimized = minimized;
+  const shScroll = flag(a['showHorizontalScroll']);
+  if (shScroll !== undefined) out.showHorizontalScroll = shScroll;
+  const svScroll = flag(a['showVerticalScroll']);
+  if (svScroll !== undefined) out.showVerticalScroll = svScroll;
+  const sst = flag(a['showSheetTabs']);
+  if (sst !== undefined) out.showSheetTabs = sst;
+  const xWindow = intAttr('xWindow');
+  if (xWindow !== undefined) out.xWindow = xWindow;
+  const yWindow = intAttr('yWindow');
+  if (yWindow !== undefined) out.yWindow = yWindow;
+  const ww = intAttr('windowWidth');
+  if (ww !== undefined) out.windowWidth = ww;
+  const wh = intAttr('windowHeight');
+  if (wh !== undefined) out.windowHeight = wh;
+  const tr = intAttr('tabRatio');
+  if (tr !== undefined) out.tabRatio = tr;
+  const fs = intAttr('firstSheet');
+  if (fs !== undefined) out.firstSheet = fs;
+  const at = intAttr('activeTab');
+  if (at !== undefined) out.activeTab = at;
+  const adg = flag(a['autoFilterDateGrouping']);
+  if (adg !== undefined) out.autoFilterDateGrouping = adg;
+  return out;
+};
 
 const parseWorkbookProtection = (node: XmlNode): import('../workbook/protection').WorkbookProtection => {
   const out: import('../workbook/protection').WorkbookProtection = {};

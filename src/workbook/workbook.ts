@@ -91,6 +91,13 @@ export interface Workbook {
    */
   workbookProtection?: import('./protection').WorkbookProtection;
   /**
+   * `<bookViews>` — the workbook's window/tab-strip presets. Most
+   * workbooks have a single entry whose `firstSheet` / `activeTab`
+   * drive the tab the user sees first. Stored as an array because
+   * Excel allows multiple views (rare).
+   */
+  bookViews?: import('./views').WorkbookView[];
+  /**
    * Workbook-level rels that don't match a modeled type. Re-emitted with
    * their original Id so captured `<pivotCaches r:id="…"/>` etc. still
    * resolve after a round-trip.
