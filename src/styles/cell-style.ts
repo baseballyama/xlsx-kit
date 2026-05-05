@@ -28,9 +28,9 @@ import { DEFAULT_BORDER, makeBorder, makeSide } from './borders';
 import type { Color } from './colors';
 import { makeColor } from './colors';
 import type { Fill } from './fills';
-import { DEFAULT_EMPTY_FILL } from './fills';
+import { DEFAULT_EMPTY_FILL, makePatternFill } from './fills';
 import type { Font } from './fonts';
-import { DEFAULT_FONT } from './fonts';
+import { DEFAULT_FONT, makeFont } from './fonts';
 import { ensureBuiltinStyle } from './named-styles';
 import { builtinFormatCode } from './numbers';
 import type { Protection } from './protection';
@@ -304,6 +304,47 @@ export function setCellAsNumber(wb: Workbook, c: Cell, decimals = 0): void {
   }
   const code = decimals === 0 ? '#,##0' : `#,##0.${'0'.repeat(decimals)}`;
   setCellNumberFormat(wb, c, code);
+}
+
+// ---- table-header preset ------------------------------------------------
+
+/**
+ * Apply Excel's stock "table header" formatting to a range: bold
+ * white text on a dark fill, plus a thick bottom border. Override
+ * any axis via `opts` — pass `bold: false` to drop the bold, or
+ * `fillColor: 'FF305496'` for a different shade. Defaults match
+ * Excel's "Table Style Medium 2" header row.
+ */
+export function formatAsHeader(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  opts: {
+    fillColor?: string | Partial<Color>;
+    fontColor?: string | Partial<Color>;
+    bold?: boolean;
+    bottomBorder?: SideStyle | false;
+    bottomBorderColor?: string | Partial<Color>;
+  } = {},
+): void {
+  const fillColor = opts.fillColor === undefined ? 'FF305496' : typeof opts.fillColor === 'string' ? makeColor({ rgb: opts.fillColor }) : makeColor(opts.fillColor);
+  const fontColor = opts.fontColor === undefined ? 'FFFFFFFF' : typeof opts.fontColor === 'string' ? makeColor({ rgb: opts.fontColor }) : makeColor(opts.fontColor);
+  const bold = opts.bold ?? true;
+  const borderStyle = opts.bottomBorder ?? 'medium';
+  const borderColorObj = opts.bottomBorderColor === undefined ? undefined : typeof opts.bottomBorderColor === 'string' ? makeColor({ rgb: opts.bottomBorderColor }) : makeColor(opts.bottomBorderColor);
+
+  const fillColorObj = typeof fillColor === 'string' ? makeColor({ rgb: fillColor }) : fillColor;
+  const fontColorObj = typeof fontColor === 'string' ? makeColor({ rgb: fontColor }) : fontColor;
+
+  const styleOpts: Parameters<typeof setRangeStyle>[3] = {
+    font: makeFont({ bold, color: fontColorObj }),
+    fill: makePatternFill({ patternType: 'solid', fgColor: fillColorObj }),
+  };
+  if (borderStyle !== false) {
+    const side = makeSide({ style: borderStyle, ...(borderColorObj ? { color: borderColorObj } : {}) });
+    styleOpts.border = makeBorder({ bottom: side });
+  }
+  setRangeStyle(wb, ws, range, styleOpts);
 }
 
 // ---- named / built-in style application --------------------------------

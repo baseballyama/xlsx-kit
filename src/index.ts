@@ -461,6 +461,7 @@ export {
   BUILTIN_NAMED_STYLES,
   defaultCellXf,
   ensureBuiltinStyle,
+  formatAsHeader,
   getCellAlignment,
   getCellBorder,
   getCellFill,

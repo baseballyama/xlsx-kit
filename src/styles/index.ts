@@ -10,6 +10,7 @@ export { makeBorder, makeSide } from './borders';
 export {
   applyBuiltinStyle,
   applyNamedStyle,
+  formatAsHeader,
   getCellAlignment,
   getCellBorder,
   getCellFill,
