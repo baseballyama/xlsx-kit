@@ -312,6 +312,46 @@ export function renameSheet(wb: Workbook, oldTitle: string, newTitle: string): v
 }
 
 /**
+ * Set the visibility state on a sheet by title. Throws on unknown
+ * title. Note: Excel forbids hiding the active sheet when it's the
+ * only visible one — this helper does NOT check that constraint;
+ * callers should ensure at least one sheet stays visible.
+ */
+export function setSheetState(wb: Workbook, title: string, state: SheetState): void {
+  const ref = wb.sheets.find((s) => s.sheet.title === title);
+  if (!ref) throw new OpenXmlSchemaError(`setSheetState: no sheet named "${title}"`);
+  ref.state = state;
+}
+
+/** Look up the current visibility state. Throws on unknown title. */
+export function getSheetState(wb: Workbook, title: string): SheetState {
+  const ref = wb.sheets.find((s) => s.sheet.title === title);
+  if (!ref) throw new OpenXmlSchemaError(`getSheetState: no sheet named "${title}"`);
+  return ref.state;
+}
+
+/**
+ * Hide a sheet (`state: 'hidden'`). Equivalent to right-click → Hide
+ * in Excel — the user can re-show it via the Unhide dialog.
+ */
+export function hideSheet(wb: Workbook, title: string): void {
+  setSheetState(wb, title, 'hidden');
+}
+
+/**
+ * Mark a sheet as very-hidden (`state: 'veryHidden'`). Excel won't
+ * surface it in the Unhide dialog — only reachable via VBA / API.
+ */
+export function veryHideSheet(wb: Workbook, title: string): void {
+  setSheetState(wb, title, 'veryHidden');
+}
+
+/** Make a hidden / veryHidden sheet visible. */
+export function showSheet(wb: Workbook, title: string): void {
+  setSheetState(wb, title, 'visible');
+}
+
+/**
  * Move a sheet to a new tab-strip position. `toIndex` is clamped to
  * `[0, sheets.length - 1]`. Adjusts `activeSheetIndex` so the same
  * sheet stays active across the move.

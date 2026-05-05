@@ -433,6 +433,8 @@ export {
   getChartsheet,
   getSheet,
   getSheetByIndex,
+  getSheetState,
+  hideSheet,
   jsonReplacer,
   jsonReviver,
   listCustomXmlParts,
@@ -440,7 +442,10 @@ export {
   removeSheet,
   renameSheet,
   setActiveSheet,
+  setSheetState,
   sheetNames,
+  showSheet,
+  veryHideSheet,
 } from './workbook/workbook';
 export type { DefinedName } from './workbook/defined-names';
 export {
