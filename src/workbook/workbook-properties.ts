@@ -42,3 +42,47 @@ export interface WorkbookProperties {
 }
 
 export const makeWorkbookProperties = (opts: WorkbookProperties = {}): WorkbookProperties => ({ ...opts });
+
+// ---- Workbook ergonomic helpers ----------------------------------------
+
+import type { Workbook } from './workbook';
+
+const ensureWorkbookProperties = (wb: Workbook): WorkbookProperties => {
+  if (!wb.workbookProperties) wb.workbookProperties = {};
+  return wb.workbookProperties;
+};
+
+/**
+ * Set the workbook-level VBA codeName ("ThisWorkbook" by default in
+ * Excel; localised forms like "ЭтаКнига" round-trip too). Empty string
+ * is allowed — Excel writes it that way for codename-stripped files.
+ */
+export const setWorkbookCodeName = (wb: Workbook, codeName: string): void => {
+  ensureWorkbookProperties(wb).codeName = codeName;
+};
+
+/**
+ * Toggle the Mac 1904 epoch. The canonical flag is `wb.date1904`
+ * (drives cell-serial conversion); this helper writes both the
+ * canonical field and the mirror on `workbookProperties` so a save
+ * emits a consistent `<workbookPr date1904="…">` attribute.
+ */
+export const setDate1904 = (wb: Workbook, on: boolean): void => {
+  wb.date1904 = on;
+  ensureWorkbookProperties(wb).date1904 = on;
+};
+
+/**
+ * Set the "Update remote links" prompt mode. `'userSet'` keeps
+ * Excel's per-user preference; `'never'` disables the prompt;
+ * `'always'` forces it. Mirrors the Trust Center "External Content"
+ * dropdown.
+ */
+export const setUpdateLinksMode = (wb: Workbook, mode: UpdateLinksMode): void => {
+  ensureWorkbookProperties(wb).updateLinks = mode;
+};
+
+/** Toggle the "filterPrivacy" hint Excel writes to indicate filter contents may be sensitive. */
+export const setFilterPrivacy = (wb: Workbook, on: boolean): void => {
+  ensureWorkbookProperties(wb).filterPrivacy = on;
+};

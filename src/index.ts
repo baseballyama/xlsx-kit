@@ -572,7 +572,13 @@ export type {
   UpdateLinksMode,
   WorkbookProperties,
 } from './workbook/workbook-properties';
-export { makeWorkbookProperties } from './workbook/workbook-properties';
+export {
+  makeWorkbookProperties,
+  setDate1904,
+  setFilterPrivacy,
+  setUpdateLinksMode,
+  setWorkbookCodeName,
+} from './workbook/workbook-properties';
 export type { FileVersion } from './workbook/file-version';
 export { makeFileVersion } from './workbook/file-version';
 export type { FileSharing } from './workbook/file-sharing';
