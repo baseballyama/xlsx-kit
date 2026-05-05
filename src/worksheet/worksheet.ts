@@ -127,6 +127,12 @@ export interface Worksheet {
    */
   backgroundPictureRId?: string;
   /**
+   * `<legacyDrawingHF r:id="…"/>` — VML drawing used for header/footer
+   * background images on print. Parallel to legacyDrawing (which
+   * carries comment markers); the rels link rides relsExtras.
+   */
+  legacyDrawingHFRId?: string;
+  /**
    * `<smartTags>` — per-cell smart-tag annotations (Excel 2003 era).
    * Pairs with the workbook-level smartTagTypes registry.
    */

@@ -129,6 +129,7 @@ const PROTECTED_RANGE_TAG = `{${SHEET_MAIN_NS}}protectedRange`;
 const SORT_STATE_TAG = `{${SHEET_MAIN_NS}}sortState`;
 const SORT_CONDITION_TAG = `{${SHEET_MAIN_NS}}sortCondition`;
 const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
+const LEGACY_DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}legacyDrawingHF`;
 const SMART_TAGS_TAG = `{${SHEET_MAIN_NS}}smartTags`;
 const CELL_SMART_TAGS_TAG = `{${SHEET_MAIN_NS}}cellSmartTags`;
 const CELL_SMART_TAG_TAG = `{${SHEET_MAIN_NS}}cellSmartTag`;
@@ -380,6 +381,13 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (pictureEl) {
     const rId = pictureEl.attrs[`{${REL_NS}}id`];
     if (rId) ws.backgroundPictureRId = rId;
+  }
+
+  // <legacyDrawingHF r:id="rIdN"/> — header/footer background VML.
+  const lhfEl = findChild(root, LEGACY_DRAWING_HF_TAG);
+  if (lhfEl) {
+    const rId = lhfEl.attrs[`{${REL_NS}}id`];
+    if (rId) ws.legacyDrawingHFRId = rId;
   }
 
   // <smartTags><cellSmartTags r="A1"><cellSmartTag type=…><cellSmartTagPr/>…</cellSmartTag></cellSmartTags></smartTags>
@@ -1047,6 +1055,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   PROTECTED_RANGES_TAG,
   SORT_STATE_TAG,
   PICTURE_TAG,
+  LEGACY_DRAWING_HF_TAG,
   SMART_TAGS_TAG,
   PRINT_OPTIONS_TAG,
   PAGE_MARGINS_TAG,

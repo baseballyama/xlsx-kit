@@ -218,6 +218,9 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     const { vmlRelId } = ctx.registerComments(ws.legacyComments);
     parts.push(`<legacyDrawing r:id="${escapeXmlAttr(vmlRelId)}"/>`);
   }
+  if (ws.legacyDrawingHFRId !== undefined) {
+    parts.push(`<legacyDrawingHF r:id="${escapeXmlAttr(ws.legacyDrawingHFRId)}"/>`);
+  }
   if (ws.backgroundPictureRId !== undefined) {
     parts.push(`<picture r:id="${escapeXmlAttr(ws.backgroundPictureRId)}"/>`);
   }
