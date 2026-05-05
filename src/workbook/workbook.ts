@@ -533,6 +533,29 @@ export function* iterWorksheets(wb: Workbook): IterableIterator<Worksheet> {
 }
 
 /**
+ * Iterate every cell across every worksheet in the workbook. Yields
+ * `{ sheet, cell }` pairs in tab-strip order, then row-then-column
+ * within each sheet. Useful for workbook-wide audits / find-and-
+ * replace passes.
+ */
+export function* iterAllCells(
+  wb: Workbook,
+): IterableIterator<{ sheet: Worksheet; cell: import('../cell/cell').Cell }> {
+  for (const sheet of iterWorksheets(wb)) {
+    const rowKeys = [...sheet.rows.keys()].sort((a, b) => a - b);
+    for (const r of rowKeys) {
+      const rowMap = sheet.rows.get(r);
+      if (!rowMap) continue;
+      const cols = [...rowMap.keys()].sort((a, b) => a - b);
+      for (const c of cols) {
+        const cell = rowMap.get(c);
+        if (cell !== undefined) yield { sheet, cell };
+      }
+    }
+  }
+}
+
+/**
  * Iterate over every Chartsheet in the workbook. Yields in tab-strip
  * order, skipping regular worksheets.
  */

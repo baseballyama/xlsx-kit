@@ -591,6 +591,7 @@ export {
   getSheetByIndex,
   getSheetState,
   hideSheet,
+  iterAllCells,
   iterChartsheets,
   iterWorksheets,
   jsonReplacer,
