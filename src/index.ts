@@ -218,6 +218,8 @@ export {
   appendRow,
   countCells,
   deleteCell,
+  editCommentAuthor,
+  editCommentText,
   findCells,
   findCommentsByAuthor,
   findFirstCell,

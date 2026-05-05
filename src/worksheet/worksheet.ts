@@ -1308,6 +1308,32 @@ export function listComments(ws: Worksheet): ReadonlyArray<LegacyComment> {
 }
 
 /**
+ * Replace just the text of an existing comment, leaving its ref and
+ * author untouched. Returns `true` when the comment was found.
+ */
+export function editCommentText(ws: Worksheet, ref: string, newText: string): boolean {
+  const i = ws.legacyComments.findIndex((c) => c.ref === ref);
+  if (i < 0) return false;
+  const c = ws.legacyComments[i];
+  if (!c) return false;
+  ws.legacyComments[i] = makeLegacyComment({ ref: c.ref, author: c.author, text: newText });
+  return true;
+}
+
+/**
+ * Replace just the author of an existing comment, leaving its ref and
+ * text untouched. Returns `true` when the comment was found.
+ */
+export function editCommentAuthor(ws: Worksheet, ref: string, newAuthor: string): boolean {
+  const i = ws.legacyComments.findIndex((c) => c.ref === ref);
+  if (i < 0) return false;
+  const c = ws.legacyComments[i];
+  if (!c) return false;
+  ws.legacyComments[i] = makeLegacyComment({ ref: c.ref, author: newAuthor, text: c.text });
+  return true;
+}
+
+/**
  * Rename every comment authored by `oldName` to `newName`. Returns
  * the number of comments updated. Useful when consolidating comments
  * after a team handoff (Excel's commentsN.xml dedups authors at save
