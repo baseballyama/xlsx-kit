@@ -37,6 +37,7 @@ import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { ProtectedRange } from './protected-ranges';
 import type { SortCondition, SortState } from './sort-state';
+import type { FormControl, OleObject } from './ole-objects';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
 
@@ -221,6 +222,8 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   if (ws.legacyDrawingHFRId !== undefined) {
     parts.push(`<legacyDrawingHF r:id="${escapeXmlAttr(ws.legacyDrawingHFRId)}"/>`);
   }
+  if (ws.oleObjects.length > 0) parts.push(serializeOleObjects(ws.oleObjects));
+  if (ws.controls.length > 0) parts.push(serializeControls(ws.controls));
   if (ws.backgroundPictureRId !== undefined) {
     parts.push(`<picture r:id="${escapeXmlAttr(ws.backgroundPictureRId)}"/>`);
   }
@@ -992,3 +995,40 @@ const serializeRowDimensionAttrs = (dim: RowDimension): string => {
  */
 const serializeBodyExtraNode = (node: XmlNode): string =>
   new TextDecoder().decode(serializeXml(node, { xmlDeclaration: false }));
+
+const serializeOleObjects = (objs: ReadonlyArray<OleObject>): string => {
+  const parts: string[] = ['<oleObjects>'];
+  for (const o of objs) {
+    let attrs = '';
+    if (o.progId !== undefined) attrs += ` progId="${escapeXmlAttr(o.progId)}"`;
+    if (o.dvAspect !== undefined) attrs += ` dvAspect="${o.dvAspect}"`;
+    if (o.link !== undefined) attrs += ` link="${escapeXmlAttr(o.link)}"`;
+    if (o.oleUpdate !== undefined) attrs += ` oleUpdate="${o.oleUpdate}"`;
+    if (o.autoLoad !== undefined) attrs += ` autoLoad="${o.autoLoad ? '1' : '0'}"`;
+    attrs += ` shapeId="${o.shapeId}"`;
+    if (o.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(o.rId)}"`;
+    if (!o.objectPr) {
+      parts.push(`<oleObject${attrs}/>`);
+    } else {
+      parts.push(`<oleObject${attrs}>${serializeBodyExtraNode(o.objectPr)}</oleObject>`);
+    }
+  }
+  parts.push('</oleObjects>');
+  return parts.join('');
+};
+
+const serializeControls = (ctrls: ReadonlyArray<FormControl>): string => {
+  const parts: string[] = ['<controls>'];
+  for (const c of ctrls) {
+    let attrs = ` shapeId="${c.shapeId}"`;
+    if (c.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(c.rId)}"`;
+    if (c.name !== undefined) attrs += ` name="${escapeXmlAttr(c.name)}"`;
+    if (!c.controlPr) {
+      parts.push(`<control${attrs}/>`);
+    } else {
+      parts.push(`<control${attrs}>${serializeBodyExtraNode(c.controlPr)}</control>`);
+    }
+  }
+  parts.push('</controls>');
+  return parts.join('');
+};

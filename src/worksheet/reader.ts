@@ -72,6 +72,7 @@ import type { OutlineProperties, PageSetupProperties, SheetProperties } from './
 import type { SheetProtection } from './protection';
 import type { ProtectedRange } from './protected-ranges';
 import type { SortBy, SortCondition, SortIconSet, SortMethod, SortState } from './sort-state';
+import type { FormControl, OleDvAspect, OleObject, OleUpdateMode } from './ole-objects';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { makeColor } from '../styles/colors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
@@ -130,6 +131,12 @@ const SORT_STATE_TAG = `{${SHEET_MAIN_NS}}sortState`;
 const SORT_CONDITION_TAG = `{${SHEET_MAIN_NS}}sortCondition`;
 const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
 const LEGACY_DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}legacyDrawingHF`;
+const OLE_OBJECTS_TAG = `{${SHEET_MAIN_NS}}oleObjects`;
+const OLE_OBJECT_TAG = `{${SHEET_MAIN_NS}}oleObject`;
+const OBJECT_PR_TAG = `{${SHEET_MAIN_NS}}objectPr`;
+const CONTROLS_TAG = `{${SHEET_MAIN_NS}}controls`;
+const CONTROL_TAG = `{${SHEET_MAIN_NS}}control`;
+const CONTROL_PR_TAG = `{${SHEET_MAIN_NS}}controlPr`;
 const SMART_TAGS_TAG = `{${SHEET_MAIN_NS}}smartTags`;
 const CELL_SMART_TAGS_TAG = `{${SHEET_MAIN_NS}}cellSmartTags`;
 const CELL_SMART_TAG_TAG = `{${SHEET_MAIN_NS}}cellSmartTag`;
@@ -388,6 +395,24 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (lhfEl) {
     const rId = lhfEl.attrs[`{${REL_NS}}id`];
     if (rId) ws.legacyDrawingHFRId = rId;
+  }
+
+  // <oleObjects><oleObject ...><objectPr.../></oleObject></oleObjects>
+  const ooWrap = findChild(root, OLE_OBJECTS_TAG);
+  if (ooWrap) {
+    for (const oo of findChildren(ooWrap, OLE_OBJECT_TAG)) {
+      const parsed = parseOleObject(oo);
+      if (parsed) ws.oleObjects.push(parsed);
+    }
+  }
+
+  // <controls><control ...><controlPr.../></control></controls>
+  const cWrap = findChild(root, CONTROLS_TAG);
+  if (cWrap) {
+    for (const c of findChildren(cWrap, CONTROL_TAG)) {
+      const parsed = parseFormControl(c);
+      if (parsed) ws.controls.push(parsed);
+    }
   }
 
   // <smartTags><cellSmartTags r="A1"><cellSmartTag type=…><cellSmartTagPr/>…</cellSmartTag></cellSmartTags></smartTags>
@@ -733,6 +758,45 @@ export const parseWebPublishItem = (node: XmlNode): WebPublishItem | undefined =
   return out;
 };
 
+const OLE_DV_ASPECTS: ReadonlyArray<OleDvAspect> = ['DVASPECT_CONTENT', 'DVASPECT_ICON'];
+const OLE_UPDATE_MODES: ReadonlyArray<OleUpdateMode> = ['OLEUPDATE_ALWAYS', 'OLEUPDATE_ONCALL'];
+
+const parseOleObject = (node: XmlNode): OleObject | undefined => {
+  const shapeIdRaw = node.attrs['shapeId'];
+  if (shapeIdRaw === undefined) return undefined;
+  const shapeId = Number.parseInt(shapeIdRaw, 10);
+  if (!Number.isInteger(shapeId)) return undefined;
+  const out: OleObject = { shapeId };
+  const rId = node.attrs[`{${REL_NS}}id`];
+  if (rId) out.rId = rId;
+  if (node.attrs['progId'] !== undefined) out.progId = node.attrs['progId'];
+  const dvAspect = node.attrs['dvAspect'];
+  if (dvAspect && OLE_DV_ASPECTS.includes(dvAspect as OleDvAspect)) out.dvAspect = dvAspect as OleDvAspect;
+  if (node.attrs['link'] !== undefined) out.link = node.attrs['link'];
+  const oleUpdate = node.attrs['oleUpdate'];
+  if (oleUpdate && OLE_UPDATE_MODES.includes(oleUpdate as OleUpdateMode))
+    out.oleUpdate = oleUpdate as OleUpdateMode;
+  const autoLoad = parseBoolXmlAttr(node.attrs['autoLoad']);
+  if (autoLoad !== undefined) out.autoLoad = autoLoad;
+  const objectPr = findChild(node, OBJECT_PR_TAG);
+  if (objectPr) out.objectPr = objectPr;
+  return out;
+};
+
+const parseFormControl = (node: XmlNode): FormControl | undefined => {
+  const shapeIdRaw = node.attrs['shapeId'];
+  if (shapeIdRaw === undefined) return undefined;
+  const shapeId = Number.parseInt(shapeIdRaw, 10);
+  if (!Number.isInteger(shapeId)) return undefined;
+  const out: FormControl = { shapeId };
+  const rId = node.attrs[`{${REL_NS}}id`];
+  if (rId) out.rId = rId;
+  if (node.attrs['name'] !== undefined) out.name = node.attrs['name'];
+  const controlPr = findChild(node, CONTROL_PR_TAG);
+  if (controlPr) out.controlPr = controlPr;
+  return out;
+};
+
 const parsePageBreak = (node: XmlNode): PageBreak => {
   const out: PageBreak = {};
   const id = parseIntegerAttr(node.attrs['id']);
@@ -1056,6 +1120,8 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   SORT_STATE_TAG,
   PICTURE_TAG,
   LEGACY_DRAWING_HF_TAG,
+  OLE_OBJECTS_TAG,
+  CONTROLS_TAG,
   SMART_TAGS_TAG,
   PRINT_OPTIONS_TAG,
   PAGE_MARGINS_TAG,

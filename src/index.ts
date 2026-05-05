@@ -258,6 +258,13 @@ export {
   makeCellSmartTags,
 } from './worksheet/smart-tags';
 export type {
+  FormControl,
+  OleDvAspect,
+  OleObject,
+  OleUpdateMode,
+} from './worksheet/ole-objects';
+export { makeFormControl, makeOleObject } from './worksheet/ole-objects';
+export type {
   CellCommentMode,
   HeaderFooter,
   PageBreak,

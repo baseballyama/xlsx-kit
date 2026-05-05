@@ -137,6 +137,18 @@ export interface Worksheet {
    * Pairs with the workbook-level smartTagTypes registry.
    */
   smartTags: import('./smart-tags').CellSmartTags[];
+  /**
+   * `<oleObjects>` — embedded OLE objects (linked Word documents,
+   * Equation editor formulas, etc.). The objectPr child is round-
+   * tripped verbatim as an XmlNode.
+   */
+  oleObjects: import('./ole-objects').OleObject[];
+  /**
+   * `<controls>` — form controls (checkboxes / list boxes / spin
+   * buttons placed via the Developer tab). The controlPr child is
+   * round-tripped verbatim.
+   */
+  controls: import('./ole-objects').FormControl[];
   /** `<printOptions>` — gridlines, headings, horizontal/vertical centering on the printed page. */
   printOptions?: PrintOptions;
   /** `<pageMargins>` — six required margins in inches. */
@@ -237,6 +249,8 @@ export function makeWorksheet(title: string): Worksheet {
     webPublishItems: [],
     protectedRanges: [],
     smartTags: [],
+    oleObjects: [],
+    controls: [],
   };
 }
 
