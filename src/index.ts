@@ -287,6 +287,7 @@ export {
   setAutoFilter,
   setCell,
   setCellByCoord,
+  setCellFormula,
   setCellRichText,
   setSelectedRange,
   setColumnDimension,

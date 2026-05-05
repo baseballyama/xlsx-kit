@@ -7,7 +7,7 @@
 // for hot-path performance — see docs/plan/01-architecture.md §5.1.
 
 import type { CellValue } from '../cell/cell';
-import { type Cell, cellValueAsString, makeCell } from '../cell/cell';
+import { type Cell, cellValueAsString, makeCell, setFormula } from '../cell/cell';
 import { type InlineFont, makeRichText, type TextRun } from '../cell/rich-text';
 import type { Drawing } from '../drawing/drawing';
 import { type Color, makeColor } from '../styles/colors';
@@ -554,6 +554,24 @@ export function setCellRichText(
   styleId?: number,
 ): Cell {
   return setCell(ws, row, col, { kind: 'rich-text', runs: makeRichText(runs) }, styleId);
+}
+
+/**
+ * Set a cell's value to a normal Excel formula. Combines `setCell`
+ * with `setFormula`. The leading `=` is stripped if present so
+ * callers can pass `'=A1+1'` or `'A1+1'` interchangeably.
+ */
+export function setCellFormula(
+  ws: Worksheet,
+  row: number,
+  col: number,
+  formula: string,
+  opts?: { cachedValue?: number | string | boolean; styleId?: number },
+): Cell {
+  const expr = formula.startsWith('=') ? formula.slice(1) : formula;
+  const cell = setCell(ws, row, col, undefined, opts?.styleId);
+  setFormula(cell, expr, opts?.cachedValue !== undefined ? { cachedValue: opts.cachedValue } : undefined);
+  return cell;
 }
 
 /** Resolve an "A1" coordinate to a numeric (col, row) pair on the sheet. */
