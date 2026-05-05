@@ -937,6 +937,62 @@ export function copyRange(
 }
 
 /**
+ * Move every populated cell from `source` to `target`. Equivalent to
+ * `copyRange` followed by clearing the source. When the ranges
+ * overlap on the same sheet, the copy walks in the direction that
+ * preserves data — high-to-low along any axis where the move
+ * shifts forward, low-to-high otherwise — so cells aren't
+ * overwritten before they've been read. Returns the number of cells
+ * moved.
+ */
+export function moveRange(
+  ws: Worksheet,
+  source: string,
+  target: string,
+  opts: { targetWs?: Worksheet } = {},
+): number {
+  const dest = opts.targetWs ?? ws;
+  const src = parseRange(source);
+  const dst = parseRange(target);
+  const dr = dst.minRow - src.minRow;
+  const dc = dst.minCol - src.minCol;
+  const maxRowOffset = Math.min(src.maxRow - src.minRow, dst.maxRow - dst.minRow);
+  const maxColOffset = Math.min(src.maxCol - src.minCol, dst.maxCol - dst.minCol);
+  // Snapshot the source cells so overlapping moves on the same sheet
+  // don't read post-write values during the copy.
+  const snap: Array<{ row: number; col: number; cell: Cell }> = [];
+  for (let i = 0; i <= maxRowOffset; i++) {
+    const srcRow = ws.rows.get(src.minRow + i);
+    if (!srcRow) continue;
+    for (let j = 0; j <= maxColOffset; j++) {
+      const srcCell = srcRow.get(src.minCol + j);
+      if (!srcCell) continue;
+      snap.push({ row: src.minRow + i, col: src.minCol + j, cell: srcCell });
+    }
+  }
+  // Clear the entire source band on the source sheet first so the
+  // pre-existing source cells are gone before we land copies on top.
+  for (let i = 0; i <= maxRowOffset; i++) {
+    const rowIdx = src.minRow + i;
+    const srcRow = ws.rows.get(rowIdx);
+    if (!srcRow) continue;
+    for (let j = 0; j <= maxColOffset; j++) srcRow.delete(src.minCol + j);
+    if (srcRow.size === 0) ws.rows.delete(rowIdx);
+  }
+  // Replay the snapshot into the destination — value, styleId, and
+  // optional hyperlinkId / commentId.
+  for (const entry of snap) {
+    const { row, col, cell } = entry;
+    const dstRow = row + dr;
+    const dstCol = col + dc;
+    const newCell = setCell(dest, dstRow, dstCol, cell.value, cell.styleId);
+    if (cell.hyperlinkId !== undefined) newCell.hyperlinkId = cell.hyperlinkId;
+    if (cell.commentId !== undefined) newCell.commentId = cell.commentId;
+  }
+  return snap.length;
+}
+
+/**
  * Read all populated values in a single column. Returns one `(CellValue
  * | null)` per row in `[minRow, maxRow]` (defaults to row 1 ..
  * `getMaxRow(ws)`). Empty cells yield `null`. Returns `[]` when the

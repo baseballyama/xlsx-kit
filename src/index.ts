@@ -273,6 +273,7 @@ export {
   clearAllCells,
   clearRange,
   copyRange,
+  moveRange,
   collapseColumnGroup,
   collapseRowGroup,
   expandColumnGroup,
