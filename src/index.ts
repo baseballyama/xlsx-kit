@@ -235,6 +235,8 @@ export type { CellWatch, IgnoredError } from './worksheet/errors';
 export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
 export type { OutlineProperties, PageSetupProperties, SheetProperties } from './worksheet/properties';
 export { makeSheetProperties } from './worksheet/properties';
+export type { SheetProtection } from './worksheet/protection';
+export { makeSheetProtection } from './worksheet/protection';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.

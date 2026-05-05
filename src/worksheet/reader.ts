@@ -47,6 +47,7 @@ import { makeDataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { IgnoredError } from './errors';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
+import type { SheetProtection } from './protection';
 import { makeColor } from '../styles/colors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
@@ -97,6 +98,7 @@ const SHEET_PR_TAG = `{${SHEET_MAIN_NS}}sheetPr`;
 const TAB_COLOR_TAG = `{${SHEET_MAIN_NS}}tabColor`;
 const OUTLINE_PR_TAG = `{${SHEET_MAIN_NS}}outlinePr`;
 const PAGE_SETUP_PR_TAG = `{${SHEET_MAIN_NS}}pageSetUpPr`;
+const SHEET_PROTECTION_TAG = `{${SHEET_MAIN_NS}}sheetProtection`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -195,6 +197,14 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
         nextCol = coord.col + 1;
       }
     }
+  }
+
+  // <sheetProtection> sits between sheetData and mergeCells per
+  // ECMA-376 §18.3.1.85. Parse all 16 boolean lock flags + optional
+  // password hash fields.
+  const protectionEl = findChild(root, SHEET_PROTECTION_TAG);
+  if (protectionEl) {
+    ws.sheetProtection = parseSheetProtection(protectionEl);
   }
 
   // <mergeCells> sits as a sibling of <sheetData>; pull each <mergeCell ref="…"/>
@@ -306,6 +316,43 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const parseSheetProtection = (node: XmlNode): SheetProtection => {
+  const out: SheetProtection = {};
+  const flag = (k: string): void => {
+    const raw = node.attrs[k];
+    if (raw === '1' || raw === 'true') (out as Record<string, unknown>)[k] = true;
+    else if (raw === '0' || raw === 'false') (out as Record<string, unknown>)[k] = false;
+  };
+  for (const k of [
+    'sheet',
+    'objects',
+    'scenarios',
+    'formatCells',
+    'formatColumns',
+    'formatRows',
+    'insertColumns',
+    'insertRows',
+    'insertHyperlinks',
+    'deleteColumns',
+    'deleteRows',
+    'selectLockedCells',
+    'selectUnlockedCells',
+    'sort',
+    'autoFilter',
+    'pivotTables',
+  ]) {
+    flag(k);
+  }
+  if (node.attrs['saltValue'] !== undefined) out.saltValue = node.attrs['saltValue'];
+  if (node.attrs['spinCount'] !== undefined) {
+    const n = Number.parseInt(node.attrs['spinCount'], 10);
+    if (Number.isInteger(n)) out.spinCount = n;
+  }
+  if (node.attrs['algorithmName'] !== undefined) out.algorithmName = node.attrs['algorithmName'];
+  if (node.attrs['hashValue'] !== undefined) out.hashValue = node.attrs['hashValue'];
+  return out;
+};
 
 const parseSheetProperties = (node: XmlNode): SheetProperties | undefined => {
   const out: SheetProperties = {};
@@ -454,6 +501,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   CELL_WATCHES_TAG,
   IGNORED_ERRORS_TAG,
   SHEET_PR_TAG,
+  SHEET_PROTECTION_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,

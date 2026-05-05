@@ -29,6 +29,7 @@ import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
 import type { SheetProperties } from './properties';
+import type { SheetProtection } from './protection';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
 
@@ -130,6 +131,12 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     parts.push('</row>');
   }
   parts.push('</sheetData>');
+  // sheetProtection sits between sheetData and mergeCells per
+  // ECMA-376 §18.3.1.85.
+  if (ws.sheetProtection) {
+    const sp = serializeSheetProtection(ws.sheetProtection);
+    if (sp) parts.push(sp);
+  }
   // Excel's element order: autoFilter sits between sheetData and mergeCells.
   if (ws.autoFilter) parts.push(serializeAutoFilter(ws.autoFilter));
   if (ws.mergedCells.length > 0) {
@@ -521,6 +528,38 @@ const serializeDataValidation = (dv: DataValidation): string => {
   if (dv.formula2 !== undefined) formulas.push(`<formula2>${escapeXmlText(dv.formula2)}</formula2>`);
   if (formulas.length === 0) return `<dataValidation${attrs}/>`;
   return `<dataValidation${attrs}>${formulas.join('')}</dataValidation>`;
+};
+
+const serializeSheetProtection = (sp: SheetProtection): string | undefined => {
+  const flagKeys = [
+    'sheet',
+    'objects',
+    'scenarios',
+    'formatCells',
+    'formatColumns',
+    'formatRows',
+    'insertColumns',
+    'insertRows',
+    'insertHyperlinks',
+    'deleteColumns',
+    'deleteRows',
+    'selectLockedCells',
+    'selectUnlockedCells',
+    'sort',
+    'autoFilter',
+    'pivotTables',
+  ] as const;
+  let attrs = '';
+  for (const k of flagKeys) {
+    const v = sp[k];
+    if (v !== undefined) attrs += ` ${k}="${v ? '1' : '0'}"`;
+  }
+  if (sp.algorithmName !== undefined) attrs += ` algorithmName="${escapeXmlAttr(sp.algorithmName)}"`;
+  if (sp.hashValue !== undefined) attrs += ` hashValue="${escapeXmlAttr(sp.hashValue)}"`;
+  if (sp.saltValue !== undefined) attrs += ` saltValue="${escapeXmlAttr(sp.saltValue)}"`;
+  if (sp.spinCount !== undefined) attrs += ` spinCount="${sp.spinCount}"`;
+  if (attrs.length === 0) return undefined;
+  return `<sheetProtection${attrs}/>`;
 };
 
 const serializeSheetProperties = (sp: SheetProperties): string | undefined => {

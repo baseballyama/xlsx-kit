@@ -20,6 +20,7 @@ import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { SheetProperties } from './properties';
+import type { SheetProtection } from './protection';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import type { TableDefinition } from './table';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
@@ -95,6 +96,13 @@ export interface Worksheet {
    * `<dimension>` per ECMA-376 ordering.
    */
   sheetProperties?: SheetProperties;
+  /**
+   * Sheet-protection state. When `sheet=true` Excel locks the sheet
+   * against edits (subject to the per-action allow flags here).
+   * Password hashing helpers come later — for now `saltValue` /
+   * `spinCount` / `algorithmName` / `hashValue` round-trip verbatim.
+   */
+  sheetProtection?: SheetProtection;
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**
