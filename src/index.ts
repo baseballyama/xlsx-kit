@@ -270,6 +270,8 @@ export {
   applyToRange,
   autofitColumn,
   autofitColumns,
+  clearAllCells,
+  clearRange,
   collapseColumnGroup,
   collapseRowGroup,
   expandColumnGroup,

@@ -309,6 +309,39 @@ export function deleteCell(ws: Worksheet, row: number, col: number): void {
 }
 
 /**
+ * Delete every populated cell inside a range. Returns the number of
+ * cells removed. Row maps that go empty are pruned. Column / row
+ * dimensions, merges, comments etc. are left untouched.
+ */
+export function clearRange(ws: Worksheet, range: string): number {
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  let n = 0;
+  for (let r = minRow; r <= maxRow; r++) {
+    const rowMap = ws.rows.get(r);
+    if (!rowMap) continue;
+    for (let c = minCol; c <= maxCol; c++) {
+      if (rowMap.delete(c)) n++;
+    }
+    if (rowMap.size === 0) ws.rows.delete(r);
+  }
+  return n;
+}
+
+/**
+ * Wipe every populated cell on the worksheet, leaving styles,
+ * dimensions, merges, comments, hyperlinks etc. intact. Returns the
+ * count of cells removed. Useful when a sheet should be re-filled
+ * from scratch but its formatting kept.
+ */
+export function clearAllCells(ws: Worksheet): number {
+  let n = 0;
+  for (const rowMap of ws.rows.values()) n += rowMap.size;
+  ws.rows.clear();
+  ws._appendRowCursor = 0;
+  return n;
+}
+
+/**
  * Append a row of values starting at the next empty row. Returns the
  * row index (1-based). Mirrors openpyxl's `Worksheet.append`. `null`
  * / `undefined` entries leave the cell empty.
