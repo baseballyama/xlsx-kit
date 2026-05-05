@@ -67,3 +67,60 @@ export const makeCustomWorkbookView = (
   opts: Pick<CustomWorkbookView, 'name' | 'guid' | 'windowWidth' | 'windowHeight' | 'activeSheetId'> &
     Partial<CustomWorkbookView>,
 ): CustomWorkbookView => ({ ...opts });
+
+import type { Workbook } from './workbook';
+
+/**
+ * Get-or-create the primary `<workbookView>` entry. Most workbooks have
+ * exactly one `<workbookView>`; this helper is the right place to hang
+ * tab-strip / window state edits without forcing the caller to allocate
+ * the array themselves.
+ */
+const ensurePrimaryView = (wb: Workbook): WorkbookView => {
+  const existing = wb.bookViews?.[0];
+  if (existing) return existing;
+  const fresh = makeWorkbookView();
+  wb.bookViews = [fresh];
+  return fresh;
+};
+
+/** Get the index of the active sheet tab (0-based) from the primary workbookView, or 0 if unset. */
+export const getActiveTab = (wb: Workbook): number => wb.bookViews?.[0]?.activeTab ?? 0;
+
+/** Set the active sheet tab (0-based) on the primary workbookView. */
+export const setActiveTab = (wb: Workbook, index: number): void => {
+  ensurePrimaryView(wb).activeTab = index;
+};
+
+/** Get the index of the leftmost visible sheet tab from the primary workbookView, or 0 if unset. */
+export const getFirstSheet = (wb: Workbook): number => wb.bookViews?.[0]?.firstSheet ?? 0;
+
+/** Set the leftmost visible sheet tab on the primary workbookView. */
+export const setFirstSheet = (wb: Workbook, index: number): void => {
+  ensurePrimaryView(wb).firstSheet = index;
+};
+
+/** Set the tab strip width ratio (0..1000, Excel default 600). */
+export const setTabRatio = (wb: Workbook, ratio: number): void => {
+  ensurePrimaryView(wb).tabRatio = ratio;
+};
+
+/** Toggle the sheet tab strip visibility. */
+export const setShowSheetTabs = (wb: Workbook, show: boolean): void => {
+  ensurePrimaryView(wb).showSheetTabs = show;
+};
+
+/**
+ * Set window position + size on the primary workbookView in one call.
+ * Pass `undefined` for any axis to leave it untouched.
+ */
+export const setWorkbookWindow = (
+  wb: Workbook,
+  opts: { xWindow?: number; yWindow?: number; windowWidth?: number; windowHeight?: number },
+): void => {
+  const v = ensurePrimaryView(wb);
+  if (opts.xWindow !== undefined) v.xWindow = opts.xWindow;
+  if (opts.yWindow !== undefined) v.yWindow = opts.yWindow;
+  if (opts.windowWidth !== undefined) v.windowWidth = opts.windowWidth;
+  if (opts.windowHeight !== undefined) v.windowHeight = opts.windowHeight;
+};

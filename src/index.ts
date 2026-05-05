@@ -372,7 +372,17 @@ export type {
   WorkbookView,
   WorkbookViewVisibility,
 } from './workbook/views';
-export { makeCustomWorkbookView, makeWorkbookView } from './workbook/views';
+export {
+  getActiveTab,
+  getFirstSheet,
+  makeCustomWorkbookView,
+  makeWorkbookView,
+  setActiveTab,
+  setFirstSheet,
+  setShowSheetTabs,
+  setTabRatio,
+  setWorkbookWindow,
+} from './workbook/views';
 export type { CalcMode, CalcProperties, RefMode } from './workbook/calc-properties';
 export { makeCalcProperties } from './workbook/calc-properties';
 export type {
