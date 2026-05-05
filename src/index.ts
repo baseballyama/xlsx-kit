@@ -585,6 +585,7 @@ export {
   createWorkbook,
   duplicateSheet,
   getActiveSheet,
+  getAllMergedRanges,
   getWorkbookStats,
   getChartsheet,
   getSheet,

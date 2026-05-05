@@ -556,6 +556,22 @@ export function* iterAllCells(
 }
 
 /**
+ * Collect every merged range across every worksheet. Each entry
+ * carries the merge bounds plus a back-reference to the owning
+ * sheet, in tab-strip order. Equivalent to walking
+ * `iterWorksheets` and concatenating each sheet's `mergedCells`.
+ */
+export function getAllMergedRanges(
+  wb: Workbook,
+): ReadonlyArray<{ sheet: Worksheet; range: import('../worksheet/cell-range').CellRange }> {
+  const out: Array<{ sheet: Worksheet; range: import('../worksheet/cell-range').CellRange }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    for (const range of sheet.mergedCells) out.push({ sheet, range });
+  }
+  return out;
+}
+
+/**
  * Iterate over every Chartsheet in the workbook. Yields in tab-strip
  * order, skipping regular worksheets.
  */
