@@ -19,6 +19,7 @@ import type { ConditionalFormatting } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
+import type { SheetProperties } from './properties';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import type { TableDefinition } from './table';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
@@ -70,6 +71,12 @@ export interface Worksheet {
   legacyComments: LegacyComment[];
   /** Conditional formatting blocks. */
   conditionalFormatting: ConditionalFormatting[];
+  /**
+   * `<sheetPr>` properties — VBA codeName, tab strip color, outline /
+   * page-setup defaults, etc. Top-level `<sheetPr>` lives just before
+   * `<dimension>` per ECMA-376 ordering.
+   */
+  sheetProperties?: SheetProperties;
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**

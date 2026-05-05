@@ -42,7 +42,7 @@ LAMBDA、threaded comments の編集、Power Query の構造アクセスなど) 
 | B4 | **数式評価 (formula evaluation engine)** | ❌ | 全数式の評価系 — 範囲計算、数学関数 200+、文字列関数、論理関数、参照関数 (INDIRECT 等)、配列関数。**最大規模の作業項目** | 20+ |
 | B5 | **Workbook / Sheet protection** | 🟡 passthrough のみ | `<sheetProtection>` / `<workbookProtection>` の schema + パスワード hash (legacy + SHA-512) | 2 |
 | B6 | **Print Settings** (rowBreaks / colBreaks / pageSetup / headerFooter / printOptions) | 🟡 worksheet body extras で passthrough | 各要素の schema + 編集 API。breakManually / orientation / paperSize / scale / fitToWidth/Height | 2 |
-| B7 | **Sheet view** 拡張 (sheetPr / customSheetViews / scenarios / dataConsolidate) | 🟡 部分対応 | 残部分の schema 化 (sheetPr の tabColor 等は人気の機能) | 1–2 |
+| B7 | **Sheet view** 拡張 (sheetPr / customSheetViews / scenarios / dataConsolidate) | 🟡 部分対応 | sheetPr 全体 (codeName / tabColor / outlinePr / pageSetUpPr 含む全 9 attr + 3 child) は `src/worksheet/properties.ts` で typed API + round-trip 完了 (e2e 27 が `makeSheetProperties` 経由で tab color を着色)。残：customSheetViews / scenarios / dataConsolidate | 1–2 |
 | B8 | **Cell Watches / Ignored Errors** | ✅ | `<cellWatches>` / `<ignoredErrors>` schema (`src/worksheet/errors.ts`、reader/writer wired、helper API + round-trip tests in `tests/phase-5/errors.test.ts`) | 0.5 |
 | B9 | **Web Publish Items / Custom Properties (worksheet level)** | ❌ | `<webPublishItems>` / `<customProperties>` schema | 0.5 |
 | B10 | **Phonetic / EaList (East Asian features)** | ❌ | `<phoneticPr>` (ふりがな)、`<rPh>` per cell。日本語 / 中国語 workbook では普通に出現 | 1 |

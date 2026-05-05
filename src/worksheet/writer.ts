@@ -28,6 +28,7 @@ import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
+import type { SheetProperties } from './properties';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
 
@@ -91,6 +92,10 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     XML_HEADER,
     `<worksheet xmlns="${SHEET_MAIN_NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`,
   ];
+  if (ws.sheetProperties) {
+    const sp = serializeSheetProperties(ws.sheetProperties);
+    if (sp) parts.push(sp);
+  }
   if (ws.bodyExtras?.beforeSheetData) {
     for (const node of ws.bodyExtras.beforeSheetData) parts.push(serializeBodyExtraNode(node));
   }
@@ -492,6 +497,51 @@ const serializeDataValidation = (dv: DataValidation): string => {
   if (dv.formula2 !== undefined) formulas.push(`<formula2>${escapeXmlText(dv.formula2)}</formula2>`);
   if (formulas.length === 0) return `<dataValidation${attrs}/>`;
   return `<dataValidation${attrs}>${formulas.join('')}</dataValidation>`;
+};
+
+const serializeSheetProperties = (sp: SheetProperties): string | undefined => {
+  let attrs = '';
+  if (sp.codeName !== undefined) attrs += ` codeName="${escapeXmlAttr(sp.codeName)}"`;
+  if (sp.enableFormatConditionsCalculation === false) attrs += ' enableFormatConditionsCalculation="0"';
+  if (sp.enableFormatConditionsCalculation === true) attrs += ' enableFormatConditionsCalculation="1"';
+  if (sp.filterMode !== undefined) attrs += ` filterMode="${sp.filterMode ? '1' : '0'}"`;
+  if (sp.published !== undefined) attrs += ` published="${sp.published ? '1' : '0'}"`;
+  if (sp.syncHorizontal !== undefined) attrs += ` syncHorizontal="${sp.syncHorizontal ? '1' : '0'}"`;
+  if (sp.syncRef !== undefined) attrs += ` syncRef="${escapeXmlAttr(sp.syncRef)}"`;
+  if (sp.syncVertical !== undefined) attrs += ` syncVertical="${sp.syncVertical ? '1' : '0'}"`;
+  if (sp.transitionEvaluation !== undefined) attrs += ` transitionEvaluation="${sp.transitionEvaluation ? '1' : '0'}"`;
+  if (sp.transitionEntry !== undefined) attrs += ` transitionEntry="${sp.transitionEntry ? '1' : '0'}"`;
+
+  const children: string[] = [];
+  if (sp.tabColor) {
+    let tcAttrs = '';
+    if (sp.tabColor.rgb !== undefined) tcAttrs += ` rgb="${escapeXmlAttr(sp.tabColor.rgb)}"`;
+    if (sp.tabColor.indexed !== undefined) tcAttrs += ` indexed="${sp.tabColor.indexed}"`;
+    if (sp.tabColor.theme !== undefined) tcAttrs += ` theme="${sp.tabColor.theme}"`;
+    if (sp.tabColor.auto !== undefined) tcAttrs += ` auto="${sp.tabColor.auto ? '1' : '0'}"`;
+    if (sp.tabColor.tint !== undefined) tcAttrs += ` tint="${sp.tabColor.tint}"`;
+    children.push(`<tabColor${tcAttrs}/>`);
+  }
+  if (sp.outlinePr) {
+    let opAttrs = '';
+    if (sp.outlinePr.applyStyles !== undefined) opAttrs += ` applyStyles="${sp.outlinePr.applyStyles ? '1' : '0'}"`;
+    if (sp.outlinePr.summaryBelow !== undefined) opAttrs += ` summaryBelow="${sp.outlinePr.summaryBelow ? '1' : '0'}"`;
+    if (sp.outlinePr.summaryRight !== undefined) opAttrs += ` summaryRight="${sp.outlinePr.summaryRight ? '1' : '0'}"`;
+    if (sp.outlinePr.showOutlineSymbols !== undefined)
+      opAttrs += ` showOutlineSymbols="${sp.outlinePr.showOutlineSymbols ? '1' : '0'}"`;
+    children.push(`<outlinePr${opAttrs}/>`);
+  }
+  if (sp.pageSetUpPr) {
+    let psAttrs = '';
+    if (sp.pageSetUpPr.autoPageBreaks !== undefined)
+      psAttrs += ` autoPageBreaks="${sp.pageSetUpPr.autoPageBreaks ? '1' : '0'}"`;
+    if (sp.pageSetUpPr.fitToPage !== undefined) psAttrs += ` fitToPage="${sp.pageSetUpPr.fitToPage ? '1' : '0'}"`;
+    children.push(`<pageSetUpPr${psAttrs}/>`);
+  }
+
+  if (attrs.length === 0 && children.length === 0) return undefined;
+  if (children.length === 0) return `<sheetPr${attrs}/>`;
+  return `<sheetPr${attrs}>${children.join('')}</sheetPr>`;
 };
 
 const serializeCellWatches = (watches: ReadonlyArray<CellWatch>): string => {

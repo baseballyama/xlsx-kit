@@ -233,6 +233,8 @@ export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
 export { makeColumnDimension, makeRowDimension } from './worksheet/dimensions';
 export type { CellWatch, IgnoredError } from './worksheet/errors';
 export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
+export type { OutlineProperties, PageSetupProperties, SheetProperties } from './worksheet/properties';
+export { makeSheetProperties } from './worksheet/properties';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.

@@ -46,6 +46,8 @@ import type {
 import { makeDataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { IgnoredError } from './errors';
+import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
+import { makeColor } from '../styles/colors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
 import { makeHyperlink } from './hyperlinks';
@@ -91,6 +93,10 @@ const CELL_WATCHES_TAG = `{${SHEET_MAIN_NS}}cellWatches`;
 const CELL_WATCH_TAG = `{${SHEET_MAIN_NS}}cellWatch`;
 const IGNORED_ERRORS_TAG = `{${SHEET_MAIN_NS}}ignoredErrors`;
 const IGNORED_ERROR_TAG = `{${SHEET_MAIN_NS}}ignoredError`;
+const SHEET_PR_TAG = `{${SHEET_MAIN_NS}}sheetPr`;
+const TAB_COLOR_TAG = `{${SHEET_MAIN_NS}}tabColor`;
+const OUTLINE_PR_TAG = `{${SHEET_MAIN_NS}}outlinePr`;
+const PAGE_SETUP_PR_TAG = `{${SHEET_MAIN_NS}}pageSetUpPr`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -131,6 +137,17 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     throw new OpenXmlSchemaError(`parseWorksheetXml: root is "${root.name}", expected worksheet`);
   }
   const ws = makeWorksheet(title);
+
+  // <sheetPr codeName="…" filterMode="0" ...>
+  //   <tabColor rgb="FF0070C0"/>
+  //   <outlinePr summaryBelow="1" .../>
+  //   <pageSetUpPr fitToPage="1"/>
+  // </sheetPr>
+  const sheetPrEl = findChild(root, SHEET_PR_TAG);
+  if (sheetPrEl) {
+    const props = parseSheetProperties(sheetPrEl);
+    if (props) ws.sheetProperties = props;
+  }
 
   // <sheetFormatPr> defaults — recorded so dimension-less sheets still
   // reflect any non-default workbook-wide row height / column width.
@@ -276,6 +293,80 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   return ws;
 }
 
+const parseSheetProperties = (node: XmlNode): SheetProperties | undefined => {
+  const out: SheetProperties = {};
+  const flag = (raw: string | undefined): boolean | undefined => {
+    if (raw === undefined) return undefined;
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+    return undefined;
+  };
+
+  if (node.attrs['codeName'] !== undefined) out.codeName = node.attrs['codeName'];
+  const efcc = flag(node.attrs['enableFormatConditionsCalculation']);
+  if (efcc !== undefined) out.enableFormatConditionsCalculation = efcc;
+  const fm = flag(node.attrs['filterMode']);
+  if (fm !== undefined) out.filterMode = fm;
+  const pub = flag(node.attrs['published']);
+  if (pub !== undefined) out.published = pub;
+  const sh = flag(node.attrs['syncHorizontal']);
+  if (sh !== undefined) out.syncHorizontal = sh;
+  if (node.attrs['syncRef'] !== undefined) out.syncRef = node.attrs['syncRef'];
+  const sv = flag(node.attrs['syncVertical']);
+  if (sv !== undefined) out.syncVertical = sv;
+  const te = flag(node.attrs['transitionEvaluation']);
+  if (te !== undefined) out.transitionEvaluation = te;
+  const tre = flag(node.attrs['transitionEntry']);
+  if (tre !== undefined) out.transitionEntry = tre;
+
+  const tabColorEl = findChild(node, TAB_COLOR_TAG);
+  if (tabColorEl) {
+    const tcOpts: { rgb?: string; indexed?: number; theme?: number; auto?: boolean; tint?: number } = {};
+    if (tabColorEl.attrs['rgb'] !== undefined) tcOpts.rgb = tabColorEl.attrs['rgb'];
+    if (tabColorEl.attrs['indexed'] !== undefined) {
+      const n = Number.parseInt(tabColorEl.attrs['indexed'], 10);
+      if (Number.isInteger(n)) tcOpts.indexed = n;
+    }
+    if (tabColorEl.attrs['theme'] !== undefined) {
+      const n = Number.parseInt(tabColorEl.attrs['theme'], 10);
+      if (Number.isInteger(n)) tcOpts.theme = n;
+    }
+    const auto = flag(tabColorEl.attrs['auto']);
+    if (auto !== undefined) tcOpts.auto = auto;
+    if (tabColorEl.attrs['tint'] !== undefined) {
+      const n = Number.parseFloat(tabColorEl.attrs['tint']);
+      if (Number.isFinite(n)) tcOpts.tint = n;
+    }
+    out.tabColor = makeColor(tcOpts);
+  }
+
+  const outlineEl = findChild(node, OUTLINE_PR_TAG);
+  if (outlineEl) {
+    const op: OutlineProperties = {};
+    const aS = flag(outlineEl.attrs['applyStyles']);
+    if (aS !== undefined) op.applyStyles = aS;
+    const sB = flag(outlineEl.attrs['summaryBelow']);
+    if (sB !== undefined) op.summaryBelow = sB;
+    const sR = flag(outlineEl.attrs['summaryRight']);
+    if (sR !== undefined) op.summaryRight = sR;
+    const sOS = flag(outlineEl.attrs['showOutlineSymbols']);
+    if (sOS !== undefined) op.showOutlineSymbols = sOS;
+    out.outlinePr = op;
+  }
+
+  const psEl = findChild(node, PAGE_SETUP_PR_TAG);
+  if (psEl) {
+    const ps: PageSetupProperties = {};
+    const apb = flag(psEl.attrs['autoPageBreaks']);
+    if (apb !== undefined) ps.autoPageBreaks = apb;
+    const ftp = flag(psEl.attrs['fitToPage']);
+    if (ftp !== undefined) ps.fitToPage = ftp;
+    out.pageSetUpPr = ps;
+  }
+
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
 const parseIgnoredError = (node: XmlNode): IgnoredError => {
   const sqref = node.attrs['sqref'];
   if (!sqref) throw new OpenXmlSchemaError('worksheet: <ignoredError> missing @sqref');
@@ -348,6 +439,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   DRAWING_TAG,
   CELL_WATCHES_TAG,
   IGNORED_ERRORS_TAG,
+  SHEET_PR_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,

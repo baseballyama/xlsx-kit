@@ -11,13 +11,20 @@
 //   sheet" — Review → Unprotect Sheet (no password) lifts it.
 // - Other sheets are editable normally.
 //
-// Both tabColor and sheetProtection are emitted as raw `<sheetPr>` /
-// `<sheetProtection>` XmlNodes via the worksheet `bodyExtras`
-// passthrough hooks since they're not yet modeled in the high-level
-// worksheet API.
+// Tab colors are now wired through the typed `sheetProperties.tabColor`
+// API (B7 in docs/plan/13). Sheet protection is still emitted as a raw
+// `<sheetProtection>` XmlNode via `bodyExtras.afterSheetData` since the
+// high-level worksheet API doesn't yet model sheetProtection.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, elNs, setCell } from '../../../src/index';
+import {
+  addWorksheet,
+  createWorkbook,
+  elNs,
+  makeColor,
+  makeSheetProperties,
+  setCell,
+} from '../../../src/index';
 import { SHEET_MAIN_NS } from '../../../src/xml/namespaces';
 import { writeWorkbook } from '../_helpers';
 
@@ -26,12 +33,7 @@ describe('e2e 27 — tab color + sheet protection', () => {
     const wb = createWorkbook();
 
     const setTabColor = (ws: Parameters<typeof setCell>[0], rgb: string): void => {
-      ws.bodyExtras = {
-        beforeSheetData: [
-          elNs(SHEET_MAIN_NS, 'sheetPr', {}, [elNs(SHEET_MAIN_NS, 'tabColor', { rgb })]),
-        ],
-        afterSheetData: ws.bodyExtras?.afterSheetData ?? [],
-      };
+      ws.sheetProperties = makeSheetProperties({ tabColor: makeColor({ rgb }) });
     };
 
     const red = addWorksheet(wb, 'Red');
