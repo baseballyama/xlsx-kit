@@ -334,6 +334,26 @@ export function cellValueAsString(v: CellValue): string {
 }
 
 /**
+ * Coerce a CellValue to a `Date` when one is meaningful. Pass-through
+ * for `Date`-typed values; ISO-8601 strings (anything `new Date(s)`
+ * parses to a finite time) round-trip; durations are interpreted as
+ * `new Date(ms)`. Numbers, booleans, formulas, errors, rich text,
+ * and null all return `undefined` — this helper does **not** apply
+ * the Excel-serial-to-Date conversion (use `excelToDate` for that).
+ */
+export function cellValueAsDate(v: CellValue): Date | undefined {
+  if (v instanceof Date) return v;
+  if (typeof v === 'string') {
+    if (v === '') return undefined;
+    const t = Date.parse(v);
+    if (!Number.isFinite(t)) return undefined;
+    return new Date(t);
+  }
+  if (isDurationValue(v)) return new Date(v.ms);
+  return undefined;
+}
+
+/**
  * Coerce a CellValue to a number when one is meaningful. Booleans yield
  * 0/1; numeric strings parse via `Number(s)`; rich-text concats then
  * parses; formulas with a numeric cached value pass through. Returns
