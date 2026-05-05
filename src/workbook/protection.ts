@@ -58,3 +58,30 @@ export const makeWorkbookProtection = (opts: WorkbookProtection = {}): WorkbookP
   if (opts.lockRevision !== undefined) out.lockRevision = opts.lockRevision;
   return out;
 };
+
+// ---- Workbook ergonomic helpers -----------------------------------------
+
+import type { Workbook } from './workbook';
+
+/**
+ * Lock the workbook with Excel's "Protect Workbook → Structure" default
+ * (lockStructure=true). Pass `overrides` to also lock windows /
+ * revision-tracking, or to attach a password-hash quad. Plaintext
+ * password support is deferred until the D-tier hashing helper lands.
+ */
+export const protectWorkbook = (
+  wb: Workbook,
+  overrides: Partial<WorkbookProtection> = {},
+): WorkbookProtection => {
+  wb.workbookProtection = { lockStructure: true, ...overrides };
+  return wb.workbookProtection;
+};
+
+/** Drop the workbook-protection record entirely. */
+export const unprotectWorkbook = (wb: Workbook): void => {
+  delete (wb as { workbookProtection?: WorkbookProtection }).workbookProtection;
+};
+
+/** True iff `lockStructure === true`. */
+export const isWorkbookProtected = (wb: Workbook): boolean =>
+  wb.workbookProtection?.lockStructure === true;

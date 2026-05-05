@@ -388,7 +388,12 @@ export {
   sheetNames,
 } from './workbook/workbook';
 export type { WorkbookProtection } from './workbook/protection';
-export { makeWorkbookProtection } from './workbook/protection';
+export {
+  isWorkbookProtected,
+  makeWorkbookProtection,
+  protectWorkbook,
+  unprotectWorkbook,
+} from './workbook/protection';
 export type {
   CustomViewShowComments,
   CustomViewShowObjects,
