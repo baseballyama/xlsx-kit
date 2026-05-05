@@ -520,7 +520,14 @@ export {
   setWorkbookWindow,
 } from './workbook/views';
 export type { CalcMode, CalcProperties, RefMode } from './workbook/calc-properties';
-export { makeCalcProperties } from './workbook/calc-properties';
+export {
+  makeCalcProperties,
+  setCalcMode,
+  setCalcOnSave,
+  setFullCalcOnLoad,
+  setFullPrecision,
+  setIterativeCalc,
+} from './workbook/calc-properties';
 export type {
   ShowObjectsMode,
   UpdateLinksMode,
