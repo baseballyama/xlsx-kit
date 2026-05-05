@@ -100,6 +100,12 @@ export interface Workbook {
   /** `<calcPr>` — calculation engine settings (calcMode / iterate / fullPrecision etc.). */
   calcProperties?: import('./calc-properties').CalcProperties;
   /**
+   * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
+   * prompt mode, etc. `date1904` is mirrored here for completeness but
+   * the canonical source remains `wb.date1904`.
+   */
+  workbookProperties?: import('./workbook-properties').WorkbookProperties;
+  /**
    * Workbook-level rels that don't match a modeled type. Re-emitted with
    * their original Id so captured `<pivotCaches r:id="…"/>` etc. still
    * resolve after a round-trip.

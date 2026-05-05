@@ -609,12 +609,13 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   if (wb.workbookXmlExtras?.beforeSheets) {
     for (const node of wb.workbookXmlExtras.beforeSheets) parts.push(serializeChildNode(node));
   }
-  // If the workbook is date1904=true but the captured extras don't
-  // already carry a `<workbookPr>` element with date1904 set, emit a
-  // minimal one so a fresh workbook (no load history) round-trips
-  // through Excel with the right epoch.
-  if (wb.date1904 && !hasWorkbookPrDate1904(wb)) {
-    parts.push('<workbookPr date1904="1"/>');
+  // Emit <workbookPr> from the typed model; fall back to a minimal
+  // {date1904: true} synthesis so a fresh workbook (no load history)
+  // still round-trips through Excel with the right epoch.
+  const effectiveWp = effectiveWorkbookProperties(wb);
+  if (effectiveWp) {
+    const wp = serializeWorkbookProperties(effectiveWp);
+    if (wp) parts.push(wp);
   }
   if (wb.workbookProtection) {
     const wp = serializeWorkbookProtection(wb.workbookProtection);
@@ -671,6 +672,54 @@ function serializeCalcProperties(
   return `<calcPr${attrs}/>`;
 }
 
+function effectiveWorkbookProperties(
+  wb: Workbook,
+): import('../workbook/workbook-properties').WorkbookProperties | undefined {
+  const explicit = wb.workbookProperties;
+  if (explicit) {
+    // Mirror the canonical date1904 flag if the typed model omits it.
+    if (wb.date1904 && explicit.date1904 === undefined) {
+      return { ...explicit, date1904: true };
+    }
+    return explicit;
+  }
+  if (wb.date1904) return { date1904: true };
+  return undefined;
+}
+
+function serializeWorkbookProperties(
+  wp: import('../workbook/workbook-properties').WorkbookProperties,
+): string | undefined {
+  let attrs = '';
+  const boolKeys: ReadonlyArray<keyof import('../workbook/workbook-properties').WorkbookProperties> = [
+    'date1904',
+    'dateCompatibility',
+    'showBorderUnselectedTables',
+    'filterPrivacy',
+    'promptedSolutions',
+    'showInkAnnotation',
+    'backupFile',
+    'saveExternalLinkValues',
+    'hidePivotFieldList',
+    'showPivotChartFilter',
+    'allowRefreshQuery',
+    'publishItems',
+    'checkCompatibility',
+    'autoCompressPictures',
+    'refreshAllConnections',
+  ];
+  for (const k of boolKeys) {
+    const v = wp[k];
+    if (v !== undefined) attrs += ` ${k}="${v ? '1' : '0'}"`;
+  }
+  if (wp.showObjects !== undefined) attrs += ` showObjects="${wp.showObjects}"`;
+  if (wp.updateLinks !== undefined) attrs += ` updateLinks="${wp.updateLinks}"`;
+  if (wp.codeName !== undefined) attrs += ` codeName="${escapeAttr(wp.codeName)}"`;
+  if (wp.defaultThemeVersion !== undefined) attrs += ` defaultThemeVersion="${wp.defaultThemeVersion}"`;
+  if (attrs.length === 0) return undefined;
+  return `<workbookPr${attrs}/>`;
+}
+
 function serializeBookViews(views: ReadonlyArray<import('../workbook/views').WorkbookView>): string {
   const parts: string[] = ['<bookViews>'];
   for (const v of views) {
@@ -724,23 +773,6 @@ function serializeWorkbookProtection(
   if (wp.lockRevision !== undefined) attrs += ` lockRevision="${wp.lockRevision ? '1' : '0'}"`;
   if (attrs.length === 0) return undefined;
   return `<workbookProtection${attrs}/>`;
-}
-
-/**
- * True if the captured workbookXmlExtras already carry a
- * `<workbookPr>` element with @date1904 set — in which case the
- * round-trip extras emit handles it and we shouldn't duplicate.
- */
-function hasWorkbookPrDate1904(wb: Workbook): boolean {
-  const buckets = [wb.workbookXmlExtras?.beforeSheets ?? [], wb.workbookXmlExtras?.afterSheets ?? []];
-  for (const bucket of buckets) {
-    for (const node of bucket) {
-      if (node.name !== `{${SHEET_MAIN_NS}}workbookPr`) continue;
-      const v = node.attrs['date1904'];
-      if (v === '1' || v === 'true') return true;
-    }
-  }
-  return false;
 }
 
 const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

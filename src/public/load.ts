@@ -512,6 +512,14 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       wb.workbookProtection = parseWorkbookProtection(child);
       continue;
     }
+    // Lift <workbookPr> into the typed workbook field. The date1904
+    // attribute is already mirrored onto wb.date1904; everything else
+    // stops leaking into bodyExtras.
+    if (child.name === WORKBOOK_PR_TAG) {
+      const wp = parseWorkbookProperties(child);
+      if (wp) wb.workbookProperties = wp;
+      continue;
+    }
     // Lift <bookViews> into the typed workbook field.
     if (child.name === BOOK_VIEWS_TAG) {
       const views: import('../workbook/views').WorkbookView[] = [];
@@ -532,6 +540,70 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     wb.workbookXmlExtras = { beforeSheets, afterSheets };
   }
 }
+
+const SHOW_OBJECTS_MODES: ReadonlyArray<import('../workbook/workbook-properties').ShowObjectsMode> = [
+  'all',
+  'placeholders',
+  'none',
+];
+const UPDATE_LINKS_MODES: ReadonlyArray<import('../workbook/workbook-properties').UpdateLinksMode> = [
+  'userSet',
+  'never',
+  'always',
+];
+
+const parseWorkbookProperties = (
+  node: XmlNode,
+): import('../workbook/workbook-properties').WorkbookProperties | undefined => {
+  const out: import('../workbook/workbook-properties').WorkbookProperties = {};
+  const a = node.attrs;
+  const flag = (raw: string | undefined): boolean | undefined => {
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+    return undefined;
+  };
+  const intAttr = (k: string): number | undefined => {
+    if (a[k] === undefined) return undefined;
+    const n = Number.parseInt(a[k], 10);
+    return Number.isInteger(n) ? n : undefined;
+  };
+
+  const bools: ReadonlyArray<keyof import('../workbook/workbook-properties').WorkbookProperties> = [
+    'date1904',
+    'dateCompatibility',
+    'showBorderUnselectedTables',
+    'filterPrivacy',
+    'promptedSolutions',
+    'showInkAnnotation',
+    'backupFile',
+    'saveExternalLinkValues',
+    'hidePivotFieldList',
+    'showPivotChartFilter',
+    'allowRefreshQuery',
+    'publishItems',
+    'checkCompatibility',
+    'autoCompressPictures',
+    'refreshAllConnections',
+  ];
+  for (const k of bools) {
+    const v = flag(a[k]);
+    if (v !== undefined) (out as Record<string, unknown>)[k] = v;
+  }
+
+  const showObjects = a['showObjects'];
+  if (showObjects && SHOW_OBJECTS_MODES.includes(showObjects as import('../workbook/workbook-properties').ShowObjectsMode)) {
+    out.showObjects = showObjects as import('../workbook/workbook-properties').ShowObjectsMode;
+  }
+  const updateLinks = a['updateLinks'];
+  if (updateLinks && UPDATE_LINKS_MODES.includes(updateLinks as import('../workbook/workbook-properties').UpdateLinksMode)) {
+    out.updateLinks = updateLinks as import('../workbook/workbook-properties').UpdateLinksMode;
+  }
+  if (a['codeName'] !== undefined) out.codeName = a['codeName'];
+  const dtv = intAttr('defaultThemeVersion');
+  if (dtv !== undefined) out.defaultThemeVersion = dtv;
+
+  return Object.keys(out).length > 0 ? out : undefined;
+};
 
 const CALC_MODES: ReadonlyArray<import('../workbook/calc-properties').CalcMode> = [
   'manual',

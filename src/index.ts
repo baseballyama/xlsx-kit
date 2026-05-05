@@ -349,3 +349,9 @@ export type { WorkbookView, WorkbookViewVisibility } from './workbook/views';
 export { makeWorkbookView } from './workbook/views';
 export type { CalcMode, CalcProperties, RefMode } from './workbook/calc-properties';
 export { makeCalcProperties } from './workbook/calc-properties';
+export type {
+  ShowObjectsMode,
+  UpdateLinksMode,
+  WorkbookProperties,
+} from './workbook/workbook-properties';
+export { makeWorkbookProperties } from './workbook/workbook-properties';
