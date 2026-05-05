@@ -7,6 +7,36 @@
 
 - **フェーズ**: フェーズ5 (rich features) — フェーズ3 acceptance pass、フェーズ4 streaming は perf ベンチが必要なので後回し
 - **フェーズ**: フェーズ5 worksheet rich features 全部完了 → **フェーズ6 charts 全部完了**
+
+## 次の作業者への引き継ぎ (Handoff @ 2026-05-05)
+
+**現状サマリ**: 1748 tests pass / typecheck + lint clean (16 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。
+
+### 直近 100+ commit のテーマ (今ブランチで積んだ作業)
+
+- **public ergonomic API の積み増し**: cell-level (setCellFormula / setCellArrayFormula / setCellRichText / 値 coercion 一式 / 型ガード) → range-level (copyRange / moveRange / clearRange / clearAllCells / setRangeBackgroundColor / setRangeFont / setRangeNumberFormat / setRangeBorderBox / setRangeStyle) → worksheet-level (selection helpers / freeze panes / outline grouping / outline collapse / hide+unhide bulk / autofit / data extent / find cells / merge resolver / hyperlink resolver / comment resolver) → workbook-level (duplicateSheet / iterAllCells / getAllMergedRanges / getAllHyperlinks / getAllComments / getAllTables / getAllDataValidations / getWorkbookStats / sheet validators)。
+- **packaging ergonomic API**: docProps/core.xml + docProps/app.xml + docProps/custom.xml の主要 field を直接 set できる setter 群 (creator/title/manager/company/customString/Number/Bool/Date/...)。
+- **styling ergonomic API**: alignment preset (centerCell / wrapCellText / rotateCellText / indentCell / alignXxx) / font preset (setBold / setItalic / setUnderline / setFontSize / setFontName / setFontColor) / fill preset (setCellBackgroundColor / clearCellBackground) / border preset (setCellBorderAll / setRangeBorderBox) / format preset (setCellAsCurrency / Percent / Date / Number) / WCAG color helpers (luminance / contrastRatio / pickReadableTextColor) / formatAsHeader range preset / applyBuiltinStyle + applyNamedStyle。
+- **CF visual rule builders**: addColorScaleRule / addDataBarRule / addIconSetRule (innerXml 直書きを構造化 opts で代替)。
+- **重要 fix**: `applyXfPatch` / `setRangeStyle` が `cellXfs[0]` を default で予約 (a0c9400)。これ以前は最初の styled cell が unstyled cell と style id 0 で衝突する footgun。
+
+### 残タスク
+
+- **Excel 365 視覚 QA** — 人手のみ。コア機能は揃っている。
+- **ZIP64 write の正式対応** — fflate 上流の 4GiB 制限。openxml-js 側ではすでに fallback ロジックが入っているので blocker ではない。
+- **public API surface の整理** — `src/index.ts` が 700+ 行に肥大。alphabetical 順を維持しているが、サブモジュールごとに `*.ts` barrel 経由でグループ化する余地あり。（urgent ではない、整形のみ。）
+- **rich-text run builder ergo の追加** — `richTextRun(text, font?)` 単体 export はまだ。`makeTextRun` を re-export するだけで済む。
+- **`replaceCellValues` の range-aware 版** — 現状は worksheet 全体走査。`replaceInRange(ws, range, search, replacement)` があれば templating で便利。
+- **autofit の font-aware 改良** — 現状は文字列長 + padding 近似。font.size 比例で width を補正するだけでも CJK / 大ポイントの結果が改善する。
+
+### 進め方の TIPS
+
+- **ターン pattern**: 「PROGRESS.md を読む → 候補から最小タスクを 1 件選ぶ → 実装 → テスト (vitest) → typecheck + lint clean → コミット → PROGRESS.md の最上段に新タスクを書き、前タスクは "次のタスク (前回)" として一段繰り下げる」。
+- **テスト**: 各 helper 追加時は `tests/phase-5/` (worksheet 系) / `tests/phase-3/` (workbook + packaging 系) / `tests/phase-2/styles/` (style 系) / `tests/phase-2/` (cell 系) に新ファイルを切る。round-trip テストは `workbookToBytes` → `loadWorkbook(fromBuffer(...))` の pattern。
+- **`exactOptionalPropertyTypes` + `noUncheckedIndexedAccess`** — `_drop` / 明示型ガード必須。`x!.y` は biome lint error なので避ける。
+- **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
+
+
 - **次のタスク**: **長期 /loop 仕上げターン (public API + docs + edge-fixtures + perf 微調整 + UTF-8 + max-coord + migration guide) 完了**。本ターン (連続コミット 11 件) で以下を一括完遂:
   1. phase-4 streaming reader real-fixture acceptance (`genuine/sample.xlsx` SAX iter ↔ eager loadWorkbook 座標一致 + `empty-with-styles.xlsx` minRow/maxRow band フィルタ) — `tests/phase-4/read-only-genuine.test.ts` 2件
   2. iterRows 早期終了 + cell-skip 最適化 (currentRow > maxRow で generator return、band 外 row の `<c>` attrs パース skip)
