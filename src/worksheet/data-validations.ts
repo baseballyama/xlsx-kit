@@ -66,3 +66,140 @@ export function makeDataValidation(
     ...(opts.showDropDown !== undefined ? { showDropDown: opts.showDropDown } : {}),
   };
 }
+
+// ---- Worksheet ergonomic builders ---------------------------------------
+
+import type { Worksheet } from './worksheet';
+import { parseMultiCellRange } from './cell-range';
+
+const resolveSqref = (sqref: MultiCellRange | string): MultiCellRange =>
+  typeof sqref === 'string' ? parseMultiCellRange(sqref) : sqref;
+
+export interface ValidationCommon {
+  /** Show the dropdown / input prompt when the cell is selected. */
+  prompt?: string;
+  promptTitle?: string;
+  /** Show an error dialog when the user types an invalid value. */
+  error?: string;
+  errorTitle?: string;
+  errorStyle?: DataValidationErrorStyle;
+  allowBlank?: boolean;
+}
+
+/**
+ * Add a list-type dropdown validation to a range. `values` may be an
+ * inline list (`['Red', 'Green', 'Blue']`) or a sheet reference
+ * (`'=Sheet1!$A$1:$A$10'`).
+ */
+export const addListValidation = (
+  ws: Worksheet,
+  sqref: MultiCellRange | string,
+  values: ReadonlyArray<string> | string,
+  opts: ValidationCommon = {},
+): DataValidation => {
+  const formula1 = Array.isArray(values)
+    ? `"${(values as ReadonlyArray<string>).join(',')}"`
+    : (values as string);
+  const dv = makeDataValidation({
+    type: 'list',
+    sqref: resolveSqref(sqref),
+    formula1,
+    allowBlank: opts.allowBlank ?? true,
+    showInputMessage: opts.prompt !== undefined,
+    showErrorMessage: opts.error !== undefined || opts.errorStyle !== undefined,
+    ...(opts.errorStyle !== undefined ? { errorStyle: opts.errorStyle } : {}),
+    ...(opts.error !== undefined ? { error: opts.error } : {}),
+    ...(opts.errorTitle !== undefined ? { errorTitle: opts.errorTitle } : {}),
+    ...(opts.prompt !== undefined ? { prompt: opts.prompt } : {}),
+    ...(opts.promptTitle !== undefined ? { promptTitle: opts.promptTitle } : {}),
+  });
+  ws.dataValidations.push(dv);
+  return dv;
+};
+
+/**
+ * Add a number-range validation. `between(min, max)` matches Excel's
+ * "Whole Number" → "between" form by default. Use `kind: 'decimal'`
+ * for decimal (default 'whole').
+ */
+export const addNumberValidation = (
+  ws: Worksheet,
+  sqref: MultiCellRange | string,
+  range: { min: number; max?: number; operator?: DataValidationOperator; kind?: 'whole' | 'decimal' },
+  opts: ValidationCommon = {},
+): DataValidation => {
+  const operator: DataValidationOperator =
+    range.operator ?? (range.max !== undefined ? 'between' : 'greaterThanOrEqual');
+  const dv = makeDataValidation({
+    type: range.kind ?? 'whole',
+    sqref: resolveSqref(sqref),
+    operator,
+    formula1: String(range.min),
+    ...(range.max !== undefined ? { formula2: String(range.max) } : {}),
+    allowBlank: opts.allowBlank ?? true,
+    showInputMessage: opts.prompt !== undefined,
+    showErrorMessage: opts.error !== undefined || opts.errorStyle !== undefined,
+    ...(opts.errorStyle !== undefined ? { errorStyle: opts.errorStyle } : {}),
+    ...(opts.error !== undefined ? { error: opts.error } : {}),
+    ...(opts.errorTitle !== undefined ? { errorTitle: opts.errorTitle } : {}),
+    ...(opts.prompt !== undefined ? { prompt: opts.prompt } : {}),
+    ...(opts.promptTitle !== undefined ? { promptTitle: opts.promptTitle } : {}),
+  });
+  ws.dataValidations.push(dv);
+  return dv;
+};
+
+/**
+ * Add a date-range validation. Dates are passed as Excel serial
+ * numbers (use `dateToExcel` to convert from JS `Date`).
+ */
+export const addDateValidation = (
+  ws: Worksheet,
+  sqref: MultiCellRange | string,
+  range: { min: number; max?: number; operator?: DataValidationOperator },
+  opts: ValidationCommon = {},
+): DataValidation => {
+  const operator: DataValidationOperator =
+    range.operator ?? (range.max !== undefined ? 'between' : 'greaterThanOrEqual');
+  const dv = makeDataValidation({
+    type: 'date',
+    sqref: resolveSqref(sqref),
+    operator,
+    formula1: String(range.min),
+    ...(range.max !== undefined ? { formula2: String(range.max) } : {}),
+    allowBlank: opts.allowBlank ?? true,
+    showInputMessage: opts.prompt !== undefined,
+    showErrorMessage: opts.error !== undefined || opts.errorStyle !== undefined,
+    ...(opts.errorStyle !== undefined ? { errorStyle: opts.errorStyle } : {}),
+    ...(opts.error !== undefined ? { error: opts.error } : {}),
+    ...(opts.errorTitle !== undefined ? { errorTitle: opts.errorTitle } : {}),
+    ...(opts.prompt !== undefined ? { prompt: opts.prompt } : {}),
+    ...(opts.promptTitle !== undefined ? { promptTitle: opts.promptTitle } : {}),
+  });
+  ws.dataValidations.push(dv);
+  return dv;
+};
+
+/** Add a custom-formula validation (`formula1` evaluated for each cell). */
+export const addCustomValidation = (
+  ws: Worksheet,
+  sqref: MultiCellRange | string,
+  formula: string,
+  opts: ValidationCommon = {},
+): DataValidation => {
+  const dv = makeDataValidation({
+    type: 'custom',
+    sqref: resolveSqref(sqref),
+    formula1: formula,
+    allowBlank: opts.allowBlank ?? true,
+    showInputMessage: opts.prompt !== undefined,
+    showErrorMessage: opts.error !== undefined || opts.errorStyle !== undefined,
+    ...(opts.errorStyle !== undefined ? { errorStyle: opts.errorStyle } : {}),
+    ...(opts.error !== undefined ? { error: opts.error } : {}),
+    ...(opts.errorTitle !== undefined ? { errorTitle: opts.errorTitle } : {}),
+    ...(opts.prompt !== undefined ? { prompt: opts.prompt } : {}),
+    ...(opts.promptTitle !== undefined ? { promptTitle: opts.promptTitle } : {}),
+  });
+  ws.dataValidations.push(dv);
+  return dv;
+};

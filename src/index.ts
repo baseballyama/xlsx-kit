@@ -231,6 +231,20 @@ export {
 } from './worksheet/worksheet';
 export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
 export { makeColumnDimension, makeRowDimension } from './worksheet/dimensions';
+export type {
+  DataValidation,
+  DataValidationErrorStyle,
+  DataValidationOperator,
+  DataValidationType,
+  ValidationCommon,
+} from './worksheet/data-validations';
+export {
+  addCustomValidation,
+  addDateValidation,
+  addListValidation,
+  addNumberValidation,
+  makeDataValidation,
+} from './worksheet/data-validations';
 export type { CellWatch, IgnoredError } from './worksheet/errors';
 export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
 export type { OutlineProperties, PageSetupProperties, SheetProperties } from './worksheet/properties';
