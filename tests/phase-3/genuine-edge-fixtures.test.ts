@@ -18,7 +18,11 @@ import { fromBuffer } from '../../src/io/node';
 import { loadWorkbook } from '../../src/public/load';
 import { workbookToBytes } from '../../src/public/save';
 
-const FIXTURES = resolve(__dirname, '../../reference/openpyxl/openpyxl/tests/data');
+const TESTS_DATA = resolve(__dirname, '../../reference/openpyxl/openpyxl/tests/data');
+const FIXTURES = TESTS_DATA;
+// openpyxl mirrors a second fixture tree under `reader/tests/data` —
+// some files live only in one or the other.
+const READER_TESTS_DATA = resolve(__dirname, '../../reference/openpyxl/openpyxl/reader/tests/data');
 
 describe('phase-3 — additional genuine fixture round-trips', () => {
   it('mac_date.xlsx: parses workbookPr@date1904 and round-trips the flag', async () => {
@@ -65,5 +69,48 @@ describe('phase-3 — additional genuine fixture round-trips', () => {
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
     expect(wb2.sheets.map((s) => s.sheet.title)).toEqual(titles);
+  });
+
+  it('hidden_sheets.xlsx: visible / hidden / veryHidden states round-trip', async () => {
+    const original = readFileSync(
+      `${READER_TESTS_DATA}/hidden_sheets.xlsx`,
+    );
+    const wb = await loadWorkbook(fromBuffer(original));
+    const states = wb.sheets.map((s) => ({ title: s.sheet.title, state: s.state }));
+    expect(states).toEqual([
+      { title: 'Sheet', state: 'visible' },
+      { title: 'Hidden', state: 'hidden' },
+      { title: 'VeryHidden', state: 'veryHidden' },
+    ]);
+
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    const states2 = wb2.sheets.map((s) => ({ title: s.sheet.title, state: s.state }));
+    expect(states2).toEqual(states);
+  });
+
+  it('contains_chartsheets.xlsx: chartsheet kind survives the round-trip', async () => {
+    const original = readFileSync(
+      `${READER_TESTS_DATA}/contains_chartsheets.xlsx`,
+    );
+    const wb = await loadWorkbook(fromBuffer(original));
+    const kinds = wb.sheets.map((s) => s.kind);
+    // The fixture has both worksheets and chartsheets; we don't assert
+    // the exact mix (it may shift if openpyxl regenerates the fixture),
+    // only that at least one chartsheet survives.
+    expect(kinds).toContain('chartsheet');
+
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    expect(wb2.sheets.map((s) => s.kind)).toEqual(kinds);
+  });
+
+  it('null_file.xlsx: surfaces a clear "not a valid zip" error', async () => {
+    const original = readFileSync(
+      `${READER_TESTS_DATA}/null_file.xlsx`,
+    );
+    await expect(loadWorkbook(fromBuffer(original))).rejects.toThrowError(
+      /not a valid zip|too short|EOCD/i,
+    );
   });
 });
