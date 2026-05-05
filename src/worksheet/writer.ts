@@ -217,6 +217,9 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     const { vmlRelId } = ctx.registerComments(ws.legacyComments);
     parts.push(`<legacyDrawing r:id="${escapeXmlAttr(vmlRelId)}"/>`);
   }
+  if (ws.backgroundPictureRId !== undefined) {
+    parts.push(`<picture r:id="${escapeXmlAttr(ws.backgroundPictureRId)}"/>`);
+  }
   if (ws.webPublishItems.length > 0) parts.push(serializeWebPublishItems(ws.webPublishItems));
   if (ws.tables.length > 0 && ctx.registerTable) {
     parts.push(`<tableParts count="${ws.tables.length}">`);

@@ -120,6 +120,12 @@ export interface Worksheet {
    * the rows come back in the same order after a save/load cycle.
    */
   sortState?: SortState;
+  /**
+   * `<picture r:id="…"/>` — sheet background image (Page Layout →
+   * Background). The rId points at a media part registered in the
+   * worksheet rels (preserved via the existing relsExtras machinery).
+   */
+  backgroundPictureRId?: string;
   /** `<printOptions>` — gridlines, headings, horizontal/vertical centering on the printed page. */
   printOptions?: PrintOptions;
   /** `<pageMargins>` — six required margins in inches. */

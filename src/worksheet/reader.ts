@@ -128,6 +128,7 @@ const PROTECTED_RANGES_TAG = `{${SHEET_MAIN_NS}}protectedRanges`;
 const PROTECTED_RANGE_TAG = `{${SHEET_MAIN_NS}}protectedRange`;
 const SORT_STATE_TAG = `{${SHEET_MAIN_NS}}sortState`;
 const SORT_CONDITION_TAG = `{${SHEET_MAIN_NS}}sortCondition`;
+const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
 const PRINT_OPTIONS_TAG = `{${SHEET_MAIN_NS}}printOptions`;
 const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
 const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
@@ -368,6 +369,13 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
         if (list) ws.legacyComments.push(...list);
       }
     }
+  }
+
+  // <picture r:id="rIdN"/> — sheet background image.
+  const pictureEl = findChild(root, PICTURE_TAG);
+  if (pictureEl) {
+    const rId = pictureEl.attrs[`{${REL_NS}}id`];
+    if (rId) ws.backgroundPictureRId = rId;
   }
 
   // <drawing r:id="rIdN"/> — at most one per sheet. Resolve via loadDrawing.
@@ -1006,6 +1014,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   SHEET_PROTECTION_TAG,
   PROTECTED_RANGES_TAG,
   SORT_STATE_TAG,
+  PICTURE_TAG,
   PRINT_OPTIONS_TAG,
   PAGE_MARGINS_TAG,
   PAGE_SETUP_TAG,
