@@ -266,6 +266,8 @@ export {
   freezeColumns,
   freezePanes,
   freezeRows,
+  groupColumns,
+  groupRows,
   setActiveCell,
   setAutoFilter,
   setCell,
@@ -292,6 +294,8 @@ export {
   setShowRowColHeaders,
   setShowZeros,
   unfreezePanes,
+  ungroupColumns,
+  ungroupRows,
   unmergeCells,
 } from './worksheet/worksheet';
 export type { ColumnDimension, RowDimension } from './worksheet/dimensions';

@@ -960,6 +960,85 @@ export function setDefaultRowHeight(ws: Worksheet, height: number | undefined): 
   ws.defaultRowHeight = height;
 }
 
+const validateOutlineLevel = (level: number): void => {
+  // Excel outline depth is bounded at 7 levels (Data → Group nesting cap).
+  if (!Number.isInteger(level) || level < 1 || level > 7) {
+    throw new OpenXmlSchemaError(`outlineLevel must be an integer in [1, 7]; got ${level}`);
+  }
+};
+
+/**
+ * Mirror Excel's "Data → Group → Rows" by stamping every row in
+ * `[fromRow, toRow]` with an outline depth of `level` (default 1).
+ * Allocates a RowDimension for each row that doesn't already have
+ * one. Ungroup with {@link ungroupRows}.
+ */
+export function groupRows(ws: Worksheet, fromRow: number, toRow: number, level = 1): void {
+  validateOutlineLevel(level);
+  if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
+    throw new OpenXmlSchemaError(`groupRows: invalid row range [${fromRow}, ${toRow}]`);
+  }
+  for (let r = fromRow; r <= toRow; r++) {
+    const existing = getRowDimension(ws, r) ?? {};
+    setRowDimension(ws, r, { ...existing, outlineLevel: level });
+  }
+}
+
+/**
+ * Drop the outline grouping for every row in `[fromRow, toRow]`.
+ * Removes the `outlineLevel` field from each affected RowDimension.
+ */
+export function ungroupRows(ws: Worksheet, fromRow: number, toRow: number): void {
+  if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
+    throw new OpenXmlSchemaError(`ungroupRows: invalid row range [${fromRow}, ${toRow}]`);
+  }
+  for (let r = fromRow; r <= toRow; r++) {
+    const existing = ws.rowDimensions.get(r);
+    if (!existing) continue;
+    const { outlineLevel: _drop, ...rest } = existing;
+    if (Object.keys(rest).length === 0) ws.rowDimensions.delete(r);
+    else ws.rowDimensions.set(r, rest);
+  }
+}
+
+/**
+ * Mirror Excel's "Data → Group → Columns" by stamping every column
+ * in `[fromCol, toCol]` with an outline depth of `level` (default 1).
+ */
+export function groupColumns(ws: Worksheet, fromCol: number, toCol: number, level = 1): void {
+  validateOutlineLevel(level);
+  if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
+    throw new OpenXmlSchemaError(`groupColumns: invalid column range [${fromCol}, ${toCol}]`);
+  }
+  for (let c = fromCol; c <= toCol; c++) {
+    const existing = getColumnDimension(ws, c);
+    setColumnDimension(ws, c, { ...existing, outlineLevel: level });
+  }
+}
+
+/**
+ * Drop the outline grouping for every column in `[fromCol, toCol]`.
+ * Removes the `outlineLevel` field from each affected ColumnDimension.
+ */
+export function ungroupColumns(ws: Worksheet, fromCol: number, toCol: number): void {
+  if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
+    throw new OpenXmlSchemaError(`ungroupColumns: invalid column range [${fromCol}, ${toCol}]`);
+  }
+  for (let c = fromCol; c <= toCol; c++) {
+    const existing = getColumnDimension(ws, c);
+    if (!existing) continue;
+    const { outlineLevel: _drop, ...rest } = existing;
+    // setColumnDimension expects the partial-without-min-max shape.
+    const { min: _min, max: _max, ...passthrough } = rest;
+    if (Object.keys(passthrough).length === 0) {
+      // Pure outline-only entry — drop it entirely.
+      ws.columnDimensions.delete(existing.min);
+    } else {
+      setColumnDimension(ws, c, passthrough);
+    }
+  }
+}
+
 /**
  * Approximate autofit for a column. Scans every populated cell in
  * `col` (or in `[opts.minRow, opts.maxRow]`), measures `cellValueAsString`
