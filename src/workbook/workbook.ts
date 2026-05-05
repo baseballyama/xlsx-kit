@@ -631,6 +631,39 @@ export function getAllComments(
 }
 
 /**
+ * Collect every Excel table across every worksheet. Each entry pairs
+ * the TableDefinition with a back-reference to the owning sheet, in
+ * tab-strip order.
+ */
+export function getAllTables(
+  wb: Workbook,
+): ReadonlyArray<{ sheet: Worksheet; table: import('../worksheet/table').TableDefinition }> {
+  const out: Array<{ sheet: Worksheet; table: import('../worksheet/table').TableDefinition }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    for (const t of sheet.tables) out.push({ sheet, table: t });
+  }
+  return out;
+}
+
+/**
+ * Collect every data-validation block across every worksheet. Each
+ * entry pairs the validation with a back-reference to the owning
+ * sheet, in tab-strip order.
+ */
+export function getAllDataValidations(
+  wb: Workbook,
+): ReadonlyArray<{ sheet: Worksheet; validation: import('../worksheet/data-validations').DataValidation }> {
+  const out: Array<{
+    sheet: Worksheet;
+    validation: import('../worksheet/data-validations').DataValidation;
+  }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    for (const v of sheet.dataValidations) out.push({ sheet, validation: v });
+  }
+  return out;
+}
+
+/**
  * Iterate over every Chartsheet in the workbook. Yields in tab-strip
  * order, skipping regular worksheets.
  */
