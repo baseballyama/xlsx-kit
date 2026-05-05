@@ -264,17 +264,23 @@ export {
 } from './worksheet/data-validations';
 export type {
   CellIsOperator,
+  Cfvo,
+  CfvoType,
   ConditionalFormatting,
   ConditionalFormattingRule,
   ConditionalFormattingRuleType,
+  IconSetStyle,
   TextOperator,
   TimePeriod,
 } from './worksheet/conditional-formatting';
 export {
   addAverageRule,
   addCellIsRule,
+  addColorScaleRule,
+  addDataBarRule,
   addDuplicateValuesRule,
   addFormulaRule,
+  addIconSetRule,
   addTextRule,
   addTopNRule,
   makeCfRule,

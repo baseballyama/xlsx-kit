@@ -7,6 +7,7 @@
 // (`innerXml` field) so the data survives a save / load cycle without
 // our needing to model cfvo / colors / iconSets fully.
 
+import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { MultiCellRange } from './cell-range';
 
 export type ConditionalFormattingRuleType =
@@ -300,6 +301,165 @@ export const addTextRule = (
       text: opts.text,
       formulas: [],
       ...(opts.dxfId !== undefined ? { dxfId: opts.dxfId } : {}),
+    }),
+  );
+};
+
+// ---- Visual rule builders (colorScale / dataBar / iconSet) --------------
+
+export type CfvoType = 'min' | 'max' | 'num' | 'percent' | 'percentile' | 'formula';
+
+export interface Cfvo {
+  type: CfvoType;
+  /** Required for num / percent / percentile / formula; ignored for min / max. */
+  val?: string;
+}
+
+export type IconSetStyle =
+  | '3Arrows'
+  | '3ArrowsGray'
+  | '3Flags'
+  | '3Signs'
+  | '3Symbols'
+  | '3Symbols2'
+  | '3TrafficLights1'
+  | '3TrafficLights2'
+  | '4Arrows'
+  | '4ArrowsGray'
+  | '4Rating'
+  | '4RedToBlack'
+  | '4TrafficLights'
+  | '5Arrows'
+  | '5ArrowsGray'
+  | '5Quarters'
+  | '5Rating';
+
+const escapeAttr = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+const renderCfvo = (c: Cfvo): string => {
+  if (c.type === 'min' || c.type === 'max') {
+    if (c.val === undefined) return `<cfvo type="${c.type}"/>`;
+    return `<cfvo type="${c.type}" val="${escapeAttr(c.val)}"/>`;
+  }
+  if (c.val === undefined) {
+    throw new OpenXmlSchemaError(`cfvo type "${c.type}" requires val`);
+  }
+  return `<cfvo type="${c.type}" val="${escapeAttr(c.val)}"/>`;
+};
+
+const renderColor = (hex: string): string => `<color rgb="${escapeAttr(hex)}"/>`;
+
+/**
+ * Color-scale rule — gradient between 2 or 3 reference points. Each
+ * cfvo pairs with one color.
+ */
+export const addColorScaleRule = (
+  ws: Worksheet,
+  sqref: MultiCellRange | string,
+  opts: {
+    cfvos: ReadonlyArray<Cfvo>;
+    /** Hex strings, e.g. `'FFFF0000'`; one per cfvo. */
+    colors: ReadonlyArray<string>;
+    priority?: number;
+    stopIfTrue?: boolean;
+  },
+): ConditionalFormattingRule => {
+  if (opts.cfvos.length !== 2 && opts.cfvos.length !== 3) {
+    throw new OpenXmlSchemaError(`addColorScaleRule: cfvos must be length 2 or 3; got ${opts.cfvos.length}`);
+  }
+  if (opts.colors.length !== opts.cfvos.length) {
+    throw new OpenXmlSchemaError(
+      `addColorScaleRule: colors length (${opts.colors.length}) must match cfvos length (${opts.cfvos.length})`,
+    );
+  }
+  const inner = `<colorScale>${opts.cfvos.map(renderCfvo).join('')}${opts.colors.map(renderColor).join('')}</colorScale>`;
+  return pushRule(
+    ws,
+    sqref,
+    makeCfRule({
+      type: 'colorScale',
+      priority: opts.priority ?? nextCfPriority(ws),
+      formulas: [],
+      innerXml: inner,
+      ...(opts.stopIfTrue !== undefined ? { stopIfTrue: opts.stopIfTrue } : {}),
+    }),
+  );
+};
+
+/**
+ * Data-bar rule — a gradient bar inside each cell sized to the value.
+ * Defaults to `min`/`max` cfvos so the bar spans the visible range.
+ */
+export const addDataBarRule = (
+  ws: Worksheet,
+  sqref: MultiCellRange | string,
+  opts: {
+    color: string;
+    minCfvo?: Cfvo;
+    maxCfvo?: Cfvo;
+    minLength?: number;
+    maxLength?: number;
+    showValue?: boolean;
+    priority?: number;
+    stopIfTrue?: boolean;
+  },
+): ConditionalFormattingRule => {
+  const min = opts.minCfvo ?? { type: 'min' };
+  const max = opts.maxCfvo ?? { type: 'max' };
+  let attrs = '';
+  if (opts.minLength !== undefined) attrs += ` minLength="${opts.minLength}"`;
+  if (opts.maxLength !== undefined) attrs += ` maxLength="${opts.maxLength}"`;
+  if (opts.showValue !== undefined) attrs += ` showValue="${opts.showValue ? '1' : '0'}"`;
+  const inner = `<dataBar${attrs}>${renderCfvo(min)}${renderCfvo(max)}${renderColor(opts.color)}</dataBar>`;
+  return pushRule(
+    ws,
+    sqref,
+    makeCfRule({
+      type: 'dataBar',
+      priority: opts.priority ?? nextCfPriority(ws),
+      formulas: [],
+      innerXml: inner,
+      ...(opts.stopIfTrue !== undefined ? { stopIfTrue: opts.stopIfTrue } : {}),
+    }),
+  );
+};
+
+/**
+ * Icon-set rule — visual icons (arrows / lights / flags) drawn next
+ * to each cell value. The number of cfvos depends on the icon set
+ * (3 for `3Arrows`, 4 for `4Arrows`, 5 for `5Arrows`, etc).
+ */
+export const addIconSetRule = (
+  ws: Worksheet,
+  sqref: MultiCellRange | string,
+  opts: {
+    iconSet: IconSetStyle | string;
+    cfvos: ReadonlyArray<Cfvo>;
+    reverse?: boolean;
+    showValue?: boolean;
+    percent?: boolean;
+    priority?: number;
+    stopIfTrue?: boolean;
+  },
+): ConditionalFormattingRule => {
+  if (opts.cfvos.length < 3 || opts.cfvos.length > 5) {
+    throw new OpenXmlSchemaError(`addIconSetRule: cfvos must be length 3..5; got ${opts.cfvos.length}`);
+  }
+  let attrs = ` iconSet="${escapeAttr(opts.iconSet)}"`;
+  if (opts.reverse !== undefined) attrs += ` reverse="${opts.reverse ? '1' : '0'}"`;
+  if (opts.showValue !== undefined) attrs += ` showValue="${opts.showValue ? '1' : '0'}"`;
+  if (opts.percent !== undefined) attrs += ` percent="${opts.percent ? '1' : '0'}"`;
+  const inner = `<iconSet${attrs}>${opts.cfvos.map(renderCfvo).join('')}</iconSet>`;
+  return pushRule(
+    ws,
+    sqref,
+    makeCfRule({
+      type: 'iconSet',
+      priority: opts.priority ?? nextCfPriority(ws),
+      formulas: [],
+      innerXml: inner,
+      ...(opts.stopIfTrue !== undefined ? { stopIfTrue: opts.stopIfTrue } : {}),
     }),
   );
 };
