@@ -157,6 +157,20 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     if (defaultColumnWidth !== undefined) ws.defaultColumnWidth = defaultColumnWidth;
     const defaultRowHeight = parseFloatAttr(sheetFormatEl.attrs['defaultRowHeight']);
     if (defaultRowHeight !== undefined) ws.defaultRowHeight = defaultRowHeight;
+    const outlineLevelRow = parseIntegerAttr(sheetFormatEl.attrs['outlineLevelRow']);
+    if (outlineLevelRow !== undefined) ws.outlineLevelRow = outlineLevelRow;
+    const outlineLevelCol = parseIntegerAttr(sheetFormatEl.attrs['outlineLevelCol']);
+    if (outlineLevelCol !== undefined) ws.outlineLevelCol = outlineLevelCol;
+    const customHeight = parseBoolXmlAttr(sheetFormatEl.attrs['customHeight']);
+    if (customHeight !== undefined) ws.customHeight = customHeight;
+    const zeroHeight = parseBoolXmlAttr(sheetFormatEl.attrs['zeroHeight']);
+    if (zeroHeight !== undefined) ws.zeroHeight = zeroHeight;
+    const thickTop = parseBoolXmlAttr(sheetFormatEl.attrs['thickTop']);
+    if (thickTop !== undefined) ws.thickTop = thickTop;
+    const thickBottom = parseBoolXmlAttr(sheetFormatEl.attrs['thickBottom']);
+    if (thickBottom !== undefined) ws.thickBottom = thickBottom;
+    const baseColWidth = parseIntegerAttr(sheetFormatEl.attrs['baseColWidth']);
+    if (baseColWidth !== undefined) ws.baseColWidth = baseColWidth;
   }
 
   // <cols> column dimensions — preserve runs verbatim (one entry per <col>).

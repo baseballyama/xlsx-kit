@@ -46,7 +46,7 @@ LAMBDA、threaded comments の編集、Power Query の構造アクセスなど) 
 | B8 | **Cell Watches / Ignored Errors** | ✅ | `<cellWatches>` / `<ignoredErrors>` schema (`src/worksheet/errors.ts`、reader/writer wired、helper API + round-trip tests in `tests/phase-5/errors.test.ts`) | 0.5 |
 | B9 | **Web Publish Items / Custom Properties (worksheet level)** | ❌ | `<webPublishItems>` / `<customProperties>` schema | 0.5 |
 | B10 | **Phonetic / EaList (East Asian features)** | ❌ | `<phoneticPr>` (ふりがな)、`<rPh>` per cell。日本語 / 中国語 workbook では普通に出現 | 1 |
-| B11 | **Filter Database / Outline (group/ungroup rows)** | 🟡 部分 | `<row outlineLevel>` は読み書き可、UI 操作対応の `<sheetFormatPr outlineLevelRow/Col>` 等の整合 | 0.5 |
+| B11 | **Filter Database / Outline (group/ungroup rows)** | ✅ | `<row outlineLevel>` 読み書き可、`<sheetFormatPr outlineLevelRow/Col + customHeight/zeroHeight/thickTop/thickBottom/baseColWidth>` 全 round-trip。outlineLevelRow/Col は明示値があればそれを優先、無ければ row/columnDimensions から auto-compute。`tests/phase-5/sheet-format-pr.test.ts` 4 件 | 0.5 |
 
 ---
 

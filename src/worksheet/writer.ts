@@ -392,10 +392,34 @@ const serializeSelection = (s: Selection): string => {
 
 const serializeSheetFormatPr = (ws: Worksheet): string => {
   let attrs = '';
+  if (ws.baseColWidth !== undefined) attrs += ` baseColWidth="${ws.baseColWidth}"`;
   if (ws.defaultColumnWidth !== undefined) attrs += ` defaultColWidth="${ws.defaultColumnWidth}"`;
   if (ws.defaultRowHeight !== undefined) attrs += ` defaultRowHeight="${ws.defaultRowHeight}"`;
+  if (ws.customHeight !== undefined) attrs += ` customHeight="${ws.customHeight ? '1' : '0'}"`;
+  if (ws.zeroHeight !== undefined) attrs += ` zeroHeight="${ws.zeroHeight ? '1' : '0'}"`;
+  if (ws.thickTop !== undefined) attrs += ` thickTop="${ws.thickTop ? '1' : '0'}"`;
+  if (ws.thickBottom !== undefined) attrs += ` thickBottom="${ws.thickBottom ? '1' : '0'}"`;
+
+  // outlineLevelRow / outlineLevelCol — emit explicit if set, else
+  // auto-compute the max from row/column dimensions so Excel renders
+  // the outline button strip with the right depth.
+  const olRow = ws.outlineLevelRow ?? maxOutlineLevel(ws.rowDimensions);
+  if (olRow > 0) attrs += ` outlineLevelRow="${olRow}"`;
+  const olCol = ws.outlineLevelCol ?? maxOutlineLevel(ws.columnDimensions);
+  if (olCol > 0) attrs += ` outlineLevelCol="${olCol}"`;
+
   if (attrs.length === 0) return '';
   return `<sheetFormatPr${attrs}/>`;
+};
+
+const maxOutlineLevel = (
+  dims: ReadonlyMap<number, { outlineLevel?: number }>,
+): number => {
+  let max = 0;
+  for (const d of dims.values()) {
+    if (d.outlineLevel !== undefined && d.outlineLevel > max) max = d.outlineLevel;
+  }
+  return max;
 };
 
 const serializeCols = (cols: ReadonlyMap<number, ColumnDimension>): string => {

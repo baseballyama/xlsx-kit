@@ -59,6 +59,24 @@ export interface Worksheet {
   defaultColumnWidth?: number;
   /** Default row height (points) when not overridden by a row dimension. */
   defaultRowHeight?: number;
+  /**
+   * Highest outline depth used among `rowDimensions`. Excel uses this to
+   * size the outline button strip on the left of the row numbers. Auto-
+   * computed by the writer when undefined — set explicitly to override.
+   */
+  outlineLevelRow?: number;
+  /** Highest outline depth used among `columnDimensions`. Auto-computed by the writer when undefined. */
+  outlineLevelCol?: number;
+  /** "Custom row heights present" hint — Excel uses this to skip default-height rendering. */
+  customHeight?: boolean;
+  /** "Show rows of zero height as one row" — for hidden rows the outline collapse uses this. */
+  zeroHeight?: boolean;
+  /** Apply a thick top border to every row by default. */
+  thickTop?: boolean;
+  /** Apply a thick bottom border to every row by default. */
+  thickBottom?: boolean;
+  /** Excel's "base column width" (characters) — defaults to 8 when unset. */
+  baseColWidth?: number;
   /** Hyperlinks. External URLs round-trip via worksheet rels; internal jumps stay inline. */
   hyperlinks: Hyperlink[];
   /** Data validation entries. */
