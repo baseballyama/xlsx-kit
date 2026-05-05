@@ -652,6 +652,76 @@ export function applyToRange(
   }
 }
 
+/**
+ * Read a rectangular range as a dense 2-D array of values. Empty
+ * cells yield `null`. The shape is `[maxRow - minRow + 1] ×
+ * [maxCol - minCol + 1]`. Inverse of {@link setRangeValues}.
+ */
+export function getRangeValues(ws: Worksheet, range: string): (CellValue | null)[][] {
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  const rowsOut: (CellValue | null)[][] = [];
+  for (let r = minRow; r <= maxRow; r++) {
+    const rowMap = ws.rows.get(r);
+    const row: (CellValue | null)[] = [];
+    for (let c = minCol; c <= maxCol; c++) {
+      const cell = rowMap?.get(c);
+      row.push(cell ? cell.value : null);
+    }
+    rowsOut.push(row);
+  }
+  return rowsOut;
+}
+
+/**
+ * Read all populated values in a single column. Returns one `(CellValue
+ * | null)` per row in `[minRow, maxRow]` (defaults to row 1 ..
+ * `getMaxRow(ws)`). Empty cells yield `null`. Returns `[]` when the
+ * worksheet is empty.
+ */
+export function getColumnValues(
+  ws: Worksheet,
+  col: number,
+  opts: { minRow?: number; maxRow?: number } = {},
+): (CellValue | null)[] {
+  const max = getMaxRow(ws);
+  if (max < 1) return [];
+  const minRow = opts.minRow ?? 1;
+  const maxRow = opts.maxRow ?? max;
+  const out: (CellValue | null)[] = [];
+  for (let r = minRow; r <= maxRow; r++) {
+    const cell = ws.rows.get(r)?.get(col);
+    out.push(cell ? cell.value : null);
+  }
+  return out;
+}
+
+/**
+ * Read all populated values in a single row. Returns one `(CellValue
+ * | null)` per column in `[minCol, maxCol]` (defaults to col 1 ..
+ * `getMaxCol(ws)` when the row exists, otherwise `[]`).
+ */
+export function getRowValues(
+  ws: Worksheet,
+  row: number,
+  opts: { minCol?: number; maxCol?: number } = {},
+): (CellValue | null)[] {
+  const rowMap = ws.rows.get(row);
+  if (!rowMap || rowMap.size === 0) {
+    if (opts.minCol === undefined && opts.maxCol === undefined) return [];
+  }
+  const minCol = opts.minCol ?? 1;
+  const maxCol =
+    opts.maxCol ??
+    (rowMap ? Math.max(...rowMap.keys()) : 0);
+  if (maxCol < minCol) return [];
+  const out: (CellValue | null)[] = [];
+  for (let c = minCol; c <= maxCol; c++) {
+    const cell = rowMap?.get(c);
+    out.push(cell ? cell.value : null);
+  }
+  return out;
+}
+
 // ---- column / row dimensions ----------------------------------------------
 
 /**
