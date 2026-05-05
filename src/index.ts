@@ -202,6 +202,48 @@ export {
   unmergeCells,
 } from './worksheet/worksheet';
 
+// Style value objects (Color / Font / Fill / Border / Alignment /
+// Protection / NumberFormat) + the cell ↔ stylesheet bridge.
+export type {
+  Alignment,
+  Border,
+  Color,
+  Fill,
+  Font,
+  GradientFill,
+  GradientStop,
+  PatternFill,
+  Protection,
+  Side,
+} from './styles';
+export {
+  defaultCellXf,
+  getCellAlignment,
+  getCellBorder,
+  getCellFill,
+  getCellFont,
+  getCellNumberFormat,
+  getCellProtection,
+  makeAlignment,
+  makeBorder,
+  makeColor,
+  makeFill,
+  makeFont,
+  makeGradientFill,
+  makeGradientStop,
+  makePatternFill,
+  makeProtection,
+  makeSide,
+  makeStylesheet,
+  rgbColor,
+  setCellAlignment,
+  setCellBorder,
+  setCellFill,
+  setCellFont,
+  setCellNumberFormat,
+  setCellProtection,
+} from './styles';
+
 // Workbook root model.
 export type { SheetRef, SheetState, Workbook } from './workbook/workbook';
 export {

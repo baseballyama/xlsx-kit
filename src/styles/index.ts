@@ -1,0 +1,42 @@
+// Public surface for the style value-objects + cell ↔ stylesheet bridge.
+// Per docs/plan/04-core-model.md §3 — Color / Font / Fill / Border /
+// Alignment / Protection / NumberFormat are plain objects with `make*`
+// factories, and Stylesheet pools dedup equal values via stable keys.
+
+export type { Alignment, HorizontalAlignment, VerticalAlignment } from './alignment';
+export { makeAlignment } from './alignment';
+export type { Border, Side, SideStyle } from './borders';
+export { makeBorder, makeSide } from './borders';
+export {
+  getCellAlignment,
+  getCellBorder,
+  getCellFill,
+  getCellFont,
+  getCellNumberFormat,
+  getCellProtection,
+  setCellAlignment,
+  setCellBorder,
+  setCellFill,
+  setCellFont,
+  setCellNumberFormat,
+  setCellProtection,
+} from './cell-style';
+export type { Color } from './colors';
+export { makeColor, normaliseRgb, resolveIndexedColor, rgbColor } from './colors';
+export type { Fill, GradientFill, GradientFillType, GradientStop, PatternFill, PatternType } from './fills';
+export { makeFill, makeGradientFill, makeGradientStop, makePatternFill } from './fills';
+export type { Font, FontScheme, UnderlineStyle, VertAlign } from './fonts';
+export { DEFAULT_FONT, makeFont } from './fonts';
+export type { Protection } from './protection';
+export { makeProtection } from './protection';
+export type { CellXf, Stylesheet } from './stylesheet';
+export {
+  addBorder,
+  addCellStyleXf,
+  addCellXf,
+  addFill,
+  addFont,
+  addNumFmt,
+  defaultCellXf,
+  makeStylesheet,
+} from './stylesheet';
