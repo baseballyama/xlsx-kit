@@ -124,6 +124,12 @@ export interface Workbook {
    * via passthrough archive.
    */
   externalReferences?: ReadonlyArray<{ rId: string }>;
+  /** `<smartTagPr>` — Excel 2003 smart-tag persistence flags. */
+  smartTagPr?: import('./smart-tags').SmartTagProperties;
+  /** `<smartTagTypes>` — Excel 2003 smart-tag type registrations. */
+  smartTagTypes?: ReadonlyArray<import('./smart-tags').SmartTagType>;
+  /** `<functionGroups>` — built-in + user-defined XLL function groups. */
+  functionGroups?: import('./function-groups').FunctionGroups;
   /**
    * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
    * prompt mode, etc. `date1904` is mirrored here for completeness but

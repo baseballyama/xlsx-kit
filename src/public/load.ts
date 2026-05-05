@@ -154,6 +154,11 @@ const PIVOT_CACHES_TAG = `{${SHEET_MAIN_NS}}pivotCaches`;
 const PIVOT_CACHE_TAG = `{${SHEET_MAIN_NS}}pivotCache`;
 const EXTERNAL_REFERENCES_TAG = `{${SHEET_MAIN_NS}}externalReferences`;
 const EXTERNAL_REFERENCE_TAG = `{${SHEET_MAIN_NS}}externalReference`;
+const SMART_TAG_PR_TAG = `{${SHEET_MAIN_NS}}smartTagPr`;
+const SMART_TAG_TYPES_TAG = `{${SHEET_MAIN_NS}}smartTagTypes`;
+const SMART_TAG_TYPE_TAG = `{${SHEET_MAIN_NS}}smartTagType`;
+const FUNCTION_GROUPS_TAG = `{${SHEET_MAIN_NS}}functionGroups`;
+const FUNCTION_GROUP_TAG = `{${SHEET_MAIN_NS}}functionGroup`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -579,6 +584,44 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     if (child.name === OLE_SIZE_TAG) {
       const ref = child.attrs['ref'];
       if (ref) wb.oleSize = ref;
+      continue;
+    }
+    // Lift <smartTagPr embed="1" show="all"/>.
+    if (child.name === SMART_TAG_PR_TAG) {
+      const out: import('../workbook/smart-tags').SmartTagProperties = {};
+      const a = child.attrs;
+      if (a['embed'] === '1' || a['embed'] === 'true') out.embed = true;
+      else if (a['embed'] === '0' || a['embed'] === 'false') out.embed = false;
+      if (a['show'] === 'all' || a['show'] === 'noIndicator') out.show = a['show'];
+      if (Object.keys(out).length > 0) wb.smartTagPr = out;
+      continue;
+    }
+    // Lift <smartTagTypes><smartTagType .../></smartTagTypes>.
+    if (child.name === SMART_TAG_TYPES_TAG) {
+      const tags: import('../workbook/smart-tags').SmartTagType[] = [];
+      for (const t of findChildren(child, SMART_TAG_TYPE_TAG)) {
+        const entry: import('../workbook/smart-tags').SmartTagType = {};
+        if (t.attrs['namespaceUri'] !== undefined) entry.namespaceUri = t.attrs['namespaceUri'];
+        if (t.attrs['name'] !== undefined) entry.name = t.attrs['name'];
+        if (t.attrs['url'] !== undefined) entry.url = t.attrs['url'];
+        if (Object.keys(entry).length > 0) tags.push(entry);
+      }
+      if (tags.length > 0) wb.smartTagTypes = tags;
+      continue;
+    }
+    // Lift <functionGroups builtInGroupCount=…><functionGroup name=…/></functionGroups>.
+    if (child.name === FUNCTION_GROUPS_TAG) {
+      const fg: import('../workbook/function-groups').FunctionGroups = { groups: [] };
+      const bicgRaw = child.attrs['builtInGroupCount'];
+      if (bicgRaw !== undefined) {
+        const n = Number.parseInt(bicgRaw, 10);
+        if (Number.isInteger(n)) fg.builtInGroupCount = n;
+      }
+      for (const g of findChildren(child, FUNCTION_GROUP_TAG)) {
+        const name = g.attrs['name'];
+        if (name) fg.groups.push({ name });
+      }
+      if (fg.groups.length > 0 || fg.builtInGroupCount !== undefined) wb.functionGroups = fg;
       continue;
     }
     // Lift <externalReferences><externalReference r:id=…/></externalReferences>.

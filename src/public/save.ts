@@ -648,6 +648,10 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     }
     parts.push('</definedNames>');
   }
+  if (wb.functionGroups) {
+    const fg = serializeFunctionGroups(wb.functionGroups);
+    if (fg) parts.push(fg);
+  }
   if (wb.externalReferences && wb.externalReferences.length > 0) {
     const inner: string[] = ['<externalReferences>'];
     for (const er of wb.externalReferences) {
@@ -670,6 +674,13 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   }
   if (wb.oleSize !== undefined) {
     parts.push(`<oleSize ref="${escapeAttr(wb.oleSize)}"/>`);
+  }
+  if (wb.smartTagPr) {
+    const stp = serializeSmartTagPr(wb.smartTagPr);
+    if (stp) parts.push(stp);
+  }
+  if (wb.smartTagTypes && wb.smartTagTypes.length > 0) {
+    parts.push(serializeSmartTagTypes(wb.smartTagTypes));
   }
   if (wb.workbookXmlExtras?.afterSheets) {
     for (const node of wb.workbookXmlExtras.afterSheets) parts.push(serializeChildNode(node));
@@ -701,6 +712,44 @@ function serializeCalcProperties(
   if (cp.forceFullCalc !== undefined) attrs += ` forceFullCalc="${cp.forceFullCalc ? '1' : '0'}"`;
   if (attrs.length === 0) return undefined;
   return `<calcPr${attrs}/>`;
+}
+
+function serializeFunctionGroups(
+  fg: import('../workbook/function-groups').FunctionGroups,
+): string | undefined {
+  let attrs = '';
+  if (fg.builtInGroupCount !== undefined) attrs += ` builtInGroupCount="${fg.builtInGroupCount}"`;
+  if (fg.groups.length === 0 && attrs.length === 0) return undefined;
+  if (fg.groups.length === 0) return `<functionGroups${attrs}/>`;
+  const inner: string[] = [`<functionGroups${attrs}>`];
+  for (const g of fg.groups) inner.push(`<functionGroup name="${escapeAttr(g.name)}"/>`);
+  inner.push('</functionGroups>');
+  return inner.join('');
+}
+
+function serializeSmartTagPr(
+  stp: import('../workbook/smart-tags').SmartTagProperties,
+): string | undefined {
+  let attrs = '';
+  if (stp.embed !== undefined) attrs += ` embed="${stp.embed ? '1' : '0'}"`;
+  if (stp.show !== undefined) attrs += ` show="${stp.show}"`;
+  if (attrs.length === 0) return undefined;
+  return `<smartTagPr${attrs}/>`;
+}
+
+function serializeSmartTagTypes(
+  tags: ReadonlyArray<import('../workbook/smart-tags').SmartTagType>,
+): string {
+  const inner: string[] = ['<smartTagTypes>'];
+  for (const t of tags) {
+    let attrs = '';
+    if (t.namespaceUri !== undefined) attrs += ` namespaceUri="${escapeAttr(t.namespaceUri)}"`;
+    if (t.name !== undefined) attrs += ` name="${escapeAttr(t.name)}"`;
+    if (t.url !== undefined) attrs += ` url="${escapeAttr(t.url)}"`;
+    inner.push(`<smartTagType${attrs}/>`);
+  }
+  inner.push('</smartTagTypes>');
+  return inner.join('');
 }
 
 function serializeFileRecoveryPr(

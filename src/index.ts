@@ -361,3 +361,7 @@ export type { FileSharing } from './workbook/file-sharing';
 export { makeFileSharing } from './workbook/file-sharing';
 export type { FileRecoveryProperties } from './workbook/file-recovery';
 export { makeFileRecoveryProperties } from './workbook/file-recovery';
+export type { SmartTagProperties, SmartTagShowMode, SmartTagType } from './workbook/smart-tags';
+export { makeSmartTagProperties, makeSmartTagType } from './workbook/smart-tags';
+export type { FunctionGroup, FunctionGroups } from './workbook/function-groups';
+export { makeFunctionGroup, makeFunctionGroups } from './workbook/function-groups';
