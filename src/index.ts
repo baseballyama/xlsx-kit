@@ -217,6 +217,7 @@ export {
   removeHyperlink,
   removeIgnoredErrors,
   removeTable,
+  applyToRange,
   freezeColumns,
   freezePanes,
   freezeRows,
@@ -228,6 +229,7 @@ export {
   setComment,
   setFreezePanes,
   setHyperlink,
+  setRangeValues,
   setRowDimension,
   setRowHeight,
   unfreezePanes,
@@ -439,6 +441,7 @@ export {
   setCellNumberFormat,
   setCellProtection,
   setCellStyle,
+  setRangeStyle,
 } from './styles';
 
 // Workbook root model.

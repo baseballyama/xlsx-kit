@@ -21,6 +21,7 @@ export {
   setCellNumberFormat,
   setCellProtection,
   setCellStyle,
+  setRangeStyle,
 } from './cell-style';
 export type { DifferentialStyle } from './differential';
 export { addDxf, makeDifferentialStyle } from './differential';

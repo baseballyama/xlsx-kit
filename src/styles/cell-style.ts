@@ -19,6 +19,8 @@
 
 import type { Cell } from '../cell/cell';
 import type { Workbook } from '../workbook/workbook';
+import { parseRange } from '../worksheet/cell-range';
+import { setCell, type Worksheet } from '../worksheet/worksheet';
 import type { Alignment } from './alignment';
 import type { Border } from './borders';
 import { DEFAULT_BORDER } from './borders';
@@ -127,6 +129,66 @@ export function setCellProtection(wb: Workbook, c: Cell, protection: Protection)
 export function setCellNumberFormat(wb: Workbook, c: Cell, formatCode: string): void {
   const numFmtId = addNumFmt(wb.styles, formatCode);
   applyXfPatch(wb, c, { numFmtId, applyNumberFormat: true });
+}
+
+/**
+ * Build a single CellXf id from a multi-axis style spec, then apply
+ * it to every cell in `range`. The xf is registered once per style
+ * shape, so a 1000-cell range allocates one xf — much faster than
+ * looping `setCellStyle` per cell.
+ */
+export function setRangeStyle(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  opts: {
+    font?: Font;
+    fill?: Fill;
+    border?: Border;
+    alignment?: Alignment;
+    protection?: Protection;
+    numberFormat?: string;
+  },
+): void {
+  const patch: { -readonly [K in keyof CellXf]?: CellXf[K] } = {};
+  if (opts.font !== undefined) {
+    patch.fontId = addFont(wb.styles, opts.font);
+    patch.applyFont = true;
+  }
+  if (opts.fill !== undefined) {
+    patch.fillId = addFill(wb.styles, opts.fill);
+    patch.applyFill = true;
+  }
+  if (opts.border !== undefined) {
+    patch.borderId = addBorder(wb.styles, opts.border);
+    patch.applyBorder = true;
+  }
+  if (opts.alignment !== undefined) {
+    patch.alignment = opts.alignment;
+    patch.applyAlignment = true;
+  }
+  if (opts.protection !== undefined) {
+    patch.protection = opts.protection;
+    patch.applyProtection = true;
+  }
+  if (opts.numberFormat !== undefined) {
+    patch.numFmtId = addNumFmt(wb.styles, opts.numberFormat);
+    patch.applyNumberFormat = true;
+  }
+  if (Object.keys(patch).length === 0) return;
+
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  // Pre-register the xf for each existing cell — Excel dedupes by
+  // value, so the inner xf-pool ends up the same shape for cells
+  // already carrying part of the patch as for blanks.
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      let cell = ws.rows.get(r)?.get(c);
+      if (!cell) cell = setCell(ws, r, c);
+      const next: CellXf = { ...currentXf(wb.styles, cell), ...patch };
+      cell.styleId = addCellXf(wb.styles, next);
+    }
+  }
 }
 
 /**

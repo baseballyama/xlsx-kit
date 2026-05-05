@@ -540,6 +540,49 @@ export const unfreezePanes = (ws: Worksheet): void => {
   setFreezePanes(ws, undefined);
 };
 
+/**
+ * Set values across a rectangular range from a 2-D array. `rows[0]`
+ * is laid down starting at the top-left of `range`; subsequent rows
+ * follow. `null` / `undefined` entries skip the cell. Useful for
+ * dropping a header + data block in one call.
+ */
+export function setRangeValues(
+  ws: Worksheet,
+  range: string,
+  rows: ReadonlyArray<ReadonlyArray<CellValue | null | undefined>>,
+): void {
+  const { minRow, minCol } = parseRange(range);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    for (let j = 0; j < row.length; j++) {
+      const v = row[j];
+      if (v === null || v === undefined) continue;
+      setCell(ws, minRow + i, minCol + j, v);
+    }
+  }
+}
+
+/**
+ * Iterate over every cell coordinate in a range, calling `visit`
+ * once per (row, col). Allocates the cell on first touch so callers
+ * can mutate it freely.
+ */
+export function applyToRange(
+  ws: Worksheet,
+  range: string,
+  visit: (cell: Cell, row: number, col: number) => void,
+): void {
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      let cell = ws.rows.get(r)?.get(c);
+      if (!cell) cell = setCell(ws, r, c);
+      visit(cell, r, c);
+    }
+  }
+}
+
 // ---- column / row dimensions ----------------------------------------------
 
 /**
