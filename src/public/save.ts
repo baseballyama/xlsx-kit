@@ -609,6 +609,13 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   if (wb.workbookXmlExtras?.beforeSheets) {
     for (const node of wb.workbookXmlExtras.beforeSheets) parts.push(serializeChildNode(node));
   }
+  // If the workbook is date1904=true but the captured extras don't
+  // already carry a `<workbookPr>` element with date1904 set, emit a
+  // minimal one so a fresh workbook (no load history) round-trips
+  // through Excel with the right epoch.
+  if (wb.date1904 && !hasWorkbookPrDate1904(wb)) {
+    parts.push('<workbookPr date1904="1"/>');
+  }
   parts.push('<sheets>');
   wb.sheets.forEach((ref, i) => {
     const stateAttr = ref.state === 'visible' ? '' : ` state="${ref.state}"`;
@@ -632,6 +639,23 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   }
   parts.push('</workbook>');
   return parts.join('');
+}
+
+/**
+ * True if the captured workbookXmlExtras already carry a
+ * `<workbookPr>` element with @date1904 set — in which case the
+ * round-trip extras emit handles it and we shouldn't duplicate.
+ */
+function hasWorkbookPrDate1904(wb: Workbook): boolean {
+  const buckets = [wb.workbookXmlExtras?.beforeSheets ?? [], wb.workbookXmlExtras?.afterSheets ?? []];
+  for (const bucket of buckets) {
+    for (const node of bucket) {
+      if (node.name !== `{${SHEET_MAIN_NS}}workbookPr`) continue;
+      const v = node.attrs['date1904'];
+      if (v === '1' || v === 'true') return true;
+    }
+  }
+  return false;
 }
 
 const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

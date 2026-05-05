@@ -5,12 +5,19 @@
 // a normal formula.
 
 import { describe, expect, it } from 'vitest';
-import { isFormulaCell, setDataTableFormula } from '../../src/cell/cell';
+import { type CellValue, type FormulaValue, setDataTableFormula } from '../../src/cell/cell';
 import { fromBuffer } from '../../src/io/node';
 import { loadWorkbook } from '../../src/public/load';
 import { workbookToBytes } from '../../src/public/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import { setCell } from '../../src/worksheet/worksheet';
+
+const asFormula = (v: CellValue | undefined): FormulaValue => {
+  if (v === null || v === undefined || typeof v !== 'object' || !('kind' in v) || v.kind !== 'formula') {
+    throw new Error('cell value is not a formula');
+  }
+  return v;
+};
 
 describe('phase-3 §5.5 — dataTable formula round-trip', () => {
   it('preserves t / ref / r1 / r2 / dt2D across save → load', async () => {
@@ -33,16 +40,15 @@ describe('phase-3 §5.5 — dataTable formula round-trip', () => {
     const ref0 = wb2.sheets[0];
     if (ref0?.kind !== 'worksheet') throw new Error('expected worksheet');
     const cell = ref0.sheet.rows.get(1)?.get(1);
-    if (!cell || !isFormulaCell(cell)) throw new Error('expected formula cell');
-    if (cell.value.kind !== 'formula') throw new Error('not a formula');
-    expect(cell.value.t).toBe('dataTable');
-    expect(cell.value.formula).toBe('TABLE(B1,C1)');
-    expect(cell.value.ref).toBe('A1:A3');
-    expect(cell.value.r1).toBe('$B$1');
-    expect(cell.value.r2).toBe('$C$1');
-    expect(cell.value.dt2D).toBe(true);
-    expect(cell.value.ca).toBe(true);
-    expect(cell.value.cachedValue).toBe(100);
+    const f = asFormula(cell?.value);
+    expect(f.t).toBe('dataTable');
+    expect(f.formula).toBe('TABLE(B1,C1)');
+    expect(f.ref).toBe('A1:A3');
+    expect(f.r1).toBe('$B$1');
+    expect(f.r2).toBe('$C$1');
+    expect(f.dt2D).toBe(true);
+    expect(f.ca).toBe(true);
+    expect(f.cachedValue).toBe(100);
   });
 
   it('handles a 1-variable column-direction Data Table', async () => {
@@ -58,12 +64,11 @@ describe('phase-3 §5.5 — dataTable formula round-trip', () => {
     const ref0 = wb2.sheets[0];
     if (ref0?.kind !== 'worksheet') throw new Error('expected worksheet');
     const cell = ref0.sheet.rows.get(1)?.get(1);
-    if (cell?.value === null || cell?.value === undefined) throw new Error('cell missing');
-    if (typeof cell.value !== 'object' || cell.value.kind !== 'formula') throw new Error('not a formula');
-    expect(cell.value.t).toBe('dataTable');
-    expect(cell.value.r1).toBe('$A$1');
-    expect(cell.value.r2).toBeUndefined();
-    expect(cell.value.dt2D).toBeUndefined();
+    const f = asFormula(cell?.value);
+    expect(f.t).toBe('dataTable');
+    expect(f.r1).toBe('$A$1');
+    expect(f.r2).toBeUndefined();
+    expect(f.dt2D).toBeUndefined();
   });
 
   it('rejects <f t="dataTable"> without @ref on read', async () => {

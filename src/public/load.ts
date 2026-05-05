@@ -141,6 +141,21 @@ export function parseDefinedNames(workbookRoot: XmlNode): DefinedName[] {
   return out;
 }
 
+const WORKBOOK_PR_TAG = `{${SHEET_MAIN_NS}}workbookPr`;
+
+/**
+ * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
+ * `date1904="true"`; everything else uses the Windows 1900 epoch. The
+ * value drives Date / Duration cell serial conversion in
+ * worksheet/writer.ts and reader.ts.
+ */
+function parseDate1904(workbookRoot: XmlNode): boolean {
+  const pr = findChild(workbookRoot, WORKBOOK_PR_TAG);
+  if (!pr) return false;
+  const v = pr.attrs['date1904'];
+  return v === '1' || v === 'true';
+}
+
 /** Extract the `<sheets>/<sheet>` entries from a parsed `xl/workbook.xml`. */
 export function parseSheetEntries(workbookRoot: XmlNode): SheetEntry[] {
   const sheets = findChild(workbookRoot, SHEETS_TAG);
@@ -280,7 +295,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
 
   // 5. Build the Workbook. We bypass `addWorksheet` because that allocates
   // sheetIds via `allocateSheetId`; load preserves the IDs from XML.
-  const wb = createWorkbook();
+  const wb = createWorkbook({ date1904: parseDate1904(wbRoot) });
   if (styles) wb.styles = styles;
   if (properties) wb.properties = properties;
   if (appProperties) wb.appProperties = appProperties;
