@@ -18,6 +18,7 @@ import { makeLegacyComment } from './comments';
 import type { ConditionalFormatting } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
+import type { DataConsolidate } from './data-consolidate';
 import type { CellWatch, IgnoredError } from './errors';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { WorksheetPhoneticProperties } from './phonetic';
@@ -132,6 +133,11 @@ export interface Worksheet {
    * IME conversion mode + alignment). Common in Japanese workbooks.
    */
   phoneticPr?: WorksheetPhoneticProperties;
+  /**
+   * `<dataConsolidate>` — config for Data → Consolidate. Carries the
+   * aggregation function and the source-range list.
+   */
+  dataConsolidate?: DataConsolidate;
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**

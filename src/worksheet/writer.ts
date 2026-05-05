@@ -28,6 +28,7 @@ import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
+import type { DataConsolidate, DataReference } from './data-consolidate';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { WorksheetPhoneticProperties } from './phonetic';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
@@ -142,6 +143,10 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   }
   // Excel's element order: autoFilter sits between sheetData and mergeCells.
   if (ws.autoFilter) parts.push(serializeAutoFilter(ws.autoFilter));
+  if (ws.dataConsolidate) {
+    const dc = serializeDataConsolidate(ws.dataConsolidate);
+    if (dc) parts.push(dc);
+  }
   if (ws.mergedCells.length > 0) {
     parts.push(`<mergeCells count="${ws.mergedCells.length}">`);
     for (const range of ws.mergedCells) {
@@ -599,6 +604,33 @@ const serializePageSetup = (ps: PageSetup): string | undefined => {
   if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
   if (attrs.length === 0) return undefined;
   return `<pageSetup${attrs}/>`;
+};
+
+const serializeDataConsolidate = (dc: DataConsolidate): string | undefined => {
+  let attrs = '';
+  if (dc.function !== undefined) attrs += ` function="${dc.function}"`;
+  if (dc.topLabels !== undefined) attrs += ` topLabels="${dc.topLabels ? '1' : '0'}"`;
+  if (dc.leftLabels !== undefined) attrs += ` leftLabels="${dc.leftLabels ? '1' : '0'}"`;
+  if (dc.link !== undefined) attrs += ` link="${dc.link ? '1' : '0'}"`;
+  if (dc.startLabels !== undefined) attrs += ` startLabels="${escapeXmlAttr(dc.startLabels)}"`;
+
+  const refs = dc.dataRefs ?? [];
+  if (attrs.length === 0 && refs.length === 0) return undefined;
+  if (refs.length === 0) return `<dataConsolidate${attrs}/>`;
+
+  const inner: string[] = [`<dataRefs count="${refs.length}">`];
+  for (const r of refs) inner.push(serializeDataReference(r));
+  inner.push('</dataRefs>');
+  return `<dataConsolidate${attrs}>${inner.join('')}</dataConsolidate>`;
+};
+
+const serializeDataReference = (r: DataReference): string => {
+  let attrs = '';
+  if (r.name !== undefined) attrs += ` name="${escapeXmlAttr(r.name)}"`;
+  if (r.ref !== undefined) attrs += ` ref="${escapeXmlAttr(r.ref)}"`;
+  if (r.sheet !== undefined) attrs += ` sheet="${escapeXmlAttr(r.sheet)}"`;
+  if (r.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(r.rId)}"`;
+  return `<dataRef${attrs}/>`;
 };
 
 const serializePhoneticPr = (pp: WorksheetPhoneticProperties): string | undefined => {

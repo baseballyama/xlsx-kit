@@ -263,6 +263,12 @@ export type {
   WorksheetPhoneticProperties,
 } from './worksheet/phonetic';
 export { makeWorksheetPhoneticProperties } from './worksheet/phonetic';
+export type {
+  DataConsolidate,
+  DataConsolidateFunction,
+  DataReference,
+} from './worksheet/data-consolidate';
+export { makeDataConsolidate } from './worksheet/data-consolidate';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.

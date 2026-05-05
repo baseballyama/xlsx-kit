@@ -62,6 +62,11 @@ import type {
   PhoneticType,
   WorksheetPhoneticProperties,
 } from './phonetic';
+import type {
+  DataConsolidate,
+  DataConsolidateFunction,
+  DataReference,
+} from './data-consolidate';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
@@ -128,6 +133,9 @@ const CUSTOM_PROPERTY_TAG = `{${SHEET_MAIN_NS}}customProperty`;
 const WEB_PUBLISH_ITEMS_TAG = `{${SHEET_MAIN_NS}}webPublishItems`;
 const WEB_PUBLISH_ITEM_TAG = `{${SHEET_MAIN_NS}}webPublishItem`;
 const PHONETIC_PR_TAG = `{${SHEET_MAIN_NS}}phoneticPr`;
+const DATA_CONSOLIDATE_TAG = `{${SHEET_MAIN_NS}}dataConsolidate`;
+const DATA_REFS_TAG = `{${SHEET_MAIN_NS}}dataRefs`;
+const DATA_REF_TAG = `{${SHEET_MAIN_NS}}dataRef`;
 const ODD_HEADER_TAG = `{${SHEET_MAIN_NS}}oddHeader`;
 const ODD_FOOTER_TAG = `{${SHEET_MAIN_NS}}oddFooter`;
 const EVEN_HEADER_TAG = `{${SHEET_MAIN_NS}}evenHeader`;
@@ -394,6 +402,13 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     if (pp) ws.phoneticPr = pp;
   }
 
+  // <dataConsolidate function="sum" topLabels="1"…><dataRefs>…</dataRefs></dataConsolidate>
+  const dcEl = findChild(root, DATA_CONSOLIDATE_TAG);
+  if (dcEl) {
+    const dc = parseDataConsolidate(dcEl);
+    if (dc) ws.dataConsolidate = dc;
+  }
+
   // <cellWatches><cellWatch r="…"/></cellWatches>
   const cwWrap = findChild(root, CELL_WATCHES_TAG);
   if (cwWrap) {
@@ -414,6 +429,51 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const DATA_CONSOLIDATE_FUNCTIONS: ReadonlyArray<DataConsolidateFunction> = [
+  'average',
+  'count',
+  'countNums',
+  'max',
+  'min',
+  'product',
+  'stdDev',
+  'stdDevp',
+  'sum',
+  'var',
+  'varp',
+];
+
+const parseDataConsolidate = (node: XmlNode): DataConsolidate | undefined => {
+  const out: DataConsolidate = {};
+  const f = node.attrs['function'];
+  if (f && DATA_CONSOLIDATE_FUNCTIONS.includes(f as DataConsolidateFunction)) {
+    out.function = f as DataConsolidateFunction;
+  }
+  const topLabels = parseBoolXmlAttr(node.attrs['topLabels']);
+  if (topLabels !== undefined) out.topLabels = topLabels;
+  const leftLabels = parseBoolXmlAttr(node.attrs['leftLabels']);
+  if (leftLabels !== undefined) out.leftLabels = leftLabels;
+  const link = parseBoolXmlAttr(node.attrs['link']);
+  if (link !== undefined) out.link = link;
+  if (node.attrs['startLabels'] !== undefined) out.startLabels = node.attrs['startLabels'];
+
+  const refsEl = findChild(node, DATA_REFS_TAG);
+  if (refsEl) {
+    const refs: DataReference[] = [];
+    for (const ref of findChildren(refsEl, DATA_REF_TAG)) {
+      const entry: DataReference = {};
+      if (ref.attrs['name'] !== undefined) entry.name = ref.attrs['name'];
+      if (ref.attrs['ref'] !== undefined) entry.ref = ref.attrs['ref'];
+      if (ref.attrs['sheet'] !== undefined) entry.sheet = ref.attrs['sheet'];
+      const rId = ref.attrs[`{${REL_NS}}id`];
+      if (rId) entry.rId = rId;
+      refs.push(entry);
+    }
+    if (refs.length > 0) out.dataRefs = refs;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+};
 
 const PHONETIC_TYPES: ReadonlyArray<PhoneticType> = [
   'halfwidthKatakana',
@@ -796,6 +856,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   CUSTOM_PROPERTIES_TAG,
   WEB_PUBLISH_ITEMS_TAG,
   PHONETIC_PR_TAG,
+  DATA_CONSOLIDATE_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,
