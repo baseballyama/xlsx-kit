@@ -929,6 +929,23 @@ export function hideColumn(ws: Worksheet, col: number): ColumnDimension {
 }
 
 /**
+ * Convenience: unhide a column. Drops the `hidden` flag from the
+ * column's dimension entry (and removes the entry altogether when no
+ * other fields remain).
+ */
+export function unhideColumn(ws: Worksheet, col: number): void {
+  const existing = getColumnDimension(ws, col);
+  if (!existing) return;
+  const { hidden: _drop, ...rest } = existing;
+  const { min: _min, max: _max, ...passthrough } = rest;
+  if (Object.keys(passthrough).length === 0) {
+    ws.columnDimensions.delete(existing.min);
+  } else {
+    setColumnDimension(ws, col, passthrough);
+  }
+}
+
+/**
  * Set the default column width (characters) for cells without an
  * explicit ColumnDimension entry. Mirrors Excel's "Default Width"
  * dialog. Pass `undefined` to clear.
@@ -1248,6 +1265,19 @@ export function setRowHeights(
 export function hideRow(ws: Worksheet, row: number): RowDimension {
   const existing = getRowDimension(ws, row);
   return setRowDimension(ws, row, { ...existing, hidden: true });
+}
+
+/**
+ * Convenience: unhide a row. Drops the `hidden` flag from the row's
+ * dimension entry (and removes the entry altogether when no other
+ * fields remain).
+ */
+export function unhideRow(ws: Worksheet, row: number): void {
+  const existing = ws.rowDimensions.get(row);
+  if (!existing) return;
+  const { hidden: _drop, ...rest } = existing;
+  if (Object.keys(rest).length === 0) ws.rowDimensions.delete(row);
+  else ws.rowDimensions.set(row, rest);
 }
 
 // ---- hyperlinks -----------------------------------------------------------

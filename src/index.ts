@@ -304,6 +304,8 @@ export {
   unfreezePanes,
   ungroupColumns,
   ungroupRows,
+  unhideColumn,
+  unhideRow,
   unmergeCells,
 } from './worksheet/worksheet';
 export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
