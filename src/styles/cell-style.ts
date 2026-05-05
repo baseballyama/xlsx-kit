@@ -18,6 +18,7 @@
 // thread the stylesheet manually.
 
 import type { Cell } from '../cell/cell';
+import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { Workbook } from '../workbook/workbook';
 import { parseRange } from '../worksheet/cell-range';
 import { setCell, type Worksheet } from '../worksheet/worksheet';
@@ -237,4 +238,67 @@ export function setCellStyle(
   }
   if (Object.keys(patch).length === 0) return;
   applyXfPatch(wb, c, patch as Partial<CellXf>);
+}
+
+// ---- format presets -----------------------------------------------------
+//
+// Mirror Excel's "Format Cells → Number → Category" panel. Each preset
+// builds the exact format-code Excel ships with, then routes through
+// the existing `setCellNumberFormat` so the dedup pool sees the same
+// string every time.
+
+/**
+ * Format a cell as currency. Produces one of:
+ * - default → `"$#,##0.00"` (US dollar, 2 decimals)
+ * - `{ symbol: "€" }` → `"€#,##0.00"`
+ * - `{ symbol: "¥", decimals: 0 }` → `"¥#,##0"`
+ * - `{ accounting: true }` → `"_-$* #,##0.00_-;-$* #,##0.00_-;_-$* \"-\"??_-;_-@_-"`
+ *   (Excel's "Accounting" subtype with right-aligned symbol).
+ */
+export function setCellAsCurrency(
+  wb: Workbook,
+  c: Cell,
+  opts: { symbol?: string; decimals?: number; accounting?: boolean } = {},
+): void {
+  const symbol = opts.symbol ?? '$';
+  const decimals = opts.decimals ?? 2;
+  const decTail = decimals > 0 ? `.${'0'.repeat(decimals)}` : '';
+  const code = opts.accounting
+    ? `_-${symbol}* #,##0${decTail}_-;-${symbol}* #,##0${decTail}_-;_-${symbol}* "-"${'?'.repeat(decimals)}_-;_-@_-`
+    : `${symbol}#,##0${decTail}`;
+  setCellNumberFormat(wb, c, code);
+}
+
+/**
+ * Format a cell as a percentage. `decimals` defaults to 0 → `"0%"`;
+ * `decimals: 2` → `"0.00%"`. The cell value is multiplied by 100 by
+ * Excel during display.
+ */
+export function setCellAsPercent(wb: Workbook, c: Cell, decimals = 0): void {
+  if (!Number.isInteger(decimals) || decimals < 0) {
+    throw new OpenXmlSchemaError(`setCellAsPercent: decimals must be a non-negative integer; got ${decimals}`);
+  }
+  const code = decimals === 0 ? '0%' : `0.${'0'.repeat(decimals)}%`;
+  setCellNumberFormat(wb, c, code);
+}
+
+/**
+ * Format a cell as a date. `format` defaults to Excel's default
+ * locale-independent ISO-style date `"yyyy-mm-dd"`. Common alternatives:
+ * `"m/d/yyyy"`, `"dd-mmm-yy"`, `"yyyy-mm-dd hh:mm:ss"`.
+ */
+export function setCellAsDate(wb: Workbook, c: Cell, format = 'yyyy-mm-dd'): void {
+  setCellNumberFormat(wb, c, format);
+}
+
+/**
+ * Format a cell as a thousands-separated number. `decimals` defaults
+ * to 0 → `"#,##0"`; `decimals: 2` → `"#,##0.00"`.
+ */
+export function setCellAsNumber(wb: Workbook, c: Cell, decimals = 0): void {
+  if (!Number.isInteger(decimals) || decimals < 0) {
+    throw new OpenXmlSchemaError(`setCellAsNumber: decimals must be a non-negative integer; got ${decimals}`);
+  }
+  const code = decimals === 0 ? '#,##0' : `#,##0.${'0'.repeat(decimals)}`;
+  setCellNumberFormat(wb, c, code);
 }
