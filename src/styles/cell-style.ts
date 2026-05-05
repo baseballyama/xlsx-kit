@@ -128,3 +128,51 @@ export function setCellNumberFormat(wb: Workbook, c: Cell, formatCode: string): 
   const numFmtId = addNumFmt(wb.styles, formatCode);
   applyXfPatch(wb, c, { numFmtId, applyNumberFormat: true });
 }
+
+/**
+ * Combined cell-style setter. Each axis is independent — pass any
+ * subset and the corresponding `applyXxx` flags get set on the
+ * underlying CellXf. Avoids 5+ separate stylesheet round-trips when
+ * a caller wants to style a single cell across multiple axes (Excel
+ * dedupes the resulting xf record on every call).
+ */
+export function setCellStyle(
+  wb: Workbook,
+  c: Cell,
+  opts: {
+    font?: Font;
+    fill?: Fill;
+    border?: Border;
+    alignment?: Alignment;
+    protection?: Protection;
+    numberFormat?: string;
+  },
+): void {
+  const patch: { -readonly [K in keyof CellXf]?: CellXf[K] } = {};
+  if (opts.font !== undefined) {
+    patch.fontId = addFont(wb.styles, opts.font);
+    patch.applyFont = true;
+  }
+  if (opts.fill !== undefined) {
+    patch.fillId = addFill(wb.styles, opts.fill);
+    patch.applyFill = true;
+  }
+  if (opts.border !== undefined) {
+    patch.borderId = addBorder(wb.styles, opts.border);
+    patch.applyBorder = true;
+  }
+  if (opts.alignment !== undefined) {
+    patch.alignment = opts.alignment;
+    patch.applyAlignment = true;
+  }
+  if (opts.protection !== undefined) {
+    patch.protection = opts.protection;
+    patch.applyProtection = true;
+  }
+  if (opts.numberFormat !== undefined) {
+    patch.numFmtId = addNumFmt(wb.styles, opts.numberFormat);
+    patch.applyNumberFormat = true;
+  }
+  if (Object.keys(patch).length === 0) return;
+  applyXfPatch(wb, c, patch as Partial<CellXf>);
+}

@@ -438,6 +438,7 @@ export {
   setCellFont,
   setCellNumberFormat,
   setCellProtection,
+  setCellStyle,
 } from './styles';
 
 // Workbook root model.

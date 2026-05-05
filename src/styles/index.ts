@@ -20,6 +20,7 @@ export {
   setCellFont,
   setCellNumberFormat,
   setCellProtection,
+  setCellStyle,
 } from './cell-style';
 export type { DifferentialStyle } from './differential';
 export { addDxf, makeDifferentialStyle } from './differential';
