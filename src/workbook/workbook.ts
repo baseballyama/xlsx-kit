@@ -450,6 +450,78 @@ export function duplicateSheet(
   return cloned;
 }
 
+/**
+ * Aggregate counts about a workbook's content. Useful for quick QA
+ * after large mutations or for surfacing a "what's in this file"
+ * banner. All counts walk the typed model — they do **not** save
+ * the workbook to bytes — so the cost is O(workbook content).
+ */
+export interface WorkbookStats {
+  /** Total worksheets (excludes chartsheets). */
+  worksheetCount: number;
+  /** Total chartsheets. */
+  chartsheetCount: number;
+  /** Sum of populated cells across every worksheet. */
+  cellCount: number;
+  /** Sum of formula cells. */
+  formulaCount: number;
+  /** Sum of legacyComments across every worksheet. */
+  commentCount: number;
+  /** Sum of hyperlinks across every worksheet. */
+  hyperlinkCount: number;
+  /** Sum of mergedCells ranges. */
+  mergedRangeCount: number;
+  /** Sum of Excel tables. */
+  tableCount: number;
+  /** Workbook-level defined names. */
+  definedNameCount: number;
+  /** Custom-property entry count, 0 when no docProps/custom.xml. */
+  customPropertyCount: number;
+}
+
+export function getWorkbookStats(wb: Workbook): WorkbookStats {
+  let worksheetCount = 0;
+  let chartsheetCount = 0;
+  let cellCount = 0;
+  let formulaCount = 0;
+  let commentCount = 0;
+  let hyperlinkCount = 0;
+  let mergedRangeCount = 0;
+  let tableCount = 0;
+  for (const ref of wb.sheets) {
+    if (ref.kind === 'worksheet') {
+      worksheetCount++;
+      const ws = ref.sheet;
+      for (const rowMap of ws.rows.values()) {
+        for (const cell of rowMap.values()) {
+          cellCount++;
+          if (typeof cell.value === 'object' && cell.value !== null && (cell.value as { kind?: string }).kind === 'formula') {
+            formulaCount++;
+          }
+        }
+      }
+      commentCount += ws.legacyComments.length;
+      hyperlinkCount += ws.hyperlinks.length;
+      mergedRangeCount += ws.mergedCells.length;
+      tableCount += ws.tables.length;
+    } else {
+      chartsheetCount++;
+    }
+  }
+  return {
+    worksheetCount,
+    chartsheetCount,
+    cellCount,
+    formulaCount,
+    commentCount,
+    hyperlinkCount,
+    mergedRangeCount,
+    tableCount,
+    definedNameCount: wb.definedNames.length,
+    customPropertyCount: wb.customProperties?.properties.length ?? 0,
+  };
+}
+
 /** Currently active sheet (worksheet only), or undefined if the active slot is empty or a chartsheet. */
 export function getActiveSheet(wb: Workbook): Worksheet | undefined {
   const ref = wb.sheets[wb.activeSheetIndex];

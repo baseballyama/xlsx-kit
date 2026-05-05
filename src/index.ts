@@ -547,13 +547,14 @@ export {
 } from './styles';
 
 // Workbook root model.
-export type { SheetRef, SheetState, Workbook } from './workbook/workbook';
+export type { SheetRef, SheetState, Workbook, WorkbookStats } from './workbook/workbook';
 export {
   addChartsheet,
   addWorksheet,
   createWorkbook,
   duplicateSheet,
   getActiveSheet,
+  getWorkbookStats,
   getChartsheet,
   getSheet,
   getSheetByIndex,
