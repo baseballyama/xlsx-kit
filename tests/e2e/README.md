@@ -17,6 +17,12 @@ If a file fails to open or shows a recovery dialog, that's a defect to
 report. If it opens but renders something unexpected, capture a
 screenshot and file an issue against the matching scenario.
 
+In addition to writing the file, `writeWorkbook` performs a load-back
+smoke check (the bytes are fed straight back through `loadWorkbook` and
+the sheet count is logged), so any test that produces XML/ZIP that the
+library itself cannot re-read will fail before you even open it in
+Excel.
+
 ## Files & checklist
 
 | File | Sheet(s) | What to verify |
