@@ -226,6 +226,7 @@ export {
   getAutoFilter,
   getCell,
   getCellByCoord,
+  getCellHyperlink,
   getCellsInRange,
   getColumnDimension,
   getColumnValues,

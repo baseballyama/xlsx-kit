@@ -1218,6 +1218,20 @@ export function listHyperlinks(ws: Worksheet): ReadonlyArray<Hyperlink> {
   return ws.hyperlinks;
 }
 
+/**
+ * Resolve a cell to its hyperlink (if any). Walks every hyperlink
+ * entry on the worksheet and returns the first whose `ref` (a
+ * single cell `"A1"` or a range `"A1:B5"`) covers the cell's
+ * coordinate. Returns `undefined` when no entry matches.
+ */
+export function getCellHyperlink(ws: Worksheet, c: Cell): Hyperlink | undefined {
+  for (const h of ws.hyperlinks) {
+    const range = parseRange(h.ref);
+    if (rangeContainsCell(range, c.row, c.col)) return h;
+  }
+  return undefined;
+}
+
 // ---- data validations ----------------------------------------------------
 
 /** Append a DataValidation entry. */
