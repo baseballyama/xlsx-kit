@@ -37,7 +37,8 @@ Bundle budgets (min + brotli):
 ### Read + edit + write (full library)
 
 ```ts
-import { fromBuffer, loadWorkbook, workbookToBytes, setCell } from 'openxml-js';
+import { loadWorkbook, workbookToBytes, setCell } from 'openxml-js';
+import { fromBuffer } from 'openxml-js/node';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const wb = await loadWorkbook(fromBuffer(await readFile('input.xlsx')));
