@@ -498,6 +498,48 @@ export function getFreezePanes(ws: Worksheet): string | undefined {
   return freezePaneRef(view);
 }
 
+import { columnLetterFromIndex } from '../utils/coordinate';
+
+/**
+ * Freeze the top `count` rows. Equivalent to
+ * `setFreezePanes(ws, "A${count + 1}")` — Excel's "Freeze Top Row"
+ * is `freezeRows(ws, 1)`.
+ */
+export function freezeRows(ws: Worksheet, count: number): void {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new OpenXmlSchemaError(`freezeRows: count must be a positive integer; got ${count}`);
+  }
+  setFreezePanes(ws, `A${count + 1}`);
+}
+
+/**
+ * Freeze the leftmost `count` columns. Equivalent to
+ * `setFreezePanes(ws, "${columnLetter(count + 1)}1")` — Excel's
+ * "Freeze First Column" is `freezeColumns(ws, 1)`.
+ */
+export function freezeColumns(ws: Worksheet, count: number): void {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new OpenXmlSchemaError(`freezeColumns: count must be a positive integer; got ${count}`);
+  }
+  setFreezePanes(ws, `${columnLetterFromIndex(count + 1)}1`);
+}
+
+/** Freeze both top `rows` rows AND left `cols` columns. */
+export function freezePanes(ws: Worksheet, rows: number, cols: number): void {
+  if (!Number.isInteger(rows) || rows < 1) {
+    throw new OpenXmlSchemaError(`freezePanes: rows must be a positive integer; got ${rows}`);
+  }
+  if (!Number.isInteger(cols) || cols < 1) {
+    throw new OpenXmlSchemaError(`freezePanes: cols must be a positive integer; got ${cols}`);
+  }
+  setFreezePanes(ws, `${columnLetterFromIndex(cols + 1)}${rows + 1}`);
+}
+
+/** Drop the freeze pane on the primary view. */
+export const unfreezePanes = (ws: Worksheet): void => {
+  setFreezePanes(ws, undefined);
+};
+
 // ---- column / row dimensions ----------------------------------------------
 
 /**

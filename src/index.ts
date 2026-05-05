@@ -217,6 +217,9 @@ export {
   removeHyperlink,
   removeIgnoredErrors,
   removeTable,
+  freezeColumns,
+  freezePanes,
+  freezeRows,
   setAutoFilter,
   setCell,
   setCellByCoord,
@@ -227,6 +230,7 @@ export {
   setHyperlink,
   setRowDimension,
   setRowHeight,
+  unfreezePanes,
   unmergeCells,
 } from './worksheet/worksheet';
 export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
@@ -263,6 +267,14 @@ export {
   makeCfRule,
   makeConditionalFormatting,
 } from './worksheet/conditional-formatting';
+export type { AutoFilter, FilterColumn } from './worksheet/auto-filter';
+export {
+  addAutoFilter,
+  addAutoFilterColumn,
+  makeAutoFilter,
+  makeFilterColumn,
+  removeAutoFilter,
+} from './worksheet/auto-filter';
 export type { TableColumn, TableDefinition, TableStyleInfo } from './worksheet/table';
 export { addExcelTable, makeTableColumn, makeTableDefinition } from './worksheet/table';
 export type { CellWatch, IgnoredError } from './worksheet/errors';

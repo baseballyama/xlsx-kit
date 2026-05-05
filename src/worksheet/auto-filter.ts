@@ -37,3 +37,37 @@ export function makeFilterColumn(opts: {
     ...(opts.blank !== undefined ? { blank: opts.blank } : {}),
   };
 }
+
+// ---- Worksheet ergonomic builders ---------------------------------------
+
+import type { Worksheet } from './worksheet';
+
+/** Add an AutoFilter dropdown header strip to the given range. */
+export const addAutoFilter = (ws: Worksheet, ref: string): AutoFilter => {
+  ws.autoFilter = makeAutoFilter({ ref });
+  return ws.autoFilter;
+};
+
+/**
+ * Add a value-list dropdown filter to a column inside the existing
+ * AutoFilter range. `colId` is 0-based relative to the AutoFilter
+ * left edge.
+ */
+export const addAutoFilterColumn = (
+  ws: Worksheet,
+  colId: number,
+  values: ReadonlyArray<string>,
+  opts: { blank?: boolean } = {},
+): FilterColumn => {
+  if (!ws.autoFilter) {
+    throw new Error('addAutoFilterColumn: call addAutoFilter(ws, ref) first');
+  }
+  const fc = makeFilterColumn({ colId, values, ...(opts.blank !== undefined ? { blank: opts.blank } : {}) });
+  ws.autoFilter.filterColumns.push(fc);
+  return fc;
+};
+
+/** Drop the worksheet's AutoFilter entirely. */
+export const removeAutoFilter = (ws: Worksheet): void => {
+  delete (ws as { autoFilter?: AutoFilter }).autoFilter;
+};
