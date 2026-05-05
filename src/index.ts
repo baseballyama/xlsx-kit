@@ -274,6 +274,8 @@ export {
   setColumnDimension,
   setColumnWidth,
   setColumnWidths,
+  setDefaultColumnWidth,
+  setDefaultRowHeight,
   setComment,
   setFreezePanes,
   setHyperlink,

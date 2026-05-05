@@ -929,6 +929,38 @@ export function hideColumn(ws: Worksheet, col: number): ColumnDimension {
 }
 
 /**
+ * Set the default column width (characters) for cells without an
+ * explicit ColumnDimension entry. Mirrors Excel's "Default Width"
+ * dialog. Pass `undefined` to clear.
+ */
+export function setDefaultColumnWidth(ws: Worksheet, width: number | undefined): void {
+  if (width === undefined) {
+    delete (ws as { defaultColumnWidth?: number }).defaultColumnWidth;
+    return;
+  }
+  if (!Number.isFinite(width) || width < 0) {
+    throw new OpenXmlSchemaError(`setDefaultColumnWidth: width must be a non-negative number; got ${width}`);
+  }
+  ws.defaultColumnWidth = width;
+}
+
+/**
+ * Set the default row height (points) for rows without an explicit
+ * RowDimension entry. Mirrors Excel's "Default Row Height" dialog.
+ * Pass `undefined` to clear.
+ */
+export function setDefaultRowHeight(ws: Worksheet, height: number | undefined): void {
+  if (height === undefined) {
+    delete (ws as { defaultRowHeight?: number }).defaultRowHeight;
+    return;
+  }
+  if (!Number.isFinite(height) || height < 0) {
+    throw new OpenXmlSchemaError(`setDefaultRowHeight: height must be a non-negative number; got ${height}`);
+  }
+  ws.defaultRowHeight = height;
+}
+
+/**
  * Approximate autofit for a column. Scans every populated cell in
  * `col` (or in `[opts.minRow, opts.maxRow]`), measures `cellValueAsString`
  * length, and sets the column width to `max(length) + padding`,
