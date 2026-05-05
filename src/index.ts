@@ -466,11 +466,13 @@ export {
   setCellAsNumber,
   setCellAsPercent,
   setCellBorder,
+  setCellBorderAll,
   setCellFill,
   setCellFont,
   setCellNumberFormat,
   setCellProtection,
   setCellStyle,
+  setRangeBorderBox,
   setRangeStyle,
 } from './styles';
 

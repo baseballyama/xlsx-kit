@@ -23,8 +23,10 @@ import type { Workbook } from '../workbook/workbook';
 import { parseRange } from '../worksheet/cell-range';
 import { setCell, type Worksheet } from '../worksheet/worksheet';
 import type { Alignment } from './alignment';
-import type { Border } from './borders';
-import { DEFAULT_BORDER } from './borders';
+import type { Border, SideStyle } from './borders';
+import { DEFAULT_BORDER, makeBorder, makeSide } from './borders';
+import type { Color } from './colors';
+import { makeColor } from './colors';
 import type { Fill } from './fills';
 import { DEFAULT_EMPTY_FILL } from './fills';
 import type { Font } from './fonts';
@@ -301,4 +303,67 @@ export function setCellAsNumber(wb: Workbook, c: Cell, decimals = 0): void {
   }
   const code = decimals === 0 ? '#,##0' : `#,##0.${'0'.repeat(decimals)}`;
   setCellNumberFormat(wb, c, code);
+}
+
+// ---- border presets ----------------------------------------------------
+
+/**
+ * Apply the same {@link SideStyle} to all four edges of a single cell.
+ * Optional color via hex string or `Color` partial. Equivalent to
+ * `setCellBorder(wb, c, makeBorder({ left, right, top, bottom: side }))`
+ * with all four sides identical.
+ */
+export function setCellBorderAll(
+  wb: Workbook,
+  c: Cell,
+  opts: { style: SideStyle; color?: string | Partial<Color> } = { style: 'thin' },
+): void {
+  const colorObj = opts.color === undefined ? undefined : typeof opts.color === 'string' ? makeColor({ rgb: opts.color }) : makeColor(opts.color);
+  const side = makeSide({ style: opts.style, ...(colorObj ? { color: colorObj } : {}) });
+  setCellBorder(wb, c, makeBorder({ left: side, right: side, top: side, bottom: side }));
+}
+
+/**
+ * Draw an outer border around a rectangular range. Cells on the
+ * perimeter receive a partial border (only the edges that face
+ * outside the range); inner cells are unaffected unless `inner` is
+ * provided, in which case every cell in the range receives a border
+ * combining its perimeter edges with the `inner` style for the inside
+ * edges.
+ */
+export function setRangeBorderBox(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  opts: { style: SideStyle; color?: string | Partial<Color>; inner?: SideStyle } = { style: 'thin' },
+): void {
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  const colorObj = opts.color === undefined ? undefined : typeof opts.color === 'string' ? makeColor({ rgb: opts.color }) : makeColor(opts.color);
+  const outer = makeSide({ style: opts.style, ...(colorObj ? { color: colorObj } : {}) });
+  const inner =
+    opts.inner !== undefined
+      ? makeSide({ style: opts.inner, ...(colorObj ? { color: colorObj } : {}) })
+      : undefined;
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let col = minCol; col <= maxCol; col++) {
+      const onTop = r === minRow;
+      const onBottom = r === maxRow;
+      const onLeft = col === minCol;
+      const onRight = col === maxCol;
+      // Skip cells that wouldn't get any styling (interior cells when no inner).
+      if (!inner && !onTop && !onBottom && !onLeft && !onRight) continue;
+      const sides: { -readonly [K in keyof Border]?: Border[K] } = {};
+      const top = onTop ? outer : inner;
+      const bottom = onBottom ? outer : inner;
+      const left = onLeft ? outer : inner;
+      const right = onRight ? outer : inner;
+      if (top !== undefined) sides.top = top;
+      if (bottom !== undefined) sides.bottom = bottom;
+      if (left !== undefined) sides.left = left;
+      if (right !== undefined) sides.right = right;
+      let cell = ws.rows.get(r)?.get(col);
+      if (!cell) cell = setCell(ws, r, col);
+      setCellBorder(wb, cell, makeBorder(sides));
+    }
+  }
 }
