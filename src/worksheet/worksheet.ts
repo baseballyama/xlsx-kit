@@ -386,6 +386,49 @@ export function countCells(ws: Worksheet): number {
 }
 
 /**
+ * Bounding-box of the populated cells: `{ minRow, maxRow, minCol,
+ * maxCol }` covering every cell in `ws.rows`. Returns `undefined`
+ * when the sheet is empty. Walks the sparse store once.
+ */
+export function getDataExtent(
+  ws: Worksheet,
+): { minRow: number; maxRow: number; minCol: number; maxCol: number } | undefined {
+  let minRow = Number.POSITIVE_INFINITY;
+  let maxRow = 0;
+  let minCol = Number.POSITIVE_INFINITY;
+  let maxCol = 0;
+  let touched = false;
+  for (const [r, rowMap] of ws.rows) {
+    if (rowMap.size === 0) continue;
+    if (r < minRow) minRow = r;
+    if (r > maxRow) maxRow = r;
+    for (const c of rowMap.keys()) {
+      if (c < minCol) minCol = c;
+      if (c > maxCol) maxCol = c;
+    }
+    touched = true;
+  }
+  if (!touched) return undefined;
+  return { minRow, maxRow, minCol, maxCol };
+}
+
+/**
+ * Same as {@link getDataExtent} but returns the canonical `"A1:E10"`
+ * range string for the bounding box, or `undefined` when the sheet
+ * is empty.
+ */
+export function getDataExtentRef(ws: Worksheet): string | undefined {
+  const ext = getDataExtent(ws);
+  if (!ext) return undefined;
+  return rangeToString({
+    minRow: ext.minRow,
+    maxRow: ext.maxRow,
+    minCol: ext.minCol,
+    maxCol: ext.maxCol,
+  });
+}
+
+/**
  * Iterate every populated cell, yielding those for which `predicate`
  * returns true. Iteration order is row-then-column ascending. Cells
  * whose `.value === null` (empty placeholders carrying only style or
