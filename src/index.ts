@@ -183,24 +183,50 @@ export { makeRichText, makeTextRun, richTextToString } from './cell/rich-text';
 // conditional-formatting are reachable through the Worksheet object).
 export type { Worksheet } from './worksheet/worksheet';
 export {
+  addConditionalFormatting,
+  addDataValidation,
+  addTable,
   appendRow,
   countCells,
   deleteCell,
+  getAutoFilter,
   getCell,
   getCellByCoord,
+  getColumnDimension,
+  getComment,
+  getConditionalFormatting,
+  getFreezePanes,
+  getHyperlink,
   getMaxCol,
   getMaxRow,
   getMergedCells,
+  getRowDimension,
+  getTable,
+  hideColumn,
+  hideRow,
   isMergedCell,
   iterRows as iterWorksheetRows,
   iterValues as iterWorksheetValues,
   makeWorksheet,
   mergeCells,
+  removeComment,
+  removeDataValidations,
+  removeHyperlink,
+  removeTable,
+  setAutoFilter,
   setCell,
   setCellByCoord,
+  setColumnDimension,
+  setColumnWidth,
+  setComment,
   setFreezePanes,
+  setHyperlink,
+  setRowDimension,
+  setRowHeight,
   unmergeCells,
 } from './worksheet/worksheet';
+export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
+export { makeColumnDimension, makeRowDimension } from './worksheet/dimensions';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.

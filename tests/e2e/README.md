@@ -43,6 +43,9 @@ screenshot and file an issue against the matching scenario.
 | `19-charts-classic.xlsx` | Data | 5 months × 3 series (A/B/C). Six classic charts anchored at F2/F20/F38/O2/O20/O38: Line, Area (stacked), Pie (series A only), Doughnut (50% hole), Scatter (A vs B, lineMarker), Radar (standard). All should render with axis/legend visible. |
 | `20-charts-chartex.xlsx` | Data | Hierarchical categories (`North/Apples`, `North/Oranges`, ...) with 6 numeric values. Eight chartex (`cx:` namespace) charts: Sunburst, Treemap, Waterfall (subtotal at idx 3), Histogram, Pareto, Funnel, BoxWhisker, RegionMap — anchored across D/M/V columns. **Excel 2016+ required**; older Excel will refuse the namespace. |
 | `21-chart-decorations.xlsx` | Data | Top chart (column): each bar shows its value as a data label above the bar; a linear trendline (with equation + R²) cuts through. Bottom chart (scatter): exponential trendline + Y-axis ±10% percentage error bars on each point. |
+| `22-grouping-outline.xlsx` | Budget | Outline buttons appear above column headers + left of row numbers. Rows 3..6 (Q1 detail) + 8..11 (Q2 detail) are level-1 grouped — clicking the "1" toggle collapses to subtotal-only view. Columns C/D are also level-1 grouped, column F is hidden (Format → Unhide to reveal). Custom widths on A/B/E. |
+| `23-page-setup.xlsx` | Report | File → Print preview shows landscape A4, 1in top/bot + 0.5in left/right margins, fitted to 1 page wide, gridlines on, horizontally centered. Header centre = "Quarterly Report — &P / &N". Footer left = `&F`, footer right = "Confidential". 80 rows of data so preview spans 2 pages. |
+| `24-multi-drawing.xlsx` | Combo | Three drawings on one sheet anchored at E2 (clustered bar "Quarterly Sales"), E20 (line chart "Trend"), N2 (the same tiny PNG fixture as scenario 18). All three should coexist after Excel re-saves the file. |
 
 ## Adding a new scenario
 
