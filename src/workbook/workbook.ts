@@ -118,6 +118,13 @@ export interface Workbook {
    */
   pivotCaches?: ReadonlyArray<{ cacheId: number; rId: string }>;
   /**
+   * `<externalReferences>` — links from workbook root to xl/externalLinks
+   * parts. The numeric token in cross-workbook formulas like `[1]Sheet!A1`
+   * is the 1-based index into this array. Underlying parts continue
+   * via passthrough archive.
+   */
+  externalReferences?: ReadonlyArray<{ rId: string }>;
+  /**
    * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
    * prompt mode, etc. `date1904` is mirrored here for completeness but
    * the canonical source remains `wb.date1904`.

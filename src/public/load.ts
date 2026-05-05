@@ -152,6 +152,8 @@ const OLE_SIZE_TAG = `{${SHEET_MAIN_NS}}oleSize`;
 const FILE_RECOVERY_PR_TAG = `{${SHEET_MAIN_NS}}fileRecoveryPr`;
 const PIVOT_CACHES_TAG = `{${SHEET_MAIN_NS}}pivotCaches`;
 const PIVOT_CACHE_TAG = `{${SHEET_MAIN_NS}}pivotCache`;
+const EXTERNAL_REFERENCES_TAG = `{${SHEET_MAIN_NS}}externalReferences`;
+const EXTERNAL_REFERENCE_TAG = `{${SHEET_MAIN_NS}}externalReference`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -577,6 +579,16 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     if (child.name === OLE_SIZE_TAG) {
       const ref = child.attrs['ref'];
       if (ref) wb.oleSize = ref;
+      continue;
+    }
+    // Lift <externalReferences><externalReference r:id=…/></externalReferences>.
+    if (child.name === EXTERNAL_REFERENCES_TAG) {
+      const refs: Array<{ rId: string }> = [];
+      for (const er of findChildren(child, EXTERNAL_REFERENCE_TAG)) {
+        const rId = er.attrs[`{${REL_NS}}id`];
+        if (rId) refs.push({ rId });
+      }
+      if (refs.length > 0) wb.externalReferences = refs;
       continue;
     }
     // Lift <pivotCaches><pivotCache cacheId=… r:id=…/></pivotCaches>.
