@@ -546,8 +546,12 @@ export {
   makeWorkbookView,
   setActiveTab,
   setFirstSheet,
+  setShowHorizontalScroll,
   setShowSheetTabs,
+  setShowVerticalScroll,
   setTabRatio,
+  setWorkbookMinimized,
+  setWorkbookVisibility,
   setWorkbookWindow,
 } from './workbook/views';
 export type { CalcMode, CalcProperties, RefMode } from './workbook/calc-properties';

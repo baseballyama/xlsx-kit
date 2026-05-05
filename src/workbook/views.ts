@@ -110,6 +110,30 @@ export const setShowSheetTabs = (wb: Workbook, show: boolean): void => {
   ensurePrimaryView(wb).showSheetTabs = show;
 };
 
+/** Toggle the horizontal scroll bar in Excel's window chrome. */
+export const setShowHorizontalScroll = (wb: Workbook, show: boolean): void => {
+  ensurePrimaryView(wb).showHorizontalScroll = show;
+};
+
+/** Toggle the vertical scroll bar in Excel's window chrome. */
+export const setShowVerticalScroll = (wb: Workbook, show: boolean): void => {
+  ensurePrimaryView(wb).showVerticalScroll = show;
+};
+
+/**
+ * Toggle the workbook window minimised state. Excel honours this on
+ * reopen so the file restores into the minimised state it was saved
+ * with.
+ */
+export const setWorkbookMinimized = (wb: Workbook, minimized: boolean): void => {
+  ensurePrimaryView(wb).minimized = minimized;
+};
+
+/** Set the visibility of the workbook window itself ('visible' / 'hidden' / 'veryHidden'). */
+export const setWorkbookVisibility = (wb: Workbook, visibility: WorkbookViewVisibility): void => {
+  ensurePrimaryView(wb).visibility = visibility;
+};
+
 /**
  * Set window position + size on the primary workbookView in one call.
  * Pass `undefined` for any axis to leave it untouched.
