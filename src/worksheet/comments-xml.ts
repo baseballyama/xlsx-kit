@@ -99,9 +99,18 @@ export function serializeComments(comments: ReadonlyArray<LegacyComment>): strin
  * Bare-bones VML drawing payload Excel tolerates as a comment-shape
  * placeholder. We don't preserve the original VML shapes (stage-1 trade-
  * off); this stub guarantees the worksheet rels stay consistent.
+ *
+ * Carries a single `<v:shape>` with `<x:ClientData ObjectType="Note">`
+ * so the load-side content sniffer (src/public/load.ts) classifies the
+ * file as comment VML on a re-load — without that marker, the second
+ * load → save cycle would mis-classify the placeholder as form-control
+ * VML and capture it as passthrough, double-emitting the entry.
  */
 export function placeholderVmlDrawing(): Uint8Array {
   return new TextEncoder().encode(
-    '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout></xml>',
+    '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">' +
+      '<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout>' +
+      '<v:shape style="visibility:hidden"><x:ClientData ObjectType="Note"/></v:shape>' +
+      '</xml>',
   );
 }

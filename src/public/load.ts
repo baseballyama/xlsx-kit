@@ -554,6 +554,8 @@ const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
   'xl/ctrlProps/',
   'xl/embeddings/',
   'xl/externalLinks/',
+  // xl/model/ — Power Pivot data model (`xl/model/item.data` etc.).
+  'xl/model/',
   'xl/persons/',
   'xl/pivotCache/',
   'xl/pivotTables/',
@@ -570,13 +572,40 @@ const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
   'customXml/',
 ];
 
-const isControlVml = (path: string): boolean => {
-  // Control VML drawings live next to chart drawings under xl/drawings/.
-  // Comment VML (vmlDrawingN.vml) is regenerated from comments and must
-  // NOT be captured as passthrough.
-  if (!path.startsWith('xl/drawings/')) return false;
-  if (!path.endsWith('.vml')) return false;
-  return !path.includes('/vmlDrawing');
+/**
+ * Excel emits both form-control VMLs and comment VMLs at
+ * `xl/drawings/vmlDrawingN.vml`. Filename alone can't tell them
+ * apart, but ECMA-376 §17.18.51 requires comment shapes to carry
+ * `<x:ClientData ObjectType="Note">`, so a byte-search for that
+ * marker decides which path the file belongs on:
+ *
+ *  - With marker → comment VML; the comments writer regenerates
+ *    these from `Worksheet.legacyComments`, so we must not capture
+ *    them as passthrough (would duplicate the entry on save).
+ *  - Without marker → control / OLE / shape VML; capture as
+ *    passthrough so form controls survive load → save → load.
+ */
+const COMMENT_VML_MARKER: ReadonlyArray<number> = (() => {
+  const marker = new TextEncoder().encode('ObjectType="Note"');
+  return Array.from(marker);
+})();
+
+const isVmlDrawing = (path: string): boolean =>
+  path.startsWith('xl/drawings/') && path.endsWith('.vml');
+
+const containsCommentMarker = (bytes: Uint8Array): boolean => {
+  const len = COMMENT_VML_MARKER.length;
+  for (let i = 0; i + len <= bytes.length; i++) {
+    let match = true;
+    for (let j = 0; j < len; j++) {
+      if (bytes[i + j] !== COMMENT_VML_MARKER[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return true;
+  }
+  return false;
 };
 
 /**
@@ -597,12 +626,23 @@ const PASSTHROUGH_EXACT_PATHS: ReadonlySet<string> = new Set([
   'xl/connections.xml',
   'xl/metadata.xml',
   'xl/SheetMetadata.xml',
+  // docProps/thumbnail.jpeg — workbook preview image Excel renders in
+  // the OS file browser. JPEG by default; some files use PNG.
+  'docProps/thumbnail.jpeg',
+  'docProps/thumbnail.jpg',
+  'docProps/thumbnail.png',
+  'docProps/thumbnail.wmf',
+  'docProps/thumbnail.emf',
 ]);
 
-const isPassthroughPath = (path: string): boolean => {
+const isPassthroughPath = (path: string, bytes?: Uint8Array): boolean => {
   if (PASSTHROUGH_EXACT_PATHS.has(path)) return true;
   if (PASSTHROUGH_PREFIXES.some((p) => path.startsWith(p))) return true;
-  return isControlVml(path);
+  if (isVmlDrawing(path) && bytes) {
+    // Comment VML is regenerated; control / shape VML passes through.
+    return !containsCommentMarker(bytes);
+  }
+  return false;
 };
 
 /**
@@ -630,9 +670,14 @@ function capturePassthrough(
       wb.vbaSignature = archive.read(path);
       continue;
     }
-    if (!isPassthroughPath(path)) continue;
+    // VML drawings need a content peek to distinguish comment-VML
+    // (regenerated from ws.legacyComments) from form-control / shape
+    // VML (passthrough). Read once and reuse for the actual capture.
+    let cached: Uint8Array | undefined;
+    if (isVmlDrawing(path)) cached = archive.read(path);
+    if (!isPassthroughPath(path, cached)) continue;
     if (!wb.passthrough) wb.passthrough = new Map();
-    wb.passthrough.set(path, archive.read(path));
+    wb.passthrough.set(path, cached ?? archive.read(path));
     const ct = overrides.get(path);
     if (ct !== undefined) {
       if (!wb.passthroughContentTypes) wb.passthroughContentTypes = new Map();
