@@ -49,6 +49,7 @@ import type { IgnoredError } from './errors';
 import type {
   CellCommentMode,
   HeaderFooter,
+  PageBreak,
   PageMargins,
   PageOrder,
   PageOrientation,
@@ -113,6 +114,9 @@ const PRINT_OPTIONS_TAG = `{${SHEET_MAIN_NS}}printOptions`;
 const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
 const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
 const HEADER_FOOTER_TAG = `{${SHEET_MAIN_NS}}headerFooter`;
+const ROW_BREAKS_TAG = `{${SHEET_MAIN_NS}}rowBreaks`;
+const COL_BREAKS_TAG = `{${SHEET_MAIN_NS}}colBreaks`;
+const BRK_TAG = `{${SHEET_MAIN_NS}}brk`;
 const ODD_HEADER_TAG = `{${SHEET_MAIN_NS}}oddHeader`;
 const ODD_FOOTER_TAG = `{${SHEET_MAIN_NS}}oddFooter`;
 const EVEN_HEADER_TAG = `{${SHEET_MAIN_NS}}evenHeader`;
@@ -340,6 +344,16 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     if (hf) ws.headerFooter = hf;
   }
 
+  // <rowBreaks count="…"><brk id="…" man="1"/></rowBreaks> + <colBreaks…>
+  const rbEl = findChild(root, ROW_BREAKS_TAG);
+  if (rbEl) {
+    for (const brk of findChildren(rbEl, BRK_TAG)) ws.rowBreaks.push(parsePageBreak(brk));
+  }
+  const cbEl = findChild(root, COL_BREAKS_TAG);
+  if (cbEl) {
+    for (const brk of findChildren(cbEl, BRK_TAG)) ws.colBreaks.push(parsePageBreak(brk));
+  }
+
   // <cellWatches><cellWatch r="…"/></cellWatches>
   const cwWrap = findChild(root, CELL_WATCHES_TAG);
   if (cwWrap) {
@@ -360,6 +374,21 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const parsePageBreak = (node: XmlNode): PageBreak => {
+  const out: PageBreak = {};
+  const id = parseIntegerAttr(node.attrs['id']);
+  if (id !== undefined) out.id = id;
+  const min = parseIntegerAttr(node.attrs['min']);
+  if (min !== undefined) out.min = min;
+  const max = parseIntegerAttr(node.attrs['max']);
+  if (max !== undefined) out.max = max;
+  const man = parseBoolXmlAttr(node.attrs['man']);
+  if (man !== undefined) out.man = man;
+  const pt = parseBoolXmlAttr(node.attrs['pt']);
+  if (pt !== undefined) out.pt = pt;
+  return out;
+};
 
 const parseBoolFlag = (raw: string | undefined): boolean | undefined => {
   if (raw === '1' || raw === 'true') return true;
@@ -669,6 +698,8 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   PAGE_MARGINS_TAG,
   PAGE_SETUP_TAG,
   HEADER_FOOTER_TAG,
+  ROW_BREAKS_TAG,
+  COL_BREAKS_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,

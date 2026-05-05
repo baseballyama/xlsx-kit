@@ -28,7 +28,7 @@ import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
-import type { HeaderFooter, PageMargins, PageSetup, PrintOptions } from './page-setup';
+import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { Pane, Selection, SheetView } from './views';
@@ -177,6 +177,8 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     const hf = serializeHeaderFooter(ws.headerFooter);
     if (hf) parts.push(hf);
   }
+  if (ws.rowBreaks.length > 0) parts.push(serializePageBreaks(ws.rowBreaks, 'rowBreaks'));
+  if (ws.colBreaks.length > 0) parts.push(serializePageBreaks(ws.colBreaks, 'colBreaks'));
   if (ws.bodyExtras?.afterSheetData) {
     for (const node of ws.bodyExtras.afterSheetData) parts.push(serializeBodyExtraNode(node));
   }
@@ -589,6 +591,22 @@ const serializePageSetup = (ps: PageSetup): string | undefined => {
   if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
   if (attrs.length === 0) return undefined;
   return `<pageSetup${attrs}/>`;
+};
+
+const serializePageBreaks = (breaks: ReadonlyArray<PageBreak>, kind: 'rowBreaks' | 'colBreaks'): string => {
+  const manualCount = breaks.reduce((acc, b) => acc + (b.man === false ? 0 : 1), 0);
+  const parts: string[] = [`<${kind} count="${breaks.length}" manualBreakCount="${manualCount}">`];
+  for (const b of breaks) {
+    let attrs = '';
+    if (b.id !== undefined) attrs += ` id="${b.id}"`;
+    if (b.min !== undefined) attrs += ` min="${b.min}"`;
+    if (b.max !== undefined) attrs += ` max="${b.max}"`;
+    if (b.man !== undefined) attrs += ` man="${b.man ? '1' : '0'}"`;
+    if (b.pt !== undefined) attrs += ` pt="${b.pt ? '1' : '0'}"`;
+    parts.push(`<brk${attrs}/>`);
+  }
+  parts.push(`</${kind}>`);
+  return parts.join('');
 };
 
 const serializeHeaderFooter = (hf: HeaderFooter): string | undefined => {

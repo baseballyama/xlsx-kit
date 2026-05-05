@@ -6,10 +6,12 @@
 //   0.5-inch left/right margins, fitted to one page wide.
 // - Header (centre) reads "Quarterly Report — &P / &N". Footer (left)
 //   reads the file name `&F`, footer (right) "Confidential".
-// - Sheet has 80 rows so the print preview spans 2 pages.
+// - Sheet has 80 rows so the print preview spans multiple pages, with
+//   a manual page break sitting above row 41 (View → Page Break Preview
+//   shows the dashed line at the break).
 //
 // Wired through the typed `printOptions` / `pageMargins` / `pageSetup` /
-// `headerFooter` APIs (B6 in docs/plan/13).
+// `headerFooter` / `rowBreaks` APIs (B6 in docs/plan/13).
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -55,6 +57,9 @@ describe('e2e 23 — page setup / print options / header-footer', () => {
       oddHeader: '&LQuarterly&CQuarterly Report — &P / &N&R&D',
       oddFooter: '&L&F&CPage &P of &N&RConfidential',
     });
+
+    // Manual page break above row 41 — Page Break Preview shows the line.
+    ws.rowBreaks.push({ id: 40, max: 16383, man: true });
 
     const result = await writeWorkbook('23-page-setup.xlsx', wb);
     expect(result.bytes).toBeGreaterThan(0);

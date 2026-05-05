@@ -19,7 +19,7 @@ import type { ConditionalFormatting } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
-import type { HeaderFooter, PageMargins, PageSetup, PrintOptions } from './page-setup';
+import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
@@ -112,6 +112,10 @@ export interface Worksheet {
   pageSetup?: PageSetup;
   /** `<headerFooter>` — odd/even/first header + footer mini-format strings + flags. */
   headerFooter?: HeaderFooter;
+  /** Manual horizontal page breaks (`<rowBreaks>`). Each entry's `id` is the row above which a new page begins. */
+  rowBreaks: PageBreak[];
+  /** Manual vertical page breaks (`<colBreaks>`). Each entry's `id` is the column to the left of which a new page begins. */
+  colBreaks: PageBreak[];
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**
@@ -173,6 +177,8 @@ export function makeWorksheet(title: string): Worksheet {
     conditionalFormatting: [],
     cellWatches: [],
     ignoredErrors: [],
+    rowBreaks: [],
+    colBreaks: [],
   };
 }
 

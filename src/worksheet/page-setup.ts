@@ -93,3 +93,19 @@ export const makePrintOptions = (opts: PrintOptions = {}): PrintOptions => ({ ..
 export const makePageSetup = (opts: PageSetup = {}): PageSetup => ({ ...opts });
 
 export const makeHeaderFooter = (opts: HeaderFooter = {}): HeaderFooter => ({ ...opts });
+
+/**
+ * One manual page break. `id` is the row (for rowBreaks) or column
+ * (for colBreaks) index where the break sits; `min`/`max` constrain the
+ * orthogonal range Excel honours; `man=true` means a user-placed break
+ * (default true). `pt` indicates a "pivot table" break — rare.
+ */
+export interface PageBreak {
+  id?: number;
+  min?: number;
+  max?: number;
+  man?: boolean;
+  pt?: boolean;
+}
+
+export const makePageBreak = (opts: PageBreak = {}): PageBreak => ({ ...opts });

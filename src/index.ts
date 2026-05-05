@@ -240,6 +240,7 @@ export { makeSheetProtection } from './worksheet/protection';
 export type {
   CellCommentMode,
   HeaderFooter,
+  PageBreak,
   PageMargins,
   PageOrder,
   PageOrientation,
@@ -249,6 +250,7 @@ export type {
 } from './worksheet/page-setup';
 export {
   makeHeaderFooter,
+  makePageBreak,
   makePageMargins,
   makePageSetup,
   makePrintOptions,

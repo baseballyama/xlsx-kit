@@ -135,6 +135,27 @@ describe('headerFooter round-trip', () => {
   });
 });
 
+describe('rowBreaks / colBreaks round-trip', () => {
+  it('preserves manual page breaks for both orientations', async () => {
+    const wb = createWorkbook();
+    const ws = addWorksheet(wb, 'B');
+    setCell(ws, 1, 1, 1);
+    ws.rowBreaks.push({ id: 5, max: 16383, man: true });
+    ws.rowBreaks.push({ id: 12, max: 16383, man: true });
+    ws.colBreaks.push({ id: 4, max: 1048575, man: true });
+
+    const bytes = await workbookToBytes(wb);
+    const wb2 = await loadWorkbook(fromBuffer(bytes));
+    const ws2 = expectSheet(wb2.sheets[0]?.sheet);
+    expect(ws2.rowBreaks.length).toBe(2);
+    expect(ws2.rowBreaks[0]?.id).toBe(5);
+    expect(ws2.rowBreaks[1]?.id).toBe(12);
+    expect(ws2.rowBreaks[0]?.man).toBe(true);
+    expect(ws2.colBreaks.length).toBe(1);
+    expect(ws2.colBreaks[0]?.id).toBe(4);
+  });
+});
+
 describe('default emission behavior', () => {
   it('emits no page-setup elements when none are set', async () => {
     const wb = createWorkbook();
