@@ -236,7 +236,12 @@ export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
 export type { OutlineProperties, PageSetupProperties, SheetProperties } from './worksheet/properties';
 export { makeSheetProperties } from './worksheet/properties';
 export type { SheetProtection } from './worksheet/protection';
-export { makeSheetProtection } from './worksheet/protection';
+export {
+  isSheetProtected,
+  makeSheetProtection,
+  protectSheet,
+  unprotectSheet,
+} from './worksheet/protection';
 export type { ProtectedRange } from './worksheet/protected-ranges';
 export { makeProtectedRange } from './worksheet/protected-ranges';
 export type {

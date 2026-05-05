@@ -70,3 +70,56 @@ export const makeSheetProtection = (opts: SheetProtection = {}): SheetProtection
   if (opts.hashValue !== undefined) out.hashValue = opts.hashValue;
   return out;
 };
+
+// ---- Worksheet ergonomic helpers ----------------------------------------
+
+import type { Worksheet } from './worksheet';
+
+/**
+ * Excel's "Protect Sheet" defaults — when you click the dialog without
+ * changing any checkbox, it locks structure but allows the listed
+ * actions. This matches Excel's wire form (sheet=1 + the listed flags
+ * left at their defaults).
+ */
+const PROTECT_SHEET_DEFAULTS: SheetProtection = Object.freeze({
+  sheet: true,
+  objects: true,
+  scenarios: true,
+  formatCells: false,
+  formatColumns: false,
+  formatRows: false,
+  insertColumns: false,
+  insertRows: false,
+  insertHyperlinks: false,
+  deleteColumns: false,
+  deleteRows: false,
+  selectLockedCells: false,
+  selectUnlockedCells: false,
+  sort: false,
+  autoFilter: false,
+  pivotTables: false,
+});
+
+/**
+ * Lock a worksheet with Excel's "Protect Sheet" defaults. Pass
+ * `overrides` to allow specific actions while otherwise locked
+ * (e.g. `{ sort: true, autoFilter: true }` for "allow sort + filter
+ * on locked sheet"). Password-hash fields can be supplied as a quad
+ * (algorithmName / hashValue / saltValue / spinCount); plaintext
+ * passwords are out of scope until the D-tier hashing helper lands.
+ */
+export const protectSheet = (
+  ws: Worksheet,
+  overrides: Partial<SheetProtection> = {},
+): SheetProtection => {
+  ws.sheetProtection = { ...PROTECT_SHEET_DEFAULTS, ...overrides };
+  return ws.sheetProtection;
+};
+
+/** Drop the typed sheet-protection record. */
+export const unprotectSheet = (ws: Worksheet): void => {
+  delete (ws as { sheetProtection?: SheetProtection }).sheetProtection;
+};
+
+/** Quick-lock helper that mirrors Excel's "Allow users to edit ranges → Protect Sheet" defaults. */
+export const isSheetProtected = (ws: Worksheet): boolean => ws.sheetProtection?.sheet === true;
