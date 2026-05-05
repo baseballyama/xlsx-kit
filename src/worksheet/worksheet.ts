@@ -385,6 +385,55 @@ export function countCells(ws: Worksheet): number {
   return n;
 }
 
+/**
+ * Iterate every populated cell, yielding those for which `predicate`
+ * returns true. Iteration order is row-then-column ascending. Cells
+ * whose `.value === null` (empty placeholders carrying only style or
+ * comment metadata) are still visited.
+ */
+export function* findCells(
+  ws: Worksheet,
+  predicate: (c: Cell) => boolean,
+): IterableIterator<Cell> {
+  const rowKeys = [...ws.rows.keys()].sort((a, b) => a - b);
+  for (const r of rowKeys) {
+    const rowMap = ws.rows.get(r);
+    if (!rowMap) continue;
+    const cols = [...rowMap.keys()].sort((a, b) => a - b);
+    for (const c of cols) {
+      const cell = rowMap.get(c);
+      if (cell !== undefined && predicate(cell)) yield cell;
+    }
+  }
+}
+
+/** First populated cell satisfying `predicate`, or `undefined`. */
+export function findFirstCell(
+  ws: Worksheet,
+  predicate: (c: Cell) => boolean,
+): Cell | undefined {
+  for (const cell of findCells(ws, predicate)) return cell;
+  return undefined;
+}
+
+/**
+ * Iterate the populated cells inside a rectangular range. Cells that
+ * don't exist in the sparse store are skipped (no auto-allocate). Use
+ * {@link applyToRange} when you need every coordinate visited
+ * regardless of population.
+ */
+export function* getCellsInRange(ws: Worksheet, range: string): IterableIterator<Cell> {
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  for (let r = minRow; r <= maxRow; r++) {
+    const rowMap = ws.rows.get(r);
+    if (!rowMap) continue;
+    for (let col = minCol; col <= maxCol; col++) {
+      const cell = rowMap.get(col);
+      if (cell !== undefined) yield cell;
+    }
+  }
+}
+
 /** Resolve an "A1" coordinate to a numeric (col, row) pair on the sheet. */
 export function setCellByCoord(ws: Worksheet, coord: string, value?: CellValue, styleId?: number): Cell {
   const m = /^([A-Za-z]{1,3})([1-9][0-9]*)$/.exec(coord);
