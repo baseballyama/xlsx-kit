@@ -73,3 +73,63 @@ export function makePictureDrawingItem(anchor: DrawingAnchor, picture: PictureRe
   const ref: PictureReference = 'format' in picture ? { image: picture as XlsxImage } : (picture as PictureReference);
   return { anchor, content: { kind: 'picture', picture: ref } };
 }
+
+// ---- Worksheet ergonomic helpers ----------------------------------------
+
+import { loadImage } from './image';
+import { makeOneCellAnchor } from './anchor';
+import type { Worksheet } from '../worksheet/worksheet';
+
+/**
+ * Drop an image onto a worksheet at a single-cell anchor. Lazy-
+ * allocates `ws.drawing` (as `makeDrawing([])`) on first call and
+ * appends a picture DrawingItem.
+ *
+ * `image` accepts either an `XlsxImage` (already loaded via
+ * `loadImage`) or raw image bytes — in the bytes case, this helper
+ * sniffs the format with `loadImage` itself.
+ *
+ * `at` is a cell ref like `"C3"`. Override `widthPx` / `heightPx` to
+ * scale; otherwise the helper uses 96×96 defaults that look fine
+ * for typical icons.
+ */
+export const addImageAt = (
+  ws: Worksheet,
+  at: string,
+  image: XlsxImage | Uint8Array,
+  opts: { widthPx?: number; heightPx?: number } = {},
+): DrawingItem => {
+  const xlsxImage: XlsxImage = image instanceof Uint8Array ? loadImage(image) : image;
+  const anchor = makeOneCellAnchor({
+    from: at,
+    widthPx: opts.widthPx ?? 96,
+    heightPx: opts.heightPx ?? 96,
+  });
+  const item = makePictureDrawingItem(anchor, xlsxImage);
+  if (!ws.drawing) ws.drawing = makeDrawing([]);
+  ws.drawing.items.push(item);
+  return item;
+};
+
+/**
+ * Anchor a chart to a worksheet at a single-cell ref. Lazy-allocates
+ * `ws.drawing`. `chart` is the same `ChartReference` shape `makeChart
+ * DrawingItem` accepts (`{ space }` for legacy chart, `{ cxSpace }`
+ * for chartex).
+ */
+export const addChartAt = (
+  ws: Worksheet,
+  at: string,
+  chart: ChartReference,
+  opts: { widthPx?: number; heightPx?: number } = {},
+): DrawingItem => {
+  const anchor = makeOneCellAnchor({
+    from: at,
+    widthPx: opts.widthPx ?? 480,
+    heightPx: opts.heightPx ?? 320,
+  });
+  const item = makeChartDrawingItem(anchor, chart);
+  if (!ws.drawing) ws.drawing = makeDrawing([]);
+  ws.drawing.items.push(item);
+  return item;
+};

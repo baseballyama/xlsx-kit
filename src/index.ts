@@ -274,6 +274,23 @@ export {
   addUrlHyperlink,
   makeHyperlink,
 } from './worksheet/hyperlinks';
+export type {
+  ChartReference,
+  Drawing,
+  DrawingItem,
+  PictureReference,
+} from './drawing/drawing';
+export {
+  addChartAt,
+  addImageAt,
+  makeChartDrawingItem,
+  makeDrawing,
+  makePictureDrawingItem,
+} from './drawing/drawing';
+export type { XlsxImage } from './drawing/image';
+export { loadImage } from './drawing/image';
+export type { DrawingAnchor } from './drawing/anchor';
+export { makeOneCellAnchor } from './drawing/anchor';
 export type { AutoFilter, FilterColumn } from './worksheet/auto-filter';
 export {
   addAutoFilter,
