@@ -31,3 +31,83 @@ export function makeDefinedName(opts: Partial<DefinedName> & { name: string; val
     ...(opts.comment !== undefined ? { comment: opts.comment } : {}),
   };
 }
+
+// ---- Workbook ergonomic helpers -----------------------------------------
+
+import type { Workbook } from './workbook';
+
+/**
+ * Add a workbook-scope or sheet-scope defined name. If a defined name
+ * with the same `name` (and `scope`) already exists, it's replaced —
+ * Excel allows one workbook-scope and one per-sheet-scope name, but
+ * not two with the same scope. Returns the resulting `DefinedName`.
+ */
+export const addDefinedName = (
+  wb: Workbook,
+  opts: Partial<DefinedName> & { name: string; value: string },
+): DefinedName => {
+  const dn = makeDefinedName(opts);
+  // Replace any existing entry with the same name + scope.
+  const idx = wb.definedNames.findIndex((d) => d.name === dn.name && d.scope === dn.scope);
+  if (idx >= 0) {
+    wb.definedNames[idx] = dn;
+  } else {
+    wb.definedNames.push(dn);
+  }
+  return dn;
+};
+
+/** Look up a defined name by identifier and (optional) sheet scope. */
+export const getDefinedName = (
+  wb: Workbook,
+  name: string,
+  scope?: number,
+): DefinedName | undefined => wb.definedNames.find((d) => d.name === name && d.scope === scope);
+
+/**
+ * Remove a defined name by identifier + scope. Returns true if any
+ * entry was removed.
+ */
+export const removeDefinedName = (wb: Workbook, name: string, scope?: number): boolean => {
+  const idx = wb.definedNames.findIndex((d) => d.name === name && d.scope === scope);
+  if (idx < 0) return false;
+  wb.definedNames.splice(idx, 1);
+  return true;
+};
+
+/**
+ * Define the print-area for a given sheet. Excel uses the built-in
+ * `_xlnm.Print_Area` defined name with sheet scope.
+ */
+export const setPrintArea = (wb: Workbook, sheetIndex: number, ref: string): DefinedName => {
+  return addDefinedName(wb, {
+    name: '_xlnm.Print_Area',
+    value: ref,
+    scope: sheetIndex,
+  });
+};
+
+/**
+ * Define print-title rows / columns on a sheet. Excel uses the
+ * `_xlnm.Print_Titles` defined name. Pass `rows` ("$1:$1") to repeat
+ * row 1 on every printed page; `cols` ("$A:$A") to repeat column A.
+ */
+export const setPrintTitles = (
+  wb: Workbook,
+  sheetIndex: number,
+  opts: { rows?: string; cols?: string; sheetName: string },
+): DefinedName => {
+  const parts: string[] = [];
+  // The wire form is "Sheet!$1:$1,Sheet!$A:$A"; both refs share the
+  // sheet prefix.
+  if (opts.cols !== undefined) parts.push(`'${opts.sheetName}'!${opts.cols}`);
+  if (opts.rows !== undefined) parts.push(`'${opts.sheetName}'!${opts.rows}`);
+  if (parts.length === 0) {
+    throw new Error('setPrintTitles: at least one of rows or cols must be set');
+  }
+  return addDefinedName(wb, {
+    name: '_xlnm.Print_Titles',
+    value: parts.join(','),
+    scope: sheetIndex,
+  });
+};

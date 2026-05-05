@@ -433,6 +433,15 @@ export {
   setActiveSheet,
   sheetNames,
 } from './workbook/workbook';
+export type { DefinedName } from './workbook/defined-names';
+export {
+  addDefinedName,
+  getDefinedName,
+  makeDefinedName,
+  removeDefinedName,
+  setPrintArea,
+  setPrintTitles,
+} from './workbook/defined-names';
 export type { WorkbookProtection } from './workbook/protection';
 export {
   isWorkbookProtected,
