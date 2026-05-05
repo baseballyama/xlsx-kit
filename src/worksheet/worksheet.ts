@@ -631,6 +631,34 @@ export function hideColumn(ws: Worksheet, col: number): ColumnDimension {
   return setColumnDimension(ws, col, { ...existing, hidden: true });
 }
 
+/**
+ * Set widths for many columns in one call. `widths` maps either:
+ * - an array `[12, 16, 20]` interpreted positionally starting at
+ *   column `startCol` (default 1), or
+ * - a `Record<number, number>` keyed by 1-based column index.
+ * Each entry sets `customWidth: true`.
+ */
+export function setColumnWidths(
+  ws: Worksheet,
+  widths: ReadonlyArray<number> | Record<number, number>,
+  startCol = 1,
+): void {
+  if (Array.isArray(widths)) {
+    for (let i = 0; i < widths.length; i++) {
+      const w = widths[i];
+      if (typeof w !== 'number' || !Number.isFinite(w)) continue;
+      setColumnWidth(ws, startCol + i, w);
+    }
+  } else {
+    for (const [k, w] of Object.entries(widths as Record<number, number>)) {
+      const col = Number.parseInt(k, 10);
+      if (!Number.isInteger(col) || col < 1) continue;
+      if (typeof w !== 'number' || !Number.isFinite(w)) continue;
+      setColumnWidth(ws, col, w);
+    }
+  }
+}
+
 /** Look up a row's dimension entry. */
 export function getRowDimension(ws: Worksheet, row: number): RowDimension | undefined {
   return ws.rowDimensions.get(row);
@@ -647,6 +675,32 @@ export function setRowDimension(ws: Worksheet, row: number, opts: Partial<RowDim
 export function setRowHeight(ws: Worksheet, row: number, height: number): RowDimension {
   const existing = getRowDimension(ws, row);
   return setRowDimension(ws, row, { ...existing, height, customHeight: true });
+}
+
+/**
+ * Set heights for many rows in one call. `heights` accepts an array
+ * (positional from `startRow`, default 1) or a `Record<number, number>`
+ * keyed by 1-based row index. Each entry sets `customHeight: true`.
+ */
+export function setRowHeights(
+  ws: Worksheet,
+  heights: ReadonlyArray<number> | Record<number, number>,
+  startRow = 1,
+): void {
+  if (Array.isArray(heights)) {
+    for (let i = 0; i < heights.length; i++) {
+      const h = heights[i];
+      if (typeof h !== 'number' || !Number.isFinite(h)) continue;
+      setRowHeight(ws, startRow + i, h);
+    }
+  } else {
+    for (const [k, h] of Object.entries(heights as Record<number, number>)) {
+      const row = Number.parseInt(k, 10);
+      if (!Number.isInteger(row) || row < 1) continue;
+      if (typeof h !== 'number' || !Number.isFinite(h)) continue;
+      setRowHeight(ws, row, h);
+    }
+  }
 }
 
 /** Convenience: hide a row. */
