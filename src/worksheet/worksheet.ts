@@ -18,6 +18,7 @@ import { makeLegacyComment } from './comments';
 import type { ConditionalFormatting } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
+import type { CellWatch, IgnoredError } from './errors';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import type { TableDefinition } from './table';
 import { freezePaneRef, makeFreezePane, makeSheetView, type SheetView } from './views';
@@ -69,6 +70,13 @@ export interface Worksheet {
   legacyComments: LegacyComment[];
   /** Conditional formatting blocks. */
   conditionalFormatting: ConditionalFormatting[];
+  /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
+  cellWatches: CellWatch[];
+  /**
+   * Per-region "ignore this error class" rules (`<ignoredErrors>`).
+   * Suppresses the small green-triangle warning for the listed checks.
+   */
+  ignoredErrors: IgnoredError[];
   /**
    * Spreadsheet drawing — at most one per worksheet. Hosts charts /
    * pictures / shapes. Persisted as `xl/drawings/drawingN.xml` plus a
@@ -121,6 +129,8 @@ export function makeWorksheet(title: string): Worksheet {
     tables: [],
     legacyComments: [],
     conditionalFormatting: [],
+    cellWatches: [],
+    ignoredErrors: [],
   };
 }
 
@@ -551,4 +561,32 @@ export function addConditionalFormatting(ws: Worksheet, cf: ConditionalFormattin
 /** All conditional formatting blocks (read-only view). */
 export function getConditionalFormatting(ws: Worksheet): ReadonlyArray<ConditionalFormatting> {
   return ws.conditionalFormatting;
+}
+
+// ---- cell watches / ignored errors --------------------------------------
+
+/** Pin a cell to the Watch Window. Returns the pushed entry. */
+export function addCellWatch(ws: Worksheet, watch: CellWatch): CellWatch {
+  ws.cellWatches.push(watch);
+  return watch;
+}
+
+/** Remove cell watches matching `predicate`. Returns the count removed. */
+export function removeCellWatches(ws: Worksheet, predicate: (w: CellWatch) => boolean): number {
+  const before = ws.cellWatches.length;
+  ws.cellWatches = ws.cellWatches.filter((w) => !predicate(w));
+  return before - ws.cellWatches.length;
+}
+
+/** Append an ignored-error region. */
+export function addIgnoredError(ws: Worksheet, ie: IgnoredError): IgnoredError {
+  ws.ignoredErrors.push(ie);
+  return ie;
+}
+
+/** Remove ignored-error entries matching `predicate`. Returns the count removed. */
+export function removeIgnoredErrors(ws: Worksheet, predicate: (ie: IgnoredError) => boolean): number {
+  const before = ws.ignoredErrors.length;
+  ws.ignoredErrors = ws.ignoredErrors.filter((ie) => !predicate(ie));
+  return before - ws.ignoredErrors.length;
 }

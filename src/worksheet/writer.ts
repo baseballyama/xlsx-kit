@@ -26,6 +26,7 @@ import { multiCellRangeToString, rangeToString } from './cell-range';
 import type { ConditionalFormatting, ConditionalFormattingRule } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
+import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
@@ -152,6 +153,12 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   // positional tracking.
   if (ws.bodyExtras?.afterSheetData) {
     for (const node of ws.bodyExtras.afterSheetData) parts.push(serializeBodyExtraNode(node));
+  }
+  if (ws.cellWatches.length > 0) {
+    parts.push(serializeCellWatches(ws.cellWatches));
+  }
+  if (ws.ignoredErrors.length > 0) {
+    parts.push(serializeIgnoredErrors(ws.ignoredErrors));
   }
   if (ws.drawing && ctx.registerDrawing) {
     const { rId } = ctx.registerDrawing(ws.drawing);
@@ -485,6 +492,32 @@ const serializeDataValidation = (dv: DataValidation): string => {
   if (dv.formula2 !== undefined) formulas.push(`<formula2>${escapeXmlText(dv.formula2)}</formula2>`);
   if (formulas.length === 0) return `<dataValidation${attrs}/>`;
   return `<dataValidation${attrs}>${formulas.join('')}</dataValidation>`;
+};
+
+const serializeCellWatches = (watches: ReadonlyArray<CellWatch>): string => {
+  const parts: string[] = ['<cellWatches>'];
+  for (const w of watches) parts.push(`<cellWatch r="${escapeXmlAttr(w.ref)}"/>`);
+  parts.push('</cellWatches>');
+  return parts.join('');
+};
+
+const serializeIgnoredErrors = (errs: ReadonlyArray<IgnoredError>): string => {
+  const parts: string[] = ['<ignoredErrors>'];
+  for (const ie of errs) {
+    let attrs = ` sqref="${escapeXmlAttr(multiCellRangeToString(ie.sqref))}"`;
+    if (ie.evalError) attrs += ' evalError="1"';
+    if (ie.twoDigitTextYear) attrs += ' twoDigitTextYear="1"';
+    if (ie.numberStoredAsText) attrs += ' numberStoredAsText="1"';
+    if (ie.formula) attrs += ' formula="1"';
+    if (ie.formulaRange) attrs += ' formulaRange="1"';
+    if (ie.unlockedFormula) attrs += ' unlockedFormula="1"';
+    if (ie.emptyCellReference) attrs += ' emptyCellReference="1"';
+    if (ie.listDataValidation) attrs += ' listDataValidation="1"';
+    if (ie.calculatedColumn) attrs += ' calculatedColumn="1"';
+    parts.push(`<ignoredError${attrs}/>`);
+  }
+  parts.push('</ignoredErrors>');
+  return parts.join('');
 };
 
 const serializeHyperlinks = (links: ReadonlyArray<Hyperlink>, rels: Relationships | undefined): string => {

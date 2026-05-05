@@ -45,6 +45,7 @@ import type {
 } from './data-validations';
 import { makeDataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
+import type { IgnoredError } from './errors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
 import type { Hyperlink } from './hyperlinks';
 import { makeHyperlink } from './hyperlinks';
@@ -86,6 +87,10 @@ const CONDITIONAL_FORMATTING_TAG = `{${SHEET_MAIN_NS}}conditionalFormatting`;
 const CF_RULE_TAG = `{${SHEET_MAIN_NS}}cfRule`;
 const FORMULA_TAG = `{${SHEET_MAIN_NS}}formula`;
 const DRAWING_TAG = `{${SHEET_MAIN_NS}}drawing`;
+const CELL_WATCHES_TAG = `{${SHEET_MAIN_NS}}cellWatches`;
+const CELL_WATCH_TAG = `{${SHEET_MAIN_NS}}cellWatch`;
+const IGNORED_ERRORS_TAG = `{${SHEET_MAIN_NS}}ignoredErrors`;
+const IGNORED_ERROR_TAG = `{${SHEET_MAIN_NS}}ignoredError`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -250,9 +255,57 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
+  // <cellWatches><cellWatch r="…"/></cellWatches>
+  const cwWrap = findChild(root, CELL_WATCHES_TAG);
+  if (cwWrap) {
+    for (const w of findChildren(cwWrap, CELL_WATCH_TAG)) {
+      const ref = w.attrs['r'];
+      if (ref) ws.cellWatches.push({ ref });
+    }
+  }
+
+  // <ignoredErrors><ignoredError sqref="…" evalError="1" .../></ignoredErrors>
+  const ieWrap = findChild(root, IGNORED_ERRORS_TAG);
+  if (ieWrap) {
+    for (const ie of findChildren(ieWrap, IGNORED_ERROR_TAG)) {
+      ws.ignoredErrors.push(parseIgnoredError(ie));
+    }
+  }
+
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const parseIgnoredError = (node: XmlNode): IgnoredError => {
+  const sqref = node.attrs['sqref'];
+  if (!sqref) throw new OpenXmlSchemaError('worksheet: <ignoredError> missing @sqref');
+  const out: IgnoredError = { sqref: parseMultiCellRange(sqref) };
+  const flag = (raw: string | undefined): boolean | undefined => {
+    if (raw === undefined) return undefined;
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+    return undefined;
+  };
+  const evalError = flag(node.attrs['evalError']);
+  if (evalError !== undefined) out.evalError = evalError;
+  const twoDigitTextYear = flag(node.attrs['twoDigitTextYear']);
+  if (twoDigitTextYear !== undefined) out.twoDigitTextYear = twoDigitTextYear;
+  const numberStoredAsText = flag(node.attrs['numberStoredAsText']);
+  if (numberStoredAsText !== undefined) out.numberStoredAsText = numberStoredAsText;
+  const formula = flag(node.attrs['formula']);
+  if (formula !== undefined) out.formula = formula;
+  const formulaRange = flag(node.attrs['formulaRange']);
+  if (formulaRange !== undefined) out.formulaRange = formulaRange;
+  const unlockedFormula = flag(node.attrs['unlockedFormula']);
+  if (unlockedFormula !== undefined) out.unlockedFormula = unlockedFormula;
+  const emptyCellReference = flag(node.attrs['emptyCellReference']);
+  if (emptyCellReference !== undefined) out.emptyCellReference = emptyCellReference;
+  const listDataValidation = flag(node.attrs['listDataValidation']);
+  if (listDataValidation !== undefined) out.listDataValidation = listDataValidation;
+  const calculatedColumn = flag(node.attrs['calculatedColumn']);
+  if (calculatedColumn !== undefined) out.calculatedColumn = calculatedColumn;
+  return out;
+};
 
 /**
  * Pick up every top-level `<worksheet>` child we don't model (e.g.
@@ -293,6 +346,8 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   TABLE_PARTS_TAG,
   CONDITIONAL_FORMATTING_TAG,
   DRAWING_TAG,
+  CELL_WATCHES_TAG,
+  IGNORED_ERRORS_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,

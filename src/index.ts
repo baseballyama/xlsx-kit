@@ -183,8 +183,10 @@ export { makeRichText, makeTextRun, richTextToString } from './cell/rich-text';
 // conditional-formatting are reachable through the Worksheet object).
 export type { Worksheet } from './worksheet/worksheet';
 export {
+  addCellWatch,
   addConditionalFormatting,
   addDataValidation,
+  addIgnoredError,
   addTable,
   appendRow,
   countCells,
@@ -209,9 +211,11 @@ export {
   iterValues as iterWorksheetValues,
   makeWorksheet,
   mergeCells,
+  removeCellWatches,
   removeComment,
   removeDataValidations,
   removeHyperlink,
+  removeIgnoredErrors,
   removeTable,
   setAutoFilter,
   setCell,
@@ -227,6 +231,8 @@ export {
 } from './worksheet/worksheet';
 export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
 export { makeColumnDimension, makeRowDimension } from './worksheet/dimensions';
+export type { CellWatch, IgnoredError } from './worksheet/errors';
+export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.
