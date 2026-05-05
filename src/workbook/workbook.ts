@@ -97,6 +97,8 @@ export interface Workbook {
    * Excel allows multiple views (rare).
    */
   bookViews?: import('./views').WorkbookView[];
+  /** `<calcPr>` — calculation engine settings (calcMode / iterate / fullPrecision etc.). */
+  calcProperties?: import('./calc-properties').CalcProperties;
   /**
    * Workbook-level rels that don't match a modeled type. Re-emitted with
    * their original Id so captured `<pivotCaches r:id="…"/>` etc. still

@@ -145,6 +145,7 @@ const WORKBOOK_PR_TAG = `{${SHEET_MAIN_NS}}workbookPr`;
 const WORKBOOK_PROTECTION_TAG = `{${SHEET_MAIN_NS}}workbookProtection`;
 const BOOK_VIEWS_TAG = `{${SHEET_MAIN_NS}}bookViews`;
 const WORKBOOK_VIEW_TAG = `{${SHEET_MAIN_NS}}workbookView`;
+const CALC_PR_TAG = `{${SHEET_MAIN_NS}}calcPr`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -518,6 +519,12 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       if (views.length > 0) wb.bookViews = views;
       continue;
     }
+    // Lift <calcPr> into the typed workbook field.
+    if (child.name === CALC_PR_TAG) {
+      const cp = parseCalcProperties(child);
+      if (cp) wb.calcProperties = cp;
+      continue;
+    }
     if (seenSheets) afterSheets.push(child);
     else beforeSheets.push(child);
   }
@@ -525,6 +532,68 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     wb.workbookXmlExtras = { beforeSheets, afterSheets };
   }
 }
+
+const CALC_MODES: ReadonlyArray<import('../workbook/calc-properties').CalcMode> = [
+  'manual',
+  'auto',
+  'autoNoTable',
+];
+const REF_MODES: ReadonlyArray<import('../workbook/calc-properties').RefMode> = ['A1', 'R1C1'];
+
+const parseCalcProperties = (
+  node: XmlNode,
+): import('../workbook/calc-properties').CalcProperties | undefined => {
+  const out: import('../workbook/calc-properties').CalcProperties = {};
+  const a = node.attrs;
+  const flag = (raw: string | undefined): boolean | undefined => {
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+    return undefined;
+  };
+  const intAttr = (k: string): number | undefined => {
+    if (a[k] === undefined) return undefined;
+    const n = Number.parseInt(a[k], 10);
+    return Number.isInteger(n) ? n : undefined;
+  };
+  const floatAttr = (k: string): number | undefined => {
+    if (a[k] === undefined) return undefined;
+    const n = Number.parseFloat(a[k]);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  const calcId = intAttr('calcId');
+  if (calcId !== undefined) out.calcId = calcId;
+  const calcMode = a['calcMode'];
+  if (calcMode && CALC_MODES.includes(calcMode as import('../workbook/calc-properties').CalcMode)) {
+    out.calcMode = calcMode as import('../workbook/calc-properties').CalcMode;
+  }
+  const fcol = flag(a['fullCalcOnLoad']);
+  if (fcol !== undefined) out.fullCalcOnLoad = fcol;
+  const refMode = a['refMode'];
+  if (refMode && REF_MODES.includes(refMode as import('../workbook/calc-properties').RefMode)) {
+    out.refMode = refMode as import('../workbook/calc-properties').RefMode;
+  }
+  const iterate = flag(a['iterate']);
+  if (iterate !== undefined) out.iterate = iterate;
+  const iterateCount = intAttr('iterateCount');
+  if (iterateCount !== undefined) out.iterateCount = iterateCount;
+  const iterateDelta = floatAttr('iterateDelta');
+  if (iterateDelta !== undefined) out.iterateDelta = iterateDelta;
+  const fullPrecision = flag(a['fullPrecision']);
+  if (fullPrecision !== undefined) out.fullPrecision = fullPrecision;
+  const calcCompleted = flag(a['calcCompleted']);
+  if (calcCompleted !== undefined) out.calcCompleted = calcCompleted;
+  const calcOnSave = flag(a['calcOnSave']);
+  if (calcOnSave !== undefined) out.calcOnSave = calcOnSave;
+  const concurrentCalc = flag(a['concurrentCalc']);
+  if (concurrentCalc !== undefined) out.concurrentCalc = concurrentCalc;
+  const concurrentManualCount = intAttr('concurrentManualCount');
+  if (concurrentManualCount !== undefined) out.concurrentManualCount = concurrentManualCount;
+  const forceFullCalc = flag(a['forceFullCalc']);
+  if (forceFullCalc !== undefined) out.forceFullCalc = forceFullCalc;
+
+  return Object.keys(out).length > 0 ? out : undefined;
+};
 
 const VISIBILITIES: ReadonlyArray<import('../workbook/views').WorkbookViewVisibility> = [
   'visible',

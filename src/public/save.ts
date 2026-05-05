@@ -639,11 +639,36 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     }
     parts.push('</definedNames>');
   }
+  if (wb.calcProperties) {
+    const cp = serializeCalcProperties(wb.calcProperties);
+    if (cp) parts.push(cp);
+  }
   if (wb.workbookXmlExtras?.afterSheets) {
     for (const node of wb.workbookXmlExtras.afterSheets) parts.push(serializeChildNode(node));
   }
   parts.push('</workbook>');
   return parts.join('');
+}
+
+function serializeCalcProperties(
+  cp: import('../workbook/calc-properties').CalcProperties,
+): string | undefined {
+  let attrs = '';
+  if (cp.calcId !== undefined) attrs += ` calcId="${cp.calcId}"`;
+  if (cp.calcMode !== undefined) attrs += ` calcMode="${cp.calcMode}"`;
+  if (cp.fullCalcOnLoad !== undefined) attrs += ` fullCalcOnLoad="${cp.fullCalcOnLoad ? '1' : '0'}"`;
+  if (cp.refMode !== undefined) attrs += ` refMode="${cp.refMode}"`;
+  if (cp.iterate !== undefined) attrs += ` iterate="${cp.iterate ? '1' : '0'}"`;
+  if (cp.iterateCount !== undefined) attrs += ` iterateCount="${cp.iterateCount}"`;
+  if (cp.iterateDelta !== undefined) attrs += ` iterateDelta="${cp.iterateDelta}"`;
+  if (cp.fullPrecision !== undefined) attrs += ` fullPrecision="${cp.fullPrecision ? '1' : '0'}"`;
+  if (cp.calcCompleted !== undefined) attrs += ` calcCompleted="${cp.calcCompleted ? '1' : '0'}"`;
+  if (cp.calcOnSave !== undefined) attrs += ` calcOnSave="${cp.calcOnSave ? '1' : '0'}"`;
+  if (cp.concurrentCalc !== undefined) attrs += ` concurrentCalc="${cp.concurrentCalc ? '1' : '0'}"`;
+  if (cp.concurrentManualCount !== undefined) attrs += ` concurrentManualCount="${cp.concurrentManualCount}"`;
+  if (cp.forceFullCalc !== undefined) attrs += ` forceFullCalc="${cp.forceFullCalc ? '1' : '0'}"`;
+  if (attrs.length === 0) return undefined;
+  return `<calcPr${attrs}/>`;
 }
 
 function serializeBookViews(views: ReadonlyArray<import('../workbook/views').WorkbookView>): string {
