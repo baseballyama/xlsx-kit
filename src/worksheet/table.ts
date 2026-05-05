@@ -85,3 +85,69 @@ export function makeTableDefinition(opts: {
     ...(opts.autoFilter ? { autoFilter: opts.autoFilter } : {}),
   };
 }
+
+// ---- Worksheet ergonomic builders ---------------------------------------
+
+import type { Workbook } from '../workbook/workbook';
+import type { Worksheet } from './worksheet';
+
+const nextTableId = (wb: Workbook): number => {
+  let max = 0;
+  for (const ref of wb.sheets) {
+    if (ref.kind !== 'worksheet') continue;
+    for (const t of ref.sheet.tables) {
+      if (t.id > max) max = t.id;
+    }
+  }
+  return max + 1;
+};
+
+/**
+ * High-level wrapper that builds a TableDefinition + pushes it onto
+ * `ws.tables` in one call. Auto-assigns the workbook-unique `id`,
+ * derives `displayName` from the supplied `name`, and constructs
+ * `TableColumn` records (1-based ids) from a string-array shorthand.
+ *
+ * Pass `style` for one-arg style selection; for finer-grained control
+ * (showFirstColumn / showLastColumn / row-stripes / column-stripes)
+ * pass the full `styleInfo` instead.
+ */
+export const addExcelTable = (
+  wb: Workbook,
+  ws: Worksheet,
+  opts: {
+    name: string;
+    ref: string;
+    columns: ReadonlyArray<string | TableColumn>;
+    /** Built-in style name shortcut (e.g. 'TableStyleMedium2'). Ignored if `styleInfo` is supplied. */
+    style?: string;
+    styleInfo?: TableStyleInfo;
+    headerRowCount?: number;
+    totalsRowCount?: number;
+    totalsRowShown?: boolean;
+    autoFilter?: AutoFilter;
+    /** Override displayName (defaults to `name`). */
+    displayName?: string;
+  },
+): TableDefinition => {
+  const cols: TableColumn[] = opts.columns.map((c, i): TableColumn =>
+    typeof c === 'string' ? { id: i + 1, name: c } : c,
+  );
+  const styleInfo: TableStyleInfo | undefined =
+    opts.styleInfo ??
+    (opts.style !== undefined ? { name: opts.style, showRowStripes: true, showColumnStripes: false } : undefined);
+  const def: TableDefinition = makeTableDefinition({
+    id: nextTableId(wb),
+    displayName: opts.displayName ?? opts.name,
+    name: opts.name,
+    ref: opts.ref,
+    columns: cols,
+    ...(opts.headerRowCount !== undefined ? { headerRowCount: opts.headerRowCount } : {}),
+    ...(opts.totalsRowCount !== undefined ? { totalsRowCount: opts.totalsRowCount } : {}),
+    ...(opts.totalsRowShown !== undefined ? { totalsRowShown: opts.totalsRowShown } : {}),
+    ...(styleInfo ? { styleInfo } : {}),
+    ...(opts.autoFilter ? { autoFilter: opts.autoFilter } : {}),
+  });
+  ws.tables.push(def);
+  return def;
+};
