@@ -31,6 +31,7 @@ import type { Fill } from './fills';
 import { DEFAULT_EMPTY_FILL } from './fills';
 import type { Font } from './fonts';
 import { DEFAULT_FONT } from './fonts';
+import { ensureBuiltinStyle } from './named-styles';
 import { builtinFormatCode } from './numbers';
 import type { Protection } from './protection';
 import { DEFAULT_PROTECTION } from './protection';
@@ -304,6 +305,62 @@ export function setCellAsNumber(wb: Workbook, c: Cell, decimals = 0): void {
   const code = decimals === 0 ? '#,##0' : `#,##0.${'0'.repeat(decimals)}`;
   setCellNumberFormat(wb, c, code);
 }
+
+// ---- named / built-in style application --------------------------------
+
+/**
+ * Apply a built-in Excel style ("Heading 1" / "Total" / "Good" /
+ * "Bad" / "Calculation" / etc.) to a single cell. Registers the
+ * built-in on the Stylesheet (idempotent) and points the cell's xf
+ * at it via `xfId` while inheriting the matching font/fill/border/
+ * numFmt ids so the cell renders correctly on its own.
+ *
+ * Throws when `name` isn't in {@link BUILTIN_NAMED_STYLES}; use
+ * {@link applyNamedStyle} for user-registered styles.
+ */
+export function applyBuiltinStyle(wb: Workbook, c: Cell, name: string): void {
+  const xfId = ensureBuiltinStyle(wb.styles, name);
+  applyNamedStyleByXfId(wb, c, xfId);
+}
+
+/**
+ * Apply a NamedStyle that's already registered on the workbook (via
+ * `addNamedStyle` or `ensureBuiltinStyle`) to a single cell, by name.
+ */
+export function applyNamedStyle(wb: Workbook, c: Cell, name: string): void {
+  const entry = wb.styles._namedStyleByName?.get(name);
+  if (entry === undefined) {
+    throw new OpenXmlSchemaError(`applyNamedStyle: no named style "${name}" registered`);
+  }
+  applyNamedStyleByXfId(wb, c, entry.xfId);
+}
+
+const applyNamedStyleByXfId = (wb: Workbook, c: Cell, xfId: number): void => {
+  const styleXf = wb.styles.cellStyleXfs[xfId];
+  if (!styleXf) {
+    throw new OpenXmlSchemaError(`applyNamedStyle: cellStyleXfs[${xfId}] missing`);
+  }
+  const patch: { -readonly [K in keyof CellXf]?: CellXf[K] } = {
+    xfId,
+    fontId: styleXf.fontId,
+    fillId: styleXf.fillId,
+    borderId: styleXf.borderId,
+    numFmtId: styleXf.numFmtId,
+  };
+  if (styleXf.applyFont) patch.applyFont = true;
+  if (styleXf.applyFill) patch.applyFill = true;
+  if (styleXf.applyBorder) patch.applyBorder = true;
+  if (styleXf.applyNumberFormat) patch.applyNumberFormat = true;
+  if (styleXf.alignment !== undefined) {
+    patch.alignment = styleXf.alignment;
+    patch.applyAlignment = true;
+  }
+  if (styleXf.protection !== undefined) {
+    patch.protection = styleXf.protection;
+    patch.applyProtection = true;
+  }
+  applyXfPatch(wb, c, patch as Partial<CellXf>);
+};
 
 // ---- border presets ----------------------------------------------------
 

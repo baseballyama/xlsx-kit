@@ -438,6 +438,8 @@ export {
   addFont,
   addNamedStyle,
   addNumFmt,
+  applyBuiltinStyle,
+  applyNamedStyle,
   BUILTIN_NAMED_STYLES,
   defaultCellXf,
   ensureBuiltinStyle,

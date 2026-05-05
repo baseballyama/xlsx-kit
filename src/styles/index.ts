@@ -8,6 +8,8 @@ export { makeAlignment } from './alignment';
 export type { Border, Side, SideStyle } from './borders';
 export { makeBorder, makeSide } from './borders';
 export {
+  applyBuiltinStyle,
+  applyNamedStyle,
   getCellAlignment,
   getCellBorder,
   getCellFill,
