@@ -522,6 +522,36 @@ export function getWorkbookStats(wb: Workbook): WorkbookStats {
   };
 }
 
+/**
+ * Iterate over every Worksheet in the workbook (skips chartsheets).
+ * Yields each worksheet in tab-strip order.
+ */
+export function* iterWorksheets(wb: Workbook): IterableIterator<Worksheet> {
+  for (const ref of wb.sheets) {
+    if (ref.kind === 'worksheet') yield ref.sheet;
+  }
+}
+
+/**
+ * Iterate over every Chartsheet in the workbook. Yields in tab-strip
+ * order, skipping regular worksheets.
+ */
+export function* iterChartsheets(wb: Workbook): IterableIterator<Chartsheet> {
+  for (const ref of wb.sheets) {
+    if (ref.kind === 'chartsheet') yield ref.sheet;
+  }
+}
+
+/** Convenience: array of every Worksheet in tab-strip order. */
+export function listWorksheets(wb: Workbook): Worksheet[] {
+  return [...iterWorksheets(wb)];
+}
+
+/** Convenience: array of every Chartsheet in tab-strip order. */
+export function listChartsheets(wb: Workbook): Chartsheet[] {
+  return [...iterChartsheets(wb)];
+}
+
 /** Currently active sheet (worksheet only), or undefined if the active slot is empty or a chartsheet. */
 export function getActiveSheet(wb: Workbook): Worksheet | undefined {
   const ref = wb.sheets[wb.activeSheetIndex];
