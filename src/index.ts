@@ -160,10 +160,16 @@ export type {
 } from './cell/cell';
 export {
   bindValue,
+  cellValueAsNumber,
+  cellValueAsString,
   getCoordinate,
+  isDurationValue,
   isEmptyCell,
+  isErrorValue,
   isFormulaCell,
+  isFormulaValue,
   isRichTextCell,
+  isRichTextValue,
   makeCell,
   makeDurationValue,
   makeErrorValue,

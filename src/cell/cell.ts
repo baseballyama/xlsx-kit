@@ -265,3 +265,71 @@ export function isRichTextCell(c: Cell): boolean {
 export function isEmptyCell(c: Cell): boolean {
   return c.value === null;
 }
+
+// ---- value-level type guards + coercion ----------------------------------
+
+/** True iff `v` is the formula variant. */
+export function isFormulaValue(v: CellValue): v is FormulaValue {
+  return typeof v === 'object' && v !== null && (v as { kind?: string }).kind === 'formula';
+}
+
+/** True iff `v` is the rich-text variant. */
+export function isRichTextValue(v: CellValue): v is { kind: 'rich-text'; runs: RichText } {
+  return typeof v === 'object' && v !== null && (v as { kind?: string }).kind === 'rich-text';
+}
+
+/** True iff `v` is the error variant. */
+export function isErrorValue(v: CellValue): v is { kind: 'error'; code: ExcelErrorCode } {
+  return typeof v === 'object' && v !== null && (v as { kind?: string }).kind === 'error';
+}
+
+/** True iff `v` is the duration variant. */
+export function isDurationValue(v: CellValue): v is { kind: 'duration'; ms: number } {
+  return typeof v === 'object' && v !== null && (v as { kind?: string }).kind === 'duration';
+}
+
+/**
+ * Coerce a CellValue to its plain-string display form. Numbers / booleans
+ * convert via `String`; rich text concatenates run text; formulas yield
+ * the cached value (or empty string when uncached); errors yield their
+ * Excel token; durations yield `"<ms> ms"` with no formatting; Dates
+ * yield `Date.toISOString()`; `null` yields `""`.
+ */
+export function cellValueAsString(v: CellValue): string {
+  if (v === null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v instanceof Date) return v.toISOString();
+  if (isRichTextValue(v)) {
+    let s = '';
+    for (const r of v.runs) s += r.text;
+    return s;
+  }
+  if (isFormulaValue(v)) {
+    if (v.cachedValue === undefined) return '';
+    return typeof v.cachedValue === 'string' ? v.cachedValue : String(v.cachedValue);
+  }
+  if (isErrorValue(v)) return v.code;
+  if (isDurationValue(v)) return `${v.ms} ms`;
+  return '';
+}
+
+/**
+ * Coerce a CellValue to a number when one is meaningful. Booleans yield
+ * 0/1; numeric strings parse via `Number(s)`; rich-text concats then
+ * parses; formulas with a numeric cached value pass through. Returns
+ * `undefined` when there's no sensible numeric reading (text strings,
+ * errors, dates, durations, null, empty).
+ */
+export function cellValueAsNumber(v: CellValue): number | undefined {
+  if (v === null) return undefined;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+  if (typeof v === 'boolean') return v ? 1 : 0;
+  if (typeof v === 'string') {
+    if (v === '') return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  if (isFormulaValue(v) && typeof v.cachedValue === 'number') return v.cachedValue;
+  return undefined;
+}
