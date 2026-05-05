@@ -190,6 +190,31 @@ export function getCustomNumFmts(ss: Stylesheet): ReadonlyArray<{ id: number; co
   return out;
 }
 
+/** Read-only snapshot of every Font entry in the pool, indexed by id. */
+export function listFonts(ss: Stylesheet): ReadonlyArray<Font> {
+  return ss.fonts;
+}
+
+/** Read-only snapshot of every Fill entry in the pool, indexed by id. */
+export function listFills(ss: Stylesheet): ReadonlyArray<Fill> {
+  return ss.fills;
+}
+
+/** Read-only snapshot of every Border entry in the pool, indexed by id. */
+export function listBorders(ss: Stylesheet): ReadonlyArray<Border> {
+  return ss.borders;
+}
+
+/** Read-only snapshot of every CellXf entry in the cellXfs pool. */
+export function listCellXfs(ss: Stylesheet): ReadonlyArray<CellXf> {
+  return ss.cellXfs;
+}
+
+/** Read-only snapshot of every CellStyleXf entry (named-style xfs). */
+export function listCellStyleXfs(ss: Stylesheet): ReadonlyArray<CellXf> {
+  return ss.cellStyleXfs;
+}
+
 /**
  * Convenience: build the default `cellXfs[0]` Excel emits — points at
  * the workbook's font 0 / fill 0 / border 0 / numFmtId 0 (General).

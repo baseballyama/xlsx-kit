@@ -71,5 +71,10 @@ export {
   addFont,
   addNumFmt,
   defaultCellXf,
+  listBorders,
+  listCellStyleXfs,
+  listCellXfs,
+  listFills,
+  listFonts,
   makeStylesheet,
 } from './stylesheet';
