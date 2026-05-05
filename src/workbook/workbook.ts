@@ -292,6 +292,52 @@ export function setActiveSheet(wb: Workbook, title: string): void {
   wb.activeSheetIndex = i;
 }
 
+/**
+ * Rename a sheet from `oldTitle` to `newTitle`. Throws if no sheet
+ * matches `oldTitle`, or if `newTitle` collides with an existing
+ * sheet (Excel requires sheet names to be unique within a workbook).
+ */
+export function renameSheet(wb: Workbook, oldTitle: string, newTitle: string): void {
+  if (typeof newTitle !== 'string' || newTitle.length === 0) {
+    throw new OpenXmlSchemaError('renameSheet: newTitle must be a non-empty string');
+  }
+  const i = wb.sheets.findIndex((s) => s.sheet.title === oldTitle);
+  if (i < 0) throw new OpenXmlSchemaError(`renameSheet: no sheet named "${oldTitle}"`);
+  if (oldTitle === newTitle) return;
+  if (wb.sheets.some((s) => s.sheet.title === newTitle)) {
+    throw new OpenXmlSchemaError(`renameSheet: a sheet named "${newTitle}" already exists`);
+  }
+  const ref = wb.sheets[i];
+  if (ref) ref.sheet.title = newTitle;
+}
+
+/**
+ * Move a sheet to a new tab-strip position. `toIndex` is clamped to
+ * `[0, sheets.length - 1]`. Adjusts `activeSheetIndex` so the same
+ * sheet stays active across the move.
+ */
+export function moveSheet(wb: Workbook, title: string, toIndex: number): void {
+  const from = wb.sheets.findIndex((s) => s.sheet.title === title);
+  if (from < 0) throw new OpenXmlSchemaError(`moveSheet: no sheet named "${title}"`);
+  if (!Number.isInteger(toIndex)) {
+    throw new OpenXmlSchemaError(`moveSheet: toIndex must be an integer; got ${toIndex}`);
+  }
+  const dest = Math.max(0, Math.min(wb.sheets.length - 1, toIndex));
+  if (from === dest) return;
+  const wasActive = wb.activeSheetIndex === from;
+  const [moved] = wb.sheets.splice(from, 1);
+  if (moved) wb.sheets.splice(dest, 0, moved);
+  if (wasActive) {
+    wb.activeSheetIndex = dest;
+  } else {
+    // Re-index activeSheetIndex if the move shifted it.
+    let cur = wb.activeSheetIndex;
+    if (from < cur) cur -= 1;
+    if (dest <= cur) cur += 1;
+    wb.activeSheetIndex = Math.max(0, Math.min(wb.sheets.length - 1, cur));
+  }
+}
+
 /** Currently active sheet (worksheet only), or undefined if the active slot is empty or a chartsheet. */
 export function getActiveSheet(wb: Workbook): Worksheet | undefined {
   const ref = wb.sheets[wb.activeSheetIndex];

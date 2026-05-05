@@ -436,7 +436,9 @@ export {
   jsonReplacer,
   jsonReviver,
   listCustomXmlParts,
+  moveSheet,
   removeSheet,
+  renameSheet,
   setActiveSheet,
   sheetNames,
 } from './workbook/workbook';
