@@ -29,6 +29,7 @@ import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
+import type { WorksheetPhoneticProperties } from './phonetic';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
@@ -147,6 +148,10 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
       parts.push(`<mergeCell ref="${rangeToString(range)}"/>`);
     }
     parts.push('</mergeCells>');
+  }
+  if (ws.phoneticPr) {
+    const pp = serializePhoneticPr(ws.phoneticPr);
+    if (pp) parts.push(pp);
   }
   for (const cf of ws.conditionalFormatting) {
     parts.push(serializeConditionalFormatting(cf));
@@ -594,6 +599,15 @@ const serializePageSetup = (ps: PageSetup): string | undefined => {
   if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
   if (attrs.length === 0) return undefined;
   return `<pageSetup${attrs}/>`;
+};
+
+const serializePhoneticPr = (pp: WorksheetPhoneticProperties): string | undefined => {
+  let attrs = '';
+  if (pp.fontId !== undefined) attrs += ` fontId="${pp.fontId}"`;
+  if (pp.type !== undefined) attrs += ` type="${pp.type}"`;
+  if (pp.alignment !== undefined) attrs += ` alignment="${pp.alignment}"`;
+  if (attrs.length === 0) return undefined;
+  return `<phoneticPr${attrs}/>`;
 };
 
 const serializeWorksheetCustomProperties = (

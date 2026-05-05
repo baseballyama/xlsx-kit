@@ -257,6 +257,12 @@ export {
 } from './worksheet/page-setup';
 export type { WebPublishItem, WorksheetCustomProperty } from './worksheet/web-publish';
 export { makeWebPublishItem, makeWorksheetCustomProperty } from './worksheet/web-publish';
+export type {
+  PhoneticAlignment,
+  PhoneticType,
+  WorksheetPhoneticProperties,
+} from './worksheet/phonetic';
+export { makeWorksheetPhoneticProperties } from './worksheet/phonetic';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.

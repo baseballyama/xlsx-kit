@@ -57,6 +57,11 @@ import type {
   PrintErrorMode,
   PrintOptions,
 } from './page-setup';
+import type {
+  PhoneticAlignment,
+  PhoneticType,
+  WorksheetPhoneticProperties,
+} from './phonetic';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
@@ -122,6 +127,7 @@ const CUSTOM_PROPERTIES_TAG = `{${SHEET_MAIN_NS}}customProperties`;
 const CUSTOM_PROPERTY_TAG = `{${SHEET_MAIN_NS}}customProperty`;
 const WEB_PUBLISH_ITEMS_TAG = `{${SHEET_MAIN_NS}}webPublishItems`;
 const WEB_PUBLISH_ITEM_TAG = `{${SHEET_MAIN_NS}}webPublishItem`;
+const PHONETIC_PR_TAG = `{${SHEET_MAIN_NS}}phoneticPr`;
 const ODD_HEADER_TAG = `{${SHEET_MAIN_NS}}oddHeader`;
 const ODD_FOOTER_TAG = `{${SHEET_MAIN_NS}}oddFooter`;
 const EVEN_HEADER_TAG = `{${SHEET_MAIN_NS}}evenHeader`;
@@ -381,6 +387,13 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
+  // <phoneticPr fontId="…" type="…" alignment="…"/>
+  const ppEl = findChild(root, PHONETIC_PR_TAG);
+  if (ppEl) {
+    const pp = parsePhoneticPr(ppEl);
+    if (pp) ws.phoneticPr = pp;
+  }
+
   // <cellWatches><cellWatch r="…"/></cellWatches>
   const cwWrap = findChild(root, CELL_WATCHES_TAG);
   if (cwWrap) {
@@ -401,6 +414,30 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const PHONETIC_TYPES: ReadonlyArray<PhoneticType> = [
+  'halfwidthKatakana',
+  'fullwidthKatakana',
+  'Hiragana',
+  'noConversion',
+];
+const PHONETIC_ALIGNMENTS: ReadonlyArray<PhoneticAlignment> = [
+  'noControl',
+  'left',
+  'center',
+  'distributed',
+];
+
+const parsePhoneticPr = (node: XmlNode): WorksheetPhoneticProperties | undefined => {
+  const out: WorksheetPhoneticProperties = {};
+  const fontId = parseIntegerAttr(node.attrs['fontId']);
+  if (fontId !== undefined) out.fontId = fontId;
+  const t = node.attrs['type'];
+  if (t && PHONETIC_TYPES.includes(t as PhoneticType)) out.type = t as PhoneticType;
+  const a = node.attrs['alignment'];
+  if (a && PHONETIC_ALIGNMENTS.includes(a as PhoneticAlignment)) out.alignment = a as PhoneticAlignment;
+  return Object.keys(out).length > 0 ? out : undefined;
+};
 
 const VALID_WP_SOURCE_TYPES: ReadonlySet<WebPublishItem['sourceType']> = new Set([
   'sheet',
@@ -758,6 +795,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   COL_BREAKS_TAG,
   CUSTOM_PROPERTIES_TAG,
   WEB_PUBLISH_ITEMS_TAG,
+  PHONETIC_PR_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,

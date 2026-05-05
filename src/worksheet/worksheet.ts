@@ -20,6 +20,7 @@ import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } from './page-setup';
+import type { WorksheetPhoneticProperties } from './phonetic';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
@@ -126,6 +127,11 @@ export interface Worksheet {
   customProperties: WorksheetCustomProperty[];
   /** `<webPublishItems>` — Excel 2007's "Publish to web" entries. Almost always empty in modern files. */
   webPublishItems: WebPublishItem[];
+  /**
+   * `<phoneticPr>` — East-Asian furigana rendering hints (font index +
+   * IME conversion mode + alignment). Common in Japanese workbooks.
+   */
+  phoneticPr?: WorksheetPhoneticProperties;
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**
