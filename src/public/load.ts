@@ -142,6 +142,7 @@ export function parseDefinedNames(workbookRoot: XmlNode): DefinedName[] {
 }
 
 const WORKBOOK_PR_TAG = `{${SHEET_MAIN_NS}}workbookPr`;
+const WORKBOOK_PROTECTION_TAG = `{${SHEET_MAIN_NS}}workbookProtection`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -502,6 +503,12 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       continue;
     }
     if (child.name === DEFINED_NAMES_TAG) continue;
+    // Lift <workbookProtection> into the typed workbook field instead
+    // of stashing it as a passthrough XmlNode (B5 partial).
+    if (child.name === WORKBOOK_PROTECTION_TAG) {
+      wb.workbookProtection = parseWorkbookProtection(child);
+      continue;
+    }
     if (seenSheets) afterSheets.push(child);
     else beforeSheets.push(child);
   }
@@ -509,6 +516,43 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     wb.workbookXmlExtras = { beforeSheets, afterSheets };
   }
 }
+
+const parseWorkbookProtection = (node: XmlNode): import('../workbook/protection').WorkbookProtection => {
+  const out: import('../workbook/protection').WorkbookProtection = {};
+  const a = node.attrs;
+  const flag = (raw: string | undefined): boolean | undefined => {
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+    return undefined;
+  };
+  if (a['workbookPassword'] !== undefined) out.workbookPassword = a['workbookPassword'];
+  if (a['workbookPasswordCharacterSet'] !== undefined)
+    out.workbookPasswordCharacterSet = a['workbookPasswordCharacterSet'];
+  if (a['workbookAlgorithmName'] !== undefined) out.workbookAlgorithmName = a['workbookAlgorithmName'];
+  if (a['workbookHashValue'] !== undefined) out.workbookHashValue = a['workbookHashValue'];
+  if (a['workbookSaltValue'] !== undefined) out.workbookSaltValue = a['workbookSaltValue'];
+  if (a['workbookSpinCount'] !== undefined) {
+    const n = Number.parseInt(a['workbookSpinCount'], 10);
+    if (Number.isInteger(n)) out.workbookSpinCount = n;
+  }
+  if (a['revisionsPassword'] !== undefined) out.revisionsPassword = a['revisionsPassword'];
+  if (a['revisionsPasswordCharacterSet'] !== undefined)
+    out.revisionsPasswordCharacterSet = a['revisionsPasswordCharacterSet'];
+  if (a['revisionsAlgorithmName'] !== undefined) out.revisionsAlgorithmName = a['revisionsAlgorithmName'];
+  if (a['revisionsHashValue'] !== undefined) out.revisionsHashValue = a['revisionsHashValue'];
+  if (a['revisionsSaltValue'] !== undefined) out.revisionsSaltValue = a['revisionsSaltValue'];
+  if (a['revisionsSpinCount'] !== undefined) {
+    const n = Number.parseInt(a['revisionsSpinCount'], 10);
+    if (Number.isInteger(n)) out.revisionsSpinCount = n;
+  }
+  const ls = flag(a['lockStructure']);
+  if (ls !== undefined) out.lockStructure = ls;
+  const lw = flag(a['lockWindows']);
+  if (lw !== undefined) out.lockWindows = lw;
+  const lr = flag(a['lockRevision']);
+  if (lr !== undefined) out.lockRevision = lr;
+  return out;
+};
 
 /**
  * Capture workbook-rels entries that don't match a modeled type so the

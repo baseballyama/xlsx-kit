@@ -343,3 +343,5 @@ export {
   setActiveSheet,
   sheetNames,
 } from './workbook/workbook';
+export type { WorkbookProtection } from './workbook/protection';
+export { makeWorkbookProtection } from './workbook/protection';

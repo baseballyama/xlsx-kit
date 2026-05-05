@@ -85,6 +85,12 @@ export interface Workbook {
     afterSheets: import('../xml/tree').XmlNode[];
   };
   /**
+   * `<workbookProtection>` — locks structure / window / revision
+   * tracking with the modern hash quad or the legacy 16-bit hash.
+   * Round-tripped verbatim; password hashing helpers come later.
+   */
+  workbookProtection?: import('./protection').WorkbookProtection;
+  /**
    * Workbook-level rels that don't match a modeled type. Re-emitted with
    * their original Id so captured `<pivotCaches r:id="…"/>` etc. still
    * resolve after a round-trip.

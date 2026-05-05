@@ -616,6 +616,10 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   if (wb.date1904 && !hasWorkbookPrDate1904(wb)) {
     parts.push('<workbookPr date1904="1"/>');
   }
+  if (wb.workbookProtection) {
+    const wp = serializeWorkbookProtection(wb.workbookProtection);
+    if (wp) parts.push(wp);
+  }
   parts.push('<sheets>');
   wb.sheets.forEach((ref, i) => {
     const stateAttr = ref.state === 'visible' ? '' : ` state="${ref.state}"`;
@@ -639,6 +643,35 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   }
   parts.push('</workbook>');
   return parts.join('');
+}
+
+function serializeWorkbookProtection(
+  wp: import('../workbook/protection').WorkbookProtection,
+): string | undefined {
+  let attrs = '';
+  const strAttrs = [
+    'workbookPassword',
+    'workbookPasswordCharacterSet',
+    'workbookAlgorithmName',
+    'workbookHashValue',
+    'workbookSaltValue',
+    'revisionsPassword',
+    'revisionsPasswordCharacterSet',
+    'revisionsAlgorithmName',
+    'revisionsHashValue',
+    'revisionsSaltValue',
+  ] as const;
+  for (const k of strAttrs) {
+    const v = wp[k];
+    if (v !== undefined) attrs += ` ${k}="${escapeAttr(v)}"`;
+  }
+  if (wp.workbookSpinCount !== undefined) attrs += ` workbookSpinCount="${wp.workbookSpinCount}"`;
+  if (wp.revisionsSpinCount !== undefined) attrs += ` revisionsSpinCount="${wp.revisionsSpinCount}"`;
+  if (wp.lockStructure !== undefined) attrs += ` lockStructure="${wp.lockStructure ? '1' : '0'}"`;
+  if (wp.lockWindows !== undefined) attrs += ` lockWindows="${wp.lockWindows ? '1' : '0'}"`;
+  if (wp.lockRevision !== undefined) attrs += ` lockRevision="${wp.lockRevision ? '1' : '0'}"`;
+  if (attrs.length === 0) return undefined;
+  return `<workbookProtection${attrs}/>`;
 }
 
 /**
