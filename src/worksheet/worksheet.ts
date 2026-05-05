@@ -19,6 +19,7 @@ import type { ConditionalFormatting } from './conditional-formatting';
 import type { DataValidation } from './data-validations';
 import { type ColumnDimension, makeColumnDimension, makeRowDimension, type RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
+import type { HeaderFooter, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
@@ -103,6 +104,14 @@ export interface Worksheet {
    * `spinCount` / `algorithmName` / `hashValue` round-trip verbatim.
    */
   sheetProtection?: SheetProtection;
+  /** `<printOptions>` — gridlines, headings, horizontal/vertical centering on the printed page. */
+  printOptions?: PrintOptions;
+  /** `<pageMargins>` — six required margins in inches. */
+  pageMargins?: PageMargins;
+  /** `<pageSetup>` — paper size / orientation / scale / fitToPage / DPI etc. */
+  pageSetup?: PageSetup;
+  /** `<headerFooter>` — odd/even/first header + footer mini-format strings + flags. */
+  headerFooter?: HeaderFooter;
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**

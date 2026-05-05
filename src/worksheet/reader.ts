@@ -46,6 +46,16 @@ import type {
 import { makeDataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { IgnoredError } from './errors';
+import type {
+  CellCommentMode,
+  HeaderFooter,
+  PageMargins,
+  PageOrder,
+  PageOrientation,
+  PageSetup,
+  PrintErrorMode,
+  PrintOptions,
+} from './page-setup';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import { makeColor } from '../styles/colors';
@@ -99,6 +109,16 @@ const TAB_COLOR_TAG = `{${SHEET_MAIN_NS}}tabColor`;
 const OUTLINE_PR_TAG = `{${SHEET_MAIN_NS}}outlinePr`;
 const PAGE_SETUP_PR_TAG = `{${SHEET_MAIN_NS}}pageSetUpPr`;
 const SHEET_PROTECTION_TAG = `{${SHEET_MAIN_NS}}sheetProtection`;
+const PRINT_OPTIONS_TAG = `{${SHEET_MAIN_NS}}printOptions`;
+const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
+const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
+const HEADER_FOOTER_TAG = `{${SHEET_MAIN_NS}}headerFooter`;
+const ODD_HEADER_TAG = `{${SHEET_MAIN_NS}}oddHeader`;
+const ODD_FOOTER_TAG = `{${SHEET_MAIN_NS}}oddFooter`;
+const EVEN_HEADER_TAG = `{${SHEET_MAIN_NS}}evenHeader`;
+const EVEN_FOOTER_TAG = `{${SHEET_MAIN_NS}}evenFooter`;
+const FIRST_HEADER_TAG = `{${SHEET_MAIN_NS}}firstHeader`;
+const FIRST_FOOTER_TAG = `{${SHEET_MAIN_NS}}firstFooter`;
 
 /** Inputs the worksheet reader needs from the surrounding workbook context. */
 export interface WorksheetReadContext {
@@ -296,6 +316,30 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
+  // <printOptions> / <pageMargins> / <pageSetup> / <headerFooter> —
+  // page-setup typed model (B6). Sit between <hyperlinks> and the
+  // legacy drawing block per ECMA-376.
+  const poEl = findChild(root, PRINT_OPTIONS_TAG);
+  if (poEl) {
+    const po = parsePrintOptions(poEl);
+    if (po) ws.printOptions = po;
+  }
+  const pmEl = findChild(root, PAGE_MARGINS_TAG);
+  if (pmEl) {
+    const pm = parsePageMargins(pmEl);
+    if (pm) ws.pageMargins = pm;
+  }
+  const psEl = findChild(root, PAGE_SETUP_TAG);
+  if (psEl) {
+    const ps = parsePageSetup(psEl);
+    if (ps) ws.pageSetup = ps;
+  }
+  const hfEl = findChild(root, HEADER_FOOTER_TAG);
+  if (hfEl) {
+    const hf = parseHeaderFooter(hfEl);
+    if (hf) ws.headerFooter = hf;
+  }
+
   // <cellWatches><cellWatch r="…"/></cellWatches>
   const cwWrap = findChild(root, CELL_WATCHES_TAG);
   if (cwWrap) {
@@ -316,6 +360,125 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const parseBoolFlag = (raw: string | undefined): boolean | undefined => {
+  if (raw === '1' || raw === 'true') return true;
+  if (raw === '0' || raw === 'false') return false;
+  return undefined;
+};
+
+const parsePrintOptions = (node: XmlNode): PrintOptions | undefined => {
+  const out: PrintOptions = {};
+  const hc = parseBoolFlag(node.attrs['horizontalCentered']);
+  if (hc !== undefined) out.horizontalCentered = hc;
+  const vc = parseBoolFlag(node.attrs['verticalCentered']);
+  if (vc !== undefined) out.verticalCentered = vc;
+  const headings = parseBoolFlag(node.attrs['headings']);
+  if (headings !== undefined) out.headings = headings;
+  const gl = parseBoolFlag(node.attrs['gridLines']);
+  if (gl !== undefined) out.gridLines = gl;
+  const gls = parseBoolFlag(node.attrs['gridLinesSet']);
+  if (gls !== undefined) out.gridLinesSet = gls;
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const parsePageMargins = (node: XmlNode): PageMargins | undefined => {
+  const left = parseFloatAttr(node.attrs['left']);
+  const right = parseFloatAttr(node.attrs['right']);
+  const top = parseFloatAttr(node.attrs['top']);
+  const bottom = parseFloatAttr(node.attrs['bottom']);
+  const header = parseFloatAttr(node.attrs['header']);
+  const footer = parseFloatAttr(node.attrs['footer']);
+  if (
+    left === undefined ||
+    right === undefined ||
+    top === undefined ||
+    bottom === undefined ||
+    header === undefined ||
+    footer === undefined
+  ) {
+    return undefined;
+  }
+  return { left, right, top, bottom, header, footer };
+};
+
+const PAGE_ORIENTATIONS: ReadonlyArray<PageOrientation> = ['default', 'portrait', 'landscape'];
+const PAGE_ORDERS: ReadonlyArray<PageOrder> = ['downThenOver', 'overThenDown'];
+const CELL_COMMENT_MODES: ReadonlyArray<CellCommentMode> = ['none', 'asDisplayed', 'atEnd'];
+const PRINT_ERROR_MODES: ReadonlyArray<PrintErrorMode> = ['displayed', 'blank', 'dash', 'NA'];
+
+const parsePageSetup = (node: XmlNode): PageSetup | undefined => {
+  const out: PageSetup = {};
+  const intAttr = (k: string): void => {
+    const v = parseIntegerAttr(node.attrs[k]);
+    if (v !== undefined) (out as Record<string, unknown>)[k] = v;
+  };
+  intAttr('paperSize');
+  intAttr('scale');
+  intAttr('firstPageNumber');
+  intAttr('fitToWidth');
+  intAttr('fitToHeight');
+  intAttr('horizontalDpi');
+  intAttr('verticalDpi');
+  intAttr('copies');
+
+  const ord = node.attrs['pageOrder'];
+  if (ord && PAGE_ORDERS.includes(ord as PageOrder)) out.pageOrder = ord as PageOrder;
+  const ori = node.attrs['orientation'];
+  if (ori && PAGE_ORIENTATIONS.includes(ori as PageOrientation)) out.orientation = ori as PageOrientation;
+  const cc = node.attrs['cellComments'];
+  if (cc && CELL_COMMENT_MODES.includes(cc as CellCommentMode)) out.cellComments = cc as CellCommentMode;
+  const errs = node.attrs['errors'];
+  if (errs && PRINT_ERROR_MODES.includes(errs as PrintErrorMode)) out.errors = errs as PrintErrorMode;
+
+  const upd = parseBoolFlag(node.attrs['usePrinterDefaults']);
+  if (upd !== undefined) out.usePrinterDefaults = upd;
+  const bw = parseBoolFlag(node.attrs['blackAndWhite']);
+  if (bw !== undefined) out.blackAndWhite = bw;
+  const draft = parseBoolFlag(node.attrs['draft']);
+  if (draft !== undefined) out.draft = draft;
+  const ufpn = parseBoolFlag(node.attrs['useFirstPageNumber']);
+  if (ufpn !== undefined) out.useFirstPageNumber = ufpn;
+
+  if (node.attrs['paperWidth']) out.paperWidth = node.attrs['paperWidth'];
+  if (node.attrs['paperHeight']) out.paperHeight = node.attrs['paperHeight'];
+  const rId = node.attrs[`{${REL_NS}}id`];
+  if (rId) out.rId = rId;
+
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const parseHeaderFooter = (node: XmlNode): HeaderFooter | undefined => {
+  const out: HeaderFooter = {};
+  const df = parseBoolFlag(node.attrs['differentFirst']);
+  if (df !== undefined) out.differentFirst = df;
+  const doe = parseBoolFlag(node.attrs['differentOddEven']);
+  if (doe !== undefined) out.differentOddEven = doe;
+  const swd = parseBoolFlag(node.attrs['scaleWithDoc']);
+  if (swd !== undefined) out.scaleWithDoc = swd;
+  const awm = parseBoolFlag(node.attrs['alignWithMargins']);
+  if (awm !== undefined) out.alignWithMargins = awm;
+
+  const text = (tag: string): string | undefined => {
+    const child = findChild(node, tag);
+    if (!child) return undefined;
+    return child.text;
+  };
+  const oh = text(ODD_HEADER_TAG);
+  if (oh !== undefined) out.oddHeader = oh;
+  const of = text(ODD_FOOTER_TAG);
+  if (of !== undefined) out.oddFooter = of;
+  const eh = text(EVEN_HEADER_TAG);
+  if (eh !== undefined) out.evenHeader = eh;
+  const ef = text(EVEN_FOOTER_TAG);
+  if (ef !== undefined) out.evenFooter = ef;
+  const fh = text(FIRST_HEADER_TAG);
+  if (fh !== undefined) out.firstHeader = fh;
+  const ff = text(FIRST_FOOTER_TAG);
+  if (ff !== undefined) out.firstFooter = ff;
+
+  return Object.keys(out).length > 0 ? out : undefined;
+};
 
 const parseSheetProtection = (node: XmlNode): SheetProtection => {
   const out: SheetProtection = {};
@@ -502,6 +665,10 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   IGNORED_ERRORS_TAG,
   SHEET_PR_TAG,
   SHEET_PROTECTION_TAG,
+  PRINT_OPTIONS_TAG,
+  PAGE_MARGINS_TAG,
+  PAGE_SETUP_TAG,
+  HEADER_FOOTER_TAG,
   // <legacyDrawing r:id> for VML comments — we regenerate it from
   // ws.legacyComments + ctx.registerComments.
   `{${SHEET_MAIN_NS}}legacyDrawing`,

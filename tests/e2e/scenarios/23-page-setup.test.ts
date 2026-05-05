@@ -6,20 +6,21 @@
 //   0.5-inch left/right margins, fitted to one page wide.
 // - Header (centre) reads "Quarterly Report — &P / &N". Footer (left)
 //   reads the file name `&F`, footer (right) "Confidential".
-// - Page Layout → Print Titles shows row 1 repeating on every printed
-//   page (configured via the workbook's defined names section, not the
-//   passthrough hooks below — printTitles needs the named-range route).
-// - Sheet has 80 rows so the print preview spans 2 pages with row 1
-//   sticking on top of page 2.
+// - Sheet has 80 rows so the print preview spans 2 pages.
 //
-// This scenario uses the worksheet `bodyExtras.afterSheetData` slot to
-// inject `<printOptions>`, `<pageMargins>`, `<pageSetup>`, and
-// `<headerFooter>` as raw XmlNodes — these elements aren't yet modeled
-// by the high-level worksheet API but the round-trip preserves them.
+// Wired through the typed `printOptions` / `pageMargins` / `pageSetup` /
+// `headerFooter` APIs (B6 in docs/plan/13).
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, elNs, setCell } from '../../../src/index';
-import { SHEET_MAIN_NS } from '../../../src/xml/namespaces';
+import {
+  addWorksheet,
+  createWorkbook,
+  makeHeaderFooter,
+  makePageMargins,
+  makePageSetup,
+  makePrintOptions,
+  setCell,
+} from '../../../src/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 23 — page setup / print options / header-footer', () => {
@@ -38,40 +39,22 @@ describe('e2e 23 — page setup / print options / header-footer', () => {
       setCell(ws, r, 4, 200 + ((r * 17) % 200));
     }
 
-    // ECMA-376 part 1 §18.3.1.70 pageSetup, §18.3.1.62 pageMargins,
-    // §18.3.1.70a printOptions, §18.3.1.46 headerFooter.
-    ws.bodyExtras = {
-      beforeSheetData: [],
-      afterSheetData: [
-        // Center horizontally on the page (vertically off).
-        elNs(SHEET_MAIN_NS, 'printOptions', { horizontalCentered: '1', gridLines: '1' }),
-        elNs(SHEET_MAIN_NS, 'pageMargins', {
-          left: '0.5',
-          right: '0.5',
-          top: '1',
-          bottom: '1',
-          header: '0.3',
-          footer: '0.3',
-        }),
-        elNs(SHEET_MAIN_NS, 'pageSetup', {
-          paperSize: '9', // A4
-          orientation: 'landscape',
-          fitToWidth: '1',
-          fitToHeight: '0',
-          horizontalDpi: '300',
-          verticalDpi: '300',
-        }),
-        elNs(
-          SHEET_MAIN_NS,
-          'headerFooter',
-          { differentFirst: '0', differentOddEven: '0' },
-          [
-            elNs(SHEET_MAIN_NS, 'oddHeader', {}, [], '&LQuarterly&CQuarterly Report — &P / &N&R&D'),
-            elNs(SHEET_MAIN_NS, 'oddFooter', {}, [], '&L&F&CPage &P of &N&RConfidential'),
-          ],
-        ),
-      ],
-    };
+    ws.printOptions = makePrintOptions({ horizontalCentered: true, gridLines: true });
+    ws.pageMargins = makePageMargins({ left: 0.5, right: 0.5, top: 1, bottom: 1, header: 0.3, footer: 0.3 });
+    ws.pageSetup = makePageSetup({
+      paperSize: 9, // A4
+      orientation: 'landscape',
+      fitToWidth: 1,
+      fitToHeight: 0,
+      horizontalDpi: 300,
+      verticalDpi: 300,
+    });
+    ws.headerFooter = makeHeaderFooter({
+      differentFirst: false,
+      differentOddEven: false,
+      oddHeader: '&LQuarterly&CQuarterly Report — &P / &N&R&D',
+      oddFooter: '&L&F&CPage &P of &N&RConfidential',
+    });
 
     const result = await writeWorkbook('23-page-setup.xlsx', wb);
     expect(result.bytes).toBeGreaterThan(0);

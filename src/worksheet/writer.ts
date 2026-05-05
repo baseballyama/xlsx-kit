@@ -28,6 +28,7 @@ import type { DataValidation } from './data-validations';
 import type { ColumnDimension, RowDimension } from './dimensions';
 import type { CellWatch, IgnoredError } from './errors';
 import type { Hyperlink } from './hyperlinks';
+import type { HeaderFooter, PageMargins, PageSetup, PrintOptions } from './page-setup';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { Pane, Selection, SheetView } from './views';
@@ -163,6 +164,19 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   // strictly the last child per ECMA, but landing it before tableParts
   // keeps round-trip Excel-compatible without requiring fine-grained
   // positional tracking.
+  if (ws.printOptions) {
+    const po = serializePrintOptions(ws.printOptions);
+    if (po) parts.push(po);
+  }
+  if (ws.pageMargins) parts.push(serializePageMargins(ws.pageMargins));
+  if (ws.pageSetup) {
+    const ps = serializePageSetup(ws.pageSetup);
+    if (ps) parts.push(ps);
+  }
+  if (ws.headerFooter) {
+    const hf = serializeHeaderFooter(ws.headerFooter);
+    if (hf) parts.push(hf);
+  }
   if (ws.bodyExtras?.afterSheetData) {
     for (const node of ws.bodyExtras.afterSheetData) parts.push(serializeBodyExtraNode(node));
   }
@@ -528,6 +542,75 @@ const serializeDataValidation = (dv: DataValidation): string => {
   if (dv.formula2 !== undefined) formulas.push(`<formula2>${escapeXmlText(dv.formula2)}</formula2>`);
   if (formulas.length === 0) return `<dataValidation${attrs}/>`;
   return `<dataValidation${attrs}>${formulas.join('')}</dataValidation>`;
+};
+
+const boolAttr = (v: boolean | undefined, name: string): string =>
+  v === undefined ? '' : ` ${name}="${v ? '1' : '0'}"`;
+
+const serializePrintOptions = (po: PrintOptions): string | undefined => {
+  let attrs = '';
+  attrs += boolAttr(po.horizontalCentered, 'horizontalCentered');
+  attrs += boolAttr(po.verticalCentered, 'verticalCentered');
+  attrs += boolAttr(po.headings, 'headings');
+  attrs += boolAttr(po.gridLines, 'gridLines');
+  attrs += boolAttr(po.gridLinesSet, 'gridLinesSet');
+  if (attrs.length === 0) return undefined;
+  return `<printOptions${attrs}/>`;
+};
+
+const serializePageMargins = (pm: PageMargins): string => {
+  return (
+    `<pageMargins left="${pm.left}" right="${pm.right}"` +
+    ` top="${pm.top}" bottom="${pm.bottom}"` +
+    ` header="${pm.header}" footer="${pm.footer}"/>`
+  );
+};
+
+const serializePageSetup = (ps: PageSetup): string | undefined => {
+  let attrs = '';
+  if (ps.paperSize !== undefined) attrs += ` paperSize="${ps.paperSize}"`;
+  if (ps.scale !== undefined) attrs += ` scale="${ps.scale}"`;
+  if (ps.firstPageNumber !== undefined) attrs += ` firstPageNumber="${ps.firstPageNumber}"`;
+  if (ps.fitToWidth !== undefined) attrs += ` fitToWidth="${ps.fitToWidth}"`;
+  if (ps.fitToHeight !== undefined) attrs += ` fitToHeight="${ps.fitToHeight}"`;
+  if (ps.pageOrder !== undefined) attrs += ` pageOrder="${ps.pageOrder}"`;
+  if (ps.orientation !== undefined) attrs += ` orientation="${ps.orientation}"`;
+  attrs += boolAttr(ps.usePrinterDefaults, 'usePrinterDefaults');
+  attrs += boolAttr(ps.blackAndWhite, 'blackAndWhite');
+  attrs += boolAttr(ps.draft, 'draft');
+  if (ps.cellComments !== undefined) attrs += ` cellComments="${ps.cellComments}"`;
+  attrs += boolAttr(ps.useFirstPageNumber, 'useFirstPageNumber');
+  if (ps.errors !== undefined) attrs += ` errors="${ps.errors}"`;
+  if (ps.horizontalDpi !== undefined) attrs += ` horizontalDpi="${ps.horizontalDpi}"`;
+  if (ps.verticalDpi !== undefined) attrs += ` verticalDpi="${ps.verticalDpi}"`;
+  if (ps.copies !== undefined) attrs += ` copies="${ps.copies}"`;
+  if (ps.paperHeight !== undefined) attrs += ` paperHeight="${escapeXmlAttr(ps.paperHeight)}"`;
+  if (ps.paperWidth !== undefined) attrs += ` paperWidth="${escapeXmlAttr(ps.paperWidth)}"`;
+  if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
+  if (attrs.length === 0) return undefined;
+  return `<pageSetup${attrs}/>`;
+};
+
+const serializeHeaderFooter = (hf: HeaderFooter): string | undefined => {
+  let attrs = '';
+  attrs += boolAttr(hf.differentFirst, 'differentFirst');
+  attrs += boolAttr(hf.differentOddEven, 'differentOddEven');
+  attrs += boolAttr(hf.scaleWithDoc, 'scaleWithDoc');
+  attrs += boolAttr(hf.alignWithMargins, 'alignWithMargins');
+  const children: string[] = [];
+  const tag = (key: string, text: string | undefined): void => {
+    if (text === undefined) return;
+    children.push(`<${key}>${escapeXmlText(text)}</${key}>`);
+  };
+  tag('oddHeader', hf.oddHeader);
+  tag('oddFooter', hf.oddFooter);
+  tag('evenHeader', hf.evenHeader);
+  tag('evenFooter', hf.evenFooter);
+  tag('firstHeader', hf.firstHeader);
+  tag('firstFooter', hf.firstFooter);
+  if (attrs.length === 0 && children.length === 0) return undefined;
+  if (children.length === 0) return `<headerFooter${attrs}/>`;
+  return `<headerFooter${attrs}>${children.join('')}</headerFooter>`;
 };
 
 const serializeSheetProtection = (sp: SheetProtection): string | undefined => {

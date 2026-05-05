@@ -237,6 +237,22 @@ export type { OutlineProperties, PageSetupProperties, SheetProperties } from './
 export { makeSheetProperties } from './worksheet/properties';
 export type { SheetProtection } from './worksheet/protection';
 export { makeSheetProtection } from './worksheet/protection';
+export type {
+  CellCommentMode,
+  HeaderFooter,
+  PageMargins,
+  PageOrder,
+  PageOrientation,
+  PageSetup,
+  PrintErrorMode,
+  PrintOptions,
+} from './worksheet/page-setup';
+export {
+  makeHeaderFooter,
+  makePageMargins,
+  makePageSetup,
+  makePrintOptions,
+} from './worksheet/page-setup';
 
 // Style value objects (Color / Font / Fill / Border / Alignment /
 // Protection / NumberFormat) + the cell ↔ stylesheet bridge.

@@ -122,7 +122,7 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     expect(sheet1Rels).toContain('Target="../pivotTables/pivotTable1.xml"');
   });
 
-  it('round-trips worksheet bodyExtras through reload (pageMargins + extLst tag count stable)', async () => {
+  it('round-trips worksheet pageMargins + bodyExtras extLst through reload', async () => {
     const original = readFileSync(FIXTURE);
     const wb = await loadWorkbook(fromBuffer(original));
     const bytes = await workbookToBytes(wb);
@@ -130,25 +130,26 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
 
     const sheet1Round = wb2.sheets[0];
     if (sheet1Round?.kind !== 'worksheet') throw new Error('expected worksheet');
+    // pageMargins now lands on the typed field (B6); extLst stays in bodyExtras.
+    expect(sheet1Round.sheet.pageMargins).toBeDefined();
     const namesAfter = (sheet1Round.sheet.bodyExtras?.afterSheetData ?? []).map((n) =>
       n.name.replace(/^\{[^}]+\}/, ''),
     );
-    expect(namesAfter).toContain('pageMargins');
     expect(namesAfter).toContain('extLst');
   });
 
-  it('preserves worksheet bodyExtras (pageMargins + extLst on sheet1)', async () => {
+  it('preserves worksheet pageMargins + bodyExtras extLst on sheet1', async () => {
     const original = readFileSync(FIXTURE);
     const wb = await loadWorkbook(fromBuffer(original));
 
-    // sheet1 has <pageMargins/> and <extLst><ext><mx:PLV/></ext></extLst>
-    // captured into Worksheet.bodyExtras.afterSheetData.
+    // sheet1 has <pageMargins/> (now typed) and <extLst><ext><mx:PLV/></ext></extLst>
+    // (still captured into Worksheet.bodyExtras.afterSheetData).
     const sheet1 = wb.sheets[0];
     expect(sheet1?.kind).toBe('worksheet');
     if (sheet1?.kind !== 'worksheet') return;
+    expect(sheet1.sheet.pageMargins).toBeDefined();
     const after = sheet1.sheet.bodyExtras?.afterSheetData ?? [];
     const localNames = after.map((n) => n.name.replace(/^\{[^}]+\}/, ''));
-    expect(localNames).toContain('pageMargins');
     expect(localNames).toContain('extLst');
 
     const bytes = await workbookToBytes(wb);
