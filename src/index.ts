@@ -588,6 +588,8 @@ export {
   createWorkbook,
   duplicateSheet,
   getActiveSheet,
+  getAllComments,
+  getAllHyperlinks,
   getAllMergedRanges,
   getWorkbookStats,
   getChartsheet,

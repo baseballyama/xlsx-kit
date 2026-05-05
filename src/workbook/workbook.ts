@@ -601,6 +601,36 @@ export function getAllMergedRanges(
 }
 
 /**
+ * Collect every hyperlink across every worksheet. Each entry pairs
+ * the hyperlink with a back-reference to the owning sheet, in
+ * tab-strip order.
+ */
+export function getAllHyperlinks(
+  wb: Workbook,
+): ReadonlyArray<{ sheet: Worksheet; hyperlink: import('../worksheet/hyperlinks').Hyperlink }> {
+  const out: Array<{ sheet: Worksheet; hyperlink: import('../worksheet/hyperlinks').Hyperlink }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    for (const h of sheet.hyperlinks) out.push({ sheet, hyperlink: h });
+  }
+  return out;
+}
+
+/**
+ * Collect every legacy comment across every worksheet. Each entry
+ * pairs the comment with a back-reference to the owning sheet, in
+ * tab-strip order.
+ */
+export function getAllComments(
+  wb: Workbook,
+): ReadonlyArray<{ sheet: Worksheet; comment: import('../worksheet/comments').LegacyComment }> {
+  const out: Array<{ sheet: Worksheet; comment: import('../worksheet/comments').LegacyComment }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    for (const c of sheet.legacyComments) out.push({ sheet, comment: c });
+  }
+  return out;
+}
+
+/**
  * Iterate over every Chartsheet in the workbook. Yields in tab-strip
  * order, skipping regular worksheets.
  */
