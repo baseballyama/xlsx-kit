@@ -129,6 +129,10 @@ const PROTECTED_RANGE_TAG = `{${SHEET_MAIN_NS}}protectedRange`;
 const SORT_STATE_TAG = `{${SHEET_MAIN_NS}}sortState`;
 const SORT_CONDITION_TAG = `{${SHEET_MAIN_NS}}sortCondition`;
 const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
+const SMART_TAGS_TAG = `{${SHEET_MAIN_NS}}smartTags`;
+const CELL_SMART_TAGS_TAG = `{${SHEET_MAIN_NS}}cellSmartTags`;
+const CELL_SMART_TAG_TAG = `{${SHEET_MAIN_NS}}cellSmartTag`;
+const CELL_SMART_TAG_PR_TAG = `{${SHEET_MAIN_NS}}cellSmartTagPr`;
 const PRINT_OPTIONS_TAG = `{${SHEET_MAIN_NS}}printOptions`;
 const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
 const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
@@ -376,6 +380,34 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   if (pictureEl) {
     const rId = pictureEl.attrs[`{${REL_NS}}id`];
     if (rId) ws.backgroundPictureRId = rId;
+  }
+
+  // <smartTags><cellSmartTags r="A1"><cellSmartTag type=…><cellSmartTagPr/>…</cellSmartTag></cellSmartTags></smartTags>
+  const stEl = findChild(root, SMART_TAGS_TAG);
+  if (stEl) {
+    for (const cstNode of findChildren(stEl, CELL_SMART_TAGS_TAG)) {
+      const ref = cstNode.attrs['r'];
+      if (!ref) continue;
+      const tags: import('./smart-tags').CellSmartTag[] = [];
+      for (const tagNode of findChildren(cstNode, CELL_SMART_TAG_TAG)) {
+        const typeRaw = tagNode.attrs['type'];
+        if (typeRaw === undefined) continue;
+        const type = Number.parseInt(typeRaw, 10);
+        if (!Number.isInteger(type)) continue;
+        const tag: import('./smart-tags').CellSmartTag = { type, properties: [] };
+        const deleted = parseBoolXmlAttr(tagNode.attrs['deleted']);
+        if (deleted !== undefined) tag.deleted = deleted;
+        const xmlBased = parseBoolXmlAttr(tagNode.attrs['xmlBased']);
+        if (xmlBased !== undefined) tag.xmlBased = xmlBased;
+        for (const prop of findChildren(tagNode, CELL_SMART_TAG_PR_TAG)) {
+          const key = prop.attrs['key'];
+          const val = prop.attrs['val'];
+          if (key !== undefined && val !== undefined) tag.properties.push({ key, val });
+        }
+        tags.push(tag);
+      }
+      ws.smartTags.push({ ref, tags });
+    }
   }
 
   // <drawing r:id="rIdN"/> — at most one per sheet. Resolve via loadDrawing.
@@ -1015,6 +1047,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   PROTECTED_RANGES_TAG,
   SORT_STATE_TAG,
   PICTURE_TAG,
+  SMART_TAGS_TAG,
   PRINT_OPTIONS_TAG,
   PAGE_MARGINS_TAG,
   PAGE_SETUP_TAG,

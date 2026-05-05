@@ -248,6 +248,16 @@ export type {
 } from './worksheet/sort-state';
 export { makeSortCondition, makeSortState } from './worksheet/sort-state';
 export type {
+  CellSmartTag,
+  CellSmartTagProperty,
+  CellSmartTags,
+} from './worksheet/smart-tags';
+export {
+  makeCellSmartTag,
+  makeCellSmartTagProperty,
+  makeCellSmartTags,
+} from './worksheet/smart-tags';
+export type {
   CellCommentMode,
   HeaderFooter,
   PageBreak,

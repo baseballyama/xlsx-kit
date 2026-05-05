@@ -126,6 +126,11 @@ export interface Worksheet {
    * worksheet rels (preserved via the existing relsExtras machinery).
    */
   backgroundPictureRId?: string;
+  /**
+   * `<smartTags>` — per-cell smart-tag annotations (Excel 2003 era).
+   * Pairs with the workbook-level smartTagTypes registry.
+   */
+  smartTags: import('./smart-tags').CellSmartTags[];
   /** `<printOptions>` — gridlines, headings, horizontal/vertical centering on the printed page. */
   printOptions?: PrintOptions;
   /** `<pageMargins>` — six required margins in inches. */
@@ -225,6 +230,7 @@ export function makeWorksheet(title: string): Worksheet {
     customProperties: [],
     webPublishItems: [],
     protectedRanges: [],
+    smartTags: [],
   };
 }
 

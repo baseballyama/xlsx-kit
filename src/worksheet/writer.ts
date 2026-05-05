@@ -209,6 +209,7 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   if (ws.ignoredErrors.length > 0) {
     parts.push(serializeIgnoredErrors(ws.ignoredErrors));
   }
+  if (ws.smartTags.length > 0) parts.push(serializeSmartTags(ws.smartTags));
   if (ws.drawing && ctx.registerDrawing) {
     const { rId } = ctx.registerDrawing(ws.drawing);
     parts.push(`<drawing r:id="${escapeXmlAttr(rId)}"/>`);
@@ -616,6 +617,32 @@ const serializePageSetup = (ps: PageSetup): string | undefined => {
   if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
   if (attrs.length === 0) return undefined;
   return `<pageSetup${attrs}/>`;
+};
+
+const serializeSmartTags = (
+  st: ReadonlyArray<import('./smart-tags').CellSmartTags>,
+): string => {
+  const parts: string[] = ['<smartTags>'];
+  for (const cst of st) {
+    parts.push(`<cellSmartTags r="${escapeXmlAttr(cst.ref)}">`);
+    for (const tag of cst.tags) {
+      let attrs = ` type="${tag.type}"`;
+      if (tag.deleted !== undefined) attrs += ` deleted="${tag.deleted ? '1' : '0'}"`;
+      if (tag.xmlBased !== undefined) attrs += ` xmlBased="${tag.xmlBased ? '1' : '0'}"`;
+      if (tag.properties.length === 0) {
+        parts.push(`<cellSmartTag${attrs}/>`);
+        continue;
+      }
+      parts.push(`<cellSmartTag${attrs}>`);
+      for (const p of tag.properties) {
+        parts.push(`<cellSmartTagPr key="${escapeXmlAttr(p.key)}" val="${escapeXmlAttr(p.val)}"/>`);
+      }
+      parts.push('</cellSmartTag>');
+    }
+    parts.push('</cellSmartTags>');
+  }
+  parts.push('</smartTags>');
+  return parts.join('');
 };
 
 const serializeSortState = (ss: SortState): string => {
