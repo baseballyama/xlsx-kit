@@ -182,3 +182,107 @@ export function customPropsFromBytes(bytes: Uint8Array | string): CustomProperti
   }
   return { properties };
 }
+
+// ---- Workbook ergonomic helpers ----------------------------------------
+
+import type { Workbook } from '../workbook/workbook';
+
+const ensureCustomProperties = (wb: Workbook): CustomProperties => {
+  if (!wb.customProperties) wb.customProperties = makeCustomProperties();
+  return wb.customProperties;
+};
+
+const replaceOrAppend = (
+  wb: Workbook,
+  name: string,
+  value: XmlNode,
+  opts?: { fmtid?: string },
+): CustomProperty => {
+  const props = ensureCustomProperties(wb);
+  const existing = findCustomPropertyByName(props, name);
+  if (existing) {
+    existing.value = value;
+    if (opts?.fmtid !== undefined) existing.fmtid = opts.fmtid;
+    return existing;
+  }
+  return appendCustomProperty(props, name, value, opts);
+};
+
+/** Set (or replace) a custom string property. */
+export const setCustomStringProperty = (wb: Workbook, name: string, value: string): CustomProperty =>
+  replaceOrAppend(wb, name, makeStringValue(value));
+
+/**
+ * Set (or replace) a custom numeric property. Integers (within Int32
+ * range) are stored as `vt:i4`; non-integer / out-of-range numbers as
+ * `vt:r8` doubles.
+ */
+export const setCustomNumberProperty = (wb: Workbook, name: string, value: number): CustomProperty => {
+  if (!Number.isFinite(value)) {
+    throw new OpenXmlSchemaError(`setCustomNumberProperty: value "${value}" is not finite`);
+  }
+  const isInt32 = Number.isInteger(value) && value >= -2147483648 && value <= 2147483647;
+  const node = isInt32 ? makeIntValue(value) : makeDoubleValue(value);
+  return replaceOrAppend(wb, name, node);
+};
+
+/** Set (or replace) a custom boolean property. */
+export const setCustomBoolProperty = (wb: Workbook, name: string, value: boolean): CustomProperty =>
+  replaceOrAppend(wb, name, makeBoolValue(value));
+
+/**
+ * Set (or replace) a custom date property. Accepts a `Date` (converted
+ * to ISO via `toISOString()`) or a pre-formatted W3C-DTF string.
+ */
+export const setCustomDateProperty = (
+  wb: Workbook,
+  name: string,
+  value: Date | string,
+): CustomProperty => {
+  const iso = value instanceof Date ? value.toISOString() : value;
+  return replaceOrAppend(wb, name, makeFiletimeValue(iso));
+};
+
+/**
+ * Read the typed value of a custom property by name. Tries each
+ * decoder in turn — string, int, double, bool, filetime — and
+ * returns the first hit. Returns `undefined` for unknown names or
+ * unsupported types.
+ */
+export const getCustomPropertyValue = (
+  wb: Workbook,
+  name: string,
+): string | number | boolean | undefined => {
+  if (!wb.customProperties) return undefined;
+  const prop = findCustomPropertyByName(wb.customProperties, name);
+  if (!prop) return undefined;
+  const s = readStringValue(prop.value);
+  if (s !== undefined) return s;
+  const i = readIntValue(prop.value);
+  if (i !== undefined) return i;
+  const d = readDoubleValue(prop.value);
+  if (d !== undefined) return d;
+  const b = readBoolValue(prop.value);
+  if (b !== undefined) return b;
+  const ft = readFiletimeValue(prop.value);
+  if (ft !== undefined) return ft;
+  return undefined;
+};
+
+/**
+ * Remove a custom property by name. Returns `true` when one was
+ * removed, `false` when the name wasn't found.
+ */
+export const removeCustomProperty = (wb: Workbook, name: string): boolean => {
+  if (!wb.customProperties) return false;
+  const arr = wb.customProperties.properties;
+  const i = arr.findIndex((p) => p.name === name);
+  if (i < 0) return false;
+  arr.splice(i, 1);
+  return true;
+};
+
+/** Read-only snapshot of every custom property. */
+export const listCustomProperties = (wb: Workbook): ReadonlyArray<CustomProperty> => {
+  return wb.customProperties?.properties ?? [];
+};

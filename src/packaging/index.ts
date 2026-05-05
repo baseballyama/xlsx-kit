@@ -21,6 +21,8 @@ export {
   customPropsFromBytes,
   customPropsToBytes,
   findCustomPropertyByName,
+  getCustomPropertyValue,
+  listCustomProperties,
   makeAsciiStringValue,
   makeBoolValue,
   makeCustomProperties,
@@ -34,6 +36,11 @@ export {
   readFiletimeValue,
   readIntValue,
   readStringValue,
+  removeCustomProperty,
+  setCustomBoolProperty,
+  setCustomDateProperty,
+  setCustomNumberProperty,
+  setCustomStringProperty,
 } from './custom';
 export type { ExtendedProperties } from './extended';
 export {
