@@ -1232,6 +1232,19 @@ export function getCellHyperlink(ws: Worksheet, c: Cell): Hyperlink | undefined 
   return undefined;
 }
 
+/**
+ * Resolve a cell to its legacy comment (if any). Same matching rule
+ * as {@link getCellHyperlink} — the comment's `ref` may be a single
+ * cell or a range, and the first containing entry wins.
+ */
+export function getCellComment(ws: Worksheet, c: Cell): LegacyComment | undefined {
+  for (const cm of ws.legacyComments) {
+    const range = parseRange(cm.ref);
+    if (rangeContainsCell(range, c.row, c.col)) return cm;
+  }
+  return undefined;
+}
+
 // ---- data validations ----------------------------------------------------
 
 /** Append a DataValidation entry. */
