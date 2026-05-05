@@ -146,6 +146,7 @@ const WORKBOOK_PROTECTION_TAG = `{${SHEET_MAIN_NS}}workbookProtection`;
 const BOOK_VIEWS_TAG = `{${SHEET_MAIN_NS}}bookViews`;
 const WORKBOOK_VIEW_TAG = `{${SHEET_MAIN_NS}}workbookView`;
 const CALC_PR_TAG = `{${SHEET_MAIN_NS}}calcPr`;
+const FILE_VERSION_TAG = `{${SHEET_MAIN_NS}}fileVersion`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
@@ -518,6 +519,17 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
     if (child.name === WORKBOOK_PR_TAG) {
       const wp = parseWorkbookProperties(child);
       if (wp) wb.workbookProperties = wp;
+      continue;
+    }
+    // Lift <fileVersion> into the typed workbook field.
+    if (child.name === FILE_VERSION_TAG) {
+      const fv: import('../workbook/file-version').FileVersion = {};
+      if (child.attrs['appName'] !== undefined) fv.appName = child.attrs['appName'];
+      if (child.attrs['lastEdited'] !== undefined) fv.lastEdited = child.attrs['lastEdited'];
+      if (child.attrs['lowestEdited'] !== undefined) fv.lowestEdited = child.attrs['lowestEdited'];
+      if (child.attrs['rupBuild'] !== undefined) fv.rupBuild = child.attrs['rupBuild'];
+      if (child.attrs['codeName'] !== undefined) fv.codeName = child.attrs['codeName'];
+      if (Object.keys(fv).length > 0) wb.fileVersion = fv;
       continue;
     }
     // Lift <bookViews> into the typed workbook field.

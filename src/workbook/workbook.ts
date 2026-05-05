@@ -99,6 +99,8 @@ export interface Workbook {
   bookViews?: import('./views').WorkbookView[];
   /** `<calcPr>` — calculation engine settings (calcMode / iterate / fullPrecision etc.). */
   calcProperties?: import('./calc-properties').CalcProperties;
+  /** `<fileVersion>` — Office app/version metadata Excel records on save. */
+  fileVersion?: import('./file-version').FileVersion;
   /**
    * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
    * prompt mode, etc. `date1904` is mirrored here for completeness but

@@ -606,6 +606,10 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     `<workbook xmlns="${SHEET_MAIN_NS}" xmlns:r="${REL_NS}">`,
   ];
+  if (wb.fileVersion) {
+    const fv = serializeFileVersion(wb.fileVersion);
+    if (fv) parts.push(fv);
+  }
   if (wb.workbookXmlExtras?.beforeSheets) {
     for (const node of wb.workbookXmlExtras.beforeSheets) parts.push(serializeChildNode(node));
   }
@@ -670,6 +674,19 @@ function serializeCalcProperties(
   if (cp.forceFullCalc !== undefined) attrs += ` forceFullCalc="${cp.forceFullCalc ? '1' : '0'}"`;
   if (attrs.length === 0) return undefined;
   return `<calcPr${attrs}/>`;
+}
+
+function serializeFileVersion(
+  fv: import('../workbook/file-version').FileVersion,
+): string | undefined {
+  let attrs = '';
+  if (fv.appName !== undefined) attrs += ` appName="${escapeAttr(fv.appName)}"`;
+  if (fv.lastEdited !== undefined) attrs += ` lastEdited="${escapeAttr(fv.lastEdited)}"`;
+  if (fv.lowestEdited !== undefined) attrs += ` lowestEdited="${escapeAttr(fv.lowestEdited)}"`;
+  if (fv.rupBuild !== undefined) attrs += ` rupBuild="${escapeAttr(fv.rupBuild)}"`;
+  if (fv.codeName !== undefined) attrs += ` codeName="${escapeAttr(fv.codeName)}"`;
+  if (attrs.length === 0) return undefined;
+  return `<fileVersion${attrs}/>`;
 }
 
 function effectiveWorkbookProperties(

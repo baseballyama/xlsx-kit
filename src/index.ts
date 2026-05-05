@@ -355,3 +355,5 @@ export type {
   WorkbookProperties,
 } from './workbook/workbook-properties';
 export { makeWorkbookProperties } from './workbook/workbook-properties';
+export type { FileVersion } from './workbook/file-version';
+export { makeFileVersion } from './workbook/file-version';
