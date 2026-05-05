@@ -973,6 +973,22 @@ export function unhideColumn(ws: Worksheet, col: number): void {
   }
 }
 
+/** Bulk-hide every column in `[fromCol, toCol]`. */
+export function hideColumns(ws: Worksheet, fromCol: number, toCol: number): void {
+  if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
+    throw new OpenXmlSchemaError(`hideColumns: invalid column range [${fromCol}, ${toCol}]`);
+  }
+  for (let c = fromCol; c <= toCol; c++) hideColumn(ws, c);
+}
+
+/** Bulk-unhide every column in `[fromCol, toCol]`. */
+export function unhideColumns(ws: Worksheet, fromCol: number, toCol: number): void {
+  if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
+    throw new OpenXmlSchemaError(`unhideColumns: invalid column range [${fromCol}, ${toCol}]`);
+  }
+  for (let c = fromCol; c <= toCol; c++) unhideColumn(ws, c);
+}
+
 /**
  * Set the default column width (characters) for cells without an
  * explicit ColumnDimension entry. Mirrors Excel's "Default Width"
@@ -1306,6 +1322,22 @@ export function unhideRow(ws: Worksheet, row: number): void {
   const { hidden: _drop, ...rest } = existing;
   if (Object.keys(rest).length === 0) ws.rowDimensions.delete(row);
   else ws.rowDimensions.set(row, rest);
+}
+
+/** Bulk-hide every row in `[fromRow, toRow]`. */
+export function hideRows(ws: Worksheet, fromRow: number, toRow: number): void {
+  if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
+    throw new OpenXmlSchemaError(`hideRows: invalid row range [${fromRow}, ${toRow}]`);
+  }
+  for (let r = fromRow; r <= toRow; r++) hideRow(ws, r);
+}
+
+/** Bulk-unhide every row in `[fromRow, toRow]`. */
+export function unhideRows(ws: Worksheet, fromRow: number, toRow: number): void {
+  if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
+    throw new OpenXmlSchemaError(`unhideRows: invalid row range [${fromRow}, ${toRow}]`);
+  }
+  for (let r = fromRow; r <= toRow; r++) unhideRow(ws, r);
 }
 
 // ---- hyperlinks -----------------------------------------------------------
