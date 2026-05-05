@@ -70,6 +70,7 @@ import type {
 import type { Scenario, ScenarioInputCell, ScenarioList } from './scenarios';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
+import type { ProtectedRange } from './protected-ranges';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { makeColor } from '../styles/colors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
@@ -122,6 +123,8 @@ const TAB_COLOR_TAG = `{${SHEET_MAIN_NS}}tabColor`;
 const OUTLINE_PR_TAG = `{${SHEET_MAIN_NS}}outlinePr`;
 const PAGE_SETUP_PR_TAG = `{${SHEET_MAIN_NS}}pageSetUpPr`;
 const SHEET_PROTECTION_TAG = `{${SHEET_MAIN_NS}}sheetProtection`;
+const PROTECTED_RANGES_TAG = `{${SHEET_MAIN_NS}}protectedRanges`;
+const PROTECTED_RANGE_TAG = `{${SHEET_MAIN_NS}}protectedRange`;
 const PRINT_OPTIONS_TAG = `{${SHEET_MAIN_NS}}printOptions`;
 const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
 const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
@@ -252,6 +255,28 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   const protectionEl = findChild(root, SHEET_PROTECTION_TAG);
   if (protectionEl) {
     ws.sheetProtection = parseSheetProtection(protectionEl);
+  }
+
+  // <protectedRanges><protectedRange sqref=… name=… [hash quad]/></protectedRanges>
+  const prsEl = findChild(root, PROTECTED_RANGES_TAG);
+  if (prsEl) {
+    for (const pr of findChildren(prsEl, PROTECTED_RANGE_TAG)) {
+      const sqref = pr.attrs['sqref'];
+      const name = pr.attrs['name'];
+      if (!sqref || !name) continue;
+      const out: ProtectedRange = { sqref: parseMultiCellRange(sqref), name };
+      if (pr.attrs['password'] !== undefined) out.password = pr.attrs['password'];
+      if (pr.attrs['securityDescriptor'] !== undefined)
+        out.securityDescriptor = pr.attrs['securityDescriptor'];
+      if (pr.attrs['algorithmName'] !== undefined) out.algorithmName = pr.attrs['algorithmName'];
+      if (pr.attrs['hashValue'] !== undefined) out.hashValue = pr.attrs['hashValue'];
+      if (pr.attrs['saltValue'] !== undefined) out.saltValue = pr.attrs['saltValue'];
+      if (pr.attrs['spinCount'] !== undefined) {
+        const n = Number.parseInt(pr.attrs['spinCount'], 10);
+        if (Number.isInteger(n)) out.spinCount = n;
+      }
+      ws.protectedRanges.push(out);
+    }
   }
 
   // <mergeCells> sits as a sibling of <sheetData>; pull each <mergeCell ref="…"/>
@@ -910,6 +935,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   IGNORED_ERRORS_TAG,
   SHEET_PR_TAG,
   SHEET_PROTECTION_TAG,
+  PROTECTED_RANGES_TAG,
   PRINT_OPTIONS_TAG,
   PAGE_MARGINS_TAG,
   PAGE_SETUP_TAG,

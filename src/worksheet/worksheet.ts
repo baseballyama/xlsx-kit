@@ -25,6 +25,7 @@ import type { HeaderFooter, PageBreak, PageMargins, PageSetup, PrintOptions } fr
 import type { WorksheetPhoneticProperties } from './phonetic';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
+import type { ProtectedRange } from './protected-ranges';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import type { TableDefinition } from './table';
@@ -108,6 +109,11 @@ export interface Worksheet {
    * `spinCount` / `algorithmName` / `hashValue` round-trip verbatim.
    */
   sheetProtection?: SheetProtection;
+  /**
+   * `<protectedRanges>` — per-range edit-allowance overrides used when
+   * the sheet is otherwise protected (Review → Allow Edit Ranges).
+   */
+  protectedRanges: ProtectedRange[];
   /** `<printOptions>` — gridlines, headings, horizontal/vertical centering on the printed page. */
   printOptions?: PrintOptions;
   /** `<pageMargins>` — six required margins in inches. */
@@ -206,6 +212,7 @@ export function makeWorksheet(title: string): Worksheet {
     colBreaks: [],
     customProperties: [],
     webPublishItems: [],
+    protectedRanges: [],
   };
 }
 

@@ -35,6 +35,7 @@ import type { WorksheetPhoneticProperties } from './phonetic';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
+import type { ProtectedRange } from './protected-ranges';
 import type { Pane, Selection, SheetView } from './views';
 import type { Worksheet } from './worksheet';
 
@@ -142,6 +143,7 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     const sp = serializeSheetProtection(ws.sheetProtection);
     if (sp) parts.push(sp);
   }
+  if (ws.protectedRanges.length > 0) parts.push(serializeProtectedRanges(ws.protectedRanges));
   if (ws.scenarios) {
     const sc = serializeScenarioList(ws.scenarios);
     if (sc) parts.push(sc);
@@ -609,6 +611,24 @@ const serializePageSetup = (ps: PageSetup): string | undefined => {
   if (ps.rId !== undefined) attrs += ` r:id="${escapeXmlAttr(ps.rId)}"`;
   if (attrs.length === 0) return undefined;
   return `<pageSetup${attrs}/>`;
+};
+
+const serializeProtectedRanges = (ranges: ReadonlyArray<ProtectedRange>): string => {
+  const parts: string[] = ['<protectedRanges>'];
+  for (const r of ranges) {
+    let attrs = '';
+    if (r.password !== undefined) attrs += ` password="${escapeXmlAttr(r.password)}"`;
+    attrs += ` sqref="${escapeXmlAttr(multiCellRangeToString(r.sqref))}"`;
+    attrs += ` name="${escapeXmlAttr(r.name)}"`;
+    if (r.securityDescriptor !== undefined) attrs += ` securityDescriptor="${escapeXmlAttr(r.securityDescriptor)}"`;
+    if (r.algorithmName !== undefined) attrs += ` algorithmName="${escapeXmlAttr(r.algorithmName)}"`;
+    if (r.hashValue !== undefined) attrs += ` hashValue="${escapeXmlAttr(r.hashValue)}"`;
+    if (r.saltValue !== undefined) attrs += ` saltValue="${escapeXmlAttr(r.saltValue)}"`;
+    if (r.spinCount !== undefined) attrs += ` spinCount="${r.spinCount}"`;
+    parts.push(`<protectedRange${attrs}/>`);
+  }
+  parts.push('</protectedRanges>');
+  return parts.join('');
 };
 
 const serializeScenarioList = (sl: ScenarioList): string | undefined => {
