@@ -71,6 +71,7 @@ import type { Scenario, ScenarioInputCell, ScenarioList } from './scenarios';
 import type { OutlineProperties, PageSetupProperties, SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { ProtectedRange } from './protected-ranges';
+import type { SortBy, SortCondition, SortIconSet, SortMethod, SortState } from './sort-state';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { makeColor } from '../styles/colors';
 import { makeColumnDimension, makeRowDimension } from './dimensions';
@@ -125,6 +126,8 @@ const PAGE_SETUP_PR_TAG = `{${SHEET_MAIN_NS}}pageSetUpPr`;
 const SHEET_PROTECTION_TAG = `{${SHEET_MAIN_NS}}sheetProtection`;
 const PROTECTED_RANGES_TAG = `{${SHEET_MAIN_NS}}protectedRanges`;
 const PROTECTED_RANGE_TAG = `{${SHEET_MAIN_NS}}protectedRange`;
+const SORT_STATE_TAG = `{${SHEET_MAIN_NS}}sortState`;
+const SORT_CONDITION_TAG = `{${SHEET_MAIN_NS}}sortCondition`;
 const PRINT_OPTIONS_TAG = `{${SHEET_MAIN_NS}}printOptions`;
 const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
 const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
@@ -255,6 +258,15 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   const protectionEl = findChild(root, SHEET_PROTECTION_TAG);
   if (protectionEl) {
     ws.sheetProtection = parseSheetProtection(protectionEl);
+  }
+
+  // <sortState ref=… columnSort=… caseSensitive=… sortMethod=…>
+  //   <sortCondition ref=… descending=… sortBy=… .../>
+  // </sortState>
+  const ssEl = findChild(root, SORT_STATE_TAG);
+  if (ssEl) {
+    const ss = parseSortState(ssEl);
+    if (ss) ws.sortState = ss;
   }
 
   // <protectedRanges><protectedRange sqref=… name=… [hash quad]/></protectedRanges>
@@ -467,6 +479,63 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   captureWorksheetBodyExtras(root, ws);
   return ws;
 }
+
+const SORT_BY_VALUES: ReadonlyArray<SortBy> = ['value', 'cellColor', 'fontColor', 'icon'];
+const SORT_METHODS: ReadonlyArray<SortMethod> = ['stroke', 'pinYin'];
+const SORT_ICON_SETS: ReadonlyArray<SortIconSet> = [
+  '3Arrows',
+  '3ArrowsGray',
+  '3Flags',
+  '3TrafficLights1',
+  '3TrafficLights2',
+  '3Signs',
+  '3Symbols',
+  '3Symbols2',
+  '4Arrows',
+  '4ArrowsGray',
+  '4RedToBlack',
+  '4Rating',
+  '4TrafficLights',
+  '5Arrows',
+  '5ArrowsGray',
+  '5Rating',
+  '5Quarters',
+];
+
+const parseSortState = (node: XmlNode): SortState | undefined => {
+  const ref = node.attrs['ref'];
+  if (!ref) return undefined;
+  const out: SortState = { ref, conditions: [] };
+  const cs = parseBoolXmlAttr(node.attrs['columnSort']);
+  if (cs !== undefined) out.columnSort = cs;
+  const cse = parseBoolXmlAttr(node.attrs['caseSensitive']);
+  if (cse !== undefined) out.caseSensitive = cse;
+  const sm = node.attrs['sortMethod'];
+  if (sm && SORT_METHODS.includes(sm as SortMethod)) out.sortMethod = sm as SortMethod;
+
+  for (const sc of findChildren(node, SORT_CONDITION_TAG)) {
+    const cRef = sc.attrs['ref'];
+    if (!cRef) continue;
+    const c: SortCondition = { ref: cRef };
+    const desc = parseBoolXmlAttr(sc.attrs['descending']);
+    if (desc !== undefined) c.descending = desc;
+    const sb = sc.attrs['sortBy'];
+    if (sb && SORT_BY_VALUES.includes(sb as SortBy)) c.sortBy = sb as SortBy;
+    if (sc.attrs['customList'] !== undefined) c.customList = sc.attrs['customList'];
+    if (sc.attrs['dxfId'] !== undefined) {
+      const n = Number.parseInt(sc.attrs['dxfId'], 10);
+      if (Number.isInteger(n)) c.dxfId = n;
+    }
+    const is = sc.attrs['iconSet'];
+    if (is && SORT_ICON_SETS.includes(is as SortIconSet)) c.iconSet = is as SortIconSet;
+    if (sc.attrs['iconId'] !== undefined) {
+      const n = Number.parseInt(sc.attrs['iconId'], 10);
+      if (Number.isInteger(n)) c.iconId = n;
+    }
+    out.conditions.push(c);
+  }
+  return out;
+};
 
 const parseScenarioList = (node: XmlNode): ScenarioList | undefined => {
   const out: ScenarioList = { scenarios: [] };
@@ -936,6 +1005,7 @@ const MODELED_WORKSHEET_TAGS: ReadonlySet<string> = new Set([
   SHEET_PR_TAG,
   SHEET_PROTECTION_TAG,
   PROTECTED_RANGES_TAG,
+  SORT_STATE_TAG,
   PRINT_OPTIONS_TAG,
   PAGE_MARGINS_TAG,
   PAGE_SETUP_TAG,

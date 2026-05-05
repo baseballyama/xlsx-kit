@@ -26,6 +26,7 @@ import type { WorksheetPhoneticProperties } from './phonetic';
 import type { SheetProperties } from './properties';
 import type { SheetProtection } from './protection';
 import type { ProtectedRange } from './protected-ranges';
+import type { SortState } from './sort-state';
 import type { WebPublishItem, WorksheetCustomProperty } from './web-publish';
 import { type Hyperlink, makeHyperlink } from './hyperlinks';
 import type { TableDefinition } from './table';
@@ -114,6 +115,11 @@ export interface Worksheet {
    * the sheet is otherwise protected (Review → Allow Edit Ranges).
    */
   protectedRanges: ProtectedRange[];
+  /**
+   * `<sortState>` — last-applied sort criteria. Excel persists this so
+   * the rows come back in the same order after a save/load cycle.
+   */
+  sortState?: SortState;
   /** `<printOptions>` — gridlines, headings, horizontal/vertical centering on the printed page. */
   printOptions?: PrintOptions;
   /** `<pageMargins>` — six required margins in inches. */

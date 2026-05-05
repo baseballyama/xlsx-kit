@@ -240,6 +240,14 @@ export { makeSheetProtection } from './worksheet/protection';
 export type { ProtectedRange } from './worksheet/protected-ranges';
 export { makeProtectedRange } from './worksheet/protected-ranges';
 export type {
+  SortBy,
+  SortCondition,
+  SortIconSet,
+  SortMethod,
+  SortState,
+} from './worksheet/sort-state';
+export { makeSortCondition, makeSortState } from './worksheet/sort-state';
+export type {
   CellCommentMode,
   HeaderFooter,
   PageBreak,
