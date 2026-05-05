@@ -94,10 +94,24 @@ export function getCellNumberFormat(wb: Workbook, c: Cell): string {
 // ---- write accessors -------------------------------------------------------
 
 /**
+ * Reserve cellXfs[0] for the implicit default xf when the pool is
+ * empty. Excel's `<c>` elements without an `s=` attribute resolve to
+ * `cellXfs[0]`, so the first time a caller styles any cell we need
+ * to make sure that slot stays the default — otherwise unstyled
+ * cells in the same sheet would inherit the freshly added styled xf.
+ *
+ * Idempotent: calling this on a non-empty pool is a no-op.
+ */
+const reserveDefaultXfSlot = (wb: Workbook): void => {
+  if (wb.styles.cellXfs.length === 0) addCellXf(wb.styles, defaultCellXf());
+};
+
+/**
  * Replace one field on the cell's CellXf. Centralises the dedup +
  * styleId update so each `setCell*` is a single dispatch.
  */
 function applyXfPatch(wb: Workbook, c: Cell, patch: Partial<CellXf>): void {
+  reserveDefaultXfSlot(wb);
   const next: CellXf = { ...currentXf(wb.styles, c), ...patch };
   c.styleId = addCellXf(wb.styles, next);
 }
@@ -180,6 +194,7 @@ export function setRangeStyle(
     patch.applyNumberFormat = true;
   }
   if (Object.keys(patch).length === 0) return;
+  reserveDefaultXfSlot(wb);
 
   const { minRow, maxRow, minCol, maxCol } = parseRange(range);
   // Pre-register the xf for each existing cell — Excel dedupes by

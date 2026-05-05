@@ -179,7 +179,9 @@ describe('JSON round-trip — stylesheet pool dedup survives', () => {
     setCellFont(wb2, c2, makeFont({ italic: true }));
     // Both cells point at the same dedup'd CellXf id post-revival.
     expect(c2.styleId).toBe(c1.styleId);
-    expect(wb2.styles.cellXfs.length).toBe(1);
+    // cellXfs[0] is the implicit default reserved by setCellFont; cellXfs[1]
+    // is the shared italic xf both cells point at.
+    expect(wb2.styles.cellXfs.length).toBe(2);
     expect(wb2.styles.fonts.length).toBe(2); // DEFAULT + italic
   });
 

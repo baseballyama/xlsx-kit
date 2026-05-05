@@ -51,7 +51,9 @@ describe('setCellFont', () => {
     setCellFont(wb, c1, makeFont({ italic: true }));
     setCellFont(wb, c2, makeFont({ italic: true }));
     expect(c1.styleId).toBe(c2.styleId);
-    expect(wb.styles.cellXfs.length).toBe(1);
+    // cellXfs[0] is the implicit default reserved by setCellFont's first
+    // call; cellXfs[1] is the italic xf shared by both cells.
+    expect(wb.styles.cellXfs.length).toBe(2);
   });
 
   it('different fonts allocate distinct ids', () => {
