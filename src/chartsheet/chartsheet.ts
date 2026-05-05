@@ -55,6 +55,54 @@ export interface Chartsheet {
   pageSetup?: PageSetup;
   /** `<headerFooter>` — odd/even/first header + footer mini-format strings. */
   headerFooter?: HeaderFooter;
+  /** `<legacyDrawing r:id="…"/>` — VML drawing for comments / form-control overlay. */
+  legacyDrawingRId?: string;
+  /** `<legacyDrawingHF r:id="…"/>` — VML drawing for header/footer print background. */
+  legacyDrawingHFRId?: string;
+  /**
+   * `<drawingHF r:id="…" lho="N" cho="N" lhe="N" che="N" lhf="N" chf="N"
+   * rho="N" cho2="N" rhe="N" che2="N" rhf="N" chf2="N" lfo="N" cfo="N"
+   * lfe="N" cfe="N" lff="N" cff="N" rfo="N" cfo2="N" rfe="N" cfe2="N"
+   * rff="N" cff2="N"/>` — drawing slot + per-section image indices for
+   * header/footer print backgrounds (DrawingML rather than VML).
+   */
+  drawingHF?: ChartsheetDrawingHF;
+  /** `<picture r:id="…"/>` — chartsheet background image. */
+  backgroundPictureRId?: string;
+}
+
+/**
+ * `<drawingHF>` — per-section image-index map for the header/footer
+ * drawing reference. Each `*o` / `*e` / `*f` attr is a 1-based image
+ * number into the referenced drawing part. All optional.
+ */
+export interface ChartsheetDrawingHF {
+  /** Required rels link to xl/drawings/drawingN.xml carrying the actual image refs. */
+  rId: string;
+  /** Left-header image index for odd pages. */
+  lho?: number;
+  cho?: number;
+  rho?: number;
+  /** Left-header image index for even pages. */
+  lhe?: number;
+  che?: number;
+  rhe?: number;
+  /** Left-header image index for the first page (when differentFirst). */
+  lhf?: number;
+  chf?: number;
+  rhf?: number;
+  /** Left-footer image index for odd pages. */
+  lfo?: number;
+  cfo?: number;
+  rfo?: number;
+  /** Left-footer image index for even pages. */
+  lfe?: number;
+  cfe?: number;
+  rfe?: number;
+  /** Left-footer image index for first page. */
+  lff?: number;
+  cff?: number;
+  rff?: number;
 }
 
 export const makeChartsheet = (title: string): Chartsheet => ({

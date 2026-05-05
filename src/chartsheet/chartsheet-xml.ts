@@ -8,6 +8,7 @@ import { parseHeaderFooter, parsePageMargins, parsePageSetup } from '../workshee
 import { serializeHeaderFooter, serializePageMargins, serializePageSetup } from '../worksheet/writer';
 import {
   type Chartsheet,
+  type ChartsheetDrawingHF,
   type ChartsheetProperties,
   type ChartsheetProtection,
   type ChartsheetView,
@@ -24,6 +25,10 @@ const DRAWING_TAG = `{${SHEET_MAIN_NS}}drawing`;
 const PAGE_MARGINS_TAG = `{${SHEET_MAIN_NS}}pageMargins`;
 const PAGE_SETUP_TAG = `{${SHEET_MAIN_NS}}pageSetup`;
 const HEADER_FOOTER_TAG = `{${SHEET_MAIN_NS}}headerFooter`;
+const LEGACY_DRAWING_TAG = `{${SHEET_MAIN_NS}}legacyDrawing`;
+const LEGACY_DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}legacyDrawingHF`;
+const DRAWING_HF_TAG = `{${SHEET_MAIN_NS}}drawingHF`;
+const PICTURE_TAG = `{${SHEET_MAIN_NS}}picture`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
@@ -123,9 +128,64 @@ export function parseChartsheetXml(bytes: Uint8Array | string, title: string): C
     if (hf) cs.headerFooter = hf;
   }
 
+  const ldEl = findChild(root, LEGACY_DRAWING_TAG);
+  if (ldEl) {
+    const rId = ldEl.attrs[`{${REL_NS}}id`];
+    if (rId) cs.legacyDrawingRId = rId;
+  }
+  const ldhfEl = findChild(root, LEGACY_DRAWING_HF_TAG);
+  if (ldhfEl) {
+    const rId = ldhfEl.attrs[`{${REL_NS}}id`];
+    if (rId) cs.legacyDrawingHFRId = rId;
+  }
+  const dhfEl = findChild(root, DRAWING_HF_TAG);
+  if (dhfEl) {
+    const dhf = parseDrawingHF(dhfEl);
+    if (dhf) cs.drawingHF = dhf;
+  }
+  const picEl = findChild(root, PICTURE_TAG);
+  if (picEl) {
+    const rId = picEl.attrs[`{${REL_NS}}id`];
+    if (rId) cs.backgroundPictureRId = rId;
+  }
+
   // Drawing reference — the actual rId / drawing payload is resolved by the loader.
   return cs;
 }
+
+const DRAWING_HF_INT_KEYS = [
+  'lho',
+  'cho',
+  'rho',
+  'lhe',
+  'che',
+  'rhe',
+  'lhf',
+  'chf',
+  'rhf',
+  'lfo',
+  'cfo',
+  'rfo',
+  'lfe',
+  'cfe',
+  'rfe',
+  'lff',
+  'cff',
+  'rff',
+] as const;
+
+const parseDrawingHF = (el: XmlNode): ChartsheetDrawingHF | undefined => {
+  const rId = el.attrs[`{${REL_NS}}id`];
+  if (!rId) return undefined;
+  const out: ChartsheetDrawingHF = { rId };
+  for (const k of DRAWING_HF_INT_KEYS) {
+    const raw = el.attrs[k];
+    if (raw === undefined) continue;
+    const n = Number.parseInt(raw, 10);
+    if (Number.isInteger(n)) (out as unknown as Record<string, unknown>)[k] = n;
+  }
+  return out;
+};
 
 /**
  * Optional drawing rId injected by the writer. The chartsheet part
@@ -184,9 +244,30 @@ export function serializeChartsheet(cs: Chartsheet, opts: ChartsheetSerializeOpt
   if (opts.drawingRId !== undefined) {
     parts.push(`<drawing r:id="${escapeAttr(opts.drawingRId)}"/>`);
   }
+  if (cs.legacyDrawingRId !== undefined) {
+    parts.push(`<legacyDrawing r:id="${escapeAttr(cs.legacyDrawingRId)}"/>`);
+  }
+  if (cs.legacyDrawingHFRId !== undefined) {
+    parts.push(`<legacyDrawingHF r:id="${escapeAttr(cs.legacyDrawingHFRId)}"/>`);
+  }
+  if (cs.drawingHF) {
+    parts.push(serializeDrawingHF(cs.drawingHF));
+  }
+  if (cs.backgroundPictureRId !== undefined) {
+    parts.push(`<picture r:id="${escapeAttr(cs.backgroundPictureRId)}"/>`);
+  }
   parts.push('</chartsheet>');
   return parts.join('');
 }
+
+const serializeDrawingHF = (dhf: ChartsheetDrawingHF): string => {
+  let attrs = ` r:id="${escapeAttr(dhf.rId)}"`;
+  for (const k of DRAWING_HF_INT_KEYS) {
+    const v = (dhf as unknown as Record<string, number | undefined>)[k];
+    if (v !== undefined) attrs += ` ${k}="${v}"`;
+  }
+  return `<drawingHF${attrs}/>`;
+};
 
 export function chartsheetToBytes(cs: Chartsheet, opts: ChartsheetSerializeOptions = {}): Uint8Array {
   return new TextEncoder().encode(serializeChartsheet(cs, opts));
