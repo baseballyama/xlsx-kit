@@ -692,6 +692,27 @@ export function getAllDataValidations(
 }
 
 /**
+ * Collect every conditional-formatting block across every worksheet.
+ * Each entry pairs the CF block with a back-reference to the owning
+ * sheet, in tab-strip order.
+ */
+export function getAllConditionalFormatting(
+  wb: Workbook,
+): ReadonlyArray<{
+  sheet: Worksheet;
+  formatting: import('../worksheet/conditional-formatting').ConditionalFormatting;
+}> {
+  const out: Array<{
+    sheet: Worksheet;
+    formatting: import('../worksheet/conditional-formatting').ConditionalFormatting;
+  }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    for (const cf of sheet.conditionalFormatting) out.push({ sheet, formatting: cf });
+  }
+  return out;
+}
+
+/**
  * Iterate over every Chartsheet in the workbook. Yields in tab-strip
  * order, skipping regular worksheets.
  */

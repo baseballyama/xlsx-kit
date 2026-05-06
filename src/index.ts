@@ -590,6 +590,7 @@ export {
   duplicateSheet,
   getActiveSheet,
   getAllComments,
+  getAllConditionalFormatting,
   getAllDataValidations,
   getAllHyperlinks,
   getAllMergedRanges,

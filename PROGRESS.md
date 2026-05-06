@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`pickUniqueSheetTitle(wb, base)` を追加**。Excel UI の "Sheet1 (2)" 風 auto-suffix:
+- **次のタスク**: **`getAllConditionalFormatting(wb)` aggregator を追加**。
+  1. `src/workbook/workbook.ts` に追加: `{sheet, formatting}` 配列を tab-strip 順で return。`getAllTables` / `getAllDataValidations` と同 pattern。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/all-conditional-formatting.test.ts` 3 件: 2 sheet 集約 (cellIs+colorScale 混在) / chartsheet skip / 空 wb。
+
+  empirical: 1764 tests pass (was 1761, +3)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`pickUniqueSheetTitle(wb, base)` を追加**。Excel UI の "Sheet1 (2)" 風 auto-suffix:
   1. `src/workbook/workbook.ts` に追加: base が free なら verbatim、衝突時は ` (N)` を 2..999 まで増やして free slot を探す。base+suffix が 31 char を超える場合は base を切り詰めて全体 31 ≤ に維持。base 自体が valid でないと throw。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/pick-unique-sheet-title.test.ts` 5 件: free pass-through / 1〜2 衝突で ` (2)`/` (3)` / 31 char base で 27 char truncation+` (2)` / invalid base throw / 出力が validateSheetTitle 通過。
