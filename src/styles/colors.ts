@@ -205,5 +205,56 @@ export function pickReadableTextColor(backgroundHex: string): 'FF000000' | 'FFFF
   return luminance(backgroundHex) < 0.179 ? 'FFFFFFFF' : 'FF000000';
 }
 
+const splitArgb = (hex: string): { a: number; r: number; g: number; b: number } => {
+  const rgb = normaliseRgb(hex);
+  return {
+    a: Number.parseInt(rgb.slice(0, 2), 16),
+    r: Number.parseInt(rgb.slice(2, 4), 16),
+    g: Number.parseInt(rgb.slice(4, 6), 16),
+    b: Number.parseInt(rgb.slice(6, 8), 16),
+  };
+};
+
+const toHexByte = (n: number): string => {
+  const v = Math.max(0, Math.min(255, Math.round(n)));
+  return v.toString(16).padStart(2, '0').toUpperCase();
+};
+
+const clampUnit = (x: number): number => Math.max(0, Math.min(1, x));
+
+/**
+ * Lighten a color by mixing it with white. `amount` is in `[0, 1]`:
+ * 0 returns the input unchanged, 1 returns pure white. Alpha
+ * channel is preserved. Equivalent to `mixColors(hex, 'FFFFFFFF', amount)`.
+ */
+export function lighten(hex: string, amount: number): string {
+  const t = clampUnit(amount);
+  const { a, r, g, b } = splitArgb(hex);
+  return `${toHexByte(a)}${toHexByte(r + (255 - r) * t)}${toHexByte(g + (255 - g) * t)}${toHexByte(b + (255 - b) * t)}`;
+}
+
+/**
+ * Darken a color by mixing it with black. `amount` is in `[0, 1]`:
+ * 0 returns the input unchanged, 1 returns pure black (preserving
+ * the alpha channel).
+ */
+export function darken(hex: string, amount: number): string {
+  const t = clampUnit(amount);
+  const { a, r, g, b } = splitArgb(hex);
+  return `${toHexByte(a)}${toHexByte(r * (1 - t))}${toHexByte(g * (1 - t))}${toHexByte(b * (1 - t))}`;
+}
+
+/**
+ * Linearly interpolate between two ARGB colors. `t = 0` returns
+ * `hexA`; `t = 1` returns `hexB`; intermediate values mix per channel
+ * (including alpha).
+ */
+export function mixColors(hexA: string, hexB: string, t: number): string {
+  const k = clampUnit(t);
+  const a = splitArgb(hexA);
+  const b = splitArgb(hexB);
+  return `${toHexByte(a.a + (b.a - a.a) * k)}${toHexByte(a.r + (b.r - a.r) * k)}${toHexByte(a.g + (b.g - a.g) * k)}${toHexByte(a.b + (b.b - a.b) * k)}`;
+}
+
 // Internal mutable mirror used inside `make*` constructors. Never leaks.
 type Mutable<T> = { -readonly [P in keyof T]: T[P] };

@@ -57,8 +57,11 @@ export { addNamedStyle, BUILTIN_NAMED_STYLES, ensureBuiltinStyle } from './named
 export type { Color } from './colors';
 export {
   contrastRatio,
+  darken,
+  lighten,
   luminance,
   makeColor,
+  mixColors,
   normaliseRgb,
   pickReadableTextColor,
   resolveIndexedColor,
