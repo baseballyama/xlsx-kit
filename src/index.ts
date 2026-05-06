@@ -620,6 +620,7 @@ export {
   pickUniqueSheetTitle,
   removeSheet,
   renameSheet,
+  replaceCellValuesInWorkbook,
   setActiveSheet,
   setSheetState,
   sheetNames,

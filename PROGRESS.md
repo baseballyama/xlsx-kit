@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`findCellInWorkbook` / `findCellsInWorkbook` を追加**。`findCells` の workbook 版:
+- **次のタスク**: **`replaceCellValuesInWorkbook` workbook-wide find-and-replace を追加**。
+  1. `src/workbook/workbook.ts` に追加: `iterAllCells` 経由で全 sheet 走査、string モード (exact-equal on string-valued) と predicate モード `(value, cell, sheet) → boolean`。返値は変更件数。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/replace-in-workbook.test.ts` 4 件: 2 sheet 横断 string 一括置換 / predicate に sheet 渡る / 不一致 0 / string モードで数値+真偽値 skip。
+
+  empirical: 1791 tests pass (was 1787, +4)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`findCellInWorkbook` / `findCellsInWorkbook` を追加**。`findCells` の workbook 版:
   1. `src/workbook/workbook.ts` に追加: 両方とも `iterAllCells` を内部で使い、predicate(cell, sheet) → boolean。findCellInWorkbook は最初の一致 / findCellsInWorkbook は全件配列。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/find-cells-in-workbook.test.ts` 5 件: 異 sheet で iter 順最初 / 不一致 undefined / predicate に sheet 渡る / 全件配列 in iter 順 / 空 wb で空。

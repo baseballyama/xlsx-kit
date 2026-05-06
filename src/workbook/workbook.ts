@@ -725,6 +725,35 @@ export function findCellsInWorkbook(
 }
 
 /**
+ * Workbook-wide find-and-replace. Same matching rule as
+ * `replaceCellValues` but walks every worksheet via
+ * {@link iterAllCells}. `search` is either an exact-string match
+ * (string-valued cells only) or a predicate `(value, cell, sheet)
+ * → boolean`. `replacement` is the new `CellValue`. Returns the
+ * count of cells changed across all sheets.
+ */
+export function replaceCellValuesInWorkbook(
+  wb: Workbook,
+  search:
+    | string
+    | ((value: import('../cell/cell').CellValue, cell: import('../cell/cell').Cell, sheet: Worksheet) => boolean),
+  replacement: import('../cell/cell').CellValue,
+): number {
+  let n = 0;
+  const matchFn =
+    typeof search === 'string'
+      ? (v: import('../cell/cell').CellValue) => typeof v === 'string' && v === search
+      : (v: import('../cell/cell').CellValue, c: import('../cell/cell').Cell, s: Worksheet) => search(v, c, s);
+  for (const { sheet, cell } of iterAllCells(wb)) {
+    if (matchFn(cell.value, cell, sheet)) {
+      cell.value = replacement;
+      n++;
+    }
+  }
+  return n;
+}
+
+/**
  * Collect every data-validation block across every worksheet. Each
  * entry pairs the validation with a back-reference to the owning
  * sheet, in tab-strip order.
