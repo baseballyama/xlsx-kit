@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`setSheetStates` / `showAllSheets` 一括 visibility helpers を追加**。
+- **次のタスク**: **`removeAllMergedRanges(ws)` 一括解除を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: `ws.mergedCells = []` で全 merge を削除し、count を return。cell value は untouched。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/remove-all-merged-ranges.test.ts` 3 件: 2 merge 削除 + count / 0 件で 0 / cell value 保持。
+
+  empirical: 1831 tests pass (was 1828, +3)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`setSheetStates` / `showAllSheets` 一括 visibility helpers を追加**。
   1. `src/workbook/workbook.ts` に追加: `setSheetStates(wb, { title: state })` で複数 sheet 状態を 1-call 更新 (missing title は throw)、`showAllSheets(wb)` で hidden+veryHidden 全部を visible に戻し count を return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/sheet-state-bulk.test.ts` 4 件: 3 sheet 一括設定 / missing title throw / showAllSheets count + 全 visible / 隠れ無しで 0。

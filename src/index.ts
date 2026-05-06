@@ -260,6 +260,7 @@ export {
   listTables,
   makeWorksheet,
   mergeCells,
+  removeAllMergedRanges,
   removeCellWatches,
   removeComment,
   removeDataValidations,

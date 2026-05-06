@@ -730,6 +730,17 @@ export function unmergeCellsAt(ws: Worksheet, row: number, col: number): boolean
   return false;
 }
 
+/**
+ * Drop every merged range on the worksheet. Returns the count of
+ * merges removed. Cells that were inside the merges keep their
+ * values — only the merge metadata is gone.
+ */
+export function removeAllMergedRanges(ws: Worksheet): number {
+  const n = ws.mergedCells.length;
+  ws.mergedCells = [];
+  return n;
+}
+
 // ---- views / freezePanes --------------------------------------------------
 
 /** Lazily get-or-create the primary SheetView so view-mutating helpers don't have to branch. */
