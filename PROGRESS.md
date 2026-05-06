@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`renameDefinedName(wb, oldName, newName, scope?)` を追加**。
+- **次のタスク**: **`removeAllHyperlinks` / `removeAllComments` 一括 wipe を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: hyperlinks/legacyComments 配列を 1 line で空にし、count を return。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/remove-all-hyperlinks-comments.test.ts` 4 件: hyperlinks 全 drop+count / 0 件で 0 / comments 全 drop+count / 0 件で 0。
+
+  empirical: 1840 tests pass (was 1836, +4)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`renameDefinedName(wb, oldName, newName, scope?)` を追加**。
   1. `src/workbook/defined-names.ts` に追加: 同 scope 内 lookup → conflict check → in-place rename。Return は boolean (見つかったか)、scope 内重複は throw。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/rename-defined-name.test.ts` 5 件: workbook-scope rename / sheet-scope rename + 他 scope 保持 / missing で false / 同 scope collision throw / 別 scope 同名 OK。

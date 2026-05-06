@@ -1629,6 +1629,13 @@ export function removeHyperlink(ws: Worksheet, ref: string): boolean {
   return true;
 }
 
+/** Drop every hyperlink on the worksheet. Returns the count removed. */
+export function removeAllHyperlinks(ws: Worksheet): number {
+  const n = ws.hyperlinks.length;
+  ws.hyperlinks = [];
+  return n;
+}
+
 /** Look up a hyperlink by its ref. */
 export function getHyperlink(ws: Worksheet, ref: string): Hyperlink | undefined {
   return ws.hyperlinks.find((h) => h.ref === ref);
@@ -1753,6 +1760,13 @@ export function removeComment(ws: Worksheet, ref: string): boolean {
 /** Read-only snapshot of every legacy comment on the sheet. */
 export function listComments(ws: Worksheet): ReadonlyArray<LegacyComment> {
   return ws.legacyComments;
+}
+
+/** Drop every legacy comment on the worksheet. Returns the count removed. */
+export function removeAllComments(ws: Worksheet): number {
+  const n = ws.legacyComments.length;
+  ws.legacyComments = [];
+  return n;
 }
 
 /**
