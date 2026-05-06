@@ -104,6 +104,22 @@ export const removeDefinedNames = (
 };
 
 /**
+ * Read-only snapshot of every `_xlnm.Print_Area` defined name. Each
+ * entry is the raw DefinedName carrying `scope` (sheet index) and
+ * `value` (the print-area expression like `'Sheet1'!$A$1:$D$10`).
+ */
+export const listPrintAreas = (wb: Workbook): ReadonlyArray<DefinedName> =>
+  wb.definedNames.filter((d) => d.name === '_xlnm.Print_Area');
+
+/**
+ * Read-only snapshot of every `_xlnm.Print_Titles` defined name. Each
+ * entry's `value` is the title-row / title-col expression Excel re-uses
+ * on every printed page.
+ */
+export const listPrintTitles = (wb: Workbook): ReadonlyArray<DefinedName> =>
+  wb.definedNames.filter((d) => d.name === '_xlnm.Print_Titles');
+
+/**
  * Define the print-area for a given sheet. Excel uses the built-in
  * `_xlnm.Print_Area` defined name with sheet scope.
  */

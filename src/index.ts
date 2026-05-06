@@ -629,6 +629,8 @@ export {
   addDefinedName,
   getDefinedName,
   listDefinedNames,
+  listPrintAreas,
+  listPrintTitles,
   makeDefinedName,
   removeDefinedName,
   removeDefinedNames,

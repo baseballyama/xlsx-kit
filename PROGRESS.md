@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **color hex mixing helpers (`lighten` / `darken` / `mixColors`) を追加**。
+- **次のタスク**: **`listPrintAreas` / `listPrintTitles` を追加**。`_xlnm.Print_Area` / `_xlnm.Print_Titles` を name で filter:
+  1. `src/workbook/defined-names.ts` に追加: definedNames を name で filter する 1-line helper x 2。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/print-area-titles-listing.test.ts` 3 件: listPrintAreas (2 sheet 分の `_xlnm.Print_Area` のみ抽出 + 他 name 無視) / 空 wb は空 / listPrintTitles 同等。
+
+  empirical: 1779 tests pass (was 1776, +3)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **color hex mixing helpers (`lighten` / `darken` / `mixColors`) を追加**。
   1. `src/styles/colors.ts` に追加: `lighten(hex, amount)` (white と線形 mix)、`darken(hex, amount)` (black と線形 mix)、`mixColors(a, b, t)` (per-channel + alpha 線形補間)。すべて 0..1 clamp、alpha 保持、6char 入力時は alpha=00 (Excel convention)。
   2. `src/styles/index.ts` + `src/index.ts` から re-export。
   3. `tests/phase-2/styles/color-mixing.test.ts` 12 件: lighten unchanged/white/halfway/clamp/6char (4) / darken unchanged/black/halfway (3) / mixColors endpoints/midpoint/alpha interp/clamp (4)。
