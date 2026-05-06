@@ -409,6 +409,32 @@ export function showSheet(wb: Workbook, title: string): void {
 }
 
 /**
+ * Bulk-update visibility state for many sheets in one call. `entries`
+ * is a `Record<title, state>` map; missing titles throw via the
+ * underlying `setSheetState`.
+ */
+export function setSheetStates(wb: Workbook, entries: Record<string, SheetState>): void {
+  for (const [title, state] of Object.entries(entries)) {
+    setSheetState(wb, title, state);
+  }
+}
+
+/**
+ * Show every hidden / veryHidden worksheet. Returns the count
+ * unhidden. Useful for spreadsheet-wide auditing.
+ */
+export function showAllSheets(wb: Workbook): number {
+  let n = 0;
+  for (const ref of wb.sheets) {
+    if (ref.state !== 'visible') {
+      ref.state = 'visible';
+      n++;
+    }
+  }
+  return n;
+}
+
+/**
  * Move a sheet to a new tab-strip position. `toIndex` is clamped to
  * `[0, sheets.length - 1]`. Adjusts `activeSheetIndex` so the same
  * sheet stays active across the move.

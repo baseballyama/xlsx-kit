@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`copyCellStyle` / `cloneCellStyle` を追加**。同 wb / 異 wb cell style 移植:
+- **次のタスク**: **`setSheetStates` / `showAllSheets` 一括 visibility helpers を追加**。
+  1. `src/workbook/workbook.ts` に追加: `setSheetStates(wb, { title: state })` で複数 sheet 状態を 1-call 更新 (missing title は throw)、`showAllSheets(wb)` で hidden+veryHidden 全部を visible に戻し count を return。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/sheet-state-bulk.test.ts` 4 件: 3 sheet 一括設定 / missing title throw / showAllSheets count + 全 visible / 隠れ無しで 0。
+
+  empirical: 1828 tests pass (was 1824, +4)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`copyCellStyle` / `cloneCellStyle` を追加**。同 wb / 異 wb cell style 移植:
   1. `src/styles/cell-style.ts` に追加: `copyCellStyle(wb, source, target)` (同 wb 内で styleId を直接共有、xf pool 増加なし)、`cloneCellStyle(srcWb, srcCell, dstWb, dstCell)` (異 wb 間 deep copy: font/fill/border/numFmt を別 stylesheet にも個別追加し、新 styleId を target に set)。
   2. `src/styles/index.ts` + `src/index.ts` から re-export。
   3. `tests/phase-2/styles/copy-cell-style.test.ts` 4 件: copy 同 styleId+pool 不変 / clone 異 wb で font+fill+numFmt 全 axis 移植 / clone 戻り値 = target.styleId / clone target wb で cellXfs[0] default reserve。
