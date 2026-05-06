@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`findTable(wb, displayName)` workbook-wide table lookup を追加**。
+- **次のタスク**: **`findCellInWorkbook` / `findCellsInWorkbook` を追加**。`findCells` の workbook 版:
+  1. `src/workbook/workbook.ts` に追加: 両方とも `iterAllCells` を内部で使い、predicate(cell, sheet) → boolean。findCellInWorkbook は最初の一致 / findCellsInWorkbook は全件配列。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/find-cells-in-workbook.test.ts` 5 件: 異 sheet で iter 順最初 / 不一致 undefined / predicate に sheet 渡る / 全件配列 in iter 順 / 空 wb で空。
+
+  empirical: 1787 tests pass (was 1782, +5)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`findTable(wb, displayName)` workbook-wide table lookup を追加**。
   1. `src/workbook/workbook.ts` に追加: 全 worksheet を walk して displayName 一致 table を `{sheet, table}` で return、無ければ undefined。Excel の table-name 一意性保証で first match で十分。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/find-table.test.ts` 3 件: 異 sheet で displayName lookup / 不存在で undefined / 空 wb で undefined。

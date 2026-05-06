@@ -692,6 +692,39 @@ export function findTable(
 }
 
 /**
+ * First cell across the workbook satisfying `predicate`. Walks
+ * every worksheet in tab-strip order, then row-then-column within
+ * each sheet (same order as {@link iterAllCells}). Returns
+ * `{ sheet, cell }` for the match, or `undefined` when nothing
+ * matches.
+ */
+export function findCellInWorkbook(
+  wb: Workbook,
+  predicate: (cell: import('../cell/cell').Cell, sheet: Worksheet) => boolean,
+): { sheet: Worksheet; cell: import('../cell/cell').Cell } | undefined {
+  for (const { sheet, cell } of iterAllCells(wb)) {
+    if (predicate(cell, sheet)) return { sheet, cell };
+  }
+  return undefined;
+}
+
+/**
+ * Every cell across the workbook satisfying `predicate`. Same
+ * iteration order as {@link iterAllCells}. Returns an array of
+ * `{ sheet, cell }` matches.
+ */
+export function findCellsInWorkbook(
+  wb: Workbook,
+  predicate: (cell: import('../cell/cell').Cell, sheet: Worksheet) => boolean,
+): ReadonlyArray<{ sheet: Worksheet; cell: import('../cell/cell').Cell }> {
+  const out: Array<{ sheet: Worksheet; cell: import('../cell/cell').Cell }> = [];
+  for (const { sheet, cell } of iterAllCells(wb)) {
+    if (predicate(cell, sheet)) out.push({ sheet, cell });
+  }
+  return out;
+}
+
+/**
  * Collect every data-validation block across every worksheet. Each
  * entry pairs the validation with a back-reference to the owning
  * sheet, in tab-strip order.
