@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`removeAllHyperlinks` / `removeAllComments` 一括 wipe を追加**。
+- **次のタスク**: **`isValidCellRef(s)` predicate を追加**。input validation:
+  1. `src/utils/coordinate.ts` に追加: 単一 A1 ref のみ true。`$` absolute marker / 範囲 / 空白 / 範囲外 row/col / 非 string は false。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-1/is-valid-cell-ref.test.ts` 6 件: 通常 + 大文字小文字 + max coord / `$` 拒否 / range 拒否 / 空白 + 空文字 / 範囲外 row/col / 非 string。
+
+  empirical: 1846 tests pass (was 1840, +6)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`removeAllHyperlinks` / `removeAllComments` 一括 wipe を追加**。
   1. `src/worksheet/worksheet.ts` に追加: hyperlinks/legacyComments 配列を 1 line で空にし、count を return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/remove-all-hyperlinks-comments.test.ts` 4 件: hyperlinks 全 drop+count / 0 件で 0 / comments 全 drop+count / 0 件で 0。

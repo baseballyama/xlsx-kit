@@ -98,6 +98,7 @@ export {
   columnLetterFromIndex,
   coordinateFromString,
   coordinateToTuple,
+  isValidCellRef,
   MAX_COL,
   MAX_ROW,
   parseSheetRange,

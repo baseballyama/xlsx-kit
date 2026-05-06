@@ -134,6 +134,38 @@ export function tupleToCoordinate(col: number, row: number): string {
 }
 
 /**
+ * Predicate: true iff `s` is a valid single-cell A1 coordinate
+ * (`"A1"`, `"XFD1048576"`). Strings with `$` absolute markers,
+ * surrounding whitespace, ranges (`A1:B2`), or out-of-bound row /
+ * column return false. Useful for sanitising user input before
+ * passing to {@link coordinateToTuple} or `setCellByCoord`.
+ */
+export function isValidCellRef(s: unknown): s is string {
+  if (typeof s !== 'string') return false;
+  const m = /^([A-Za-z]{1,3})([1-9][0-9]*)$/.exec(s);
+  if (!m) return false;
+  const colStr = m[1];
+  const rowStr = m[2];
+  if (colStr === undefined || rowStr === undefined) return false;
+  const col = columnIndexFromLetterUnchecked(colStr);
+  if (col < 1 || col > MAX_COL) return false;
+  const row = Number.parseInt(rowStr, 10);
+  if (!Number.isFinite(row) || row < 1 || row > MAX_ROW) return false;
+  return true;
+}
+
+const columnIndexFromLetterUnchecked = (letters: string): number => {
+  let n = 0;
+  const upper = letters.toUpperCase();
+  for (let i = 0; i < upper.length; i++) {
+    const ch = upper.charCodeAt(i);
+    if (ch < 65 || ch > 90) return -1;
+    n = n * 26 + (ch - 64);
+  }
+  return n;
+};
+
+/**
  * Parse "A1:B5" / "A:A" / "1:1" / single-cell into 1-based
  * (minCol, minRow, maxCol, maxRow). Whole-column ranges fill rows to
  * [1, MAX_ROW]; whole-row ranges fill cols to [1, MAX_COL].
