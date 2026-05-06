@@ -58,6 +58,8 @@ export type { Color } from './colors';
 export {
   contrastRatio,
   darken,
+  hexToHsl,
+  hslToHex,
   lighten,
   luminance,
   makeColor,

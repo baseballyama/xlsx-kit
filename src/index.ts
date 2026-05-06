@@ -548,6 +548,8 @@ export {
   getCellProtection,
   contrastRatio,
   darken,
+  hexToHsl,
+  hslToHex,
   lighten,
   luminance,
   makeAlignment,

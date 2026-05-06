@@ -256,5 +256,70 @@ export function mixColors(hexA: string, hexB: string, t: number): string {
   return `${toHexByte(a.a + (b.a - a.a) * k)}${toHexByte(a.r + (b.r - a.r) * k)}${toHexByte(a.g + (b.g - a.g) * k)}${toHexByte(a.b + (b.b - a.b) * k)}`;
 }
 
+/**
+ * Convert an ARGB / RGB hex to its HSL representation. Returns
+ * `{ h, s, l, a }` with `h ∈ [0, 360)`, `s ∈ [0, 1]`, `l ∈ [0, 1]`,
+ * `a ∈ [0, 255]` (alpha as the original byte). Useful for theme
+ * tweaking (rotate hue, desaturate, etc.) before round-tripping
+ * through {@link hslToHex}.
+ */
+export function hexToHsl(hex: string): { h: number; s: number; l: number; a: number } {
+  const { a, r: rb, g: gb, b: bb } = splitArgb(hex);
+  const r = rb / 255;
+  const g = gb / 255;
+  const b = bb / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+    else if (max === g) h = ((b - r) / d + 2) * 60;
+    else h = ((r - g) / d + 4) * 60;
+  }
+  return { h, s, l, a };
+}
+
+/**
+ * Convert HSL components back to an ARGB hex string. `h` wraps
+ * mod-360, `s` and `l` clamp to `[0, 1]`. `alpha` is the byte
+ * (default 255 = opaque), placed in the high byte of the result.
+ */
+export function hslToHex(h: number, s: number, l: number, alpha = 255): string {
+  const hh = ((h % 360) + 360) % 360;
+  const ss = clampUnit(s);
+  const ll = clampUnit(l);
+  const c = (1 - Math.abs(2 * ll - 1)) * ss;
+  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+  const m = ll - c / 2;
+  let rp = 0;
+  let gp = 0;
+  let bp = 0;
+  if (hh < 60) {
+    rp = c;
+    gp = x;
+  } else if (hh < 120) {
+    rp = x;
+    gp = c;
+  } else if (hh < 180) {
+    gp = c;
+    bp = x;
+  } else if (hh < 240) {
+    gp = x;
+    bp = c;
+  } else if (hh < 300) {
+    rp = x;
+    bp = c;
+  } else {
+    rp = c;
+    bp = x;
+  }
+  const a = Math.max(0, Math.min(255, Math.round(alpha)));
+  return `${toHexByte(a)}${toHexByte((rp + m) * 255)}${toHexByte((gp + m) * 255)}${toHexByte((bp + m) * 255)}`;
+}
+
 // Internal mutable mirror used inside `make*` constructors. Never leaks.
 type Mutable<T> = { -readonly [P in keyof T]: T[P] };

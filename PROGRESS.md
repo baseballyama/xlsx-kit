@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`replaceCellValuesInWorkbook` workbook-wide find-and-replace を追加**。
+- **次のタスク**: **color HSL 変換 (`hexToHsl` / `hslToHex`) を追加**。テーマ調整向け hue/sat/light 操作:
+  1. `src/styles/colors.ts` に追加: `hexToHsl(hex)` → `{h ∈ [0,360), s, l ∈ [0,1], a ∈ [0,255]}` (RGB→HSL std formula)、`hslToHex(h, s, l, alpha=255)` → ARGB hex (h は mod-360 wrap、s/l は clamp)。
+  2. `src/styles/index.ts` + `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/color-hsl.test.ts` 13 件: 白/黒/赤/緑/青の hue/sat/light / alpha 保持 / hslToHex 逆変換 5 色 / h wrap (-120 / 360) / alpha 引数 / 任意 hex round-trip。
+
+  empirical: 1804 tests pass (was 1791, +13)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`replaceCellValuesInWorkbook` workbook-wide find-and-replace を追加**。
   1. `src/workbook/workbook.ts` に追加: `iterAllCells` 経由で全 sheet 走査、string モード (exact-equal on string-valued) と predicate モード `(value, cell, sheet) → boolean`。返値は変更件数。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/replace-in-workbook.test.ts` 4 件: 2 sheet 横断 string 一括置換 / predicate に sheet 渡る / 不一致 0 / string モードで数値+真偽値 skip。
