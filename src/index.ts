@@ -269,6 +269,7 @@ export {
   removeTable,
   renameCommentAuthor,
   replaceCellValues,
+  replaceInRange,
   applyToRange,
   autofitColumn,
   autofitColumns,

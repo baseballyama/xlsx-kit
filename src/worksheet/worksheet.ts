@@ -523,6 +523,33 @@ export function replaceCellValues(
 }
 
 /**
+ * Range-scoped find-and-replace. Same matching rules as
+ * {@link replaceCellValues} (string → exact-equal on string-valued
+ * cells; function → predicate over every populated cell), but only
+ * cells inside the rectangular `range` are visited. Returns the
+ * count changed.
+ */
+export function replaceInRange(
+  ws: Worksheet,
+  range: string,
+  search: string | ((value: CellValue, cell: Cell) => boolean),
+  replacement: CellValue,
+): number {
+  let n = 0;
+  const matchFn =
+    typeof search === 'string'
+      ? (v: CellValue) => typeof v === 'string' && v === search
+      : (v: CellValue, c: Cell) => search(v, c);
+  for (const cell of getCellsInRange(ws, range)) {
+    if (matchFn(cell.value, cell)) {
+      cell.value = replacement;
+      n++;
+    }
+  }
+  return n;
+}
+
+/**
  * Iterate the populated cells inside a rectangular range. Cells that
  * don't exist in the sparse store are skipped (no auto-allocate). Use
  * {@link applyToRange} when you need every coordinate visited

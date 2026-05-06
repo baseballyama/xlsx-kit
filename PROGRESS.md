@@ -26,7 +26,7 @@
 - **ZIP64 write の正式対応** — fflate 上流の 4GiB 制限。openxml-js 側ではすでに fallback ロジックが入っているので blocker ではない。
 - **public API surface の整理** — `src/index.ts` が 700+ 行に肥大。alphabetical 順を維持しているが、サブモジュールごとに `*.ts` barrel 経由でグループ化する余地あり。（urgent ではない、整形のみ。）
 - **rich-text run builder ergo の追加** — `richTextRun(text, font?)` 単体 export はまだ。`makeTextRun` を re-export するだけで済む。
-- **`replaceCellValues` の range-aware 版** — 現状は worksheet 全体走査。`replaceInRange(ws, range, search, replacement)` があれば templating で便利。
+- ~~**`replaceCellValues` の range-aware 版**~~ → `replaceInRange` で対応 (2026-05-07)。
 - **autofit の font-aware 改良** — 現状は文字列長 + padding 近似。font.size 比例で width を補正するだけでも CJK / 大ポイントの結果が改善する。
 
 ### 進め方の TIPS
@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **長期 /loop 仕上げターン (public API + docs + edge-fixtures + perf 微調整 + UTF-8 + max-coord + migration guide) 完了**。本ターン (連続コミット 11 件) で以下を一括完遂:
+- **次のタスク**: **`replaceInRange` 範囲限定 find-and-replace を追加**。`replaceCellValues` の rectangle 範囲版:
+  1. `src/worksheet/worksheet.ts` に追加: `replaceInRange(ws, range, search, replacement)`。matching rule は `replaceCellValues` と同じ (string→exact-equal、function→predicate)。populated cell のみ走査、auto-allocate 無し。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/replace-in-range.test.ts` 5 件: 範囲内のみ置換 + 範囲外保持 / predicate variant + 範囲外保持 / 不一致 0 / auto-allocate 無し / 数値+真偽値 skip (string モード)。
+
+  empirical: 1753 tests pass (was 1748, +5)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **長期 /loop 仕上げターン (public API + docs + edge-fixtures + perf 微調整 + UTF-8 + max-coord + migration guide) 完了**。本ターン (連続コミット 11 件) で以下を一括完遂:
   1. phase-4 streaming reader real-fixture acceptance (`genuine/sample.xlsx` SAX iter ↔ eager loadWorkbook 座標一致 + `empty-with-styles.xlsx` minRow/maxRow band フィルタ) — `tests/phase-4/read-only-genuine.test.ts` 2件
   2. iterRows 早期終了 + cell-skip 最適化 (currentRow > maxRow で generator return、band 外 row の `<c>` attrs パース skip)
   3. public API 露出整備: `src/index.ts` に Cell / Worksheet / Workbook helpers + Style 値オブジェクト群 (`setCell` / `addWorksheet` / `createWorkbook` / formula helpers / `makeRichText` / `setCellFont` / `makeFont` / `makePatternFill` etc.) を re-export、`src/zip/index.ts` に `StreamingEntryWriter` 追加、`src/styles/index.ts` を新設
