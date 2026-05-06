@@ -27,7 +27,7 @@
 - **public API surface の整理** — `src/index.ts` が 700+ 行に肥大。alphabetical 順を維持しているが、サブモジュールごとに `*.ts` barrel 経由でグループ化する余地あり。（urgent ではない、整形のみ。）
 - **rich-text run builder ergo の追加** — `richTextRun(text, font?)` 単体 export はまだ。`makeTextRun` を re-export するだけで済む。
 - ~~**`replaceCellValues` の range-aware 版**~~ → `replaceInRange` で対応 (2026-05-07)。
-- **autofit の font-aware 改良** — 現状は文字列長 + padding 近似。font.size 比例で width を補正するだけでも CJK / 大ポイントの結果が改善する。
+- ~~**autofit の font-aware 改良**~~ → `opts.workbook` で font.size 比例 scaling 対応 (2026-05-07)。
 
 ### 進め方の TIPS
 
@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`replaceInRange` 範囲限定 find-and-replace を追加**。`replaceCellValues` の rectangle 範囲版:
+- **次のタスク**: **autofit 列の font-aware scaling を追加**。
+  1. `src/worksheet/worksheet.ts`: `autofitColumn` / `autofitColumns` に `opts.workbook` 引数を追加。供給時は cell の `styleId` → `wb.styles.cellXfs[id].fontId` → `wb.styles.fonts[fontId].size` を辿り、長さを `(size / 11)` で線形 scaling。未供給時は従来の文字列長 fallback。
+  2. `tests/phase-5/autofit-columns.test.ts` 3 件追加: 22pt cell が 11pt の ~2× width / workbook 引数なしで font は無視 / autofitColumns で複数列 mixed 11pt/22pt の独立 scaling。
+  3. 既存 9 件の string-length-only テストはそのまま pass。
+
+  empirical: 1756 tests pass (was 1753, +3)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`replaceInRange` 範囲限定 find-and-replace を追加**。`replaceCellValues` の rectangle 範囲版:
   1. `src/worksheet/worksheet.ts` に追加: `replaceInRange(ws, range, search, replacement)`。matching rule は `replaceCellValues` と同じ (string→exact-equal、function→predicate)。populated cell のみ走査、auto-allocate 無し。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/replace-in-range.test.ts` 5 件: 範囲内のみ置換 + 範囲外保持 / predicate variant + 範囲外保持 / 不一致 0 / auto-allocate 無し / 数値+真偽値 skip (string モード)。

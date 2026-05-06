@@ -96,3 +96,44 @@ describe('autofitColumns', () => {
     expect(getColumnDimension(ws, 1)?.width).toBe('Hello world!'.length + 2);
   });
 });
+
+describe('autofitColumn font-aware mode', () => {
+  it('22pt cell produces ~2× the width of an 11pt cell with the same text', async () => {
+    const { setCellFont } = await import('../../src/styles/cell-style');
+    const { makeFont } = await import('../../src/styles/fonts');
+    const wb = createWorkbook();
+    const ws = addWorksheet(wb, 'A');
+    const c = setCell(ws, 1, 1, 'header text');
+    setCellFont(wb, c, makeFont({ size: 22 }));
+    autofitColumn(ws, 1, { workbook: wb });
+    // 'header text'.length === 11 → scaled by 22/11 = 2 → 22 → +2 padding = 24.
+    expect(getColumnDimension(ws, 1)?.width).toBe(24);
+  });
+
+  it('without workbook, font is ignored (string-length fallback)', async () => {
+    const { setCellFont } = await import('../../src/styles/cell-style');
+    const { makeFont } = await import('../../src/styles/fonts');
+    const wb = createWorkbook();
+    const ws = addWorksheet(wb, 'A');
+    const c = setCell(ws, 1, 1, 'header text');
+    setCellFont(wb, c, makeFont({ size: 22 }));
+    autofitColumn(ws, 1);
+    expect(getColumnDimension(ws, 1)?.width).toBe('header text'.length + 2);
+  });
+
+  it('autofitColumns with workbook scales each column independently', async () => {
+    const { setCellFont } = await import('../../src/styles/cell-style');
+    const { makeFont } = await import('../../src/styles/fonts');
+    const wb = createWorkbook();
+    const ws = addWorksheet(wb, 'A');
+    const small = setCell(ws, 1, 1, 'small11');
+    const big = setCell(ws, 1, 2, 'big22pt');
+    setCellFont(wb, big, makeFont({ size: 22 }));
+    // small stays font 0 (default 11pt).
+    void small;
+    autofitColumns(ws, { workbook: wb });
+    expect(getColumnDimension(ws, 1)?.width).toBe('small11'.length + 2);
+    // 'big22pt'.length === 7 → ×2 = 14 → +2 = 16.
+    expect(getColumnDimension(ws, 2)?.width).toBe(16);
+  });
+});

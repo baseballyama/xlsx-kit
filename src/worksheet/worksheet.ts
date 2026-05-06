@@ -1388,21 +1388,48 @@ export function expandColumnGroup(ws: Worksheet, fromCol: number, toCol: number)
 }
 
 /**
+ * Per-cell effective string length, optionally scaled by the cell's
+ * font size relative to Excel's default 11pt baseline.
+ */
+const effectiveLength = (cell: Cell, wb: { styles: { cellXfs: ReadonlyArray<{ fontId: number }>; fonts: ReadonlyArray<{ size?: number }> } } | undefined): number => {
+  const len = cellValueAsString(cell.value).length;
+  if (!wb) return len;
+  const xf = wb.styles.cellXfs[cell.styleId];
+  const fontId = xf?.fontId ?? 0;
+  const font = wb.styles.fonts[fontId];
+  const size = font?.size ?? 11;
+  // Linear scale: 11pt → 1.0; 22pt → 2.0; etc. Excel's actual
+  // character width grows roughly linearly with point size.
+  return len * (size / 11);
+};
+
+/**
  * Approximate autofit for a column. Scans every populated cell in
- * `col` (or in `[opts.minRow, opts.maxRow]`), measures `cellValueAsString`
- * length, and sets the column width to `max(length) + padding`,
- * clamped to `[opts.min ?? 4, opts.max ?? 80]` and bounded above by
- * Excel's hard limit of 255.
+ * `col` (or in `[opts.minRow, opts.maxRow]`), measures
+ * `cellValueAsString` length, and sets the column width to
+ * `max(length) + padding`, clamped to `[opts.min ?? 4, opts.max ?? 80]`
+ * and bounded above by Excel's hard limit of 255.
  *
  * Note: this is a string-length approximation — Excel sizes columns
  * with the font's actual character-width metrics. For plain ASCII in
  * the default Calibri 11 face the result is usually within ±1 width
  * unit; CJK / wide glyphs need extra padding.
+ *
+ * Pass `opts.workbook` (or use the `Wb` variant via `autofitColumns`)
+ * to enable font-aware scaling — each cell's length is scaled by
+ * `(cellFont.size / 11)` so 22pt headings get roughly 2× width.
  */
 export function autofitColumn(
   ws: Worksheet,
   col: number,
-  opts: { minRow?: number; maxRow?: number; padding?: number; min?: number; max?: number } = {},
+  opts: {
+    minRow?: number;
+    maxRow?: number;
+    padding?: number;
+    min?: number;
+    max?: number;
+    workbook?: { styles: { cellXfs: ReadonlyArray<{ fontId: number }>; fonts: ReadonlyArray<{ size?: number }> } };
+  } = {},
 ): ColumnDimension | undefined {
   const padding = opts.padding ?? 2;
   const minWidth = opts.min ?? 4;
@@ -1414,8 +1441,8 @@ export function autofitColumn(
   for (let r = minRow; r <= maxRow; r++) {
     const cell = ws.rows.get(r)?.get(col);
     if (!cell) continue;
-    const s = cellValueAsString(cell.value);
-    if (s.length > widest) widest = s.length;
+    const len = effectiveLength(cell, opts.workbook);
+    if (len > widest) widest = len;
   }
   if (widest === 0) return undefined;
   const width = Math.max(minWidth, Math.min(maxWidth, widest + padding));
@@ -1425,12 +1452,18 @@ export function autofitColumn(
 /**
  * Approximate autofit for every column with at least one populated
  * cell. Walks the worksheet once collecting per-column widest-length
- * + applies {@link autofitColumn} per column. `opts` flows through
- * unchanged.
+ * + applies {@link autofitColumn} per column. `opts.workbook` enables
+ * font-size-aware scaling; without it the helper falls back to plain
+ * string length.
  */
 export function autofitColumns(
   ws: Worksheet,
-  opts: { padding?: number; min?: number; max?: number } = {},
+  opts: {
+    padding?: number;
+    min?: number;
+    max?: number;
+    workbook?: { styles: { cellXfs: ReadonlyArray<{ fontId: number }>; fonts: ReadonlyArray<{ size?: number }> } };
+  } = {},
 ): void {
   const padding = opts.padding ?? 2;
   const minWidth = opts.min ?? 4;
@@ -1438,9 +1471,9 @@ export function autofitColumns(
   const widest = new Map<number, number>();
   for (const rowMap of ws.rows.values()) {
     for (const [col, cell] of rowMap) {
-      const s = cellValueAsString(cell.value);
+      const len = effectiveLength(cell, opts.workbook);
       const cur = widest.get(col) ?? 0;
-      if (s.length > cur) widest.set(col, s.length);
+      if (len > cur) widest.set(col, len);
     }
   }
   for (const [col, w] of widest) {
