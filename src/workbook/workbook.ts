@@ -674,6 +674,24 @@ export function getAllTables(
 }
 
 /**
+ * Locate an Excel table by `displayName` across the whole workbook.
+ * Excel enforces uniqueness at the workbook level, so the first
+ * match wins. Returns the owning sheet + the table itself, or
+ * `undefined` when nothing matches.
+ */
+export function findTable(
+  wb: Workbook,
+  displayName: string,
+): { sheet: Worksheet; table: import('../worksheet/table').TableDefinition } | undefined {
+  for (const sheet of iterWorksheets(wb)) {
+    for (const t of sheet.tables) {
+      if (t.displayName === displayName) return { sheet, table: t };
+    }
+  }
+  return undefined;
+}
+
+/**
  * Collect every data-validation block across every worksheet. Each
  * entry pairs the validation with a back-reference to the owning
  * sheet, in tab-strip order.

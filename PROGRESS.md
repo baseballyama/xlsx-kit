@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`listPrintAreas` / `listPrintTitles` を追加**。`_xlnm.Print_Area` / `_xlnm.Print_Titles` を name で filter:
+- **次のタスク**: **`findTable(wb, displayName)` workbook-wide table lookup を追加**。
+  1. `src/workbook/workbook.ts` に追加: 全 worksheet を walk して displayName 一致 table を `{sheet, table}` で return、無ければ undefined。Excel の table-name 一意性保証で first match で十分。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/find-table.test.ts` 3 件: 異 sheet で displayName lookup / 不存在で undefined / 空 wb で undefined。
+
+  empirical: 1782 tests pass (was 1779, +3)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`listPrintAreas` / `listPrintTitles` を追加**。`_xlnm.Print_Area` / `_xlnm.Print_Titles` を name で filter:
   1. `src/workbook/defined-names.ts` に追加: definedNames を name で filter する 1-line helper x 2。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/print-area-titles-listing.test.ts` 3 件: listPrintAreas (2 sheet 分の `_xlnm.Print_Area` のみ抽出 + 他 name 無視) / 空 wb は空 / listPrintTitles 同等。
