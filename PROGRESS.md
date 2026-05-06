@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **autofit 列の font-aware scaling を追加**。
+- **次のタスク**: **`pickUniqueSheetTitle(wb, base)` を追加**。Excel UI の "Sheet1 (2)" 風 auto-suffix:
+  1. `src/workbook/workbook.ts` に追加: base が free なら verbatim、衝突時は ` (N)` を 2..999 まで増やして free slot を探す。base+suffix が 31 char を超える場合は base を切り詰めて全体 31 ≤ に維持。base 自体が valid でないと throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/pick-unique-sheet-title.test.ts` 5 件: free pass-through / 1〜2 衝突で ` (2)`/` (3)` / 31 char base で 27 char truncation+` (2)` / invalid base throw / 出力が validateSheetTitle 通過。
+
+  empirical: 1761 tests pass (was 1756, +5)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **autofit 列の font-aware scaling を追加**。
   1. `src/worksheet/worksheet.ts`: `autofitColumn` / `autofitColumns` に `opts.workbook` 引数を追加。供給時は cell の `styleId` → `wb.styles.cellXfs[id].fontId` → `wb.styles.fonts[fontId].size` を辿り、長さを `(size / 11)` で線形 scaling。未供給時は従来の文字列長 fallback。
   2. `tests/phase-5/autofit-columns.test.ts` 3 件追加: 22pt cell が 11pt の ~2× width / workbook 引数なしで font は無視 / autofitColumns で複数列 mixed 11pt/22pt の独立 scaling。
   3. 既存 9 件の string-length-only テストはそのまま pass。

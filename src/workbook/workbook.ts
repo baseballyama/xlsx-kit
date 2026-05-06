@@ -200,6 +200,34 @@ export function validateSheetTitle(title: unknown): string | undefined {
 /** Boolean form of {@link validateSheetTitle}. */
 export const isValidSheetTitle = (title: unknown): title is string => validateSheetTitle(title) === undefined;
 
+/**
+ * Pick a unique sheet title based on `base`. If `base` itself is
+ * available, it's returned verbatim. Otherwise the helper appends
+ * ` (2)`, ` (3)`, … until it finds a free slot. The returned title
+ * always satisfies {@link validateSheetTitle} — if the base+suffix
+ * would exceed 31 chars, the base is truncated to fit.
+ *
+ * Useful for "duplicate sheet" / "import" flows where you want
+ * Excel-like automatic uniqueification ("Sheet1 (2)").
+ */
+export function pickUniqueSheetTitle(wb: Workbook, base: string): string {
+  const reason = validateSheetTitle(base);
+  if (reason) {
+    throw new OpenXmlSchemaError(`pickUniqueSheetTitle: base "${base}" is not a valid sheet title (${reason})`);
+  }
+  const used = new Set<string>();
+  for (const s of wb.sheets) used.add(s.sheet.title);
+  if (!used.has(base)) return base;
+  for (let n = 2; n < 1000; n++) {
+    const suffix = ` (${n})`;
+    const room = 31 - suffix.length;
+    const truncatedBase = base.length > room ? base.slice(0, room) : base;
+    const candidate = `${truncatedBase}${suffix}`;
+    if (!used.has(candidate)) return candidate;
+  }
+  throw new OpenXmlSchemaError(`pickUniqueSheetTitle: exhausted candidates for "${base}"`);
+}
+
 const validateUniqueTitle = (wb: Workbook, title: string): void => {
   const reason = validateSheetTitle(title);
   if (reason) {

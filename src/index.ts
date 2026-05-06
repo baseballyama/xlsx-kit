@@ -610,6 +610,7 @@ export {
   listCustomXmlParts,
   listWorksheets,
   moveSheet,
+  pickUniqueSheetTitle,
   removeSheet,
   renameSheet,
   setActiveSheet,
