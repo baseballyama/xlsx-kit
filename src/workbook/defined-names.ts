@@ -9,6 +9,8 @@
 // here as plain DefinedName entries since the value semantics are the
 // same.
 
+import { OpenXmlSchemaError } from '../utils/exceptions';
+
 export interface DefinedName {
   /** Identifier — `_xlnm.Print_Area` for built-ins, otherwise user-chosen. */
   name: string;
@@ -101,6 +103,29 @@ export const removeDefinedNames = (
   const before = wb.definedNames.length;
   wb.definedNames = wb.definedNames.filter((d) => !predicate(d));
   return before - wb.definedNames.length;
+};
+
+/**
+ * Rename a defined name, scoped or workbook-scope. Returns `true`
+ * when an entry was renamed. Throws when `newName` is already taken
+ * with the same scope (Excel forbids duplicates within a scope).
+ */
+export const renameDefinedName = (
+  wb: Workbook,
+  oldName: string,
+  newName: string,
+  scope?: number,
+): boolean => {
+  const idx = wb.definedNames.findIndex((d) => d.name === oldName && d.scope === scope);
+  if (idx < 0) return false;
+  const conflict = wb.definedNames.findIndex((d, i) => i !== idx && d.name === newName && d.scope === scope);
+  if (conflict >= 0) {
+    throw new OpenXmlSchemaError(`renameDefinedName: "${newName}" is already in use at the same scope`);
+  }
+  const existing = wb.definedNames[idx];
+  if (!existing) return false;
+  wb.definedNames[idx] = { ...existing, name: newName };
+  return true;
 };
 
 /**

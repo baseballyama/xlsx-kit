@@ -650,6 +650,7 @@ export {
   makeDefinedName,
   removeDefinedName,
   removeDefinedNames,
+  renameDefinedName,
   setPrintArea,
   setPrintTitles,
 } from './workbook/defined-names';

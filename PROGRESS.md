@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`removeAllMergedRanges(ws)` 一括解除を追加**。
+- **次のタスク**: **`renameDefinedName(wb, oldName, newName, scope?)` を追加**。
+  1. `src/workbook/defined-names.ts` に追加: 同 scope 内 lookup → conflict check → in-place rename。Return は boolean (見つかったか)、scope 内重複は throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/rename-defined-name.test.ts` 5 件: workbook-scope rename / sheet-scope rename + 他 scope 保持 / missing で false / 同 scope collision throw / 別 scope 同名 OK。
+
+  empirical: 1836 tests pass (was 1831, +5)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`removeAllMergedRanges(ws)` 一括解除を追加**。
   1. `src/worksheet/worksheet.ts` に追加: `ws.mergedCells = []` で全 merge を削除し、count を return。cell value は untouched。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/remove-all-merged-ranges.test.ts` 3 件: 2 merge 削除 + count / 0 件で 0 / cell value 保持。
