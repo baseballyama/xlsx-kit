@@ -56,6 +56,8 @@ export type { NamedStyle, StylesheetNamedStyle } from './named-styles';
 export { addNamedStyle, BUILTIN_NAMED_STYLES, ensureBuiltinStyle } from './named-styles';
 export type { Color } from './colors';
 export {
+  adjustLightness,
+  adjustSaturation,
   contrastRatio,
   darken,
   hexToHsl,
@@ -68,6 +70,7 @@ export {
   pickReadableTextColor,
   resolveIndexedColor,
   rgbColor,
+  rotateHue,
 } from './colors';
 export type { Fill, GradientFill, GradientFillType, GradientStop, PatternFill, PatternType } from './fills';
 export { makeFill, makeGradientFill, makeGradientStop, makePatternFill } from './fills';

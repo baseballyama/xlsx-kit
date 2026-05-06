@@ -284,6 +284,37 @@ export function hexToHsl(hex: string): { h: number; s: number; l: number; a: num
 }
 
 /**
+ * Rotate the hue of a color by `degrees` (positive = clockwise).
+ * Saturation and lightness are preserved; alpha is preserved.
+ * Equivalent to `hexToHsl` → adjust `h` → `hslToHex`.
+ */
+export function rotateHue(hex: string, degrees: number): string {
+  const { h, s, l, a } = hexToHsl(hex);
+  return hslToHex(h + degrees, s, l, a);
+}
+
+/**
+ * Adjust the saturation of a color by `delta` (added directly to the
+ * `[0, 1]` saturation channel and clamped). Positive = more vivid,
+ * negative = closer to gray. Hue, lightness, and alpha are preserved.
+ */
+export function adjustSaturation(hex: string, delta: number): string {
+  const { h, s, l, a } = hexToHsl(hex);
+  return hslToHex(h, s + delta, l, a);
+}
+
+/**
+ * Adjust the lightness of a color by `delta` (added directly to the
+ * `[0, 1]` lightness channel and clamped). Positive = lighter,
+ * negative = darker. Distinct from {@link lighten} / {@link darken}
+ * which mix toward white/black in RGB space.
+ */
+export function adjustLightness(hex: string, delta: number): string {
+  const { h, s, l, a } = hexToHsl(hex);
+  return hslToHex(h, s, l + delta, a);
+}
+
+/**
  * Convert HSL components back to an ARGB hex string. `h` wraps
  * mod-360, `s` and `l` clamp to `[0, 1]`. `alpha` is the byte
  * (default 255 = opaque), placed in the high byte of the result.

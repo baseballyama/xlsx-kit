@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **color HSL 変換 (`hexToHsl` / `hslToHex`) を追加**。テーマ調整向け hue/sat/light 操作:
+- **次のタスク**: **HSL adjustment shortcuts (`rotateHue` / `adjustSaturation` / `adjustLightness`) を追加**。
+  1. `src/styles/colors.ts` に追加: 全 hexToHsl→adjust→hslToHex の 1-line wrapper。alpha 保持、s/l は clamp、h は wrap。
+  2. `src/styles/index.ts` + `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/color-hsl-shortcuts.test.ts` 11 件: rotateHue 120°/-120°/360° identity / alpha 保持 / adjustSaturation +1 clamp+hue 保持 / -1 → gray / alpha 保持 / adjustLightness +0.5 from black → 0.5 / -1 → black / +1 → white / alpha 保持。
+
+  empirical: 1815 tests pass (was 1804, +11)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **color HSL 変換 (`hexToHsl` / `hslToHex`) を追加**。テーマ調整向け hue/sat/light 操作:
   1. `src/styles/colors.ts` に追加: `hexToHsl(hex)` → `{h ∈ [0,360), s, l ∈ [0,1], a ∈ [0,255]}` (RGB→HSL std formula)、`hslToHex(h, s, l, alpha=255)` → ARGB hex (h は mod-360 wrap、s/l は clamp)。
   2. `src/styles/index.ts` + `src/index.ts` から re-export。
   3. `tests/phase-2/styles/color-hsl.test.ts` 13 件: 白/黒/赤/緑/青の hue/sat/light / alpha 保持 / hslToHex 逆変換 5 色 / h wrap (-120 / 360) / alpha 引数 / 任意 hex round-trip。
