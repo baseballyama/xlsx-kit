@@ -590,6 +590,31 @@ export function* iterWorksheets(wb: Workbook): IterableIterator<Worksheet> {
 }
 
 /**
+ * Iterate only over Worksheets whose tab-strip state is `'visible'`.
+ * Hidden / veryHidden sheets are skipped. Useful for reports that
+ * should ignore back-office sheets the author has hidden.
+ */
+export function* iterVisibleWorksheets(wb: Workbook): IterableIterator<Worksheet> {
+  for (const ref of wb.sheets) {
+    if (ref.kind === 'worksheet' && ref.state === 'visible') yield ref.sheet;
+  }
+}
+
+/**
+ * Iterate Worksheets matching the supplied state. Pass `'hidden'`
+ * to skim back-office sheets, `'veryHidden'` to find sheets only
+ * accessible via VBA, etc.
+ */
+export function* iterWorksheetsByState(
+  wb: Workbook,
+  state: SheetState,
+): IterableIterator<Worksheet> {
+  for (const ref of wb.sheets) {
+    if (ref.kind === 'worksheet' && ref.state === state) yield ref.sheet;
+  }
+}
+
+/**
  * Iterate every cell across every worksheet in the workbook. Yields
  * `{ sheet, cell }` pairs in tab-strip order, then row-then-column
  * within each sheet. Useful for workbook-wide audits / find-and-

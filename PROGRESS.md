@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **HSL adjustment shortcuts (`rotateHue` / `adjustSaturation` / `adjustLightness`) を追加**。
+- **次のタスク**: **`iterVisibleWorksheets` / `iterWorksheetsByState` を追加**。state filter sheet iter:
+  1. `src/workbook/workbook.ts` に追加: `iterVisibleWorksheets(wb)` (state==='visible' のみ yield)、`iterWorksheetsByState(wb, state)` (任意 state filter)。chartsheet skip。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/iter-visible-worksheets.test.ts` 5 件: hidden+veryHidden skip / chartsheet skip / 空 wb / state filter (3 state) / setSheetState 反映。
+
+  empirical: 1820 tests pass (was 1815, +5)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **HSL adjustment shortcuts (`rotateHue` / `adjustSaturation` / `adjustLightness`) を追加**。
   1. `src/styles/colors.ts` に追加: 全 hexToHsl→adjust→hslToHex の 1-line wrapper。alpha 保持、s/l は clamp、h は wrap。
   2. `src/styles/index.ts` + `src/index.ts` から re-export。
   3. `tests/phase-2/styles/color-hsl-shortcuts.test.ts` 11 件: rotateHue 120°/-120°/360° identity / alpha 保持 / adjustSaturation +1 clamp+hue 保持 / -1 → gray / alpha 保持 / adjustLightness +0.5 from black → 0.5 / -1 → black / +1 → white / alpha 保持。
