@@ -14,6 +14,8 @@ export {
   applyNamedStyle,
   centerCell,
   clearCellBackground,
+  cloneCellStyle,
+  copyCellStyle,
   formatAsHeader,
   indentCell,
   rotateCellText,

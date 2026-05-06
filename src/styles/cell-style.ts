@@ -151,6 +151,62 @@ export function setCellNumberFormat(wb: Workbook, c: Cell, formatCode: string): 
 }
 
 /**
+ * Copy the source cell's `styleId` to the target cell. Both cells
+ * share the same workbook stylesheet, so the styled appearance
+ * carries over without allocating a new xf entry. Pass cells from
+ * different workbooks via {@link cloneCellStyle} if you need a
+ * deep copy across workbooks.
+ */
+export function copyCellStyle(_wb: Workbook, source: Cell, target: Cell): void {
+  target.styleId = source.styleId;
+}
+
+/**
+ * Deep-copy the source cell's full xf (font / fill / border /
+ * alignment / protection / numberFormat) into a possibly-different
+ * workbook. Returns the new styleId in the target workbook.
+ */
+export function cloneCellStyle(
+  sourceWb: Workbook,
+  source: Cell,
+  targetWb: Workbook,
+  target: Cell,
+): number {
+  reserveDefaultXfSlot(targetWb);
+  const srcXf = currentXf(sourceWb.styles, source);
+  const srcFont = sourceWb.styles.fonts[srcXf.fontId] ?? DEFAULT_FONT;
+  const srcFill = sourceWb.styles.fills[srcXf.fillId] ?? DEFAULT_EMPTY_FILL;
+  const srcBorder = sourceWb.styles.borders[srcXf.borderId] ?? DEFAULT_BORDER;
+  const srcNumFmt = builtinFormatCode(srcXf.numFmtId)
+    ?? sourceWb.styles.numFmts.get(srcXf.numFmtId)
+    ?? GENERAL_FORMAT_CODE;
+  const fontId = addFont(targetWb.styles, srcFont);
+  const fillId = addFill(targetWb.styles, srcFill);
+  const borderId = addBorder(targetWb.styles, srcBorder);
+  const numFmtId = addNumFmt(targetWb.styles, srcNumFmt);
+  const next: { -readonly [K in keyof CellXf]?: CellXf[K] } = {
+    fontId,
+    fillId,
+    borderId,
+    numFmtId,
+  };
+  if (srcXf.applyFont) next.applyFont = true;
+  if (srcXf.applyFill) next.applyFill = true;
+  if (srcXf.applyBorder) next.applyBorder = true;
+  if (srcXf.applyNumberFormat) next.applyNumberFormat = true;
+  if (srcXf.alignment !== undefined) {
+    next.alignment = srcXf.alignment;
+    next.applyAlignment = true;
+  }
+  if (srcXf.protection !== undefined) {
+    next.protection = srcXf.protection;
+    next.applyProtection = true;
+  }
+  target.styleId = addCellXf(targetWb.styles, next as CellXf);
+  return target.styleId;
+}
+
+/**
  * Build a single CellXf id from a multi-axis style spec, then apply
  * it to every cell in `range`. The xf is registered once per style
  * shape, so a 1000-cell range allocates one xf — much faster than

@@ -521,6 +521,8 @@ export {
   BUILTIN_NAMED_STYLES,
   centerCell,
   clearCellBackground,
+  cloneCellStyle,
+  copyCellStyle,
   defaultCellXf,
   ensureBuiltinStyle,
   formatAsHeader,
