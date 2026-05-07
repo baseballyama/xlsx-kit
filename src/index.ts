@@ -678,6 +678,7 @@ export {
   getChartsheet,
   getSheet,
   describeWorkbook,
+  getCellAtAddress,
   getCellSummary,
   isWorkbookEmpty,
   getSheetByIndex,

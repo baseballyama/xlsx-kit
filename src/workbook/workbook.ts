@@ -28,7 +28,7 @@ import type { Border } from '../styles/borders';
 import type { Fill } from '../styles/fills';
 import type { Font } from '../styles/fonts';
 import type { Protection } from '../styles/protection';
-import { coordinateToTuple } from '../utils/coordinate';
+import { coordinateToTuple, parseSheetRange } from '../utils/coordinate';
 import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToString } from '../worksheet/cell-range';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import type { LegacyComment } from '../worksheet/comments';
@@ -717,6 +717,33 @@ export function createWorkbookFromCsv(
     ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
   });
   return wb;
+}
+
+/**
+ * Resolve a sheet-qualified A1 address (`'Sheet1!A1'` / `'\'Q1 2024\'!B5'`)
+ * to its Cell, or `undefined` when the cell isn't materialised.
+ *
+ * Throws when:
+ *  - the address is malformed (parseSheetRange rejects)
+ *  - the sheet doesn't exist on the workbook
+ *  - the range part isn't a single cell (`'A1:B5'` is a range, not an
+ *    address — use a different helper for ranges)
+ *
+ * Round-trips with {@link getCellAddress}.
+ */
+export function getCellAtAddress(wb: Workbook, address: string): import('../cell/cell').Cell | undefined {
+  const { sheet: sheetTitle, range } = parseSheetRange(address);
+  if (range.includes(':')) {
+    throw new OpenXmlSchemaError(
+      `getCellAtAddress: address "${address}" refers to a range, not a single cell`,
+    );
+  }
+  const ws = getSheet(wb, sheetTitle);
+  if (!ws) {
+    throw new OpenXmlSchemaError(`getCellAtAddress: sheet "${sheetTitle}" not found`);
+  }
+  const { col, row } = coordinateToTuple(range);
+  return getCell(ws, row, col);
 }
 
 /**
