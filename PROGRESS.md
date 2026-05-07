@@ -37,17 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`hasSheet(wb, title)` predicate を追加** — getSheetIndex(wb, title) >= 0 の薄い shortcut。
-  1. `src/workbook/workbook.ts` に追加: 1 line wrapper。
+- **次のタスク**: **`hasChartsheet(wb, title)` chartsheet 専用 predicate を追加** (worksheet と区別)。
+  1. `src/workbook/workbook.ts` に追加: wb.sheets を walk + ref.kind === 'chartsheet' && title 一致。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/has-sheet.test.ts` 3 件: 在 true / 不在 false / chartsheet も in。
+  3. `tests/phase-3/has-chartsheet.test.ts` 3 件: chartsheet 在 / chartsheet 不在 / 同名 worksheet は false。
 
-- **次のタスク (前回)**: **`getSheetIndex(wb, title)` 0-based tab-strip index**。
-  1. `src/workbook/workbook.ts` に追加: wb.sheets findIndex。
+- **次のタスク (前回)**: **`hasSheet(wb, title)` workbook predicate**。
+  1. `src/workbook/workbook.ts` に追加: getSheetIndex(wb, title) >= 0 wrapper。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/get-sheet-index.test.ts` 4 件: 在 / 不在 -1 / chartsheet / 空 wb。
+  3. `tests/phase-3/has-sheet.test.ts` 4 件: worksheet 在 / 不在 / chartsheet 在 / 空 wb。
 
-  empirical: 2303 tests pass (was 2299, +4)、typecheck / lint clean (14 warnings)。
+  empirical: 2307 tests pass (was 2303, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: header walk + minCol 相対 index、不在で -1。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/column-index-of.test.ts` 3 件: 在 / 不在 -1 / range 相対。
