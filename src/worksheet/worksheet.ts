@@ -1632,6 +1632,22 @@ export function fillColumn(
 }
 
 /**
+ * True iff the header row of a header-driven range contains a
+ * column with exactly `name`. Thin shortcut over
+ * {@link getHeaders}.includes; lets callers avoid the array
+ * allocation when they only want the boolean.
+ */
+export function hasColumn(ws: Worksheet, range: string, name: string): boolean {
+  const { minRow, minCol, maxCol } = parseRange(range);
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    const cell = v === null || v === undefined ? '' : String(v);
+    if (cell === name) return true;
+  }
+  return false;
+}
+
+/**
  * Read the header row of a header-driven range as a string array.
  * Non-string header cells are coerced via `String(value)`; null /
  * unmaterialised header cells become `""`. The array always has

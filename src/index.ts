@@ -317,6 +317,7 @@ export {
   forEachRow,
   getHeaders,
   groupBy,
+  hasColumn,
   indexOfRow,
   mapRange,
   pivotTable,
