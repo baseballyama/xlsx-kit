@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`worksheetToMarkdownTable(ws, range)` を追加** — sibling of worksheetToHtml for Markdown output (GFM table)。
-  1. `src/worksheet/markdown.ts` (新規): GFM `| col1 | col2 |` 形式、header separator `|---|---|`。1行目を header に。`|` の escape (`\|`)。merge 無視 (md table は rowspan/colspan 不可、最初の merged cell 値だけ表示、他は空 cell)。
+- **次のタスク**: **`getWorksheetAsMarkdownTable(ws)` shortcut を追加** — getDataExtentRef + worksheetToMarkdownTable の 1 call。
+  1. `src/worksheet/markdown.ts` に追加: getDataExtent → A1 → worksheetToMarkdownTable。空 ws は `''`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/worksheet-to-markdown.test.ts` 5 件: 通常 / `|` escape / 空 cell / merged は最初のセルのみ / 範囲 1 行で header だけの output。
+  3. `tests/phase-5/worksheet-as-markdown.test.ts` 4 件: 通常 / 空 ws / sparse extent / merge。
 
-- **次のタスク (前回)**: **`getWorkbookAsHtmlRecord(wb)` workbook-wide HTML export**。
+- **次のタスク (前回)**: **`worksheetToMarkdownTable(ws, range)` GFM table renderer**。
+  1. `src/worksheet/markdown.ts` (新規): GFM 形式、header sep `| --- |`、`|` / newline escape、merge 無視で flatten。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/worksheet-to-markdown.test.ts` 5 件: 通常 / `|` escape / 空 cell / merge flatten / 1 row range。
+
+  empirical: 2352 tests pass (was 2347, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: iterWorksheets + getWorksheetAsHtml → Record。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-as-html-record.test.ts` 4 件: 通常 / 空 sheet '' / 空 wb / chartsheet skip。
