@@ -13,7 +13,7 @@ import type { ExtendedProperties } from '../packaging/extended';
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { zipSync } from 'fflate';
+import { unzipSync, zipSync } from 'fflate';
 import type { CellValue } from '../cell/cell';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import { addTableFromObjects } from '../worksheet/table';
@@ -727,6 +727,50 @@ export function getWorkbookAsCsvBundle(
     entries[name] = encoder.encode(getWorksheetAsCsv(ws, opts));
   }
   return zipSync(entries);
+}
+
+/**
+ * Inverse of {@link getWorkbookAsCsvBundle}: read a ZIP archive of
+ * `<title>.csv` entries into a brand-new Workbook, one sheet per
+ * entry. Entry names lose their `.csv` suffix (case-insensitive) to
+ * become the sheet title; non-CSV entries are skipped.
+ *
+ * Sheet titles are deduplicated via {@link pickUniqueSheetTitle} so
+ * collisions / Excel-disallowed characters in the source filenames
+ * don't cause `addWorksheet` to throw.
+ *
+ * Empty bundle → workbook with no sheets (matches the empty-output
+ * behaviour of `getWorkbookAsCsvBundle`).
+ */
+export function createWorkbookFromCsvBundle(
+  bundle: Uint8Array,
+  opts: {
+    delimiter?: string;
+    coerceTypes?: boolean;
+    date1904?: boolean;
+  } = {},
+): Workbook {
+  const wb = createWorkbook(opts.date1904 !== undefined ? { date1904: opts.date1904 } : undefined);
+  const entries = unzipSync(bundle);
+  const decoder = new TextDecoder();
+  // Sort entries for deterministic sheet ordering across runs.
+  for (const name of Object.keys(entries).sort()) {
+    if (!/\.csv$/i.test(name)) continue;
+    const bytes = entries[name];
+    if (!bytes) continue;
+    const rawTitle = name.replace(/\.csv$/i, '');
+    // Strip Excel-disallowed chars (: \ / ? * [ ]) and clamp to 31 chars
+    // so pickUniqueSheetTitle never throws on the source filename.
+    let baseTitle = rawTitle.replace(/[:\\/?*[\]]/g, '_').slice(0, 31).trim();
+    if (baseTitle.length === 0) baseTitle = 'Sheet';
+    const safeTitle = pickUniqueSheetTitle(wb, baseTitle);
+    const ws = addWorksheet(wb, safeTitle);
+    parseCsvToRange(ws, 'A1', decoder.decode(bytes), {
+      ...(opts.delimiter !== undefined ? { delimiter: opts.delimiter } : {}),
+      ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
+    });
+  }
+  return wb;
 }
 
 /**

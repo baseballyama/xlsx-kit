@@ -643,6 +643,7 @@ export {
   addWorksheet,
   createWorkbook,
   createWorkbookFromCsv,
+  createWorkbookFromCsvBundle,
   createWorkbookFromObjects,
   duplicateSheet,
   getActiveSheet,
