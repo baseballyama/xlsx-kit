@@ -313,6 +313,7 @@ export {
   mapRange,
   pivotTable,
   readRangeAsObjects,
+  reduceRange,
   sortRange,
   tabularData,
   writeRangeFromObjects,

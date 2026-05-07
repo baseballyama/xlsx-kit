@@ -1428,6 +1428,30 @@ export function pivotTable(
 }
 
 /**
+ * Reduce the data rows of a header-driven range to a single value via
+ * a user-supplied reducer. Mirrors `Array.prototype.reduce`. Header
+ * row is excluded from iteration. Empty data area returns `init`.
+ *
+ * Useful for "count rows where X" / "sum a derived column" / similar
+ * one-shot aggregations not covered by {@link columnAggregates}.
+ */
+export function reduceRange<T>(
+  ws: Worksheet,
+  range: string,
+  reducer: (acc: T, row: Record<string, CellValue | null>, index: number) => T,
+  init: T,
+): T {
+  const rows = readRangeAsObjects(ws, range);
+  let acc = init;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    acc = reducer(acc, row, i);
+  }
+  return acc;
+}
+
+/**
  * Transform every data row of a header-driven range in place. The
  * `transform` callback receives the row object + its index and
  * returns a new row object (same shape). Returned values overwrite
