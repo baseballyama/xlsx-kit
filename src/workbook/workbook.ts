@@ -318,6 +318,14 @@ export function getSheetIndex(wb: Workbook, title: string): number {
   return -1;
 }
 
+/**
+ * True iff the workbook has a sheet (worksheet *or* chartsheet) with
+ * the given title. Thin shortcut over {@link getSheetIndex}.
+ */
+export function hasSheet(wb: Workbook, title: string): boolean {
+  return getSheetIndex(wb, title) >= 0;
+}
+
 /** Look up a Worksheet by title. Returns undefined for missing names or chartsheets. */
 export function getSheet(wb: Workbook, title: string): Worksheet | undefined {
   for (const s of wb.sheets) {
