@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`removeColumn(ws, range, column)` を追加** — header-driven range から 1 column を消す (右側 column を 1 つ左に shift)。
-  1. `src/worksheet/worksheet.ts` に追加: column index を見つけて、その列 + 各 data row の cell を null に、右側列の値を 1 つ左へ shift (setCell)。最右列は null clear。返り値は new bounding range string。
+- **次のタスク**: **`reorderColumns(ws, range, newOrder)` を追加** — header-driven range の column を任意の順序に並べ替え。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → opts.headers (newOrder) で writeRangeFromObjects。空 cell も適切に。newOrder が現 header の subset で OK (足りない列は drop)、過剰 (新 column) で throw。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/remove-column.test.ts` 4 件: 中央列削除 / 最右列削除 / 不存在 column throw / 単一列 range 削除で empty range。
+  3. `tests/phase-5/reorder-columns.test.ts` 4 件: swap / 部分 subset (drop) / 不存在 column throw / 同順なら no-op。
 
-- **次のタスク (前回)**: **`addColumn` 新 column 追加**。
+- **次のタスク (前回)**: **`removeColumn(ws, range, column)` 列削除 + shift-left**。
+  1. `src/worksheet/worksheet.ts` に追加: column 検索 → 右側 shift → 最右列 clear。new range return。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/remove-column.test.ts` 4 件: 中央 / 最右 / 不存在 throw / 単一列 throw。
+
+  empirical: 2276 tests pass (was 2272, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: header + data 値 (value/fn) を maxCol+1 に書き込み、新 range を return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/add-column.test.ts` 4 件: 通常 / fn 計算 / 重複 name throw / header-only range。
