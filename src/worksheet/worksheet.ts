@@ -1632,6 +1632,65 @@ export function fillColumn(
 }
 
 /**
+ * Bulk version of {@link renameColumn}: apply a `{oldName: newName}`
+ * mapping to the header row in one call.
+ *
+ * Validates **all** entries up-front before mutating anything:
+ *  - every `oldName` must be present in the original header
+ *  - no `newName` may collide with another existing header (one
+ *    that isn't being renamed away in the same call) or with another
+ *    `newName` in the mapping
+ *
+ * Throws on any violation, leaving the worksheet untouched. An
+ * empty mapping is a no-op.
+ */
+export function renameColumns(
+  ws: Worksheet,
+  range: string,
+  mapping: Record<string, string>,
+): void {
+  const entries = Object.entries(mapping);
+  if (entries.length === 0) return;
+  const { minRow, minCol, maxCol } = parseRange(range);
+  // Snapshot the original header row.
+  const original: string[] = [];
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    original.push(v === null || v === undefined ? '' : String(v));
+  }
+  // Validate every oldName exists.
+  const originalSet = new Set(original);
+  const removingSet = new Set(entries.map(([o]) => o));
+  for (const [o] of entries) {
+    if (!originalSet.has(o)) {
+      throw new OpenXmlSchemaError(`renameColumns: column "${o}" not found in the header row`);
+    }
+  }
+  // Validate no newName collides with another existing header that
+  // isn't being renamed in the same call.
+  const newNameSet = new Set<string>();
+  for (const [, n] of entries) {
+    if (newNameSet.has(n)) {
+      throw new OpenXmlSchemaError(`renameColumns: duplicate target name "${n}" in mapping`);
+    }
+    newNameSet.add(n);
+    if (originalSet.has(n) && !removingSet.has(n)) {
+      throw new OpenXmlSchemaError(`renameColumns: column "${n}" already exists in the header row`);
+    }
+  }
+  // Apply renames by index.
+  for (let i = 0; i < original.length; i++) {
+    const oldName = original[i];
+    if (oldName === undefined) continue;
+    if (Object.hasOwn(mapping, oldName)) {
+      const newName = mapping[oldName];
+      if (newName === undefined) continue;
+      setCell(ws, minRow, minCol + i, newName);
+    }
+  }
+}
+
+/**
  * Rename a column in the header row of a header-driven range. Only
  * the header cell is rewritten; the data column is unchanged.
  *
