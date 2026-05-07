@@ -564,6 +564,7 @@ export {
   getCellProtection,
   adjustLightness,
   adjustSaturation,
+  colorToHex,
   contrastRatio,
   darken,
   hexToHsl,

@@ -169,6 +169,22 @@ export function rgbColor(hex: string): Color {
 }
 
 /**
+ * Read a {@link Color} value-object back to a normalised ARGB hex.
+ * Resolution order: explicit `rgb` → `indexed` palette lookup. Returns
+ * `undefined` for `theme` / `auto` / empty inputs (unresolvable without
+ * a theme), so callers can fall back to a default.
+ */
+export function colorToHex(color: Color | undefined): string | undefined {
+  if (!color) return undefined;
+  if (color.rgb !== undefined) return normaliseRgb(color.rgb);
+  if (color.indexed !== undefined) {
+    const rgb = resolveIndexedColor(color.indexed);
+    if (rgb) return rgb.toUpperCase();
+  }
+  return undefined;
+}
+
+/**
  * Compute the relative luminance of an ARGB / RGB hex string per
  * the WCAG 2.x formula. Returns a value in `[0, 1]` where 0 is
  * black and 1 is white. The alpha channel (if present) is ignored.

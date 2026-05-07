@@ -60,6 +60,7 @@ export type { Color } from './colors';
 export {
   adjustLightness,
   adjustSaturation,
+  colorToHex,
   contrastRatio,
   darken,
   hexToHsl,
