@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **drawing listing helpers (`listImagesOnSheet` / `listChartsOnSheet` / `removeAllDrawingItems`) を追加**。
+- **次のタスク**: **`getAllImages(wb)` / `getAllCharts(wb)` workbook-wide drawing aggregator を追加**。
+  1. `src/workbook/workbook.ts` に追加: `iterWorksheets` で全 sheet 巡回 → `ws.drawing?.items` の content.kind で picture / chart を分けて `{sheet, item}` 配列で return。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/all-images-charts.test.ts` 4 件: 2 sheet image 集約 + chart 混在 / 空 wb / 2 sheet chart 集約 + image 混在 / drawing 無し sheet skip。
+
+  empirical: 1893 tests pass (was 1889, +4)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **drawing listing helpers (`listImagesOnSheet` / `listChartsOnSheet` / `removeAllDrawingItems`) を追加**。
   1. `src/drawing/drawing.ts` に追加: `ws.drawing?.items` を kind で filter して image/chart のみを return、wipe 系は items 配列を空にして count 返す。
   2. `src/index.ts` から re-export。
   3. `tests/phase-6/drawing-listing.test.ts` 6 件: images 2 件抽出 / 空 / charts 2 件抽出 / 空 / wipe 2 件 + count / 0 件で 0。

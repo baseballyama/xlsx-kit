@@ -843,6 +843,40 @@ export function getAllDataValidations(
 }
 
 /**
+ * Collect every image (picture) DrawingItem across every worksheet,
+ * each paired with its owning sheet in tab-strip order.
+ */
+export function getAllImages(
+  wb: Workbook,
+): ReadonlyArray<{ sheet: Worksheet; item: import('../drawing/drawing').DrawingItem }> {
+  const out: Array<{ sheet: Worksheet; item: import('../drawing/drawing').DrawingItem }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    if (!sheet.drawing) continue;
+    for (const item of sheet.drawing.items) {
+      if (item.content.kind === 'picture') out.push({ sheet, item });
+    }
+  }
+  return out;
+}
+
+/**
+ * Collect every chart DrawingItem across every worksheet, each
+ * paired with its owning sheet in tab-strip order.
+ */
+export function getAllCharts(
+  wb: Workbook,
+): ReadonlyArray<{ sheet: Worksheet; item: import('../drawing/drawing').DrawingItem }> {
+  const out: Array<{ sheet: Worksheet; item: import('../drawing/drawing').DrawingItem }> = [];
+  for (const sheet of iterWorksheets(wb)) {
+    if (!sheet.drawing) continue;
+    for (const item of sheet.drawing.items) {
+      if (item.content.kind === 'chart') out.push({ sheet, item });
+    }
+  }
+  return out;
+}
+
+/**
  * Collect every conditional-formatting block across every worksheet.
  * Each entry pairs the CF block with a back-reference to the owning
  * sheet, in tab-strip order.
