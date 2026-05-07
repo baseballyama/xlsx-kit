@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isActiveSheet(wb, title)` predicate を追加** — title が active sheet と一致するか。
-  1. `src/workbook/workbook.ts` に追加: getActiveSheetTitle(wb) === title wrapper。
+- **次のタスク**: **`worksheetToHtml(wb, ws, range, opts?)` を追加** — *ToCss helpers の payoff: range を `<table>` HTML に。
+  1. `src/worksheet/html.ts` (新規) に追加: range walk + cellStyleToCss → cssRecordToInlineStyle で `<td style="...">` 出力、merged cell は rowspan/colspan で集約、`<table><tr><td>` 構造で生成。`opts.includeStyle: true` で `<style>` block も。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/is-active-sheet.test.ts` 3 件: 一致 true / 不一致 / 空 wb false。
+  3. `tests/phase-5/worksheet-to-html.test.ts` 5 件: 通常 / styled cell の inline-style / merge → rowspan/colspan / 空 cell は `<td>` 空 / range 範囲外 cell 無視。
 
-- **次のタスク (前回)**: **`getActiveSheetTitle(wb)` active sheet title (any kind)**。
+- **次のタスク (前回)**: **`isActiveSheet(wb, title)` active-match predicate**。
+  1. `src/workbook/workbook.ts` に追加: getActiveSheetTitle wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/is-active-sheet.test.ts` 4 件: 一致 / 不一致 / setActive 反映 / 空 wb。
+
+  empirical: 2333 tests pass (was 2329, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: wb.sheets[activeSheetIndex]?.sheet.title。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/get-active-sheet-title.test.ts` 4 件: 通常 / setActiveSheet / chartsheet active / 空 wb。
