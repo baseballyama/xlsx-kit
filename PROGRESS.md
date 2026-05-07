@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getWorksheetAsCsv(ws, opts?)` shortcut を追加** — getDataExtentRef + getRangeAsCsv を 1 call に。
-  1. `src/worksheet/csv.ts` に追加: getDataExtent → 範囲を A1 化 → getRangeAsCsv。空 ws は ''。
+- **次のタスク**: **`getWorkbookAsCsvRecord(wb, opts?)` を追加** — sheet 名 → CSV 文字列の Record (workbook 全体を 1 構造で export)。
+  1. `src/workbook/workbook.ts` に追加: iterWorksheets walk + getWorksheetAsCsv で sheet ごとに CSV 化 → `Record<string, string>` (sheet title をキーに)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/worksheet-as-csv.test.ts` 4 件: 通常 / 空 ws → '' / sparse layout で正しい dims / opts.delimiter 伝播。
+  3. `tests/phase-3/workbook-as-csv-record.test.ts` 4 件: 1 sheet / 2 sheet 別々の CSV / 空 sheet は '' で含まれる / chartsheet skip。
 
-- **次のタスク (前回)**: **`parseCsv` + `parseCsvToRange` getRangeAsCsv の inverse**。
+- **次のタスク (前回)**: **`getWorksheetAsCsv(ws, opts?)` whole-sheet CSV shortcut**。
+  1. `src/worksheet/csv.ts` に追加: getDataExtent → A1 → getRangeAsCsv。空 ws は ''。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/worksheet-as-csv.test.ts` 4 件: 通常 / 空 ws / sparse extent / opts.delimiter 伝播。
+
+  empirical: 2046 tests pass (was 2042, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/csv.ts` に追加: RFC 4180 parser + writeRange。opts.coerceTypes で number/boolean coerce。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/parse-csv-to-range.test.ts` 10 件 (parseCsv 5 + parseCsvToRange 5): 標準 / quote / newline / 末尾 \n 扱い / 空 / write 通常 / coerceTypes / round-trip / delimiter / 空 input。
