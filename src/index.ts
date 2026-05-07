@@ -683,6 +683,7 @@ export type { SheetRef, SheetState, Workbook, WorkbookStats } from './workbook/w
 export {
   addChartsheet,
   addWorksheet,
+  countSheets,
   createWorkbook,
   createWorkbookFromCsv,
   createWorkbookFromCsvBundle,

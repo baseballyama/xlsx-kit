@@ -327,6 +327,24 @@ export function hasSheet(wb: Workbook, title: string): boolean {
 }
 
 /**
+ * Count sheets in the workbook, with optional kind/state filters.
+ * Mirrors the filter shape of {@link getSheetTitles} but skips the
+ * array allocation when the caller only needs the count.
+ */
+export function countSheets(
+  wb: Workbook,
+  opts: { kind?: 'worksheet' | 'chartsheet'; state?: SheetState } = {},
+): number {
+  let n = 0;
+  for (const ref of wb.sheets) {
+    if (opts.kind !== undefined && ref.kind !== opts.kind) continue;
+    if (opts.state !== undefined && ref.state !== opts.state) continue;
+    n++;
+  }
+  return n;
+}
+
+/**
  * Sheet titles in tab-strip order. By default returns titles for
  * every sheet (worksheets + chartsheets). Optional filters narrow
  * to one kind (`'worksheet'` / `'chartsheet'`) or one state
