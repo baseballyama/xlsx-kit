@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`shiftRangeStr(range, dr, dc)` A1-string shift wrapper を追加**。
-  1. `src/worksheet/cell-range.ts` に追加: `shiftRange` の A1 wrapper。出力は `rangeToString`。負の dr/dc も対応。
+- **次のタスク**: **`rangeAreaStr(range)` A1-string area helper を追加**。
+  1. `src/worksheet/cell-range.ts` に追加: `rangeArea` の A1 wrapper、parseRange + 既存 area。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/shift-range-str.test.ts` 5 件: 単純 +1+1 / 負方向 / 単一 cell / 0,0 で同じ string / 範囲外 (clamping or throw)。
+  3. `tests/phase-5/range-area-str.test.ts` 4 件: 1 cell / 矩形 / 単一 row / 1 col / 不正 input。
 
-- **次のタスク (前回)**: **`unionRangeStr` / `intersectionRangeStr` A1 set ops**。
+- **次のタスク (前回)**: **`shiftRangeStr(range, dr, dc)` A1 shift wrapper**。
+  1. `src/worksheet/cell-range.ts` に追加: shiftRange の A1 wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/shift-range-str.test.ts` 5 件: 正方向 / 負方向 / 単一 cell / (0,0) / OOXML grid 外 throw。
+
+  empirical: 2146 tests pass (was 2141, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/cell-range.ts` に追加: union/intersection の A1 wrapper。disjoint で intersection は undefined。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/range-set-ops-str.test.ts` 9 件: union overlap/disjoint/同一/単一 cell + intersect overlap/disjoint/containment/同一/境界 cell。
