@@ -94,6 +94,7 @@ export { defineSchema, fromTree, toTree } from './schema';
 export type { CellCoordinate, CellCoordinateNumeric, CellRangeBoundaries } from './utils/coordinate';
 export {
   cellRangeFromCells,
+  expandRangeStr,
   intersectionRangeStr,
   isCellInRange,
   isRangeInRange,

@@ -169,6 +169,23 @@ export function rangeDimensionsStr(range: string): { rows: number; cols: number 
   return { rows: r.maxRow - r.minRow + 1, cols: r.maxCol - r.minCol + 1 };
 }
 
+/**
+ * Expand (or shrink) an A1 range by adding `deltaRows` to its bottom
+ * edge and `deltaCols` to its right edge. The top-left corner is
+ * preserved. Negative deltas shrink the range; the result must still
+ * have at least 1 row and 1 column (otherwise throws).
+ *
+ * Useful for "this is the data range — also reserve room for a totals
+ * row" or "include one more column to the right" patterns.
+ */
+export function expandRangeStr(range: string, deltaRows: number, deltaCols: number): string {
+  if (!Number.isInteger(deltaRows) || !Number.isInteger(deltaCols)) {
+    throw new OpenXmlSchemaError('expandRangeStr: deltas must be integers');
+  }
+  const r = parseRange(range);
+  return rangeToString(makeCellRange(r.minRow, r.minCol, r.maxRow + deltaRows, r.maxCol + deltaCols));
+}
+
 /** Inclusive containment of `inner` within `outer`. */
 export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean {
   return (
