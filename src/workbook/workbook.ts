@@ -462,6 +462,26 @@ export function moveSheet(wb: Workbook, title: string, toIndex: number): void {
 }
 
 /**
+ * Swap the tab-strip positions of two sheets by title. Both titles
+ * must exist; throws otherwise. `activeSheetIndex` follows the
+ * moved sheet so the same sheet stays active across the swap.
+ */
+export function swapSheets(wb: Workbook, titleA: string, titleB: string): void {
+  const i = wb.sheets.findIndex((s) => s.sheet.title === titleA);
+  const j = wb.sheets.findIndex((s) => s.sheet.title === titleB);
+  if (i < 0) throw new OpenXmlSchemaError(`swapSheets: no sheet named "${titleA}"`);
+  if (j < 0) throw new OpenXmlSchemaError(`swapSheets: no sheet named "${titleB}"`);
+  if (i === j) return;
+  const a = wb.sheets[i];
+  const b = wb.sheets[j];
+  if (!a || !b) return;
+  wb.sheets[i] = b;
+  wb.sheets[j] = a;
+  if (wb.activeSheetIndex === i) wb.activeSheetIndex = j;
+  else if (wb.activeSheetIndex === j) wb.activeSheetIndex = i;
+}
+
+/**
  * Duplicate a worksheet end-to-end and append it as `newTitle`. Mirrors
  * Excel's "Move or Copy → Create a copy" command. Cells, dimensions,
  * styles (via shared cellXf ids), comments, hyperlinks, conditional

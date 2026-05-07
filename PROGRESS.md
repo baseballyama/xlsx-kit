@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isValidColumnLetter` / `isValidRowNumber` / `isValidColumnNumber` mini-predicates を追加**。
+- **次のタスク**: **`swapSheets(wb, titleA, titleB)` を追加**。タブストリップ位置入れ替え:
+  1. `src/workbook/workbook.ts` に追加: 両 title 検索 → 配列内 swap → activeSheetIndex を follow。同一 title は no-op、片方 missing で throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/swap-sheets.test.ts` 5 件: 隣接 swap / 非隣接 swap / activeSheetIndex follow / 同 title no-op / missing throw 両側。
+
+  empirical: 1871 tests pass (was 1866, +5)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`isValidColumnLetter` / `isValidRowNumber` / `isValidColumnNumber` mini-predicates を追加**。
   1. `src/utils/coordinate.ts` に追加: 1..3 char column letter (case-insensitive) / [1, 1048576] integer row / [1, 16384] integer col。non-integer / out-of-bound / 非 string|number は false。
   2. `src/index.ts` から re-export。
   3. `tests/phase-1/is-valid-row-col.test.ts` 12 件: ColumnLetter A..XFD + 大文字小文字 / 空+over-length+非letter+空白 / XFE / 非 string / RowNumber 1+max / 0+負 / >max / 非 integer+NaN+Infinity / 非 number / ColumnNumber 1+max / 0 + >max / 非 integer。

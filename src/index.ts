@@ -644,6 +644,7 @@ export {
   sheetNames,
   showAllSheets,
   showSheet,
+  swapSheets,
   validateSheetTitle,
   veryHideSheet,
 } from './workbook/workbook';
