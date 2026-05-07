@@ -1428,6 +1428,47 @@ export function pivotTable(
 }
 
 /**
+ * Transform every data row of a header-driven range in place. The
+ * `transform` callback receives the row object + its index and
+ * returns a new row object (same shape). Returned values overwrite
+ * the corresponding cell; keys not in the original headers are
+ * silently ignored. Existing keys not present on the returned row
+ * are written back as `null` (cleared).
+ *
+ * Header row is preserved. Return the original row unchanged from
+ * the callback to act as identity. Predicate-style filtering should
+ * use {@link filterRange} instead.
+ */
+export function mapRange(
+  ws: Worksheet,
+  range: string,
+  transform: (
+    row: Record<string, CellValue | null>,
+    index: number,
+  ) => Record<string, CellValue | null>,
+): void {
+  const rows = readRangeAsObjects(ws, range);
+  if (rows.length === 0) return;
+  const first = rows[0];
+  if (!first) return;
+  const headers = Object.keys(first);
+  const { minRow, minCol } = parseRange(range);
+  for (let i = 0; i < rows.length; i++) {
+    const original = rows[i];
+    if (!original) continue;
+    const replacement = transform(original, i);
+    for (let j = 0; j < headers.length; j++) {
+      const h = headers[j];
+      if (h === undefined) continue;
+      // Only overwrite the cell when the transformed object touches the key.
+      // Missing keys clear the cell to null (matches "remove this column").
+      const v = h in replacement ? replacement[h] : null;
+      setCell(ws, minRow + i + 1, minCol + j, v ?? null);
+    }
+  }
+}
+
+/**
  * Filter the data rows of a header-driven range in place: rows for
  * which `predicate` returns `false` are removed; remaining rows are
  * re-packed at the top of the data area, and the trailing rows are

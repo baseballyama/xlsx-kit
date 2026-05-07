@@ -310,6 +310,7 @@ export {
   columnAggregates,
   filterRange,
   groupBy,
+  mapRange,
   pivotTable,
   readRangeAsObjects,
   sortRange,
