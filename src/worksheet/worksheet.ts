@@ -1632,6 +1632,26 @@ export function fillColumn(
 }
 
 /**
+ * Read the header row of a header-driven range as a string array.
+ * Non-string header cells are coerced via `String(value)`; null /
+ * unmaterialised header cells become `""`. The array always has
+ * `maxCol - minCol + 1` entries (one per column in the range).
+ *
+ * Useful for "what columns does this range have" without going
+ * through `readRangeAsObjects` and grabbing `Object.keys` of the
+ * first row.
+ */
+export function getHeaders(ws: Worksheet, range: string): string[] {
+  const { minRow, minCol, maxCol } = parseRange(range);
+  const out: string[] = [];
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    out.push(v === null || v === undefined ? '' : String(v));
+  }
+  return out;
+}
+
+/**
  * Bulk version of {@link renameColumn}: apply a `{oldName: newName}`
  * mapping to the header row in one call.
  *

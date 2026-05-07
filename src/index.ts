@@ -315,6 +315,7 @@ export {
   filterRange,
   findRow,
   forEachRow,
+  getHeaders,
   groupBy,
   indexOfRow,
   mapRange,
