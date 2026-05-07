@@ -682,6 +682,7 @@ export {
   getCellSummary,
   getRangeValuesAtAddress,
   isWorkbookEmpty,
+  setRangeValuesAtAddress,
   getSheetByIndex,
   getSheetState,
   getWorkbookAsCsvBundle,

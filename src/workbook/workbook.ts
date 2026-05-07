@@ -44,6 +44,7 @@ import {
   getRangeValues,
   isWorksheetEmpty,
   makeWorksheet,
+  setRangeValues,
   writeRangeFromObjects,
 } from '../worksheet/worksheet';
 
@@ -737,6 +738,28 @@ export function getRangeValuesAtAddress(
     throw new OpenXmlSchemaError(`getRangeValuesAtAddress: sheet "${sheetTitle}" not found`);
   }
   return getRangeValues(ws, range);
+}
+
+/**
+ * Inverse of {@link getRangeValuesAtAddress}: write a 2D values array
+ * to a sheet-qualified A1 range. `rows[0]` is laid down at the top-
+ * left of the range; subsequent rows follow. `null` / `undefined`
+ * entries skip the cell (preserving its existing value), matching
+ * {@link setRangeValues} semantics.
+ *
+ * Throws when the address is malformed or the sheet doesn't exist.
+ */
+export function setRangeValuesAtAddress(
+  wb: Workbook,
+  address: string,
+  values: ReadonlyArray<ReadonlyArray<CellValue | null | undefined>>,
+): void {
+  const { sheet: sheetTitle, range } = parseSheetRange(address);
+  const ws = getSheet(wb, sheetTitle);
+  if (!ws) {
+    throw new OpenXmlSchemaError(`setRangeValuesAtAddress: sheet "${sheetTitle}" not found`);
+  }
+  setRangeValues(ws, range, values);
 }
 
 /**
