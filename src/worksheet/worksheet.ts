@@ -1339,6 +1339,94 @@ export interface ColumnAggregates {
   numericCount: number;
 }
 
+export type PivotAggregate = 'sum' | 'count' | 'mean' | 'min' | 'max';
+
+/**
+ * Compute a row × column pivot over a header-driven range. Reads the
+ * range with {@link readRangeAsObjects}, groups by `opts.rowKey`, then
+ * by `opts.colKey`, and aggregates `opts.valueKey` per cell.
+ *
+ * Result: `Record<rowKey, Record<colKey, number>>`. Row / column keys
+ * are string-coerced (matches groupBy semantics — null collapses to
+ * `''`). Aggregates skip non-numeric cell values for sum/mean/min/max
+ * (count counts every non-null cell, regardless of type).
+ *
+ * Throws when any of `rowKey` / `colKey` / `valueKey` isn't one of
+ * the range's headers.
+ */
+export function pivotTable(
+  ws: Worksheet,
+  range: string,
+  opts: { rowKey: string; colKey: string; valueKey: string; aggregate?: PivotAggregate },
+): Record<string, Record<string, number>> {
+  const aggregate: PivotAggregate = opts.aggregate ?? 'sum';
+  const rows = readRangeAsObjects(ws, range);
+  if (rows.length === 0) return {};
+  const first = rows[0];
+  if (!first) return {};
+  for (const k of [opts.rowKey, opts.colKey, opts.valueKey]) {
+    if (!(k in first)) {
+      throw new OpenXmlSchemaError(`pivotTable: column "${k}" not found in the header row`);
+    }
+  }
+  // accum[rowKey][colKey] = { sum, count, min, max }
+  const accum: Record<string, Record<string, { sum: number; count: number; min: number; max: number; nonNullCount: number }>> = {};
+  const keyOf = (v: CellValue | null | undefined): string =>
+    v === null || v === undefined ? '' : String(v);
+  for (const row of rows) {
+    const r = keyOf(row[opts.rowKey]);
+    const c = keyOf(row[opts.colKey]);
+    const v = row[opts.valueKey];
+    if (!Object.hasOwn(accum, r)) accum[r] = {};
+    const colMap = accum[r];
+    if (colMap === undefined) continue;
+    if (!Object.hasOwn(colMap, c)) {
+      colMap[c] = {
+        sum: 0,
+        count: 0,
+        min: Number.POSITIVE_INFINITY,
+        max: Number.NEGATIVE_INFINITY,
+        nonNullCount: 0,
+      };
+    }
+    const cell = colMap[c];
+    if (cell === undefined) continue;
+    if (v !== null && v !== undefined) cell.nonNullCount++;
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      cell.count++;
+      cell.sum += v;
+      if (v < cell.min) cell.min = v;
+      if (v > cell.max) cell.max = v;
+    }
+  }
+  const out: Record<string, Record<string, number>> = {};
+  for (const [r, colMap] of Object.entries(accum)) {
+    out[r] = {};
+    const target = out[r];
+    if (target === undefined) continue;
+    for (const [c, stats] of Object.entries(colMap)) {
+      switch (aggregate) {
+        case 'sum':
+          target[c] = stats.sum;
+          break;
+        case 'count':
+          target[c] = stats.nonNullCount;
+          break;
+        case 'mean':
+          target[c] = stats.count === 0 ? Number.NaN : stats.sum / stats.count;
+          break;
+        case 'min':
+          target[c] = stats.count === 0 ? Number.NaN : stats.min;
+          break;
+        case 'max':
+          target[c] = stats.count === 0 ? Number.NaN : stats.max;
+          break;
+      }
+    }
+  }
+  return out;
+}
+
 /**
  * Group rows of a header-driven range by the value in `byColumn`.
  * Returns a `Record<string, Record<string, CellValue|null>[]>` keyed
