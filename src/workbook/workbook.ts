@@ -742,6 +742,18 @@ export function getRangeValuesAtAddress(
 }
 
 /**
+ * Read the value at a sheet-qualified A1 address. Thin wrapper over
+ * {@link getCellAtAddress} that returns `cell.value` directly, with
+ * `null` for unmaterialised cells (consistent with cell.value's null
+ * convention). Throws on malformed addresses, missing sheets, or
+ * range inputs.
+ */
+export function getValueAtAddress(wb: Workbook, address: string): CellValue | null {
+  const cell = getCellAtAddress(wb, address);
+  return cell ? cell.value : null;
+}
+
+/**
  * Set a single cell by sheet-qualified A1 address. Resolves the
  * sheet, then delegates to {@link setCellByCoord}. Throws on
  * malformed addresses, missing sheets, or range inputs.

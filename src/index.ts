@@ -681,6 +681,7 @@ export {
   getCellAtAddress,
   getCellSummary,
   getRangeValuesAtAddress,
+  getValueAtAddress,
   isWorkbookEmpty,
   setCellAtAddress,
   setRangeValuesAtAddress,
