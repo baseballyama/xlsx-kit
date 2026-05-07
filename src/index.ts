@@ -98,6 +98,7 @@ export {
   isCellInRange,
   isRangeInRange,
   rangeAreaStr,
+  rangeDimensionsStr,
   rangesOverlapStr,
   shiftRangeStr,
   unionRangeStr,

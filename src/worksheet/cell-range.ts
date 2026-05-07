@@ -159,6 +159,16 @@ export function rangeAreaStr(range: string): number {
   return rangeArea(parseRange(range));
 }
 
+/**
+ * A1-string range dimensions: how many rows and columns the range
+ * spans (inclusive). Distinct from {@link rangeAreaStr} which returns
+ * the product. Single-cell refs return `{ rows: 1, cols: 1 }`.
+ */
+export function rangeDimensionsStr(range: string): { rows: number; cols: number } {
+  const r = parseRange(range);
+  return { rows: r.maxRow - r.minRow + 1, cols: r.maxCol - r.minCol + 1 };
+}
+
 /** Inclusive containment of `inner` within `outer`. */
 export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean {
   return (
