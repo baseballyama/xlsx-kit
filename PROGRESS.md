@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getNonEmptyCellCount(ws, opts?)` を追加** — null/empty を除いた populated cells を count。
-  1. `src/worksheet/worksheet.ts` に追加: iterCells walk で `cell.value !== null` をカウント。`opts.includeFormulas` (default true)、`opts.includeRichText` (default true)。
+- **次のタスク**: **`isCellEmpty(cell)` / `isWorksheetEmpty(ws)` predicates を追加** — null & populated check。
+  1. `src/cell/cell.ts` に `isCellEmpty(c) → c.value === null` を追加。`src/worksheet/worksheet.ts` に `isWorksheetEmpty(ws) → getNonEmptyCellCount(ws) === 0` を追加。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/non-empty-cell-count.test.ts` 5 件: 全 non-null / null 含む / 空文字列は count に含む / formula skip option / rich-text skip option。
+  3. `tests/phase-2/cell-predicates.test.ts` 4 件: null cell / 値あり / 空文字列は !empty / 削除済み (rows.delete)。`tests/phase-5/worksheet-empty-predicate.test.ts` 3 件。
 
-- **次のタスク (前回)**: **`describeWorkbook(wb)` workbook overview**。
+- **次のタスク (前回)**: **`getNonEmptyCellCount(ws, opts?)` populated minus null**。
+  1. `src/worksheet/worksheet.ts` に追加: iterCells walk + `value !== null` + opts.includeFormulas / opts.includeRichText。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/non-empty-cell-count.test.ts` 5 件: 全 non-null / null skip / '' は count / formula skip / rich-text skip。
+
+  empirical: 2085 tests pass (was 2080, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: getWorkbookStats + getWorkbookCellsByKind + per-sheet metadata。型 `WorkbookOverview` / `WorkbookSheetOverview` も export。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/describe-workbook.test.ts` 4 件: 空 wb / 通常 sheet / chartsheet+hidden 混在 / tab-strip 順序保持。
