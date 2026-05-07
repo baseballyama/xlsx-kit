@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`someRow(ws, range, predicate)` / `everyRow(...)` を追加** — Array.some / .every の row 版 (predicate 短絡)。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects walk + 短絡判定。`someRow` は first true で `true`、`everyRow` は first false で `false`。
+- **次のタスク**: **`indexOfRow(ws, range, predicate)` を追加** — Array.findIndex の row 版 (matching row の 0-based index、none で -1)。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → 短絡 indexOf。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/some-every-row.test.ts` 5 件: someRow hit / someRow no hit / everyRow all true / everyRow first false / 空 range で someRow=false / everyRow=true。
+  3. `tests/phase-5/index-of-row.test.ts` 4 件: hit / no match で -1 / 空 range で -1 / 短絡 (callback 1 回)。
 
-- **次のタスク (前回)**: **`findRow(ws, range, predicate)` Array.find for rows**。
+- **次のタスク (前回)**: **`someRow` / `everyRow` Array.some / .every for rows**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects walk で短絡判定。空 range で some=false / every=true。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/some-every-row.test.ts` 7 件: some hit / some no / some 空 / some 短絡 / every all true / every 第二 row で短絡 / every 空 vacuous true。
+
+  empirical: 2242 tests pass (was 2235, +7)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → 短絡 find。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/find-row.test.ts` 5 件: hit / 短絡 / no match / 空 / index passing。
