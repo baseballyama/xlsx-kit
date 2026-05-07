@@ -322,6 +322,7 @@ export {
   pluckColumn,
   readRangeAsObjects,
   reduceRange,
+  removeColumn,
   renameColumn,
   someRow,
   sortRange,

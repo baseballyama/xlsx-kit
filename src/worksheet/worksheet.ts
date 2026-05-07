@@ -1445,6 +1445,46 @@ export function pluckColumn(
 }
 
 /**
+ * Remove a column from a header-driven range. The column's data
+ * (header + every data row) is wiped to `null`, and the columns to
+ * the right are shifted one column left to close the gap. The
+ * original right-most column is cleared.
+ *
+ * Returns the new range string covering the original area minus
+ * one column. Throws when `column` isn't in the header row, or
+ * when the original range has only a single column (would leave a
+ * zero-column range).
+ */
+export function removeColumn(ws: Worksheet, range: string, column: string): string {
+  const { minRow, minCol, maxRow, maxCol } = parseRange(range);
+  if (minCol === maxCol) {
+    throw new OpenXmlSchemaError(`removeColumn: cannot remove the only column of range "${range}"`);
+  }
+  let targetCol = -1;
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    const name = v === null || v === undefined ? '' : String(v);
+    if (name === column) {
+      targetCol = c;
+      break;
+    }
+  }
+  if (targetCol < 0) {
+    throw new OpenXmlSchemaError(`removeColumn: column "${column}" not found in the header row`);
+  }
+  // Shift each row left from targetCol .. maxCol-1.
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = targetCol; c < maxCol; c++) {
+      const right = ws.rows.get(r)?.get(c + 1)?.value ?? null;
+      setCell(ws, r, c, right);
+    }
+    // Clear the original right-most column (now duplicated by shift).
+    setCell(ws, r, maxCol, null);
+  }
+  return tupleToCoordinate(minCol, minRow) + ':' + tupleToCoordinate(maxCol - 1, maxRow);
+}
+
+/**
  * Append a new column to a header-driven range. Writes the new
  * header at column `maxCol + 1` and fills the data rows with
  * either a fixed value or a per-row computed value via a function.
