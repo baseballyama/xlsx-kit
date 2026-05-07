@@ -13,8 +13,8 @@ import type { ExtendedProperties } from '../packaging/extended';
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import type { Worksheet } from '../worksheet/worksheet';
-import { makeWorksheet } from '../worksheet/worksheet';
+import type { CellsByKindCounts, Worksheet } from '../worksheet/worksheet';
+import { countCellsByKind, makeWorksheet } from '../worksheet/worksheet';
 
 export type SheetState = 'visible' | 'hidden' | 'veryHidden';
 
@@ -623,6 +623,39 @@ export function getWorkbookStats(wb: Workbook): WorkbookStats {
     definedNameCount: wb.definedNames.length,
     customPropertyCount: wb.customProperties?.properties.length ?? 0,
   };
+}
+
+/**
+ * Workbook-wide value-kind histogram. Sums {@link countCellsByKind}
+ * across every Worksheet (chartsheets contribute no cells). Buckets
+ * have the same shape as the per-worksheet result; an empty workbook
+ * returns all-zero counts.
+ */
+export function getWorkbookCellsByKind(wb: Workbook): CellsByKindCounts {
+  const out: CellsByKindCounts = {
+    null: 0,
+    string: 0,
+    number: 0,
+    boolean: 0,
+    date: 0,
+    duration: 0,
+    error: 0,
+    'rich-text': 0,
+    formula: 0,
+  };
+  for (const ws of iterWorksheets(wb)) {
+    const partial = countCellsByKind(ws);
+    out.null += partial.null;
+    out.string += partial.string;
+    out.number += partial.number;
+    out.boolean += partial.boolean;
+    out.date += partial.date;
+    out.duration += partial.duration;
+    out.error += partial.error;
+    out['rich-text'] += partial['rich-text'];
+    out.formula += partial.formula;
+  }
+  return out;
 }
 
 /**
