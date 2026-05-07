@@ -721,6 +721,7 @@ export {
   getWorkbookAsCsvBundle,
   getWorkbookAsCsvRecord,
   getWorkbookAsHtmlRecord,
+  getWorkbookAsMarkdownRecord,
   getWorkbookCellsByKind,
   getWorkbookStats,
   hasChartsheet,

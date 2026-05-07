@@ -32,6 +32,7 @@ import { coordinateToTuple, parseSheetRange } from '../utils/coordinate';
 import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToString } from '../worksheet/cell-range';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import { getWorksheetAsHtml } from '../worksheet/html';
+import { getWorksheetAsMarkdownTable } from '../worksheet/markdown';
 import type { LegacyComment } from '../worksheet/comments';
 import type { Hyperlink } from '../worksheet/hyperlinks';
 import { addTableFromObjects } from '../worksheet/table';
@@ -1246,6 +1247,24 @@ export function getWorkbookAsHtmlRecord(wb: Workbook): Record<string, string> {
   const out: Record<string, string> = {};
   for (const ws of iterWorksheets(wb)) {
     out[ws.title] = getWorksheetAsHtml(wb, ws);
+  }
+  return out;
+}
+
+/**
+ * Workbook-wide GitHub-Flavored Markdown export. Walks every
+ * Worksheet in tab-strip order, serialises each via
+ * {@link getWorksheetAsMarkdownTable}, and returns a
+ * `Record<string, string>` keyed by sheet title. Empty worksheets
+ * are included with `""`. Chartsheets are skipped.
+ *
+ * Mirror of {@link getWorkbookAsCsvRecord} / {@link getWorkbookAsHtmlRecord}
+ * for the markdown side.
+ */
+export function getWorkbookAsMarkdownRecord(wb: Workbook): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const ws of iterWorksheets(wb)) {
+    out[ws.title] = getWorksheetAsMarkdownTable(ws);
   }
   return out;
 }
