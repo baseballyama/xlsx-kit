@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`cellStyleToCss(wb, cell)` aggregator を追加** — styled cell → 統合 CSS record。
-  1. `src/styles/cell-style.ts` に追加: cell の `styleId` から `wb.stylesheet.cellXfs[styleId]` を引いて → font/fill/border/alignment を `fontToCss` / `fillToCss` / `borderToCss` / `alignmentToCss` でそれぞれ変換 → 1 つの Record に merge (重複 key は alignment > border > fill > font の優先順)。`styleId === 0` で完全 default は `{}`。
+- **次のタスク**: **`cssRecordToInlineStyle(record)` helper を追加** — `Record<string,string>` → HTML `style="…"` 文字列。
+  1. `src/styles/cell-style.ts` (or `src/utils/css.ts` に新設) に追加: alphabetical sort で `key: value;` を `;` 連結。空 record は `''`。`'` / `"` / `;` / `<` を CSS 内で展開しないよう最低限のチェック (CSS 値に `;` が現れたら drop or escape)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/cell-style-to-css.test.ts` 5 件: default cell → {} / setBold → font-weight だけ / setCellBackgroundColor + setBold → font + bg merge / formatAsHeader (font + fill + border + alignment 全部) / unstyled cell.styleId === 0 → {}。
+  3. `tests/phase-2/styles/css-record-to-inline-style.test.ts` 5 件: 空 → '' / 単一 prop / multi-prop alphabetical / 空文字値 skip / `;` を含む値は drop。
+
+- **次のタスク (前回)**: **`cellStyleToCss(wb, cell)` aggregator を追加**。
+  1. `src/styles/cell-style.ts` に追加: cell の `styleId` から `wb.styles.cellXfs[styleId]` を引いて → font/fill/border/alignment を 4 種 toCss helper でそれぞれ変換 → 1 record に merge (font→fill→border→alignment 順、後勝ち)。`styleId === 0` + 完全 default xf は早期 `{}`。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/cell-style-to-css.test.ts` 5 件: 空 / setBold (DEFAULT_FONT 込み) / bold+bg / formatAsHeader (font+fill+border) / vertical-align collision precedence。
+
+  empirical: 1931 tests pass (was 1926, +5)、typecheck / lint clean (16 warnings)。
 
 - **次のタスク (前回)**: **`alignmentToCss(alignment)` Alignment → CSS record helper を追加**。
   1. `src/styles/alignment.ts` に追加: horizontal → text-align (general → 出力なし、fill → left approx、distributed → justify) / vertical → vertical-align (table-cell semantics) / wrapText → white-space: pre-wrap / textRotation → transform: rotate(-deg) (Excel ccw → CSS cw flip)、255 → writing-mode: vertical-rl / indent → padding-left em。空 Alignment → {}。
