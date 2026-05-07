@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`uniqueColumn(ws, range, column)` を追加** — pluckColumn + Set dedupe。
-  1. `src/worksheet/worksheet.ts` に追加: pluckColumn → first-seen-order array で dedupe (Set)。
+- **次のタスク**: **`renameColumn(ws, range, oldName, newName)` を追加** — header row のみ書き換え。
+  1. `src/worksheet/worksheet.ts` に追加: parseRange + getCell(minRow, minCol+i) で oldName を探して setCell newName 上書き。oldName 不在 throw、duplicate newName warn or throw。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/unique-column.test.ts` 4 件: 重複 dedupe / null は 1 値として保持 / 単一 cell column / 不存在 column throw。
+  3. `tests/phase-5/rename-column.test.ts` 4 件: 通常 / 不存在 oldName throw / 同名 newName で no-op / 重複 newName で throw。
 
-- **次のタスク (前回)**: **`pluckColumn(ws, range, column)` 1 column 抽出**。
+- **次のタスク (前回)**: **`uniqueColumn` pluckColumn + Set dedupe**。
+  1. `src/worksheet/worksheet.ts` に追加: pluckColumn → Set dedupe、null は distinct。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/unique-column.test.ts` 4 件: dedupe / null distinct / 空 [] / 不存在 column throw。
+
+  empirical: 2258 tests pass (was 2254, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: tabularData[column]、不存在 column で throw。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/pluck-column.test.ts` 4 件: 通常 / null / 不存在 throw / 空 range []。
