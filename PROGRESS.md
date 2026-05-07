@@ -10,7 +10,7 @@
 
 ## 次の作業者への引き継ぎ (Handoff @ 2026-05-05)
 
-**現状サマリ**: 1748 tests pass / typecheck + lint clean (16 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。
+**現状サマリ**: 1944 tests pass / typecheck + lint clean (14 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。直近で *ToCss helpers (color/font/fill/border/alignment/cellStyle) + cssRecordToInlineStyle + setRangeWrapText + setRangeProtection を積み増し。
 
 ### 直近 100+ commit のテーマ (今ブランチで積んだ作業)
 
@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`setRangeWrapText(wb, ws, range, on=true)` 一括 wrap helper を追加**。
-  1. `src/styles/cell-style.ts` に追加: range 全 cell に対して `setCellAlignment` で wrapText を patch。既存 alignment は preserve。
+- **次のタスク**: **`setRangeAlignment(wb, ws, range, alignment)` 一括 Alignment setter (full replace + merge mode 両対応)**。
+  1. `src/styles/cell-style.ts` に追加: 既存 `setRangeStyle` の alignment 経由 (full replace) と、partial を `mergeAlignment` で各 cell の現状にマージするモードを別 fn (`setRangeAlignmentMerge` / `setRangeAlignmentReplace`) で提供。デフォルトは merge 動作 (= 普通の人間に優しい)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/set-range-wrap-text.test.ts` 4 件: 全 cell wrap on / wrap off / horizontal alignment 既存値 preserve / 空 range no-op。
+  3. `tests/phase-2/styles/set-range-alignment.test.ts` 5 件: replace 全 cell / merge horizontal だけ / merge vertical 既存 horizontal preserve / replace で既存 indent 消える / merge で indent 共存。
 
-- **次のタスク (前回)**: **`setRangeProtection(wb, ws, range, protection)` 一括 Protection setter を追加**。
+- **次のタスク (前回)**: **`setRangeWrapText(wb, ws, range, on=true)` 一括 wrap helper を追加**。
+  1. `src/styles/cell-style.ts` に追加: range walk + wrapCellText per cell で既存 alignment 保持。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/set-range-wrap-text.test.ts` 4 件: 全 cell on / off / horizontal preserve / 空 range で cell 作成。
+
+  empirical: 1944 tests pass (was 1940, +4)、typecheck / lint clean (14 warnings — 16 → 14、tests/e2e/scenarios/19-charts-classic.test.ts の `!` 撤去で 2 減)。
   1. `src/styles/cell-style.ts` に追加: `setRangeStyle` 経由で range 全 cell に Protection を stamp。`Protection | Partial<Protection>` を受け、partials は missing fields を `false` にデフォルト。
   2. `src/index.ts` から re-export。
   3. `tests/phase-2/styles/set-range-protection.test.ts` 4 件: locked=false 全 cell / hidden=true partial 適用 / bold + protection 共存 / 空 range で cell 作成。
