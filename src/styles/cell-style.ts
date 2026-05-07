@@ -403,6 +403,28 @@ export function setRangeNumberFormat(
   setRangeStyle(wb, ws, range, { numberFormat: formatCode });
 }
 
+/**
+ * Range-level shortcut for `setCellProtection`. Stamps the same
+ * Protection (locked / hidden) onto every cell in the range. Pass a
+ * full `Protection` value or a partial — partials default missing
+ * fields to `false` per Excel's `<protection>` semantics.
+ *
+ * Common usage: `setRangeProtection(wb, ws, 'B2:B100', { locked: false })`
+ * to leave just an input column editable when the sheet is protected.
+ */
+export function setRangeProtection(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  protection: Protection | Partial<Protection>,
+): void {
+  // Funnel partials through the Protection factory so frozen invariant holds.
+  const p: Protection = Object.isFrozen(protection)
+    ? (protection as Protection)
+    : { locked: protection.locked ?? false, hidden: protection.hidden ?? false };
+  setRangeStyle(wb, ws, range, { protection: p });
+}
+
 // ---- font presets -------------------------------------------------------
 
 const mergeFont = (current: Font, patch: Partial<Font>): Font => makeFont({ ...current, ...patch });

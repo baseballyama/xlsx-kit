@@ -51,6 +51,7 @@ export {
   setRangeBorderBox,
   setRangeFont,
   setRangeNumberFormat,
+  setRangeProtection,
   setRangeStyle,
 } from './cell-style';
 export type { DifferentialStyle } from './differential';

@@ -609,6 +609,7 @@ export {
   setRangeBorderBox,
   setRangeFont,
   setRangeNumberFormat,
+  setRangeProtection,
   setRangeStyle,
 } from './styles';
 
