@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isValidRangeRef(s)` predicate を追加**。`isValidCellRef` の range 版:
+- **次のタスク**: **`isValidColumnLetter` / `isValidRowNumber` / `isValidColumnNumber` mini-predicates を追加**。
+  1. `src/utils/coordinate.ts` に追加: 1..3 char column letter (case-insensitive) / [1, 1048576] integer row / [1, 16384] integer col。non-integer / out-of-bound / 非 string|number は false。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-1/is-valid-row-col.test.ts` 12 件: ColumnLetter A..XFD + 大文字小文字 / 空+over-length+非letter+空白 / XFE / 非 string / RowNumber 1+max / 0+負 / >max / 非 integer+NaN+Infinity / 非 number / ColumnNumber 1+max / 0 + >max / 非 integer。
+
+  empirical: 1866 tests pass (was 1854, +12)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`isValidRangeRef(s)` predicate を追加**。`isValidCellRef` の range 版:
   1. `src/utils/coordinate.ts` に追加: 単一 cell / 二角 range / 全列 (A:A) / 全行 (1:1) を accept、$/空白/sheet prefix/multi-range/範囲外/非 string は reject。
   2. `src/index.ts` から re-export。
   3. `tests/phase-1/is-valid-range-ref.test.ts` 8 件: 単 cell / 二角 / 全列 / 全行 / $+空白+空 / 範囲外 / 非 string / sheet prefix + multi-range。

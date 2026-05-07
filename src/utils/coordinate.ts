@@ -205,6 +205,34 @@ const columnIndexFromLetterUnchecked = (letters: string): number => {
 };
 
 /**
+ * Predicate: true iff `s` is a valid 1..3-char column letter
+ * (`"A"` through `"XFD"`, case-insensitive). Empty / over-long /
+ * out-of-bound / non-string fails.
+ */
+export function isValidColumnLetter(s: unknown): s is string {
+  if (typeof s !== 'string' || s.length === 0 || s.length > 3) return false;
+  if (!/^[A-Za-z]+$/.test(s)) return false;
+  const col = columnIndexFromLetterUnchecked(s);
+  return col >= 1 && col <= MAX_COL;
+}
+
+/**
+ * Predicate: true iff `n` is a valid 1-based row index in
+ * `[1, 1048576]`. Non-finite / non-integer / out-of-bound fails.
+ */
+export function isValidRowNumber(n: unknown): n is number {
+  return typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= MAX_ROW;
+}
+
+/**
+ * Predicate: true iff `n` is a valid 1-based column index in
+ * `[1, 16384]`. Non-finite / non-integer / out-of-bound fails.
+ */
+export function isValidColumnNumber(n: unknown): n is number {
+  return typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= MAX_COL;
+}
+
+/**
  * Parse "A1:B5" / "A:A" / "1:1" / single-cell into 1-based
  * (minCol, minRow, maxCol, maxRow). Whole-column ranges fill rows to
  * [1, MAX_ROW]; whole-row ranges fill cols to [1, MAX_COL].
