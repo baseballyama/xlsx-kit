@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`writeRangeFromObjects(ws, startRef, objects, opts?)` を追加** — `readRangeAsObjects` の inverse。
-  1. `src/worksheet/worksheet.ts` に追加: objects[0] のキーを header 行に書き、続く rows を順次 setCell で書き込み。返り値は writeRange と同じ bounding-box。`opts.headers` で順序を明示指定可。
+- **次のタスク**: **`addTableFromObjects(wb, ws, startRef, objects, name, opts?)` を追加** — writeRangeFromObjects + addTable を 1 call に。
+  1. `src/worksheet/worksheet.ts` または table 専用ファイルに追加: writeRangeFromObjects で書いて bounding-box を取得 → ref string に変換 → addTable(ws, name, ref, headers)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/write-range-from-objects.test.ts` 5 件: 通常 / 空 objects → undefined / opts.headers 順序指定 / null 値 skip / 異なる keys を持つ objects は union of keys。
+  3. `tests/phase-5/add-table-from-objects.test.ts` 4 件: 単純 case / opts.headers 順序指定 / 空配列で throw or no-op / addTable 結果に headers が反映される。
 
-- **次のタスク (前回)**: **`readRangeAsObjects(ws, range, opts?)` header-driven table read**。
+- **次のタスク (前回)**: **`writeRangeFromObjects(ws, startRef, objects, opts?)` readRangeAsObjects の inverse**。
+  1. `src/worksheet/worksheet.ts` に追加: headers (union of keys / opts pinned) → grid → writeRange。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/write-range-from-objects.test.ts` 6 件: 通常 / 空 / opts.headers / null skip / union of keys / round-trip readRangeAsObjects。
+
+  empirical: 2022 tests pass (was 2016, +6)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: getRangeValues 上に header 抽出 + zipping。`opts.skipEmptyRows`。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/read-range-as-objects.test.ts` 5 件: 通常 / data 無しで [] / 非 string header coerce / skipEmptyRows / 重複 header last-wins。
