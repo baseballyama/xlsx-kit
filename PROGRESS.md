@@ -37,17 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`hasColumn(ws, range, name)` を追加** — header に column が含まれるか predicate。
-  1. `src/worksheet/worksheet.ts` に追加: getHeaders → includes(name)。空 range で false。
+- **次のタスク**: **`columnIndexOf(ws, range, name)` を追加** — header の column の 0-based 相対 index、不在で -1。
+  1. `src/worksheet/worksheet.ts` に追加: header walk + 検索。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/has-column.test.ts` 3 件: 在 / 不在 / 空 range で false。
+  3. `tests/phase-5/column-index-of.test.ts` 3 件: 在 / 不在 -1 / minCol 相対 index。
 
-- **次のタスク (前回)**: **`getHeaders(ws, range)` header → string[]**。
-  1. `src/worksheet/worksheet.ts` に追加: parseRange + 1 行目を walk + coerce。
+- **次のタスク (前回)**: **`hasColumn(ws, range, name)` includes predicate**。
+  1. `src/worksheet/worksheet.ts` に追加: header walk で短絡判定。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/get-headers.test.ts` 4 件: 通常 / 数値 coerce / null '' / 列数。
+  3. `tests/phase-5/has-column.test.ts` 4 件: 在 / 不在 / 空 range / 空文字 sentinel。
 
-  empirical: 2292 tests pass (was 2288, +4)、typecheck / lint clean (14 warnings)。
+  empirical: 2296 tests pass (was 2292, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: 全 entry を up-front validate (oldName 存在 / newName collision / duplicate newName) → mutate。空 mapping no-op。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/rename-columns.test.ts` 7 件: 単一 / 複数 / swap / oldName 不在 throw / collision throw / duplicate target throw / 空 no-op。
