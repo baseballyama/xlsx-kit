@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`fontToCss(font)` Font → CSS font-shorthand 変換 helper を追加**。
-  1. `src/styles/fonts.ts` (or new `font-css.ts`) に追加: `Font` を読んで CSS font-shorthand 風 string ("italic bold 12pt 'Calibri'" など) を返す。html/preview ユーティリティ向け。
+- **次のタスク**: **`fillToCss(fill)` Fill → CSS `background` declaration record helper を追加**。
+  1. `src/styles/fills.ts` に追加: PatternFill ('solid' → fgColor を `background-color`) / GradientFill (linear/path → `linear-gradient(...)` / `radial-gradient(...)` の `background-image`) / `none' → {}`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/font-to-css.test.ts` で plain / bold / italic / underline / strike / size+name / 空 Font → 'inherit' を覆う 6 件テスト。
+  3. `tests/phase-2/styles/fill-to-css.test.ts` 6 件: solid + rgb / pattern none / linear gradient 2-stop / radial / theme-only fg → {} / undefined → {}。
+
+- **次のタスク (前回)**: **`fontToCss(font)` Font → CSS-property record helper を追加**。
+  1. `src/styles/fonts.ts` に追加: name → font-family / size → font-size pt / bold/italic/underline/strike → weight/style/decoration / color → `#RRGGBB` / vertAlign sup/sub → vertical-align + 0.83em fallback。空 Font → `{}`。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/font-to-css.test.ts` 7 件: 空 / family+size / bold/italic/strike / underline+strike combine / rgb color + theme skip / sup/sub + size override / quote escape。
+
+  empirical: 1906 tests pass (was 1899, +7)、typecheck / lint clean (16 warnings)。
 
 - **次のタスク (前回)**: **`colorToHex(color)` Color → ARGB hex readback を追加**。
   1. `src/styles/colors.ts` に追加: `rgb` あれば normaliseRgb / `indexed` あれば palette lookup / theme・auto・空は undefined を返す。
