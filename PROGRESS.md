@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`readRangeAsObjects(ws, range, opts?)` を追加** — 1 行目を header に rows を `Record<string, CellValue|null>[]` に。
-  1. `src/worksheet/worksheet.ts` に追加: getRangeValues の上に header 抽出 + 残り行を obj に変換。`opts.headerRow` (default true)、`opts.skipEmptyRows` も。
+- **次のタスク**: **`writeRangeFromObjects(ws, startRef, objects, opts?)` を追加** — `readRangeAsObjects` の inverse。
+  1. `src/worksheet/worksheet.ts` に追加: objects[0] のキーを header 行に書き、続く rows を順次 setCell で書き込み。返り値は writeRange と同じ bounding-box。`opts.headers` で順序を明示指定可。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/read-range-as-objects.test.ts` 5 件: 通常 header+data / header skip option / 空 row skip / range が単一行で `[]` / 列名重複は last-wins。
+  3. `tests/phase-5/write-range-from-objects.test.ts` 5 件: 通常 / 空 objects → undefined / opts.headers 順序指定 / null 値 skip / 異なる keys を持つ objects は union of keys。
+
+- **次のタスク (前回)**: **`readRangeAsObjects(ws, range, opts?)` header-driven table read**。
+  1. `src/worksheet/worksheet.ts` に追加: getRangeValues 上に header 抽出 + zipping。`opts.skipEmptyRows`。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/read-range-as-objects.test.ts` 5 件: 通常 / data 無しで [] / 非 string header coerce / skipEmptyRows / 重複 header last-wins。
+
+  empirical: 2016 tests pass (was 2011, +5)、typecheck / lint clean (14 warnings)。
 
 - **次のタスク (前回)**: **`readRange(ws, range)` を queue → 既存 `getRangeValues` と重複のため scrap**。
 - **次のタスク (前回 2)**: **`writeRange(ws, startRef, values)` 任意起点 2D write**。
