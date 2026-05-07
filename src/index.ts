@@ -266,6 +266,7 @@ export {
   makeWorksheet,
   mergeCells,
   removeAllComments,
+  removeAllConditionalFormatting,
   removeAllHyperlinks,
   removeAllMergedRanges,
   removeCellWatches,

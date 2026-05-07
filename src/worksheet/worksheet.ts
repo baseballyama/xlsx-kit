@@ -1831,6 +1831,13 @@ export function getConditionalFormatting(ws: Worksheet): ReadonlyArray<Condition
   return ws.conditionalFormatting;
 }
 
+/** Drop every conditional-formatting block on the worksheet. Returns the count removed. */
+export function removeAllConditionalFormatting(ws: Worksheet): number {
+  const n = ws.conditionalFormatting.length;
+  ws.conditionalFormatting = [];
+  return n;
+}
+
 // ---- cell watches / ignored errors --------------------------------------
 
 /** Pin a cell to the Watch Window. Returns the pushed entry. */
