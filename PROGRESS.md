@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`alignmentToCss(alignment)` Alignment → CSS text-align/vertical-align/wrap record helper を追加**。
-  1. `src/styles/alignment.ts` に追加: horizontal → text-align (left/center/right/justify; fill → 'left' approx) / vertical → vertical-align (top/middle/bottom) / wrapText → white-space: pre-wrap / textRotation → transform: rotate(-deg) (Excel: 0..180 cw → CSS counter-cw) / indent → padding-left: <n>em。空 Alignment → {}。
+- **次のタスク**: **`cellStyleToCss(wb, cell)` aggregator を追加** — styled cell → 統合 CSS record。
+  1. `src/styles/cell-style.ts` に追加: cell の `styleId` から `wb.stylesheet.cellXfs[styleId]` を引いて → font/fill/border/alignment を `fontToCss` / `fillToCss` / `borderToCss` / `alignmentToCss` でそれぞれ変換 → 1 つの Record に merge (重複 key は alignment > border > fill > font の優先順)。`styleId === 0` で完全 default は `{}`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/alignment-to-css.test.ts` 6 件: empty / horizontal 4 種 / vertical 3 種 / wrapText / textRotation 90 / indent 2。
+  3. `tests/phase-2/styles/cell-style-to-css.test.ts` 5 件: default cell → {} / setBold → font-weight だけ / setCellBackgroundColor + setBold → font + bg merge / formatAsHeader (font + fill + border + alignment 全部) / unstyled cell.styleId === 0 → {}。
+
+- **次のタスク (前回)**: **`alignmentToCss(alignment)` Alignment → CSS record helper を追加**。
+  1. `src/styles/alignment.ts` に追加: horizontal → text-align (general → 出力なし、fill → left approx、distributed → justify) / vertical → vertical-align (table-cell semantics) / wrapText → white-space: pre-wrap / textRotation → transform: rotate(-deg) (Excel ccw → CSS cw flip)、255 → writing-mode: vertical-rl / indent → padding-left em。空 Alignment → {}。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/alignment-to-css.test.ts` 7 件: empty / horizontal 5 種 / vertical 3 種 / wrapText / textRotation 90/0/255 / indent 2/0 / 全部 combine。
+
+  empirical: 1926 tests pass (was 1919, +7)、typecheck / lint clean (16 warnings)。
 
 - **次のタスク (前回)**: **`borderToCss(border)` Border → CSS border-property record helper を追加**。
   1. `src/styles/borders.ts` に追加: 4 sides を CSS border shorthand (`<width> <style> <#color>`) に。Excel SideStyle → CSS mapping (thin/hair→1px solid / medium→2px solid / thick→3px solid / double→3px double / dotted→1px dotted / dashed family→1px dashed / mediumDashed family→2px dashed)。色未指定 / theme は `currentColor` フォールバック。diagonal / vertical / horizontal sides は無視。
