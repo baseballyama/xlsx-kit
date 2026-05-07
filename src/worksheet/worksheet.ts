@@ -816,6 +816,27 @@ export const unfreezePanes = (ws: Worksheet): void => {
   setFreezePanes(ws, undefined);
 };
 
+/**
+ * Freeze the header row (row 1) so it stays visible while scrolling.
+ * Equivalent to Excel's "View → Freeze Top Row". Shortcut for
+ * `freezeRows(ws, 1)`.
+ */
+export const freezeFirstRow = (ws: Worksheet): void => freezeRows(ws, 1);
+
+/**
+ * Freeze the leftmost column (column A) so it stays visible while
+ * scrolling horizontally. Equivalent to Excel's "View → Freeze First
+ * Column". Shortcut for `freezeColumns(ws, 1)`.
+ */
+export const freezeFirstColumn = (ws: Worksheet): void => freezeColumns(ws, 1);
+
+/**
+ * Freeze both row 1 and column A so the header row + label column
+ * stay visible. Equivalent to selecting B2 and "View → Freeze Panes".
+ * Shortcut for `freezePanes(ws, 1, 1)`.
+ */
+export const freezeFirstRowAndColumn = (ws: Worksheet): void => freezePanes(ws, 1, 1);
+
 // ---- sheet view display helpers -------------------------------------------
 
 /** Lazily get-or-create `ws.sheetProperties` so tab-color helpers don't have to branch. */
