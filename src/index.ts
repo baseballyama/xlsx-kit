@@ -702,11 +702,12 @@ export {
   validateSheetTitle,
   veryHideSheet,
 } from './workbook/workbook';
-export type { DefinedName } from './workbook/defined-names';
+export type { DefinedName, DefinedNameTarget } from './workbook/defined-names';
 export {
   addDefinedName,
   addDefinedNameForRange,
   getDefinedName,
+  getDefinedNameTarget,
   listDefinedNames,
   listPrintAreas,
   listPrintTitles,

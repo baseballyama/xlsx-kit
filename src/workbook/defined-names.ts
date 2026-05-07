@@ -36,9 +36,21 @@ export function makeDefinedName(opts: Partial<DefinedName> & { name: string; val
 
 // ---- Workbook ergonomic helpers -----------------------------------------
 
+import { type CellRangeBoundaries, parseSheetRange } from '../utils/coordinate';
 import type { Worksheet } from '../worksheet/worksheet';
 import { getRangeAddress } from '../worksheet/worksheet';
 import type { Workbook } from './workbook';
+
+/**
+ * One parsed leg of a defined name's value. Defined-name values can be
+ * comma-separated multi-range expressions (e.g. `_xlnm.Print_Titles`
+ * sets `Sheet!$1:$1,Sheet!$A:$A`); this represents one such leg.
+ */
+export interface DefinedNameTarget {
+  sheet: string;
+  range: string;
+  bounds: CellRangeBoundaries;
+}
 
 /**
  * Add a workbook-scope or sheet-scope defined name. If a defined name
@@ -107,6 +119,56 @@ export const getDefinedName = (
   name: string,
   scope?: number,
 ): DefinedName | undefined => wb.definedNames.find((d) => d.name === name && d.scope === scope);
+
+/**
+ * Resolve a defined name's `value` into one or more
+ * {@link DefinedNameTarget}s. Comma-separated values (e.g.
+ * `_xlnm.Print_Titles` typically sets `Sheet!$1:$1,Sheet!$A:$A`)
+ * yield one entry per leg; a plain `Sheet!A1:B5` yields a single-
+ * element array.
+ *
+ * Returns `undefined` when the name doesn't exist; throws when the
+ * value can't be parsed (e.g. a constant or a non-range formula —
+ * defined names are sometimes used for things like `=42` or
+ * `=SUM(A:A)` which aren't ranges).
+ */
+export const getDefinedNameTarget = (
+  wb: Workbook,
+  name: string,
+  scope?: number,
+): DefinedNameTarget[] | undefined => {
+  const dn = getDefinedName(wb, name, scope);
+  if (!dn) return undefined;
+  // Defined-name values use `,` as the leg separator. Sheet titles
+  // can themselves contain commas inside `'...'` quotes — split on
+  // commas that aren't inside an unbalanced single-quoted segment.
+  const legs: string[] = [];
+  let current = '';
+  let inQuote = false;
+  for (let i = 0; i < dn.value.length; i++) {
+    const c = dn.value[i];
+    if (c === "'") {
+      // Doubled `''` inside a quoted run is the escape for a literal
+      // apostrophe — skip the second one without flipping the state.
+      if (inQuote && dn.value[i + 1] === "'") {
+        current += "''";
+        i++;
+        continue;
+      }
+      inQuote = !inQuote;
+      current += c;
+      continue;
+    }
+    if (c === ',' && !inQuote) {
+      legs.push(current);
+      current = '';
+      continue;
+    }
+    current += c;
+  }
+  if (current.length > 0) legs.push(current);
+  return legs.map((leg) => parseSheetRange(leg));
+};
 
 /**
  * Remove a defined name by identifier + scope. Returns true if any
