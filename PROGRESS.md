@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`renameColumns(ws, range, mapping)` を追加** — header の複数 rename を 1 call で。
-  1. `src/worksheet/worksheet.ts` に追加: `Record<oldName, newName>` を受けて、各 key について renameColumn を呼ぶ。1 つでも oldName 不在で throw、同 newName への collision で throw。
+- **次のタスク**: **`getHeaders(ws, range)` を追加** — header row を string array で返す。
+  1. `src/worksheet/worksheet.ts` に追加: parseRange + 1 行目を walk して string-coerce。空 range で []。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/rename-columns.test.ts` 4 件: 単一 rename / 複数 rename / 不存在 oldName throw / 重複 newName throw / 空 mapping no-op。
+  3. `tests/phase-5/get-headers.test.ts` 4 件: 通常 / 空 range / 数値 header coerce / null は ''。
 
-- **次のタスク (前回)**: **`reorderColumns` 列並べ替え + subset**。
+- **次のタスク (前回)**: **`renameColumns(ws, range, mapping)` 複数 rename**。
+  1. `src/worksheet/worksheet.ts` に追加: 全 entry を up-front validate (oldName 存在 / newName collision / duplicate newName) → mutate。空 mapping no-op。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/rename-columns.test.ts` 7 件: 単一 / 複数 / swap / oldName 不在 throw / collision throw / duplicate target throw / 空 no-op。
+
+  empirical: 2288 tests pass (was 2281, +7)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → newOrder 順で書き直し、余り列は clear。空 / unknown name で throw。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/reorder-columns.test.ts` 5 件: swap / subset drop / unknown name throw / empty throw / 同順 no-op。
