@@ -680,6 +680,7 @@ export {
   describeWorkbook,
   getCellAtAddress,
   getCellSummary,
+  getRangeValuesAtAddress,
   isWorkbookEmpty,
   getSheetByIndex,
   getSheetState,

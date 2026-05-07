@@ -41,6 +41,7 @@ import {
   getCellComment,
   getCellHyperlink,
   getMergedRangeAt,
+  getRangeValues,
   isWorksheetEmpty,
   makeWorksheet,
   writeRangeFromObjects,
@@ -717,6 +718,25 @@ export function createWorkbookFromCsv(
     ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
   });
   return wb;
+}
+
+/**
+ * Resolve a sheet-qualified A1 range (`'Sheet1!A1:B5'` / `'\'Q1\'!A1'`)
+ * to a 2D values array. Empty cells become `null`. Single-cell
+ * addresses still return a 2D array (`[[value]]`).
+ *
+ * Throws when the address is malformed or the sheet doesn't exist.
+ */
+export function getRangeValuesAtAddress(
+  wb: Workbook,
+  address: string,
+): (CellValue | null)[][] {
+  const { sheet: sheetTitle, range } = parseSheetRange(address);
+  const ws = getSheet(wb, sheetTitle);
+  if (!ws) {
+    throw new OpenXmlSchemaError(`getRangeValuesAtAddress: sheet "${sheetTitle}" not found`);
+  }
+  return getRangeValues(ws, range);
 }
 
 /**
