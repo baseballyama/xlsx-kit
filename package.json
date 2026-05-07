@@ -30,6 +30,7 @@
     }
   },
   "scripts": {
+    "prepare": "git submodule update --init --recursive || true",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

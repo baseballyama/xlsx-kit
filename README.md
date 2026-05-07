@@ -135,7 +135,15 @@ await wb.close();
 
 ## Development
 
+The test suite reads fixtures from the `reference/openpyxl` git submodule, so
+clone with submodules (or run `pnpm install`, which auto-inits via the
+`prepare` script):
+
 ```sh
+git clone --recursive https://github.com/baseballyama/openxml-js.git
+# or, if you already cloned without --recursive:
+git submodule update --init --recursive
+
 pnpm install
 pnpm typecheck
 pnpm lint
