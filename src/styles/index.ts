@@ -76,7 +76,7 @@ export {
   rotateHue,
 } from './colors';
 export type { Fill, GradientFill, GradientFillType, GradientStop, PatternFill, PatternType } from './fills';
-export { makeFill, makeGradientFill, makeGradientStop, makePatternFill } from './fills';
+export { fillToCss, makeFill, makeGradientFill, makeGradientStop, makePatternFill } from './fills';
 export type { Font, FontScheme, UnderlineStyle, VertAlign } from './fonts';
 export { DEFAULT_FONT, fontToCss, makeFont } from './fonts';
 export type { Protection } from './protection';

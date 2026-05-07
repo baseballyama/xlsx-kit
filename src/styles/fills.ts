@@ -11,7 +11,7 @@
 // docs/plan/04-core-model.md §3.1 so the Stylesheet pool can dedupe.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { type Color, makeColor } from './colors';
+import { type Color, colorToHex, makeColor } from './colors';
 
 // ---- pattern fills ---------------------------------------------------------
 
@@ -155,3 +155,52 @@ export const DEFAULT_GRAY_FILL: Fill = makePatternFill({ patternType: 'gray125' 
 
 const freezeColor = (c: Color | Partial<Color>): Color => (Object.isFrozen(c) ? (c as Color) : makeColor(c));
 const freezeStop = (s: GradientStop): GradientStop => (Object.isFrozen(s) ? s : makeGradientStop(s.position, s.color));
+
+const argbToCssHex = (color: Color | undefined): string | undefined => {
+  const argb = colorToHex(color);
+  return argb ? `#${argb.slice(2)}` : undefined;
+};
+
+/**
+ * Translate a {@link Fill} to a CSS-property record suitable for HTML
+ * preview. `'solid'` PatternFill renders as `background-color`, other
+ * pattern types collapse to bgColor (CSS has no built-in equivalent of
+ * Excel hatch patterns). GradientFill emits a CSS `background-image`
+ * with `linear-gradient(<angle>, …)` for `type='linear'` or
+ * `radial-gradient(circle, …)` for `type='path'`.
+ *
+ * theme/auto colours and unresolvable inputs are skipped (returns `{}`)
+ * so callers can spread without overwriting upstream defaults.
+ */
+export function fillToCss(fill: Fill | undefined): Record<string, string> {
+  const css: Record<string, string> = {};
+  if (!fill) return css;
+  if (fill.kind === 'pattern') {
+    if (fill.patternType === 'none' || fill.patternType === undefined) return css;
+    if (fill.patternType === 'solid') {
+      const fg = argbToCssHex(fill.fgColor);
+      if (fg !== undefined) css['background-color'] = fg;
+      return css;
+    }
+    // Non-solid patterns collapse to the bg colour as a coarse approximation;
+    // CSS has no native Excel hatch equivalent.
+    const bg = argbToCssHex(fill.bgColor) ?? argbToCssHex(fill.fgColor);
+    if (bg !== undefined) css['background-color'] = bg;
+    return css;
+  }
+  // Gradient fill — need at least one resolvable stop to emit anything.
+  const stopParts: string[] = [];
+  for (const s of fill.stops) {
+    const hex = argbToCssHex(s.color);
+    if (hex === undefined) continue;
+    stopParts.push(`${hex} ${(s.position * 100).toFixed(2)}%`);
+  }
+  if (stopParts.length === 0) return css;
+  if (fill.type === 'linear') {
+    const angle = fill.degree ?? 0;
+    css['background-image'] = `linear-gradient(${angle}deg, ${stopParts.join(', ')})`;
+  } else {
+    css['background-image'] = `radial-gradient(circle, ${stopParts.join(', ')})`;
+  }
+  return css;
+}

@@ -539,6 +539,7 @@ export {
   copyCellStyle,
   defaultCellXf,
   ensureBuiltinStyle,
+  fillToCss,
   fontToCss,
   formatAsHeader,
   indentCell,
