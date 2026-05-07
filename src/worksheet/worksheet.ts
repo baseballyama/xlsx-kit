@@ -651,6 +651,17 @@ export function getCellAddress(ws: Worksheet, c: Cell): string {
 }
 
 /**
+ * Sheet-qualified A1 range address — `'Sheet1!A1:B5'` for plain
+ * titles, `'\'Quarter 1\'!A1:B5'` for titles needing quoting. Pass
+ * any A1-style range string (single cell `'A1'`, rectangle `'A1:B5'`,
+ * row span `'1:5'`, column span `'A:E'`); the helper does no
+ * validation on `range` itself — that's the caller's responsibility.
+ */
+export function getRangeAddress(ws: Worksheet, range: string): string {
+  return formatSheetQualifiedRef(ws.title, range);
+}
+
+/**
  * True iff the worksheet has zero non-empty cells. Equivalent to
  * `getNonEmptyCellCount(ws) === 0` but short-circuits on the first
  * non-null value found, so the cost is O(first non-empty cell)

@@ -262,6 +262,7 @@ export {
   getNonEmptyCellCount,
   getPopulatedColumnIndices,
   getPopulatedRowIndices,
+  getRangeAddress,
   getRangeValues,
   getRowDimension,
   getRowValues,
