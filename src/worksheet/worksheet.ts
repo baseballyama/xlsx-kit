@@ -1485,6 +1485,59 @@ export function removeColumn(ws: Worksheet, range: string, column: string): stri
 }
 
 /**
+ * Reorder (and optionally subset) the columns of a header-driven
+ * range. `newOrder` lists the column names in their target order;
+ * column names omitted from `newOrder` are dropped. Returns the
+ * new range string covering `newOrder.length` columns starting at
+ * the original top-left.
+ *
+ * Throws when:
+ *  - any name in `newOrder` is not present in the original headers
+ *  - `newOrder` is empty (would leave a zero-column range)
+ */
+export function reorderColumns(ws: Worksheet, range: string, newOrder: ReadonlyArray<string>): string {
+  if (newOrder.length === 0) {
+    throw new OpenXmlSchemaError('reorderColumns: newOrder must contain at least one column');
+  }
+  const rows = readRangeAsObjects(ws, range);
+  const { minRow, minCol, maxRow, maxCol } = parseRange(range);
+  // Validate that every name in newOrder is one of the existing headers.
+  const headerSet = new Set<string>();
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    headerSet.add(v === null || v === undefined ? '' : String(v));
+  }
+  for (const name of newOrder) {
+    if (!headerSet.has(name)) {
+      throw new OpenXmlSchemaError(`reorderColumns: column "${name}" not found in the header row`);
+    }
+  }
+  // Write the new header row + every data row in newOrder order.
+  for (let i = 0; i < newOrder.length; i++) {
+    const headerName = newOrder[i];
+    if (headerName === undefined) continue;
+    setCell(ws, minRow, minCol + i, headerName);
+  }
+  for (let r = 0; r < rows.length; r++) {
+    const original = rows[r];
+    if (!original) continue;
+    for (let i = 0; i < newOrder.length; i++) {
+      const headerName = newOrder[i];
+      if (headerName === undefined) continue;
+      setCell(ws, minRow + r + 1, minCol + i, original[headerName] ?? null);
+    }
+  }
+  // Clear any columns to the right of the new last column.
+  const newMaxCol = minCol + newOrder.length - 1;
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = newMaxCol + 1; c <= maxCol; c++) {
+      setCell(ws, r, c, null);
+    }
+  }
+  return tupleToCoordinate(minCol, minRow) + ':' + tupleToCoordinate(newMaxCol, maxRow);
+}
+
+/**
  * Append a new column to a header-driven range. Writes the new
  * header at column `maxCol + 1` and fills the data rows with
  * either a fixed value or a per-row computed value via a function.

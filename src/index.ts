@@ -324,6 +324,7 @@ export {
   reduceRange,
   removeColumn,
   renameColumn,
+  reorderColumns,
   someRow,
   sortRange,
   tabularData,
