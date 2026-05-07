@@ -1428,6 +1428,23 @@ export function pivotTable(
 }
 
 /**
+ * Extract a single column of a header-driven range as an array, in
+ * row order. Empty cells become `null`. Thin shortcut over
+ * {@link tabularData}; throws when `column` isn't one of the headers.
+ */
+export function pluckColumn(
+  ws: Worksheet,
+  range: string,
+  column: string,
+): (CellValue | null)[] {
+  const cols = tabularData(ws, range);
+  if (!Object.hasOwn(cols, column)) {
+    throw new OpenXmlSchemaError(`pluckColumn: column "${column}" not found in the header row`);
+  }
+  return cols[column] ?? [];
+}
+
+/**
  * Count the data rows of a header-driven range. With no predicate,
  * returns the total row count. With a predicate, returns only rows
  * for which it returns true (Array.prototype.filter().length without

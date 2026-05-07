@@ -317,6 +317,7 @@ export {
   indexOfRow,
   mapRange,
   pivotTable,
+  pluckColumn,
   readRangeAsObjects,
   reduceRange,
   someRow,
