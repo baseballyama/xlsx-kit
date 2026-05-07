@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`rangeAreaStr(range)` A1-string area helper を追加**。
-  1. `src/worksheet/cell-range.ts` に追加: `rangeArea` の A1 wrapper、parseRange + 既存 area。
+- **次のタスク**: **`rangeDimensionsStr(range)` を追加** — A1 range → `{ rows, cols }`。
+  1. `src/worksheet/cell-range.ts` に追加: parseRange → `{rows: maxRow - minRow + 1, cols: maxCol - minCol + 1}`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/range-area-str.test.ts` 4 件: 1 cell / 矩形 / 単一 row / 1 col / 不正 input。
+  3. `tests/phase-5/range-dimensions-str.test.ts` 4 件: 単一 cell {1,1} / 3×5 / 1 col / 1 row / 不正 input。
 
-- **次のタスク (前回)**: **`shiftRangeStr(range, dr, dc)` A1 shift wrapper**。
+- **次のタスク (前回)**: **`rangeAreaStr(range)` A1 area helper**。
+  1. `src/worksheet/cell-range.ts` に追加: rangeArea の A1 wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/range-area-str.test.ts` 5 件: 単一 cell=1 / 矩形 / 単一 col / 単一 row / 不正 input。
+
+  empirical: 2151 tests pass (was 2146, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/cell-range.ts` に追加: shiftRange の A1 wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/shift-range-str.test.ts` 5 件: 正方向 / 負方向 / 単一 cell / (0,0) / OOXML grid 外 throw。
