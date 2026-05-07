@@ -37,12 +37,22 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`cellRangeFromCells(cells)` を追加** — Cell[] から包含 range A1 表記を計算。
-  1. `src/worksheet/cell-range.ts` に追加: 各 cell の row/col の min/max を取って `A1:B5` 形式の string を返す。`[]` で `OpenXmlSchemaError`。1 cell だけの場合は単一参照 (例 `A1`) を返す。
+- **次のタスク**: **`removeAllImages(ws)` / `removeAllCharts(ws)` を追加** — kind ごとの drawing wipe。
+  1. `src/drawing/drawing.ts` に追加: `ws.drawing?.items` を kind で filter して残す/削除。`removeAllDrawingItems` の split 版で count を返す。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/cell-range-from-cells.test.ts` 5 件: 単一 cell / 4 cell 矩形 / 飛び飛び cells でも min/max bounding / 1 col 連続 / 空配列で throw。
+  3. `tests/phase-6/remove-by-kind.test.ts` 4 件: image だけ削除 (chart 残る) / chart だけ削除 (image 残る) / drawing 無し sheet で 0 / 全 image/chart 削除でも items[] は残る。
 
-- **次のタスク (前回)**: **`freezeFirstRow` / `freezeFirstColumn` / `freezeFirstRowAndColumn` shortcut**。
+- **次のタスク (前回)**: **`iterCells(ws)` flat 単一 cell iterator を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: `iterRows` を flatten して 1 cell ずつ yield。min/max bounds は `IterRowsOptions` を継承。
+  2. `src/index.ts` から re-export (`iterWorksheetCells` alias)。
+  3. `tests/phase-5/iter-cells.test.ts` 4 件: 順序 / 空 / bounds / 挿入順序非依存。
+
+- **次のタスク (前回)**: **`cellRangeFromCells(cells)` を追加** — Cell[] → bounding A1 range。
+  1. `src/worksheet/cell-range.ts` に追加: row/col min/max → A1 / A1:B2 形式。空 throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/cell-range-from-cells.test.ts` 6 件: 単一 / 矩形 / sparse / 1 col / 空 throw / 実 Cell。
+
+  empirical: 1973 tests pass (was 1963, +10 = +6 from cellRangeFromCells + +4 from iterCells)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: 既存 freezePanes/freezeRows/freezeColumns の薄い wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/freeze-shortcuts.test.ts` 4 件: firstRow / firstColumn / both / 既存 freeze 上書き。
