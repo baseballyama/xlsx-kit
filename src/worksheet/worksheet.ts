@@ -396,6 +396,18 @@ export function* iterValues(ws: Worksheet, opts: IterRowsOptions = {}): Iterable
   for (const row of iterRows(ws, opts)) yield row.map((c) => c.value);
 }
 
+/**
+ * Yield every populated cell in the worksheet as a flat stream
+ * (row-major, columns ascending). Distinct from {@link iterRows} which
+ * yields one Cell[] per populated row — use this when the caller
+ * doesn't care about row boundaries.
+ */
+export function* iterCells(ws: Worksheet, opts: IterRowsOptions = {}): IterableIterator<Cell> {
+  for (const row of iterRows(ws, opts)) {
+    for (const cell of row) yield cell;
+  }
+}
+
 /** Effective max row index based on populated cells (0 when empty). */
 export function getMaxRow(ws: Worksheet): number {
   let m = 0;

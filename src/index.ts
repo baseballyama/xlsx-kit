@@ -261,6 +261,7 @@ export {
   hideRow,
   hideRows,
   isMergedCell,
+  iterCells as iterWorksheetCells,
   iterRows as iterWorksheetRows,
   iterValues as iterWorksheetValues,
   listComments,
