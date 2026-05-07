@@ -320,6 +320,7 @@ export {
   pluckColumn,
   readRangeAsObjects,
   reduceRange,
+  renameColumn,
   someRow,
   sortRange,
   tabularData,

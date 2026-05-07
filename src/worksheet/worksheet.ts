@@ -1445,6 +1445,37 @@ export function pluckColumn(
 }
 
 /**
+ * Rename a column in the header row of a header-driven range. Only
+ * the header cell is rewritten; the data column is unchanged.
+ *
+ * Throws when:
+ *  - `oldName` isn't present in the header row
+ *  - `newName` is already present (would create a duplicate header)
+ *
+ * No-op when `oldName === newName`.
+ */
+export function renameColumn(ws: Worksheet, range: string, oldName: string, newName: string): void {
+  if (oldName === newName) return;
+  const { minRow, minCol, maxCol } = parseRange(range);
+  // Read just the header row.
+  let oldCol = -1;
+  let collide = false;
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    const name = v === null || v === undefined ? '' : String(v);
+    if (name === oldName) oldCol = c;
+    if (name === newName) collide = true;
+  }
+  if (oldCol < 0) {
+    throw new OpenXmlSchemaError(`renameColumn: column "${oldName}" not found in the header row`);
+  }
+  if (collide) {
+    throw new OpenXmlSchemaError(`renameColumn: column "${newName}" already exists in the header row`);
+  }
+  setCell(ws, minRow, oldCol, newName);
+}
+
+/**
  * Distinct values of a single column in a header-driven range, in
  * first-seen row order. Equivalent to {@link pluckColumn} piped
  * through Set dedupe. Equality semantics match
