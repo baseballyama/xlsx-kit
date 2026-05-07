@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`reorderColumns(ws, range, newOrder)` を追加** — header-driven range の column を任意の順序に並べ替え。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → opts.headers (newOrder) で writeRangeFromObjects。空 cell も適切に。newOrder が現 header の subset で OK (足りない列は drop)、過剰 (新 column) で throw。
+- **次のタスク**: **`renameColumns(ws, range, mapping)` を追加** — header の複数 rename を 1 call で。
+  1. `src/worksheet/worksheet.ts` に追加: `Record<oldName, newName>` を受けて、各 key について renameColumn を呼ぶ。1 つでも oldName 不在で throw、同 newName への collision で throw。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/reorder-columns.test.ts` 4 件: swap / 部分 subset (drop) / 不存在 column throw / 同順なら no-op。
+  3. `tests/phase-5/rename-columns.test.ts` 4 件: 単一 rename / 複数 rename / 不存在 oldName throw / 重複 newName throw / 空 mapping no-op。
 
-- **次のタスク (前回)**: **`removeColumn(ws, range, column)` 列削除 + shift-left**。
+- **次のタスク (前回)**: **`reorderColumns` 列並べ替え + subset**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → newOrder 順で書き直し、余り列は clear。空 / unknown name で throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/reorder-columns.test.ts` 5 件: swap / subset drop / unknown name throw / empty throw / 同順 no-op。
+
+  empirical: 2281 tests pass (was 2276, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: column 検索 → 右側 shift → 最右列 clear。new range return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/remove-column.test.ts` 4 件: 中央 / 最右 / 不存在 throw / 単一列 throw。
