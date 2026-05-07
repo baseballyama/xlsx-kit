@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getWorkbookAsMarkdownRecord(wb)` を追加** — sheet title → MD table の Record (CSV/HTML record と対称)。
+- **次のタスク**: **`worksheetToTextTable(ws, range)` を追加** — plain ASCII-art (column-padded) table renderer。
+  1. `src/worksheet/text.ts` 新規: 各列の幅を最大 cell length で確定 → `padEnd` で揃えて 区切り文字 ` | `、header line と data row を返す。merge は flatten。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/worksheet-to-text.test.ts` 4 件: 通常 / unequal column widths / merge flatten / 空 cell。
+
+- **次のタスク (前回)**: **`getWorkbookAsMarkdownRecord(wb)` workbook-wide MD export**。
   1. `src/workbook/workbook.ts` に追加: iterWorksheets + getWorksheetAsMarkdownTable → Record。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/workbook-as-markdown-record.test.ts` 4 件: 1 sheet / 多 sheet / 空 sheet / chartsheet skip。
+  3. `tests/phase-3/workbook-as-markdown-record.test.ts` 4 件: 通常 / 空 sheet '' / 空 wb / chartsheet skip。
 
-- **次のタスク (前回)**: **`getWorksheetAsMarkdownTable(ws)` whole-sheet markdown shortcut**。
+  empirical: 2360 tests pass (was 2356, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/markdown.ts` に追加: getDataExtent → A1 → worksheetToMarkdownTable。空 ws は ''。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/worksheet-as-markdown.test.ts` 4 件: 通常 / 空 / sparse / merge。
