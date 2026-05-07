@@ -15,6 +15,8 @@ export {
   cellStyleToCss,
   centerCell,
   clearCellBackground,
+  clearCellStyle,
+  clearRangeStyle,
   cloneCellStyle,
   copyCellStyle,
   formatAsHeader,

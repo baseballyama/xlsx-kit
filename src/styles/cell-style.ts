@@ -191,6 +191,36 @@ export function copyCellStyle(_wb: Workbook, source: Cell, target: Cell): void {
 }
 
 /**
+ * Reset a cell back to the default (unstyled) appearance — equivalent
+ * to Excel's "Clear Formatting" command. After the call, the cell
+ * inherits the workbook's default font / fill / border / alignment /
+ * protection / numberFormat. The underlying xf pool is **not**
+ * shrunk (Excel doesn't bother either; the orphaned xf is harmless).
+ */
+export function clearCellStyle(_wb: Workbook, c: Cell): void {
+  c.styleId = 0;
+}
+
+/**
+ * Range-level shortcut for {@link clearCellStyle}. Walks every cell
+ * actually present in the range and resets its `styleId` to 0; cells
+ * that don't exist yet are **not** materialised (no-op for sparse
+ * regions, unlike the styled `setRange*` family which has to create
+ * cells to make the patch observable).
+ */
+export function clearRangeStyle(wb: Workbook, ws: Worksheet, range: string): void {
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  for (let r = minRow; r <= maxRow; r++) {
+    const row = ws.rows.get(r);
+    if (!row) continue;
+    for (let c = minCol; c <= maxCol; c++) {
+      const cell = row.get(c);
+      if (cell) clearCellStyle(wb, cell);
+    }
+  }
+}
+
+/**
  * Deep-copy the source cell's full xf (font / fill / border /
  * alignment / protection / numberFormat) into a possibly-different
  * workbook. Returns the new styleId in the target workbook.
