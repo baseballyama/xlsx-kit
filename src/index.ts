@@ -430,7 +430,7 @@ export {
   removeAutoFilter,
 } from './worksheet/auto-filter';
 export type { TableColumn, TableDefinition, TableStyleInfo } from './worksheet/table';
-export { addExcelTable, makeTableColumn, makeTableDefinition } from './worksheet/table';
+export { addExcelTable, addTableFromObjects, makeTableColumn, makeTableDefinition } from './worksheet/table';
 export type { CellWatch, IgnoredError } from './worksheet/errors';
 export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
 export type { OutlineProperties, PageSetupProperties, SheetProperties } from './worksheet/properties';
