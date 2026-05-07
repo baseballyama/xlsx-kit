@@ -308,6 +308,7 @@ export {
   removeTable,
   renameCommentAuthor,
   columnAggregates,
+  groupBy,
   readRangeAsObjects,
   tabularData,
   writeRangeFromObjects,

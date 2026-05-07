@@ -1340,6 +1340,39 @@ export interface ColumnAggregates {
 }
 
 /**
+ * Group rows of a header-driven range by the value in `byColumn`.
+ * Returns a `Record<string, Record<string, CellValue|null>[]>` keyed
+ * by the (string-coerced) value in the group column. Useful for
+ * "split this table by category" / "tally by region" patterns
+ * without reaching for a dataframe library.
+ *
+ * Null group keys collapse to the string `''` (matches readRangeAsObjects'
+ * empty-header fallback). Throws when `byColumn` isn't one of the
+ * range's headers.
+ */
+export function groupBy(
+  ws: Worksheet,
+  range: string,
+  byColumn: string,
+): Record<string, Array<Record<string, CellValue | null>>> {
+  const rows = readRangeAsObjects(ws, range);
+  if (rows.length === 0) return {};
+  const first = rows[0];
+  if (!first || !(byColumn in first)) {
+    throw new OpenXmlSchemaError(`groupBy: column "${byColumn}" not found in the header row`);
+  }
+  const out: Record<string, Array<Record<string, CellValue | null>>> = {};
+  for (const row of rows) {
+    const k = row[byColumn];
+    const key = k === null || k === undefined ? '' : String(k);
+    if (!Object.hasOwn(out, key)) out[key] = [];
+    const bucket = out[key];
+    if (bucket) bucket.push(row);
+  }
+  return out;
+}
+
+/**
  * Compute per-column aggregates over a header-driven range. Each
  * key in the result maps to a {@link ColumnAggregates} with sum /
  * mean / min / max plus count + numericCount. Useful for quick
