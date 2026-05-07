@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`renameColumn(ws, range, oldName, newName)` を追加** — header row のみ書き換え。
-  1. `src/worksheet/worksheet.ts` に追加: parseRange + getCell(minRow, minCol+i) で oldName を探して setCell newName 上書き。oldName 不在 throw、duplicate newName warn or throw。
+- **次のタスク**: **`fillColumn(ws, range, column, valueOrFn)` を追加** — 1 column の data を一括設定 (header 不変)。
+  1. `src/worksheet/worksheet.ts` に追加: parseRange で column index 決定 → 各 data row の cell に value or fn(row, i) を setCell。oldName 不在で throw。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/rename-column.test.ts` 4 件: 通常 / 不存在 oldName throw / 同名 newName で no-op / 重複 newName で throw。
+  3. `tests/phase-5/fill-column.test.ts` 4 件: 全 row 同値 / fn(row, i) 計算 / 不存在 column throw / data area 空 で no-op。
 
-- **次のタスク (前回)**: **`uniqueColumn` pluckColumn + Set dedupe**。
+- **次のタスク (前回)**: **`renameColumn(ws, range, oldName, newName)` header rename**。
+  1. `src/worksheet/worksheet.ts` に追加: header cell rewrite、不存在 / 重複 / 同名 no-op を validation。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/rename-column.test.ts` 5 件: 通常 / 不存在 throw / 重複 throw / 同名 no-op / data 不変。
+
+  empirical: 2263 tests pass (was 2258, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: pluckColumn → Set dedupe、null は distinct。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/unique-column.test.ts` 4 件: dedupe / null distinct / 空 [] / 不存在 column throw。
