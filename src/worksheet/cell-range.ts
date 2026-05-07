@@ -10,6 +10,7 @@ import type { Cell } from '../cell/cell';
 import {
   boundariesToRangeString,
   type CellRangeBoundaries,
+  coordinateToTuple,
   MAX_COL,
   MAX_ROW,
   rangeBoundaries,
@@ -87,6 +88,17 @@ export function cellRangeFromCells(cells: ReadonlyArray<Pick<Cell, 'row' | 'col'
 /** Inclusive containment of a single (row, col) within a range. */
 export function rangeContainsCell(r: CellRange, row: number, col: number): boolean {
   return row >= r.minRow && row <= r.maxRow && col >= r.minCol && col <= r.maxCol;
+}
+
+/**
+ * A1-string convenience for {@link rangeContainsCell}. Parses
+ * `cellRef` (e.g. `"B3"`) and `rangeRef` (e.g. `"A1:C5"`) and
+ * returns `true` iff the cell sits inside the range (boundary-
+ * inclusive). Throws when either input is malformed.
+ */
+export function isCellInRange(cellRef: string, rangeRef: string): boolean {
+  const { col, row } = coordinateToTuple(cellRef);
+  return rangeContainsCell(parseRange(rangeRef), row, col);
 }
 
 /** Inclusive containment of `inner` within `outer`. */
