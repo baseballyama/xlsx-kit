@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`setRangeValuesAtAddress(wb, address, values)` を追加** — getRangeValuesAtAddress の inverse。
+- **次のタスク**: **`setCellAtAddress(wb, address, value)` を追加** — sheet-qualified A1 → 単一 cell write。
+  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → setCellByCoord。range 形式は throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/set-cell-at-address.test.ts` 4 件: bare title / quoted title / 不存在 sheet で throw / range 形式 throw。
+
+- **次のタスク (前回)**: **`setRangeValuesAtAddress(wb, address, values)` 2D 書き込み**。
   1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → setRangeValues。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/set-range-values-at-address.test.ts` 4 件: 通常 / quoted title / 単一 cell address / 不存在 sheet で throw。
+  3. `tests/phase-3/set-range-values-at-address.test.ts` 5 件: 通常 / quoted / null skip / round-trip / 不存在 sheet throw。
 
-- **次のタスク (前回)**: **`getRangeValuesAtAddress(wb, address)` sheet-qualified A1 → 2D values**。
+  empirical: 2179 tests pass (was 2174, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getRangeValues。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/range-values-at-address.test.ts` 5 件: 矩形 / 単一 cell も 2D / 空 cell null / quoted title / 不存在 sheet throw。
