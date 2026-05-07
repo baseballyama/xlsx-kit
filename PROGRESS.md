@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isRangeInRange(inner, outer)` A1-string version of `rangeContainsRange` を追加**。
-  1. `src/worksheet/cell-range.ts` に追加: `parseRange(inner)` + `parseRange(outer)` → `rangeContainsRange(outer, inner)`。
+- **次のタスク**: **`rangesOverlapStr(a, b)` A1-string version of `rangesOverlap` を追加**。
+  1. `src/worksheet/cell-range.ts` に追加: `parseRange(a)` + `parseRange(b)` → `rangesOverlap`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/is-range-in-range.test.ts` 4 件: 完全 contained / 同一 range / partial overlap で false / 不正 ref で throw。
+  3. `tests/phase-5/ranges-overlap-str.test.ts` 5 件: 重なる / 重ならない / 境界線で接しているのみ (overlap) / 完全包含 / 不正 ref で throw。
 
-- **次のタスク (前回)**: **`isCellInRange(cellRef, rangeRef)` A1-string predicate**。
+- **次のタスク (前回)**: **`isRangeInRange(inner, outer)` A1-string range containment**。
+  1. `src/worksheet/cell-range.ts` に追加: rangeContainsRange の A1 wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/is-range-in-range.test.ts` 6 件: contained / 同一 / partial overlap / disjoint / 単一 cell / 不正 input。
+
+  empirical: 2126 tests pass (was 2120, +6)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/cell-range.ts` に追加: rangeContainsCell の A1 wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/is-cell-in-range.test.ts` 5 件: 内側 / 境界 inclusive / 外側 / 不正 cell / 不正 range。
