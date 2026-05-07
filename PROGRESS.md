@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`hasWorksheet(wb, title)` worksheet 専用 predicate を追加** (chartsheet と区別)。
-  1. `src/workbook/workbook.ts` に追加: getSheet(wb, title) !== undefined の wrapper。
+- **次のタスク**: **`getSheetTitles(wb, opts?)` を追加** — 全 sheet のタイトルを array で返す (kind/state filter optional)。
+  1. `src/workbook/workbook.ts` に追加: `wb.sheets.map(s => s.sheet.title)`、`opts.kind` (`'worksheet' | 'chartsheet'`) や `opts.state` で filter。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/has-worksheet.test.ts` 3 件: 在 / 不在 / 同名 chartsheet は false。
+  3. `tests/phase-3/get-sheet-titles.test.ts` 4 件: 全 sheet / kind=worksheet only / kind=chartsheet only / state='hidden' filter。
 
-- **次のタスク (前回)**: **`hasChartsheet(wb, title)` chartsheet-only predicate**。
+- **次のタスク (前回)**: **`hasWorksheet(wb, title)` worksheet-only predicate**。
+  1. `src/workbook/workbook.ts` に追加: getSheet(wb, title) !== undefined wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/has-worksheet.test.ts` 4 件: 在 / 同名 chartsheet false / 不在 / 空 wb。
+
+  empirical: 2315 tests pass (was 2311, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: wb.sheets walk + kind 'chartsheet' && title 一致。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/has-chartsheet.test.ts` 4 件: 在 / 不在 / 同名 worksheet false / 空 wb。
