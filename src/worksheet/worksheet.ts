@@ -1445,6 +1445,31 @@ export function pluckColumn(
 }
 
 /**
+ * Distinct values of a single column in a header-driven range, in
+ * first-seen row order. Equivalent to {@link pluckColumn} piped
+ * through Set dedupe. Equality semantics match
+ * {@link getDistinctValuesInColumn}: primitives by value, object
+ * variants by reference. `null` counts as a distinct value when
+ * present.
+ *
+ * Throws when `column` isn't one of the headers.
+ */
+export function uniqueColumn(
+  ws: Worksheet,
+  range: string,
+  column: string,
+): (CellValue | null)[] {
+  const seen = new Set<unknown>();
+  const out: (CellValue | null)[] = [];
+  for (const v of pluckColumn(ws, range, column)) {
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
+/**
  * Count the data rows of a header-driven range. With no predicate,
  * returns the total row count. With a predicate, returns only rows
  * for which it returns true (Array.prototype.filter().length without

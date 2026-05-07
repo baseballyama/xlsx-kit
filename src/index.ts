@@ -323,6 +323,7 @@ export {
   someRow,
   sortRange,
   tabularData,
+  uniqueColumn,
   writeRangeFromObjects,
   replaceCellValues,
   replaceInRange,
