@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getDistinctValuesInRow(ws, row, opts?)` を追加** — row 版 (column 版と対称)。
-  1. `src/worksheet/worksheet.ts` に追加: getCellsInRow → cell.value で Set + insertion-order で配列。`opts.skipNull` / `opts.skipFormulas` 引き継ぎ。
+- **次のタスク**: **`countCellsByKind(ws)` を追加** — populated cells を value 種別 (string/number/boolean/date/duration/formula/error/rich-text/null) で分類して count を return。
+  1. `src/worksheet/worksheet.ts` に追加: iterCells walk + value の typeof / object kind 検査で sum into `Record<string, number>`。空 ws は全 0 のオブジェクト。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/distinct-row-values.test.ts` 5 件: 重複 dedupe / 順序保持 / 空 row / null filter / formula filter。
+  3. `tests/phase-5/count-cells-by-kind.test.ts` 5 件: 全 kind 1 件ずつ / 重複 count / 空 / 数値 + 文字列 mixed / Date は 'date' に分類。
+
+- **次のタスク (前回)**: **`getDistinctValuesInRow(ws, row, opts?)` を追加** — column 版と対称。
+  1. `src/worksheet/worksheet.ts` に追加: getCellsInRow → Set dedupe、column-order、skipNull/skipFormulas opts。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/distinct-row-values.test.ts` 5 件: dedupe / 混合型 / 空 row / skipNull / skipFormulas。
+
+  empirical: 1992 tests pass (was 1987, +5)、typecheck / lint clean (14 warnings)。
 
 - **次のタスク (前回)**: **`getDistinctValuesInColumn(ws, col, opts?)` を追加**。
   1. `src/worksheet/worksheet.ts` に追加: getCellsInColumn → Set で dedupe、first-seen 順、skipNull/skipFormulas opts。
