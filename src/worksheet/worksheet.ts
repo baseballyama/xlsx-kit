@@ -1428,6 +1428,83 @@ export function pivotTable(
 }
 
 /**
+ * Sort the data rows of a header-driven range by the value of one
+ * column, in place. The header row is preserved at the top; the rest
+ * are reordered.
+ *
+ * `opts.descending` reverses the order. By default sorting auto-
+ * detects type: a column whose every non-null cell is a JS `number`
+ * is sorted numerically, otherwise lexicographically (string-coerced
+ * with `localeCompare`). `opts.numeric: true` / `false` forces the
+ * mode. Null values sort last regardless of order (so descending
+ * still puts nulls at the bottom).
+ *
+ * Throws when `byColumn` isn't one of the range's headers.
+ */
+export function sortRange(
+  ws: Worksheet,
+  range: string,
+  byColumn: string,
+  opts: { descending?: boolean; numeric?: boolean } = {},
+): void {
+  const rows = readRangeAsObjects(ws, range);
+  if (rows.length === 0) return;
+  const first = rows[0];
+  if (!first) return;
+  if (!(byColumn in first)) {
+    throw new OpenXmlSchemaError(`sortRange: column "${byColumn}" not found in the header row`);
+  }
+  // Determine numeric vs lexicographic mode.
+  let numericMode: boolean;
+  if (opts.numeric !== undefined) {
+    numericMode = opts.numeric;
+  } else {
+    numericMode = rows.every((r) => {
+      const v = r[byColumn];
+      return v === null || (typeof v === 'number' && Number.isFinite(v));
+    });
+  }
+  const desc = opts.descending === true;
+  rows.sort((a, b) => {
+    const va = a[byColumn];
+    const vb = b[byColumn];
+    // Nulls always last.
+    if (va === null || va === undefined) return vb === null || vb === undefined ? 0 : 1;
+    if (vb === null || vb === undefined) return -1;
+    let cmp = 0;
+    if (numericMode) {
+      const na = typeof va === 'number' ? va : Number(va);
+      const nb = typeof vb === 'number' ? vb : Number(vb);
+      cmp = na < nb ? -1 : na > nb ? 1 : 0;
+    } else {
+      cmp = String(va).localeCompare(String(vb));
+    }
+    return desc ? -cmp : cmp;
+  });
+  // Write back to the same range starting at the top-left. Use
+  // setCell directly so null values overwrite (writeRange would
+  // skip them, leaving the pre-sort values in place).
+  const { minRow, minCol } = parseRange(range);
+  const headers = Object.keys(first);
+  // Header row stays — overwrite anyway in case the range moved (defensive).
+  for (let j = 0; j < headers.length; j++) {
+    const h = headers[j];
+    if (h !== undefined) setCell(ws, minRow, minCol + j, h);
+  }
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    for (let j = 0; j < headers.length; j++) {
+      const h = headers[j];
+      if (h === undefined) continue;
+      const v = row[h];
+      // Use null sentinel for unset / null values so the cell is reset.
+      setCell(ws, minRow + i + 1, minCol + j, v ?? null);
+    }
+  }
+}
+
+/**
  * Group rows of a header-driven range by the value in `byColumn`.
  * Returns a `Record<string, Record<string, CellValue|null>[]>` keyed
  * by the (string-coerced) value in the group column. Useful for

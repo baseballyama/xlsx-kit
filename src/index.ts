@@ -311,6 +311,7 @@ export {
   groupBy,
   pivotTable,
   readRangeAsObjects,
+  sortRange,
   tabularData,
   writeRangeFromObjects,
   replaceCellValues,
