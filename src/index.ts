@@ -308,6 +308,7 @@ export {
   removeTable,
   renameCommentAuthor,
   readRangeAsObjects,
+  tabularData,
   writeRangeFromObjects,
   replaceCellValues,
   replaceInRange,

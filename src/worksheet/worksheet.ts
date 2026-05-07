@@ -1325,6 +1325,43 @@ export function writeRangeFromObjects(
 }
 
 /**
+ * Read a rectangular range as a column store: a `Record<string,
+ * (CellValue | null)[]>` keyed by header names from the first row.
+ * Each entry is the data column under that header, in row order.
+ *
+ * Distinct from {@link readRangeAsObjects} (row store, one Record
+ * per data row) — `tabularData` returns one array per column, which
+ * is faster to scan when you want analytics-style "all values in the
+ * Age column" access.
+ *
+ * Header coercion mirrors `readRangeAsObjects`: non-string headers
+ * become `String(value)`; null headers become `""`; duplicate headers
+ * fall back to JS object last-wins. Single-row ranges (header only)
+ * yield `Record<string, []>` — every column key with an empty array.
+ */
+export function tabularData(ws: Worksheet, range: string): Record<string, (CellValue | null)[]> {
+  const grid = getRangeValues(ws, range);
+  if (grid.length === 0) return {};
+  const header = grid[0];
+  if (!header) return {};
+  const headers = header.map((v) => (v === null ? '' : String(v)));
+  const out: Record<string, (CellValue | null)[]> = {};
+  for (const h of headers) out[h] = [];
+  for (let i = 1; i < grid.length; i++) {
+    const row = grid[i];
+    if (!row) continue;
+    for (let j = 0; j < headers.length; j++) {
+      const key = headers[j];
+      if (key === undefined) continue;
+      const col = out[key];
+      if (col === undefined) continue;
+      col.push(row[j] ?? null);
+    }
+  }
+  return out;
+}
+
+/**
  * Read a rectangular range as an array of objects keyed by header
  * names from the first row. Useful for CSV-style table reads where
  * the spreadsheet's first row is column titles and the rest are data
