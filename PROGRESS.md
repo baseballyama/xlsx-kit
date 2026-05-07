@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`sortRange(ws, range, byColumn, opts?)` を追加** — header-driven range を 1 column の値で sort して書き戻し。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → 任意 column key で sort → writeRangeFromObjects で同じ起点に書き戻し。`opts.descending` (default false)、`opts.numeric` (default auto: 全 numeric なら numeric sort)。
+- **次のタスク**: **`filterRange(ws, range, predicate)` を追加** — predicate に true を返す行だけ残して再書き込み。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → predicate で filter → 残った rows を range 起点に書き直し、余り行は null で clear。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/sort-range.test.ts` 4 件: 文字列 ascending / 数値 ascending / descending / 不存在 column throw。
+  3. `tests/phase-5/filter-range.test.ts` 4 件: 通常 / 全部削除 / null cell の clear 確認 / 多列 row preservation。
 
-- **次のタスク (前回)**: **`pivotTable(ws, range, opts)` row × col aggregation**。
+- **次のタスク (前回)**: **`sortRange(ws, range, byColumn, opts?)` row sort**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → sort → setCell で書き戻し (null overwrite)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/sort-range.test.ts` 6 件: 文字列 / 数値 / descending / null last / multi-column / 不存在 column throw。
+
+  empirical: 2212 tests pass (was 2206, +6)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → row × col group → aggregate (sum/count/mean/min/max)。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/pivot-table.test.ts` 5 件: sum / count / max / mean / column 不存在 throw。
