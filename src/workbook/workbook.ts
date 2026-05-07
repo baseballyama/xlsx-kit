@@ -13,7 +13,7 @@ import type { ExtendedProperties } from '../packaging/extended';
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { getWorksheetAsCsv } from '../worksheet/csv';
+import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import type { CellsByKindCounts, Worksheet } from '../worksheet/worksheet';
 import { countCellsByKind, makeWorksheet } from '../worksheet/worksheet';
 
@@ -657,6 +657,37 @@ export function getWorkbookCellsByKind(wb: Workbook): CellsByKindCounts {
     out.formula += partial.formula;
   }
   return out;
+}
+
+/**
+ * One-shot constructor: build a brand-new {@link Workbook} containing
+ * a single worksheet populated from a CSV string. Common usage for
+ * "import this CSV as an .xlsx" flows.
+ *
+ * Options:
+ *   - `sheetTitle` (default `'Sheet1'`) — name of the new worksheet
+ *   - `delimiter` (default `,`) — passed to {@link parseCsvToRange}
+ *   - `coerceTypes` (default `false`) — passed to {@link parseCsvToRange};
+ *     `true` parses booleans + numeric strings to native types
+ *
+ * Empty CSV input returns a workbook with the empty sheet present.
+ */
+export function createWorkbookFromCsv(
+  csv: string,
+  opts: {
+    sheetTitle?: string;
+    delimiter?: string;
+    coerceTypes?: boolean;
+    date1904?: boolean;
+  } = {},
+): Workbook {
+  const wb = createWorkbook(opts.date1904 !== undefined ? { date1904: opts.date1904 } : undefined);
+  const ws = addWorksheet(wb, opts.sheetTitle ?? 'Sheet1');
+  parseCsvToRange(ws, 'A1', csv, {
+    ...(opts.delimiter !== undefined ? { delimiter: opts.delimiter } : {}),
+    ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
+  });
+  return wb;
 }
 
 /**

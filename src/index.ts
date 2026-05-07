@@ -642,6 +642,7 @@ export {
   addChartsheet,
   addWorksheet,
   createWorkbook,
+  createWorkbookFromCsv,
   duplicateSheet,
   getActiveSheet,
   findCellInWorkbook,
