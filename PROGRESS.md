@@ -10,7 +10,7 @@
 
 ## 次の作業者への引き継ぎ (Handoff @ 2026-05-05)
 
-**現状サマリ**: 1944 tests pass / typecheck + lint clean (14 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。直近で *ToCss helpers (color/font/fill/border/alignment/cellStyle) + cssRecordToInlineStyle + setRangeWrapText + setRangeProtection を積み増し。
+**現状サマリ**: 2001 tests pass / typecheck + lint clean (14 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。直近で *ToCss helpers (color/font/fill/border/alignment/cellStyle) + cssRecordToInlineStyle + setRange{Protection,WrapText,Alignment} + clearCellStyle + getCellsInRow/Column + freezeFirstRow/Column shortcuts + cellRangeFromCells + iterCells + removeAllImages/Charts + getPopulatedRow/ColumnIndices + getDistinctValuesInColumn/Row + countCellsByKind + getWorkbookCellsByKind を積み増し (+108 tests / 1893 → 2001)。
 
 ### 直近 100+ commit のテーマ (今ブランチで積んだ作業)
 
@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getWorkbookCellsByKind(wb)` workbook-wide aggregator を追加** — countCellsByKind の workbook 集計版。
-  1. `src/workbook/workbook.ts` に追加: iterWorksheets walk + countCellsByKind を sum。
+- **次のタスク**: **`getCellComment` overload of cell-by-coord lookup**: `getCommentByCoord(ws, "A1") → Comment | undefined` を追加 — A1 ref 直で comment 取得。
+  1. `src/worksheet/worksheet.ts` に追加: A1 → tuple → ws.legacyComments の `cellRef` フィールドと突き合わせ → 該当する Comment object を return (重複は最初に現れたもの)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/workbook-cells-by-kind.test.ts` 4 件: 1 sheet / 2 sheet sum / 空 wb / chartsheet 無視。
+  3. `tests/phase-5/comment-by-coord.test.ts` 4 件: 単一 cell の comment / 存在しない coord で undefined / 不正 coord で throw / cell に複数 comment は first 戻す。
+
+- **次のタスク (前回)**: **`getWorkbookCellsByKind(wb)` workbook-wide value-kind histogram**。
+  1. `src/workbook/workbook.ts` に追加: iterWorksheets + countCellsByKind を sum。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/workbook-cells-by-kind.test.ts` 4 件: 空 wb / 1 sheet / 2 sheet sum / chartsheet skip。
+
+  empirical: 2001 tests pass (was 1997, +4)、typecheck / lint clean (14 warnings)。
 
 - **次のタスク (前回)**: **`countCellsByKind(ws)` value-kind histogram**。
   1. `src/worksheet/worksheet.ts` に追加: iterCells walk + typeof/{kind} 判定。`CellsByKindCounts` interface も export。
