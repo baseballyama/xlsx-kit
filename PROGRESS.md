@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getRangeValuesAtAddress(wb, address)` を追加** — `'Sheet1!A1:B5'` から 2D values 配列。
-  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getRangeValues。range が単一 cell でも 2D 配列で return。
+- **次のタスク**: **`setRangeValuesAtAddress(wb, address, values)` を追加** — getRangeValuesAtAddress の inverse。
+  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → setRangeValues。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/range-values-at-address.test.ts` 4 件: 通常 / 単一 cell / quoted title / 不存在 sheet で throw。
+  3. `tests/phase-3/set-range-values-at-address.test.ts` 4 件: 通常 / quoted title / 単一 cell address / 不存在 sheet で throw。
 
-- **次のタスク (前回)**: **`getCellAtAddress(wb, address)` sheet-qualified A1 → Cell**。
+- **次のタスク (前回)**: **`getRangeValuesAtAddress(wb, address)` sheet-qualified A1 → 2D values**。
+  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getRangeValues。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/range-values-at-address.test.ts` 5 件: 矩形 / 単一 cell も 2D / 空 cell null / quoted title / 不存在 sheet throw。
+
+  empirical: 2174 tests pass (was 2169, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getCell。range は throw、不存在 sheet は throw。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/cell-at-address.test.ts` 6 件: bare / quoted / 不存在 cell undefined / 不存在 sheet throw / range throw / round-trip。
