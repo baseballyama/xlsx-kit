@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`fillToCss(fill)` Fill → CSS `background` declaration record helper を追加**。
-  1. `src/styles/fills.ts` に追加: PatternFill ('solid' → fgColor を `background-color`) / GradientFill (linear/path → `linear-gradient(...)` / `radial-gradient(...)` の `background-image`) / `none' → {}`。
+- **次のタスク**: **`borderToCss(border)` Border → CSS border-property record helper を追加**。
+  1. `src/styles/borders.ts` に追加: 4 sides ごとに style → CSS border style (thin→1px solid / medium→2px solid / thick→3px solid / dashed→1px dashed / dotted→1px dotted / double→3px double / none → 省略) + color → `#RRGGBB`。出力 key は `border-top` / `-right` / `-bottom` / `-left`。空 Border → `{}`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/fill-to-css.test.ts` 6 件: solid + rgb / pattern none / linear gradient 2-stop / radial / theme-only fg → {} / undefined → {}。
+  3. `tests/phase-2/styles/border-to-css.test.ts` 6 件: 全辺 thin / medium 1辺 / thick double 混在 / dashed dotted / theme-only color skip / 空 Border → {}。
+
+- **次のタスク (前回)**: **`fillToCss(fill)` Fill → CSS background-property record helper を追加**。
+  1. `src/styles/fills.ts` に追加: PatternFill ('solid' → fgColor を `background-color`) / non-solid → bgColor 折り畳み / GradientFill (linear/path → `linear-gradient` / `radial-gradient` の `background-image`)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/fill-to-css.test.ts` 7 件: undefined+none / solid+rgb / theme-only fg → {} / non-solid bg/fg fallback / linear gradient / radial gradient / 全 stop が theme で {}。
+
+  empirical: 1913 tests pass (was 1906, +7)、typecheck / lint clean (16 warnings)。
 
 - **次のタスク (前回)**: **`fontToCss(font)` Font → CSS-property record helper を追加**。
   1. `src/styles/fonts.ts` に追加: name → font-family / size → font-size pt / bold/italic/underline/strike → weight/style/decoration / color → `#RRGGBB` / vertAlign sup/sub → vertical-align + 0.83em fallback。空 Font → `{}`。
