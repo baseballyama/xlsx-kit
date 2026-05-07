@@ -154,6 +154,45 @@ export function isValidCellRef(s: unknown): s is string {
   return true;
 }
 
+/**
+ * Predicate: true iff `s` is a valid A1-style range expression —
+ * single cell, two-corner range, whole column (`A:A`), or whole
+ * row (`1:1`). `$` markers, whitespace, and out-of-bound bounds
+ * fail. Sanity-check before {@link rangeBoundaries} / `parseRange`.
+ */
+export function isValidRangeRef(s: unknown): s is string {
+  if (typeof s !== 'string' || s.length === 0) return false;
+  if (isValidCellRef(s)) return true;
+  const ab = /^([A-Za-z]{1,3})([1-9][0-9]*):([A-Za-z]{1,3})([1-9][0-9]*)$/.exec(s);
+  if (ab) {
+    const [, c1, r1, c2, r2] = ab;
+    if (!c1 || !r1 || !c2 || !r2) return false;
+    const col1 = columnIndexFromLetterUnchecked(c1);
+    const col2 = columnIndexFromLetterUnchecked(c2);
+    if (col1 < 1 || col1 > MAX_COL || col2 < 1 || col2 > MAX_COL) return false;
+    const row1 = Number.parseInt(r1, 10);
+    const row2 = Number.parseInt(r2, 10);
+    return row1 >= 1 && row1 <= MAX_ROW && row2 >= 1 && row2 <= MAX_ROW;
+  }
+  const cc = /^([A-Za-z]{1,3}):([A-Za-z]{1,3})$/.exec(s);
+  if (cc) {
+    const [, c1, c2] = cc;
+    if (!c1 || !c2) return false;
+    const col1 = columnIndexFromLetterUnchecked(c1);
+    const col2 = columnIndexFromLetterUnchecked(c2);
+    return col1 >= 1 && col1 <= MAX_COL && col2 >= 1 && col2 <= MAX_COL;
+  }
+  const rr = /^([1-9][0-9]*):([1-9][0-9]*)$/.exec(s);
+  if (rr) {
+    const [, r1, r2] = rr;
+    if (!r1 || !r2) return false;
+    const row1 = Number.parseInt(r1, 10);
+    const row2 = Number.parseInt(r2, 10);
+    return row1 >= 1 && row1 <= MAX_ROW && row2 >= 1 && row2 <= MAX_ROW;
+  }
+  return false;
+}
+
 const columnIndexFromLetterUnchecked = (letters: string): number => {
   let n = 0;
   const upper = letters.toUpperCase();

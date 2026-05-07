@@ -99,6 +99,7 @@ export {
   coordinateFromString,
   coordinateToTuple,
   isValidCellRef,
+  isValidRangeRef,
   MAX_COL,
   MAX_ROW,
   parseSheetRange,

@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isValidCellRef(s)` predicate を追加**。input validation:
+- **次のタスク**: **`isValidRangeRef(s)` predicate を追加**。`isValidCellRef` の range 版:
+  1. `src/utils/coordinate.ts` に追加: 単一 cell / 二角 range / 全列 (A:A) / 全行 (1:1) を accept、$/空白/sheet prefix/multi-range/範囲外/非 string は reject。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-1/is-valid-range-ref.test.ts` 8 件: 単 cell / 二角 / 全列 / 全行 / $+空白+空 / 範囲外 / 非 string / sheet prefix + multi-range。
+
+  empirical: 1854 tests pass (was 1846, +8)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`isValidCellRef(s)` predicate を追加**。input validation:
   1. `src/utils/coordinate.ts` に追加: 単一 A1 ref のみ true。`$` absolute marker / 範囲 / 空白 / 範囲外 row/col / 非 string は false。
   2. `src/index.ts` から re-export。
   3. `tests/phase-1/is-valid-cell-ref.test.ts` 6 件: 通常 + 大文字小文字 + max coord / `$` 拒否 / range 拒否 / 空白 + 空文字 / 範囲外 row/col / 非 string。
