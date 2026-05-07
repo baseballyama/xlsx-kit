@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`indexOfRow(ws, range, predicate)` を追加** — Array.findIndex の row 版 (matching row の 0-based index、none で -1)。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → 短絡 indexOf。
+- **次のタスク**: **`countRows(ws, range, predicate?)` を追加** — header-driven row 数を数える (predicate なら true row の数)。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → predicate なら filter count、なければ length。空 range は 0。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/index-of-row.test.ts` 4 件: hit / no match で -1 / 空 range で -1 / 短絡 (callback 1 回)。
+  3. `tests/phase-5/count-rows.test.ts` 4 件: 全 row count / predicate true row count / 空 range で 0 / 全 false で 0。
 
-- **次のタスク (前回)**: **`someRow` / `everyRow` Array.some / .every for rows**。
+- **次のタスク (前回)**: **`indexOfRow` Array.findIndex for rows**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects 短絡。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/index-of-row.test.ts` 4 件: hit / no match -1 / 空 -1 / 短絡。
+
+  empirical: 2246 tests pass (was 2242, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects walk で短絡判定。空 range で some=false / every=true。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/some-every-row.test.ts` 7 件: some hit / some no / some 空 / some 短絡 / every all true / every 第二 row で短絡 / every 空 vacuous true。
