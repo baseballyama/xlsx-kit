@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getValueAtAddress(wb, address)` を追加** — getCellAtAddress + .value extraction の薄い wrapper (`null` を返す convention)。
-  1. `src/workbook/workbook.ts` に追加: getCellAtAddress(wb, address) → cell?.value ?? null。
+- **次のタスク**: **`tabularData(ws, range, opts?)` を追加** — `readRangeAsObjects` の bag of-utils 拡張版 (column → array per key)。
+  1. `src/worksheet/worksheet.ts` に追加: getRangeValues + 1 行目 header → `Record<string, (CellValue | null)[]>` (列志向。AKA "DataFrame の column store")。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/value-at-address.test.ts` 4 件: 値あり / 不存在 cell → null / 不存在 sheet で throw / quoted title。
+  3. `tests/phase-5/tabular-data.test.ts` 5 件: 通常 (列ごと配列) / 単一 row 範囲で空 columns / quoted header / 重複 header (last-wins) / 空 range で throw or {}。
 
-- **次のタスク (前回)**: **`setCellAtAddress(wb, address, value)` 単一 cell write**。
+- **次のタスク (前回)**: **`getValueAtAddress(wb, address)` cell value 直読み**。
+  1. `src/workbook/workbook.ts` に追加: getCellAtAddress + .value extraction (null fallback)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/value-at-address.test.ts` 4 件: 値あり / 不存在 cell null / quoted title / 不存在 sheet throw。
+
+  empirical: 2187 tests pass (was 2183, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: parseSheetRange → setCellByCoord。range は throw。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/set-cell-at-address.test.ts` 4 件: 通常 / quoted / 不存在 sheet throw / range throw。
