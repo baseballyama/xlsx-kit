@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`findRow(ws, range, predicate)` を追加** — header-driven range で最初の matching row を返す (Array.find の row 版)。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → for ... if predicate return row。none → undefined。
+- **次のタスク**: **`someRow(ws, range, predicate)` / `everyRow(...)` を追加** — Array.some / .every の row 版 (predicate 短絡)。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects walk + 短絡判定。`someRow` は first true で `true`、`everyRow` は first false で `false`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/find-row.test.ts` 4 件: hit / first match のみ / no match / 空 range で undefined。
+  3. `tests/phase-5/some-every-row.test.ts` 5 件: someRow hit / someRow no hit / everyRow all true / everyRow first false / 空 range で someRow=false / everyRow=true。
 
-- **次のタスク (前回)**: **`forEachRow(ws, range, callback)` row iteration**。
+- **次のタスク (前回)**: **`findRow(ws, range, predicate)` Array.find for rows**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → 短絡 find。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/find-row.test.ts` 5 件: hit / 短絡 / no match / 空 / index passing。
+
+  empirical: 2235 tests pass (was 2230, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → for callback。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/for-each-row.test.ts` 4 件: 通常 / index / 空 / row shape。
