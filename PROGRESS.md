@@ -37,10 +37,10 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getCellRef(c)` / `setCellByRef(ws, ref, value)` を追加** — A1 string と Cell の架け橋。
-  1. `src/cell/cell.ts` に追加: `getCellRef(cell) → "A1"` (cell.col/row → tupleToCoordinate)。worksheet.ts に `setCellByRef(ws, "A1", value) → cell` (coordinateToTuple → setCell)。
+- **次のタスク**: **`getPopulatedRowIndices(ws)` / `getPopulatedColumnIndices(ws)` を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: ws.rows のキーを sort して返す (row 版) / 全 row を走査して col 集合を集めて sort (col 版)。空 ws は `[]`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/cell-ref-helpers.test.ts` 5 件: getCellRef A1/AA10 / setCellByRef A1 = ws.rows.get(1)?.get(1) / 既存 cell に上書き / 不正 ref で throw / row/col 0 で throw。
+  3. `tests/phase-5/populated-indices.test.ts` 5 件: row sparse / row 空 / col sparse / col 重複 dedupe / col 空。
 
 - **次のタスク (前回)**: **`removeAllImages(ws)` / `removeAllCharts(ws)` kind 別 drawing wipe**。
   1. `src/drawing/drawing.ts` に追加: items を kind で filter。

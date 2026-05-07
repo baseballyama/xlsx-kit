@@ -424,6 +424,33 @@ export function getMaxCol(ws: Worksheet): number {
   return m;
 }
 
+/**
+ * Sorted list of every row index that holds at least one populated
+ * cell. Returns `[]` for an empty worksheet. Useful when a caller
+ * wants to iterate only the rows the user actually populated, without
+ * walking 1..maxRow in dense fashion.
+ */
+export function getPopulatedRowIndices(ws: Worksheet): number[] {
+  const out: number[] = [];
+  for (const [r, rowMap] of ws.rows) {
+    if (rowMap.size > 0) out.push(r);
+  }
+  return out.sort((a, b) => a - b);
+}
+
+/**
+ * Sorted list of every column index that holds at least one populated
+ * cell anywhere on the sheet. Distinct columns only; returns `[]` for
+ * an empty worksheet.
+ */
+export function getPopulatedColumnIndices(ws: Worksheet): number[] {
+  const seen = new Set<number>();
+  for (const rowMap of ws.rows.values()) {
+    for (const c of rowMap.keys()) seen.add(c);
+  }
+  return [...seen].sort((a, b) => a - b);
+}
+
 /** Total populated cell count. */
 export function countCells(ws: Worksheet): number {
   let n = 0;

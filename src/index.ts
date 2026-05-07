@@ -252,6 +252,8 @@ export {
   getMaxRow,
   getMergedCells,
   getMergedRangeAt,
+  getPopulatedColumnIndices,
+  getPopulatedRowIndices,
   getRangeValues,
   getRowDimension,
   getRowValues,
