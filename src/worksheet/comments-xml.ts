@@ -4,6 +4,7 @@ import { OpenXmlSchemaError } from '../utils/exceptions';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
+import { coordinateToTuple } from '../utils/coordinate';
 import type { LegacyComment } from './comments';
 import { makeLegacyComment } from './comments';
 
@@ -100,17 +101,59 @@ export function serializeComments(comments: ReadonlyArray<LegacyComment>): strin
  * placeholder. We don't preserve the original VML shapes (stage-1 trade-
  * off); this stub guarantees the worksheet rels stay consistent.
  *
- * Carries a single `<v:shape>` with `<x:ClientData ObjectType="Note">`
- * so the load-side content sniffer (src/public/load.ts) classifies the
- * file as comment VML on a re-load — without that marker, the second
- * load → save cycle would mis-classify the placeholder as form-control
- * VML and capture it as passthrough, double-emitting the entry.
+ * Excel won't open the file unless every legacy comment is paired with
+ * a `<v:shape>` carrying `<x:ClientData ObjectType="Note">` plus the
+ * cell anchor row/column — without those, Excel reports "removed
+ * Records: Comment from /xl/comments1.xml" and silently drops them.
+ *
+ * The `<v:shapetype id="_x0000_t202">` / `<v:shape type="#_x0000_t202">`
+ * pair mirrors what openpyxl's ShapeWriter emits.
  */
-export function placeholderVmlDrawing(): Uint8Array {
-  return new TextEncoder().encode(
-    '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">' +
-      '<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout>' +
-      '<v:shape style="visibility:hidden"><x:ClientData ObjectType="Note"/></v:shape>' +
-      '</xml>',
-  );
+export function placeholderVmlDrawing(comments: ReadonlyArray<LegacyComment> = []): Uint8Array {
+  const parts: string[] = [
+    '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">',
+    '<o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout>',
+    '<v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe">',
+    '<v:stroke joinstyle="miter"/>',
+    '<v:path gradientshapeok="t" o:connecttype="rect"/>',
+    '</v:shapetype>',
+  ];
+  // Comment shape ids start at 1026 (matches openpyxl/Excel convention).
+  let shapeId = 1026;
+  if (comments.length === 0) {
+    parts.push('<v:shape type="#_x0000_t202" style="visibility:hidden"><x:ClientData ObjectType="Note"/></v:shape>');
+  } else {
+    for (const c of comments) {
+      // The ref may be a single cell or a range; anchor at the top-left.
+      const firstRef = c.ref.split(':')[0] ?? c.ref;
+      let row = 0;
+      let col = 0;
+      try {
+        const t = coordinateToTuple(firstRef);
+        row = t.row - 1; // VML uses 0-based row/column.
+        col = t.col - 1;
+      } catch {
+        // Leave at 0,0 if the ref can't be parsed.
+      }
+      const idAttr = `_x0000_s${String(shapeId).padStart(4, '0')}`;
+      shapeId++;
+      parts.push(
+        `<v:shape id="${idAttr}" type="#_x0000_t202" style="position:absolute;margin-left:59.25pt;margin-top:1.5pt;width:108pt;height:59.25pt;z-index:1;visibility:hidden" fillcolor="#ffffe1" o:insetmode="auto">`,
+        '<v:fill color2="#ffffe1"/>',
+        '<v:shadow color="black" obscured="t"/>',
+        '<v:path o:connecttype="none"/>',
+        '<v:textbox style="mso-direction-alt:auto"><div style="text-align:left"/></v:textbox>',
+        '<x:ClientData ObjectType="Note">',
+        '<x:MoveWithCells/>',
+        '<x:SizeWithCells/>',
+        '<x:AutoFill>False</x:AutoFill>',
+        `<x:Row>${row}</x:Row>`,
+        `<x:Column>${col}</x:Column>`,
+        '</x:ClientData>',
+        '</v:shape>',
+      );
+    }
+  }
+  parts.push('</xml>');
+  return new TextEncoder().encode(parts.join(''));
 }

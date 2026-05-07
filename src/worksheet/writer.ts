@@ -17,7 +17,7 @@ import { dateToExcel, durationToExcel } from '../utils/datetime';
 import { escapeCellString } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
-import { addSharedString } from '../workbook/shared-strings';
+import { addSharedString, serializeRichTextRuns } from '../workbook/shared-strings';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { serializeXml } from '../xml/serializer';
 import type { XmlNode } from '../xml/tree';
@@ -308,12 +308,13 @@ export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string =>
     return `<c r="${ref}"${styleAttr} t="e"><v>${code}</v></c>`;
   }
   if (typeof value === 'object' && value !== null && (value as { kind?: string }).kind === 'rich-text') {
-    // Stage-1: flatten rich text into a plain string, dedup via sst.
-    const runs = (value as { kind: 'rich-text'; runs: ReadonlyArray<{ text: string }> }).runs;
-    let flat = '';
-    for (const run of runs) flat += run.text;
-    const id = addSharedString(ctx.sharedStrings, flat);
-    return `<c r="${ref}"${styleAttr} t="s"><v>${id}</v></c>`;
+    // Emit rich text inline (t="inlineStr") rather than via the shared-
+    // strings table. Excel only honours per-run formatting for inline
+    // strings; rich-text entries inside `xl/sharedStrings.xml` get
+    // collapsed back to plain text on render. This mirrors openpyxl's
+    // writer (`cell.write` → `t="inlineStr"` for CellRichText values).
+    const runs = (value as { kind: 'rich-text'; runs: import('../cell/rich-text').RichText }).runs;
+    return `<c r="${ref}"${styleAttr} t="inlineStr"><is>${serializeRichTextRuns(runs)}</is></c>`;
   }
 
   if (typeof value === 'number') {
@@ -366,6 +367,13 @@ const serializeFormulaCell = (ref: string, styleAttr: string, f: FormulaValue): 
   if (f.del2) fAttrs.push('del2="1"');
   if (f.aca) fAttrs.push('aca="1"');
   if (f.ca) fAttrs.push('ca="1"');
+  // Pass the formula text through verbatim. Auto-prefixing future-
+  // functions with `_xlfn.` matches what Excel writes on save, but
+  // Excel itself only accepts that form in tandem with `cm="N"` cell
+  // metadata + an `xl/metadata.xml` part — otherwise it raises the
+  // "We found a problem" recovery dialog. Until we emit metadata, ship
+  // bare names: Excel 365 / 2021 still resolves them; older Excel
+  // renders #NAME? but the workbook opens.
   const fAttrStr = fAttrs.length > 0 ? ` ${fAttrs.join(' ')}` : '';
   const formulaText = escapeXmlText(escapeCellString(f.formula));
   const fEl = formulaText.length > 0 ? `<f${fAttrStr}>${formulaText}</f>` : `<f${fAttrStr}/>`;
@@ -451,7 +459,10 @@ const serializeSheetFormatPr = (ws: Worksheet): string => {
   let attrs = '';
   if (ws.baseColWidth !== undefined) attrs += ` baseColWidth="${ws.baseColWidth}"`;
   if (ws.defaultColumnWidth !== undefined) attrs += ` defaultColWidth="${ws.defaultColumnWidth}"`;
-  if (ws.defaultRowHeight !== undefined) attrs += ` defaultRowHeight="${ws.defaultRowHeight}"`;
+  // Excel requires `defaultRowHeight` on <sheetFormatPr>; default to 15
+  // (the body-font row height for Calibri 11pt) when the caller hasn't
+  // specified one.
+  attrs += ` defaultRowHeight="${ws.defaultRowHeight ?? 15}"`;
   if (ws.customHeight !== undefined) attrs += ` customHeight="${ws.customHeight ? '1' : '0'}"`;
   if (ws.zeroHeight !== undefined) attrs += ` zeroHeight="${ws.zeroHeight ? '1' : '0'}"`;
   if (ws.thickTop !== undefined) attrs += ` thickTop="${ws.thickTop ? '1' : '0'}"`;
@@ -465,7 +476,6 @@ const serializeSheetFormatPr = (ws: Worksheet): string => {
   const olCol = ws.outlineLevelCol ?? maxOutlineLevel(ws.columnDimensions);
   if (olCol > 0) attrs += ` outlineLevelCol="${olCol}"`;
 
-  if (attrs.length === 0) return '';
   return `<sheetFormatPr${attrs}/>`;
 };
 
@@ -489,11 +499,18 @@ const serializeCols = (cols: ReadonlyMap<number, ColumnDimension>): string => {
 
 const serializeColumnDimension = (dim: ColumnDimension): string => {
   let attrs = ` min="${dim.min}" max="${dim.max}"`;
-  if (dim.width !== undefined) attrs += ` width="${dim.width}"`;
+  // Excel rejects `<col>` without `width` — even hidden columns need it.
+  // Default to the workbook's stock 9.140625 (Calibri 11pt) so the
+  // viewport width stays consistent with what Excel itself emits.
+  const width = dim.width ?? 9.140625;
+  attrs += ` width="${width}"`;
   if (dim.style !== undefined) attrs += ` style="${dim.style}"`;
   if (dim.hidden) attrs += ' hidden="1"';
   if (dim.bestFit) attrs += ' bestFit="1"';
-  if (dim.customWidth) attrs += ' customWidth="1"';
+  // Excel only honours `width` when paired with `customWidth="1"`. Auto-emit
+  // when the user supplied a width even if they didn't set the flag (the
+  // flag is OOXML plumbing, not something most callers think to set).
+  if (dim.customWidth || dim.width !== undefined) attrs += ' customWidth="1"';
   if (dim.outlineLevel !== undefined) attrs += ` outlineLevel="${dim.outlineLevel}"`;
   if (dim.collapsed) attrs += ' collapsed="1"';
   return `<col${attrs}/>`;

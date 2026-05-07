@@ -44,14 +44,14 @@ describe('addNamedStyle', () => {
     expect(ss.namedStyles?.length).toBe(1);
   });
 
-  it('sets apply* flags on the cellStyleXf for explicitly-supplied components', () => {
+  it('omits apply* flags on the cellStyleXf — the named-style base entry mirrors openpyxl, leaving apply* to the cellXf bridge', () => {
     const ss = makeStylesheet();
     addNamedStyle(ss, {
       name: 'Bold-only',
       font: makeFont({ bold: true }),
     });
     const xf = ss.cellStyleXfs[0];
-    expect(xf?.applyFont).toBe(true);
+    expect(xf?.applyFont).toBeUndefined();
     expect(xf?.applyFill).toBeUndefined();
     expect(xf?.applyBorder).toBeUndefined();
     expect(xf?.applyAlignment).toBeUndefined();

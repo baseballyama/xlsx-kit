@@ -5,18 +5,17 @@
 // flat list of `<si>` entries, each holding either a single `<t>`
 // (plain text) or a sequence of `<r><rPr/>?<t/></r>` runs (rich text).
 //
-// **Stage 1**: flat-string round-trip. Rich-text runs are concatenated
-// into their plain-text body on read; rich-text fidelity round-trip is
-// reserved for a later iteration of the loop. The wire format on write
-// mirrors openpyxl's writer (single `<si><t>...</t></si>` per entry).
-//
-// The accumulator path is the part that runs during worksheet writes
-// — `addSharedString(table, value)` is O(1) thanks to the in-place
-// Map keyed by literal string.
+// Rich-text entries are kept as their full `RichText` runs so per-run
+// fonts (bold / italic / colour / size / …) survive the round-trip.
+// Plain strings still dedup against literal text; rich text is kept
+// distinct per-cell (Excel's writer doesn't dedupe rich-text either —
+// formatting equality is rarely worth comparing).
 
+import type { RichText } from '../cell/rich-text';
+import { type Color, colorToHex } from '../styles/colors';
 import { escapeCellString, unescapeCellString } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { SHEET_MAIN_NS } from '../xml/namespaces';
+import { qname, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 
@@ -25,6 +24,9 @@ const SI_TAG = `{${SHEET_MAIN_NS}}si`;
 const T_TAG = `{${SHEET_MAIN_NS}}t`;
 const R_TAG = `{${SHEET_MAIN_NS}}r`;
 
+/** A single SST entry: either a plain string or a rich-text run array. */
+export type SharedStringEntry = string | { kind: 'rich-text'; runs: RichText };
+
 /**
  * Mutable shared-strings accumulator + lookup table. The same shape is
  * used during read (just populate `entries`) and write (call
@@ -32,8 +34,8 @@ const R_TAG = `{${SHEET_MAIN_NS}}r`;
  */
 export interface SharedStringsTable {
   /** Insertion-ordered list of unique entries. */
-  entries: string[];
-  /** Reverse lookup keyed by literal text. */
+  entries: SharedStringEntry[];
+  /** Reverse lookup keyed by literal text — rich-text entries skip this map. */
   index: Map<string, number>;
 }
 
@@ -55,13 +57,37 @@ export function addSharedString(table: SharedStringsTable, value: string): numbe
   return id;
 }
 
+/**
+ * Insert a rich-text entry and return its index. Rich-text values are
+ * not deduped — formatting equality is expensive and rarely worth the
+ * trade. Each call appends a new `<si>` slot.
+ */
+export function addSharedRichText(table: SharedStringsTable, runs: RichText): number {
+  const id = table.entries.length;
+  table.entries.push({ kind: 'rich-text', runs });
+  return id;
+}
+
 /** Look up a shared-string index by its literal text. Returns `undefined` for unknown values. */
 export function getSharedStringIndex(table: SharedStringsTable, value: string): number | undefined {
   return table.index.get(value);
 }
 
-/** Read a shared-string by its 0-based index. Returns `undefined` for out-of-range. */
+/**
+ * Read a shared-string by its 0-based index. Returns `undefined` for
+ * out-of-range. Rich-text entries surface their concatenated plain text
+ * so callers that want only the textual body don't need to know about
+ * the discriminated union.
+ */
 export function getSharedStringAt(table: SharedStringsTable, index: number): string | undefined {
+  const entry = table.entries[index];
+  if (entry === undefined) return undefined;
+  if (typeof entry === 'string') return entry;
+  return entry.runs.map((r) => r.text).join('');
+}
+
+/** Raw entry access — preserves the rich-text shape when present. */
+export function getSharedEntryAt(table: SharedStringsTable, index: number): SharedStringEntry | undefined {
   return table.entries[index];
 }
 
@@ -96,7 +122,8 @@ const collectText = (node: XmlNode): string => {
  * (rather than just the array) so the worksheet writer can keep
  * appending to it without rebuilding the index.
  *
- * Rich-text runs are flattened to their plain-text body in this stage.
+ * Rich-text runs are preserved as their full per-run formatting so
+ * round-tripping a file with rich text doesn't drop the styling.
  */
 export function parseSharedStringsXml(bytes: Uint8Array | string): SharedStringsTable {
   const root = parseXml(bytes);
@@ -105,15 +132,89 @@ export function parseSharedStringsXml(bytes: Uint8Array | string): SharedStrings
   }
   const table = makeSharedStrings();
   for (const si of findChildren(root, SI_TAG)) {
-    const text = collectText(si);
+    const entry = parseSi(si);
     // Don't dedup — Excel preserves duplicate `<si>` entries by index, and
     // the worksheet `t="s"` references depend on slot, not on text equality.
     const id = table.entries.length;
-    table.entries.push(text);
-    if (!table.index.has(text)) table.index.set(text, id);
+    table.entries.push(entry);
+    if (typeof entry === 'string' && !table.index.has(entry)) table.index.set(entry, id);
   }
   return table;
 }
+
+const parseSi = (si: XmlNode): SharedStringEntry => {
+  // Rich-text si has one or more <r> children. Plain si has a single <t>.
+  const runEls = findChildren(si, R_TAG);
+  if (runEls.length > 0) {
+    const runs: Array<{ text: string; font?: import('../cell/rich-text').InlineFont }> = [];
+    for (const rEl of runEls) {
+      const tEl = findChild(rEl, T_TAG);
+      const text = unescapeCellString(tEl?.text ?? '');
+      const rPrEl = findChild(rEl, qname(SHEET_MAIN_NS, 'rPr'));
+      const font = rPrEl ? parseRunPr(rPrEl) : undefined;
+      runs.push(font !== undefined ? { text, font } : { text });
+    }
+    return { kind: 'rich-text', runs: Object.freeze(runs) };
+  }
+  return collectText(si);
+};
+
+const parseRunPr = (rPr: XmlNode): import('../cell/rich-text').InlineFont | undefined => {
+  type InlineFontMutable = {
+    -readonly [K in keyof import('../cell/rich-text').InlineFont]: import('../cell/rich-text').InlineFont[K];
+  };
+  const f: InlineFontMutable = {};
+  for (const child of rPr.children) {
+    const local = child.name.replace(/^\{[^}]+\}/, '');
+    const valAttr = child.attrs['val'];
+    switch (local) {
+      case 'rFont':
+      case 'name':
+        if (valAttr !== undefined) f.name = valAttr;
+        break;
+      case 'sz':
+        if (valAttr !== undefined) f.sz = Number.parseFloat(valAttr);
+        break;
+      case 'b':
+        f.b = valAttr === undefined ? true : valAttr !== '0' && valAttr !== 'false';
+        break;
+      case 'i':
+        f.i = valAttr === undefined ? true : valAttr !== '0' && valAttr !== 'false';
+        break;
+      case 'u': {
+        const v = (valAttr ?? 'single') as import('../cell/rich-text').InlineUnderline;
+        f.u = v;
+        break;
+      }
+      case 'strike':
+        f.strike = valAttr === undefined ? true : valAttr !== '0' && valAttr !== 'false';
+        break;
+      case 'vertAlign':
+        if (valAttr !== undefined) f.vertAlign = valAttr as import('../cell/rich-text').InlineVertAlign;
+        break;
+      case 'family':
+        if (valAttr !== undefined) f.family = Number.parseInt(valAttr, 10);
+        break;
+      case 'charset':
+        if (valAttr !== undefined) f.charset = Number.parseInt(valAttr, 10);
+        break;
+      case 'scheme':
+        if (valAttr !== undefined) f.scheme = valAttr as 'major' | 'minor';
+        break;
+      case 'color': {
+        const c: { rgb?: string; theme?: number; indexed?: number; tint?: number; auto?: boolean } = {};
+        if (child.attrs['rgb'] !== undefined) c.rgb = child.attrs['rgb'];
+        if (child.attrs['theme'] !== undefined) c.theme = Number.parseInt(child.attrs['theme'], 10);
+        if (child.attrs['indexed'] !== undefined) c.indexed = Number.parseInt(child.attrs['indexed'], 10);
+        if (child.attrs['tint'] !== undefined) c.tint = Number.parseFloat(child.attrs['tint']);
+        if (child.attrs['auto'] !== undefined) c.auto = child.attrs['auto'] === '1' || child.attrs['auto'] === 'true';
+        f.color = c as Color;
+        break;
+      }
+    }
+  }
+  return Object.keys(f).length === 0 ? undefined : Object.freeze(f as import('../cell/rich-text').InlineFont);
+};
 
 // ---- write -----------------------------------------------------------------
 
@@ -145,10 +246,73 @@ const escapeXmlText = (s: string): string =>
   // introduced by the later substitutions.
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const serializeSi = (value: string): string => {
-  // Whitespace at either end needs xml:space="preserve" so Excel doesn't
-  // collapse it. Mirrors openpyxl's emitter.
-  const preserve = value.length > 0 && (value[0] === ' ' || value[value.length - 1] === ' ' || /[\t\n]/.test(value));
-  const tAttr = preserve ? ' xml:space="preserve"' : '';
-  return `<si><t${tAttr}>${escapeXmlText(escapeCellString(value))}</t></si>`;
+const escapeXmlAttr = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+const serializeSi = (value: SharedStringEntry): string => {
+  if (typeof value === 'string') {
+    // Whitespace at either end needs xml:space="preserve" so Excel doesn't
+    // collapse it. Mirrors openpyxl's emitter.
+    const preserve = value.length > 0 && (value[0] === ' ' || value[value.length - 1] === ' ' || /[\t\n]/.test(value));
+    const tAttr = preserve ? ' xml:space="preserve"' : '';
+    return `<si><t${tAttr}>${escapeXmlText(escapeCellString(value))}</t></si>`;
+  }
+  return `<si>${serializeRichTextRuns(value.runs)}</si>`;
+};
+
+/**
+ * Serialise a sequence of `<r>...<r>` runs — shared by the SST `<si>`
+ * writer and the worksheet's inline-string (`t="inlineStr"`) cell writer.
+ */
+export function serializeRichTextRuns(runs: import('../cell/rich-text').RichText): string {
+  const parts: string[] = [];
+  for (const run of runs) {
+    parts.push('<r>');
+    if (run.font) parts.push(serializeInlineFont(run.font));
+    const text = run.text;
+    const preserve = text.length > 0 && (text[0] === ' ' || text[text.length - 1] === ' ' || /[\t\n]/.test(text));
+    const tAttr = preserve ? ' xml:space="preserve"' : '';
+    parts.push(`<t${tAttr}>${escapeXmlText(escapeCellString(text))}</t>`);
+    parts.push('</r>');
+  }
+  return parts.join('');
+}
+
+const serializeInlineFont = (f: import('../cell/rich-text').InlineFont): string => {
+  // Element order per ECMA-376 §17.4.4.10 (CT_RPrElt). Excel's parser is
+  // sensitive to ordering — out-of-order children make the run silently
+  // fall back to the cell's font.
+  const parts: string[] = ['<rPr>'];
+  if (f.name !== undefined) parts.push(`<rFont val="${escapeXmlAttr(f.name)}"/>`);
+  if (f.charset !== undefined) parts.push(`<charset val="${f.charset}"/>`);
+  if (f.family !== undefined) parts.push(`<family val="${f.family}"/>`);
+  if (f.b) parts.push('<b/>');
+  if (f.i) parts.push('<i/>');
+  if (f.strike) parts.push('<strike/>');
+  if (f.outline) parts.push('<outline/>');
+  if (f.shadow) parts.push('<shadow/>');
+  if (f.condense) parts.push('<condense/>');
+  if (f.extend) parts.push('<extend/>');
+  if (f.color) parts.push(serializeRunColor(f.color));
+  if (f.sz !== undefined) parts.push(`<sz val="${f.sz}"/>`);
+  if (f.u) parts.push(`<u val="${f.u}"/>`);
+  if (f.vertAlign) parts.push(`<vertAlign val="${f.vertAlign}"/>`);
+  if (f.scheme) parts.push(`<scheme val="${f.scheme}"/>`);
+  parts.push('</rPr>');
+  return parts.join('');
+};
+
+const serializeRunColor = (c: Color): string => {
+  const attrs: string[] = [];
+  if (c.rgb !== undefined) attrs.push(`rgb="${escapeXmlAttr(c.rgb)}"`);
+  else if (c.theme !== undefined) attrs.push(`theme="${c.theme}"`);
+  else if (c.indexed !== undefined) attrs.push(`indexed="${c.indexed}"`);
+  else if (c.auto !== undefined) attrs.push(`auto="${c.auto ? '1' : '0'}"`);
+  if (c.tint !== undefined) attrs.push(`tint="${c.tint}"`);
+  // Fallback to colorToHex if nothing was set above (shouldn't happen, but safe).
+  if (attrs.length === 0) {
+    const hex = colorToHex(c);
+    if (hex !== undefined) attrs.push(`rgb="${hex}"`);
+  }
+  return `<color${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}/>`;
 };

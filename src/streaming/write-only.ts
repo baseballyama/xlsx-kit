@@ -12,7 +12,7 @@
 
 import type { Cell, CellValue } from '../cell/cell';
 import type { XlsxSink } from '../io/sink';
-import { addOverride, makeManifest, manifestToBytes } from '../packaging/manifest';
+import { addDefault, addOverride, makeManifest, manifestToBytes } from '../packaging/manifest';
 import { makeRelationships, relsToBytes } from '../packaging/relationships';
 import {
   addBorder,
@@ -353,6 +353,11 @@ const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
 
     // 7. [Content_Types].xml.
     const manifest = makeManifest();
+    // Excel rejects packages whose [Content_Types].xml is missing the
+    // Default entries for `rels` / `xml` — without them the package
+    // relationships file can't be classified and Excel refuses to open.
+    addDefault(manifest, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
+    addDefault(manifest, 'xml', 'application/xml');
     addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
     for (const s of state.sheets) {
       addOverride(manifest, `/xl/worksheets/sheet${s.sheetId}.xml`, WORKSHEET_TYPE);

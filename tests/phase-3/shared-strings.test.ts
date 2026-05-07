@@ -51,11 +51,13 @@ describe('parseSharedStringsXml — plain strings', () => {
     expect(t.index.get('b')).toBe(2);
   });
 
-  it('flattens rich-text runs <r><t>...</t></r> to a plain string', () => {
+  it('preserves rich-text runs <r><t>...</t></r> as a discriminated entry', () => {
     const t = parseSharedStringsXml(
       '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1"><si><r><t>foo</t></r><r><t>bar</t></r></si></sst>',
     );
-    expect(t.entries).toEqual(['foobar']);
+    expect(t.entries).toEqual([
+      { kind: 'rich-text', runs: [{ text: 'foo' }, { text: 'bar' }] },
+    ]);
   });
 
   it('rejects non-sst root', () => {

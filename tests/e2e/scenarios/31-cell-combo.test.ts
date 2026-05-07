@@ -42,6 +42,7 @@ import { writeWorkbook } from '../_helpers';
 describe('e2e 31 — single cell, every decoration at once', () => {
   it('writes 31-cell-combo.xlsx', async () => {
     const wb = createWorkbook();
+    addCellXf(wb.styles, defaultCellXf()); // reserve slot 0 for default
     const ws = addWorksheet(wb, 'Combo');
 
     // Build a fancy style: bold red Calibri 16pt + yellow fill + thick

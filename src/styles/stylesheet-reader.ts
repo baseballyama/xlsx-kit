@@ -16,11 +16,14 @@ import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import { AlignmentSchema } from './alignment.schema';
 import type { Border } from './borders';
 import { BorderSchema } from './borders.schema';
+import type { DifferentialStyle, StylesheetWithDxfs } from './differential';
 import type { Fill } from './fills';
 import { fillFromTree } from './fills.schema';
 import type { Font } from './fonts';
 import { FontSchema } from './fonts.schema';
+import type { StylesheetNamedStyle } from './named-styles';
 import type { NumberFormat } from './numbers';
+import { NumberFormatSchema } from './numbers.schema';
 import { ProtectionSchema } from './protection.schema';
 import { type CellXf, makeStylesheet, type Stylesheet } from './stylesheet';
 
@@ -32,10 +35,15 @@ const NUMFMTS_TAG = qname(SHEET_MAIN_NS, 'numFmts');
 const NUMFMT_TAG = qname(SHEET_MAIN_NS, 'numFmt');
 const CELLXFS_TAG = qname(SHEET_MAIN_NS, 'cellXfs');
 const CELLSTYLEXFS_TAG = qname(SHEET_MAIN_NS, 'cellStyleXfs');
+const CELLSTYLES_TAG = qname(SHEET_MAIN_NS, 'cellStyles');
+const CELLSTYLE_TAG = qname(SHEET_MAIN_NS, 'cellStyle');
+const DXFS_TAG = qname(SHEET_MAIN_NS, 'dxfs');
+const DXF_TAG = qname(SHEET_MAIN_NS, 'dxf');
 const XF_TAG = qname(SHEET_MAIN_NS, 'xf');
 const FONT_TAG = qname(SHEET_MAIN_NS, 'font');
 const FILL_TAG = qname(SHEET_MAIN_NS, 'fill');
 const BORDER_TAG = qname(SHEET_MAIN_NS, 'border');
+const NUMFMT_INNER_TAG = qname(SHEET_MAIN_NS, 'numFmt');
 const ALIGNMENT_TAG = qname(SHEET_MAIN_NS, 'alignment');
 const PROTECTION_TAG = qname(SHEET_MAIN_NS, 'protection');
 
@@ -78,6 +86,58 @@ export function parseStylesheetXml(bytes: Uint8Array | string): Stylesheet {
   }
   for (const xfEl of findInSection(root, CELLXFS_TAG, XF_TAG)) {
     ss.cellXfs.push(parseCellXf(xfEl));
+  }
+
+  // cellStyles → ss.namedStyles
+  const cellStylesEl = findChild(root, CELLSTYLES_TAG);
+  if (cellStylesEl) {
+    const named: StylesheetNamedStyle[] = [];
+    for (const cs of findChildren(cellStylesEl, CELLSTYLE_TAG)) {
+      const name = cs.attrs['name'];
+      const xfId = parseIntAttr(cs.attrs['xfId'], 'xfId');
+      if (name === undefined || xfId === undefined) continue;
+      const entry: StylesheetNamedStyle = {
+        name,
+        xfId,
+        ...(cs.attrs['builtinId'] !== undefined ? { builtinId: parseIntAttr(cs.attrs['builtinId'], 'builtinId') ?? 0 } : {}),
+        ...(cs.attrs['iLevel'] !== undefined ? { iLevel: parseIntAttr(cs.attrs['iLevel'], 'iLevel') ?? 0 } : {}),
+        ...(parseBoolAttr(cs.attrs['hidden']) === true ? { hidden: true } : {}),
+        ...(parseBoolAttr(cs.attrs['customBuiltin']) === true ? { customBuiltin: true } : {}),
+      };
+      named.push(entry);
+    }
+    if (named.length > 0) {
+      ss.namedStyles = named;
+      ss._namedStyleByName = new Map(named.map((n) => [n.name, n]));
+    }
+  }
+
+  // dxfs → ss.dxfs
+  const dxfsEl = findChild(root, DXFS_TAG);
+  if (dxfsEl) {
+    const dxfs: DifferentialStyle[] = [];
+    for (const dxfEl of findChildren(dxfsEl, DXF_TAG)) {
+      const fontEl = findChild(dxfEl, FONT_TAG);
+      const numFmtEl = findChild(dxfEl, NUMFMT_INNER_TAG);
+      const fillEl = findChild(dxfEl, FILL_TAG);
+      const alignmentEl = findChild(dxfEl, ALIGNMENT_TAG);
+      const borderEl = findChild(dxfEl, BORDER_TAG);
+      const protectionEl = findChild(dxfEl, PROTECTION_TAG);
+      const dxf: DifferentialStyle = {
+        ...(fontEl ? { font: fromTree(fontEl, FontSchema) } : {}),
+        ...(numFmtEl ? { numFmt: fromTree(numFmtEl, NumberFormatSchema) } : {}),
+        ...(fillEl ? { fill: fillFromTree(fillEl) } : {}),
+        ...(alignmentEl ? { alignment: fromTree(alignmentEl, AlignmentSchema) } : {}),
+        ...(borderEl ? { border: fromTree(borderEl, BorderSchema) } : {}),
+        ...(protectionEl ? { protection: fromTree(protectionEl, ProtectionSchema) } : {}),
+      };
+      dxfs.push(Object.freeze(dxf));
+    }
+    if (dxfs.length > 0) {
+      const w = ss as StylesheetWithDxfs;
+      w.dxfs = dxfs;
+      w._dxfIdByKey = new Map(dxfs.map((d, i) => [stableStringify(d), i]));
+    }
   }
 
   rebuildIndexes(ss);

@@ -29,6 +29,14 @@ export interface ChartReference {
    * element and populates whichever is appropriate.
    */
   cxSpace?: CxChartSpace;
+  /**
+   * `true` when the resolved chart part is a chartex (`cx:`) chart. Set
+   * by the package writer so the drawing emitter knows to use the
+   * chartex `<a:graphicData uri>` instead of the legacy chart URI —
+   * Excel rejects the workbook when the URI doesn't match the chart's
+   * actual root namespace.
+   */
+  isCx?: boolean;
 }
 
 /** Reference to an embedded picture inside a worksheet drawing. */

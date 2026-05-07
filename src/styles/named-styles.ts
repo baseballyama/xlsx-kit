@@ -75,17 +75,17 @@ export function addNamedStyle(ss: Stylesheet, style: NamedStyle): number {
   const borderId = style.border !== undefined ? addBorder(ss, style.border) : 0;
   const numFmtId = style.numberFormat !== undefined ? addNumFmt(ss, style.numberFormat) : 0;
 
+  // openpyxl convention: cellStyleXfs entries (the "base" XFs of named
+  // styles) don't carry apply* flags. The cellXf that bridges a cell to
+  // a named style is the one that sets apply* — that's what Excel reads
+  // to decide whether to honour the inherited font / fill / border.
   const xf: CellXf = {
     fontId,
     fillId,
     borderId,
     numFmtId,
-    ...(style.alignment !== undefined ? { alignment: style.alignment, applyAlignment: true } : {}),
-    ...(style.protection !== undefined ? { protection: style.protection, applyProtection: true } : {}),
-    ...(style.font !== undefined ? { applyFont: true } : {}),
-    ...(style.fill !== undefined ? { applyFill: true } : {}),
-    ...(style.border !== undefined ? { applyBorder: true } : {}),
-    ...(style.numberFormat !== undefined ? { applyNumberFormat: true } : {}),
+    ...(style.alignment !== undefined ? { alignment: style.alignment } : {}),
+    ...(style.protection !== undefined ? { protection: style.protection } : {}),
   };
   const xfId = addCellStyleXf(ss, xf);
 

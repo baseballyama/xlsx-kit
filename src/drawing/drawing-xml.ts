@@ -28,6 +28,7 @@ const CLIENT_DATA_TAG = `{${SHEET_DRAWING_NS}}clientData`;
 const A_GRAPHIC_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}graphic';
 const A_GRAPHIC_DATA_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}graphicData';
 const C_CHART_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/chart}chart';
+const CX_CHART_TAG = '{http://schemas.microsoft.com/office/drawing/2014/chartex}chart';
 const PIC_TAG = `{${SHEET_DRAWING_NS}}pic`;
 const PIC_NV_PR_TAG = `{${SHEET_DRAWING_NS}}nvPicPr`;
 const C_NV_PR_TAG = `{${SHEET_DRAWING_NS}}cNvPr`;
@@ -104,10 +105,20 @@ const parseChartReference = (node: XmlNode): ChartReference | undefined => {
   if (!graphic) return undefined;
   const aGraphic = findChild(graphic, A_GRAPHIC_TAG);
   const aGraphicData = aGraphic ? findChild(aGraphic, A_GRAPHIC_DATA_TAG) : undefined;
-  const chart = aGraphicData ? findChild(aGraphicData, C_CHART_TAG) : undefined;
-  if (!chart) return undefined;
-  const rId = chart.attrs[`{${REL_NS}}id`];
-  return rId !== undefined ? { rId } : {};
+  if (!aGraphicData) return undefined;
+  // Chart references use either `<c:chart>` (legacy) or `<cx:chart>`
+  // (chartex). Both carry the rels rId on the element.
+  const cChart = findChild(aGraphicData, C_CHART_TAG);
+  if (cChart) {
+    const rId = cChart.attrs[`{${REL_NS}}id`];
+    return rId !== undefined ? { rId } : {};
+  }
+  const cxChart = findChild(aGraphicData, CX_CHART_TAG);
+  if (cxChart) {
+    const rId = cxChart.attrs[`{${REL_NS}}id`];
+    return rId !== undefined ? { rId, isCx: true } : { isCx: true };
+  }
+  return undefined;
 };
 
 const parseAnchor = (node: XmlNode): DrawingItem | undefined => {
@@ -210,14 +221,32 @@ const serializePictureFrame = (picture: PictureReference, anchorIdx: number): st
   ].join('');
 };
 
-const serializeChartGraphicFrame = (chart: ChartReference, anchorIdx: number): string => {
+const serializeChartGraphicFrame = (
+  chart: ChartReference,
+  anchorIdx: number,
+  ext: { cx: number; cy: number },
+): string => {
   const rId = chart.rId ?? '';
+  const isCx = chart.isCx === true;
+  // chartex (`cx:`) and the legacy ECMA-376 (`c:`) chart kinds use
+  // different `<a:graphicData uri>` values *and* different inline
+  // chart-reference element namespaces. Mismatched URIs make Excel
+  // reject the workbook on open.
+  const uri = isCx
+    ? 'http://schemas.microsoft.com/office/drawing/2014/chartex'
+    : 'http://schemas.openxmlformats.org/drawingml/2006/chart';
+  const chartEl = isCx
+    ? `<cx:chart xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:r="${REL_NS}" r:id="${escapeAttr(rId)}"/>`
+    : `<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="${REL_NS}" r:id="${escapeAttr(rId)}"/>`;
   return [
     '<xdr:graphicFrame>',
     `<xdr:nvGraphicFramePr><xdr:cNvPr id="${anchorIdx + 2}" name="Chart ${anchorIdx + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>`,
-    '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>',
-    '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">',
-    `<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="${REL_NS}" r:id="${escapeAttr(rId)}"/>`,
+    // The graphicFrame's xfrm carries the chart's actual on-sheet size.
+    // Some Excel versions render a zero-size frame as a hidden / 0-pixel
+    // element, which is why earlier outputs showed a chart-less workbook.
+    `<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="${ext.cx}" cy="${ext.cy}"/></xdr:xfrm>`,
+    `<a:graphic><a:graphicData uri="${uri}">`,
+    chartEl,
     '</a:graphicData></a:graphic>',
     '</xdr:graphicFrame>',
   ].join('');
@@ -226,16 +255,22 @@ const serializeChartGraphicFrame = (chart: ChartReference, anchorIdx: number): s
 const serializeAnchor = (item: DrawingItem, idx: number): string => {
   const a = item.anchor;
   let body = '';
+  // Default size for twoCellAnchor where the from→to delta is unknown at this
+  // layer: Excel auto-resizes graphicFrames to the cell range so any non-zero
+  // value is fine. 6"×4" matches openpyxl's default chart frame.
+  let chartExt: { cx: number; cy: number } = { cx: 5486400, cy: 3200400 };
   if (a.kind === 'absolute') {
     body = `<xdr:pos x="${a.pos.x}" y="${a.pos.y}"/><xdr:ext cx="${a.ext.cx}" cy="${a.ext.cy}"/>`;
+    chartExt = a.ext;
   } else if (a.kind === 'oneCell') {
     body = `${serializeMarker('from', a.from)}<xdr:ext cx="${a.ext.cx}" cy="${a.ext.cy}"/>`;
+    chartExt = a.ext;
   } else {
     body = `${serializeMarker('from', a.from)}${serializeMarker('to', a.to)}`;
   }
   let content = '';
   if (item.content.kind === 'chart') {
-    content = serializeChartGraphicFrame(item.content.chart, idx);
+    content = serializeChartGraphicFrame(item.content.chart, idx, chartExt);
   } else if (item.content.kind === 'picture') {
     content = serializePictureFrame(item.content.picture, idx);
   } else {
@@ -243,7 +278,7 @@ const serializeAnchor = (item: DrawingItem, idx: number): string => {
     // Excel doesn't choke. Re-emitting unknown content verbatim is the
     // job of a later iteration (we don't carry the original XmlNode tree
     // through the data model in stage-1).
-    content = serializeChartGraphicFrame({}, idx);
+    content = serializeChartGraphicFrame({}, idx, chartExt);
   }
   const editAs = a.kind === 'twoCell' && a.editAs ? ` editAs="${a.editAs}"` : '';
   const tag = a.kind === 'absolute' ? 'absoluteAnchor' : a.kind === 'oneCell' ? 'oneCellAnchor' : 'twoCellAnchor';

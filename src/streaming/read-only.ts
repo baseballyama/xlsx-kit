@@ -496,6 +496,6 @@ export async function loadWorkbookStream(source: XlsxSource): Promise<ReadOnlyWo
     styles,
     archive,
     entryMap,
-    sst.entries,
+    sst.entries.map((e) => (typeof e === 'string' ? e : e.runs.map((r) => r.text).join(''))),
   );
 }

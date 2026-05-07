@@ -75,6 +75,7 @@ const VML_DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.vmlDrawi
 const DRAWING_REL = `${REL_NS}/drawing`;
 const DRAWING_TYPE = 'application/vnd.openxmlformats-officedocument.drawing+xml';
 const CHART_REL = `${REL_NS}/chart`;
+const CHARTEX_REL = 'http://schemas.microsoft.com/office/2014/relationships/chartEx';
 const CHART_TYPE = 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml';
 const IMAGE_REL = `${REL_NS}/image`;
 const CHARTSHEET_REL = `${REL_NS}/chartsheet`;
@@ -248,7 +249,7 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       commentEmits.push({
         id,
         commentsBytes: commentsToBytes(comments),
-        vmlBytes: placeholderVmlDrawing(),
+        vmlBytes: placeholderVmlDrawing(comments),
       });
       return { vmlRelId };
     };
@@ -270,9 +271,14 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
         if (item.content.kind === 'chart' && (item.content.chart.space || item.content.chart.cxSpace)) {
           const chartId = nextChartId++;
           const chartRId = `rId${drawingRels.rels.length + 1}`;
+          // chartex parts use a different relationship Type than the
+          // legacy ECMA-376 charts. Excel rejects the workbook when the
+          // drawing rels claim a `relationships/chart` target that
+          // actually contains a `cx:chartSpace` root.
+          const isCxChart = item.content.chart.cxSpace !== undefined;
           drawingRels.rels.push({
             id: chartRId,
-            type: CHART_REL,
+            type: isCxChart ? CHARTEX_REL : CHART_REL,
             target: `../charts/chart${chartId}.xml`,
           });
           if (item.content.chart.cxSpace) {
@@ -312,7 +318,13 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
           }
           itemsForXml.push({
             anchor: item.anchor,
-            content: { kind: 'chart', chart: { rId: chartRId } },
+            content: {
+              kind: 'chart',
+              chart: {
+                rId: chartRId,
+                ...(item.content.chart.cxSpace ? { isCx: true } : {}),
+              },
+            },
           });
         } else if (item.content.kind === 'picture' && item.content.picture.image) {
           const img = item.content.picture.image;
@@ -672,6 +684,10 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     const cp = serializeCalcProperties(wb.calcProperties);
     if (cp) parts.push(cp);
   }
+  // No default `<calcPr>` — Excel handles its absence by inserting one
+  // on save. Hand-rolled `calcId` values (especially the modern 191029)
+  // made Excel reject workbooks whose future-function formulas (LET /
+  // LAMBDA / FILTER…) couldn't be evaluated against the declared engine.
   if (wb.oleSize !== undefined) {
     parts.push(`<oleSize ref="${escapeAttr(wb.oleSize)}"/>`);
   }

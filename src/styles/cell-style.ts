@@ -761,17 +761,23 @@ const applyNamedStyleByXfId = (wb: Workbook, c: Cell, xfId: number): void => {
   if (!styleXf) {
     throw new OpenXmlSchemaError(`applyNamedStyle: cellStyleXfs[${xfId}] missing`);
   }
+  // Excel only renders the cellStyleXf's font / fill / border when the
+  // cellXf carries the matching `apply*` flag — even a `xfId` reference
+  // alone doesn't make Excel inherit the values. So we copy every
+  // component the named style touches *and* set the corresponding
+  // apply* flag, mirroring what real Excel writes for `s=` referenced
+  // cells using a built-in named style.
   const patch: { -readonly [K in keyof CellXf]?: CellXf[K] } = {
     xfId,
     fontId: styleXf.fontId,
     fillId: styleXf.fillId,
     borderId: styleXf.borderId,
     numFmtId: styleXf.numFmtId,
+    applyFont: true,
+    applyFill: true,
+    applyBorder: true,
+    applyNumberFormat: true,
   };
-  if (styleXf.applyFont) patch.applyFont = true;
-  if (styleXf.applyFill) patch.applyFill = true;
-  if (styleXf.applyBorder) patch.applyBorder = true;
-  if (styleXf.applyNumberFormat) patch.applyNumberFormat = true;
   if (styleXf.alignment !== undefined) {
     patch.alignment = styleXf.alignment;
     patch.applyAlignment = true;

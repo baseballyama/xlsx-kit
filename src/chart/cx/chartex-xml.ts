@@ -429,6 +429,10 @@ const parseChart = (el: XmlNode): CxChart => {
   const series: CxSeries[] = [];
   for (const sEl of findChildren(region, SERIES)) series.push(parseSeries(sEl));
   const axes: CxAxis[] = [];
+  // Axes live as siblings of <cx:plotAreaRegion> under <cx:plotArea>, but
+  // tolerate writers (including older revisions of this library) that
+  // nest them inside the region.
+  for (const aEl of findChildren(plotAreaEl, AXIS)) axes.push(parseAxis(aEl));
   for (const aEl of findChildren(region, AXIS)) axes.push(parseAxis(aEl));
   // <cx:plotSurface> sits inside plotAreaRegion and carries the plot
   // background spPr.
@@ -621,15 +625,23 @@ const serializeAxis = (a: CxAxis): string => {
   const attrs: string[] = [`id="${a.id}"`];
   if (a.hidden !== undefined) attrs.push(`hidden="${a.hidden ? '1' : '0'}"`);
   const parts: string[] = [`<cx:axis ${attrs.join(' ')}>`];
+  // Excel rejects an empty `<cx:axis>` — every axis needs at least a
+  // scaling child. Default to `<cx:valScaling/>` when the caller didn't
+  // pick one, which is the safer fallback (numeric axes are far more
+  // common than category axes in chartex layouts).
+  let scalingEmitted = false;
   if (a.valScaling) {
     const va: string[] = [];
     if (a.valScaling.min !== undefined) va.push(`min="${a.valScaling.min}"`);
     if (a.valScaling.max !== undefined) va.push(`max="${a.valScaling.max}"`);
     parts.push(`<cx:valScaling${va.length > 0 ? ` ${va.join(' ')}` : ''}/>`);
+    scalingEmitted = true;
   }
   if (a.catScalingGapWidth !== undefined) {
     parts.push(`<cx:catScaling gapWidth="${a.catScalingGapWidth}"/>`);
+    scalingEmitted = true;
   }
+  if (!scalingEmitted) parts.push('<cx:valScaling/>');
   if (a.majorGridlines) parts.push('<cx:majorGridlines/>');
   if (a.title) parts.push(serializeTitle(a.title));
   if (a.spPr) parts.push(serializeShapeProperties(a.spPr, 'cx:spPr'));
@@ -646,8 +658,10 @@ const serializeChart = (c: CxChart): string => {
   // the plot background spPr.
   if (c.plotArea.spPr) parts.push(serializeShapeProperties(c.plotArea.spPr, 'cx:plotSurface'));
   for (const s of c.plotArea.series) parts.push(serializeSeries(s));
+  parts.push('</cx:plotAreaRegion>');
+  // Axes are siblings of <cx:plotAreaRegion> under <cx:plotArea>.
   for (const a of c.plotArea.axes) parts.push(serializeAxis(a));
-  parts.push('</cx:plotAreaRegion></cx:plotArea>');
+  parts.push('</cx:plotArea>');
   if (c.legend) parts.push(serializeLegend(c.legend));
   if (c.plotVisOnly !== undefined) parts.push(`<cx:plotVisOnly val="${c.plotVisOnly ? '1' : '0'}"/>`);
   if (c.dispBlanksAs !== undefined) parts.push(`<cx:dispBlanksAs val="${c.dispBlanksAs}"/>`);

@@ -1128,10 +1128,13 @@ const serializeBarChart = (chart: BarChart): string => {
     '<c:barChart>',
     `<c:barDir val="${chart.barDir}"/>`,
     `<c:grouping val="${chart.grouping}"/>`,
+    `<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`,
   ];
-  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
   for (const s of chart.series) parts.push(serializeSeries(s));
-  if (chart.gapWidth !== undefined) parts.push(`<c:gapWidth val="${chart.gapWidth}"/>`);
+  parts.push(`<c:gapWidth val="${chart.gapWidth ?? 150}"/>`);
+  if (chart.grouping === 'stacked' || chart.grouping === 'percentStacked') {
+    parts.push('<c:overlap val="100"/>');
+  }
   parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
   parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
   parts.push('</c:barChart>');
@@ -1146,8 +1149,11 @@ const serializeLineSeries = (s: LineSeries): string => {
 };
 
 const serializeLineChart = (chart: LineChart): string => {
-  const parts: string[] = ['<c:lineChart>', `<c:grouping val="${chart.grouping}"/>`];
-  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  const parts: string[] = [
+    '<c:lineChart>',
+    `<c:grouping val="${chart.grouping}"/>`,
+    `<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`,
+  ];
   for (const s of chart.series) parts.push(serializeLineSeries(s));
   if (chart.smooth !== undefined) parts.push(`<c:smooth val="${chart.smooth ? '1' : '0'}"/>`);
   parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
@@ -1157,8 +1163,11 @@ const serializeLineChart = (chart: LineChart): string => {
 };
 
 const serializeAreaChart = (chart: AreaChart): string => {
-  const parts: string[] = ['<c:areaChart>', `<c:grouping val="${chart.grouping}"/>`];
-  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  const parts: string[] = [
+    '<c:areaChart>',
+    `<c:grouping val="${chart.grouping}"/>`,
+    `<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`,
+  ];
   for (const s of chart.series) parts.push(serializeSeries(s));
   parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
   parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
@@ -1167,19 +1176,17 @@ const serializeAreaChart = (chart: AreaChart): string => {
 };
 
 const serializePieChart = (chart: PieChart): string => {
-  const parts: string[] = ['<c:pieChart>'];
-  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  const parts: string[] = ['<c:pieChart>', `<c:varyColors val="${(chart.varyColors ?? true) ? '1' : '0'}"/>`];
   for (const s of chart.series) parts.push(serializeSeries(s));
   parts.push('</c:pieChart>');
   return parts.join('');
 };
 
 const serializeDoughnutChart = (chart: DoughnutChart): string => {
-  const parts: string[] = ['<c:doughnutChart>'];
-  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  const parts: string[] = ['<c:doughnutChart>', `<c:varyColors val="${(chart.varyColors ?? true) ? '1' : '0'}"/>`];
   for (const s of chart.series) parts.push(serializeSeries(s));
-  if (chart.firstSliceAng !== undefined) parts.push(`<c:firstSliceAng val="${chart.firstSliceAng}"/>`);
-  if (chart.holeSize !== undefined) parts.push(`<c:holeSize val="${chart.holeSize}"/>`);
+  parts.push(`<c:firstSliceAng val="${chart.firstSliceAng ?? 0}"/>`);
+  parts.push(`<c:holeSize val="${chart.holeSize ?? 50}"/>`);
   parts.push('</c:doughnutChart>');
   return parts.join('');
 };
@@ -1205,8 +1212,11 @@ const serializeScatterSeries = (s: ScatterSeries): string => {
 };
 
 const serializeScatterChart = (chart: ScatterChart): string => {
-  const parts: string[] = ['<c:scatterChart>', `<c:scatterStyle val="${chart.scatterStyle}"/>`];
-  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  const parts: string[] = [
+    '<c:scatterChart>',
+    `<c:scatterStyle val="${chart.scatterStyle}"/>`,
+    `<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`,
+  ];
   for (const s of chart.series) parts.push(serializeScatterSeries(s));
   parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
   parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
@@ -1215,8 +1225,11 @@ const serializeScatterChart = (chart: ScatterChart): string => {
 };
 
 const serializeRadarChart = (chart: RadarChart): string => {
-  const parts: string[] = ['<c:radarChart>', `<c:radarStyle val="${chart.radarStyle}"/>`];
-  if (chart.varyColors !== undefined) parts.push(`<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`);
+  const parts: string[] = [
+    '<c:radarChart>',
+    `<c:radarStyle val="${chart.radarStyle}"/>`,
+    `<c:varyColors val="${chart.varyColors ? '1' : '0'}"/>`,
+  ];
   for (const s of chart.series) parts.push(serializeSeries(s));
   parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
   parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
@@ -1368,10 +1381,26 @@ const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): st
     `<c:axPos val="${ax.position ?? (tag === 'catAx' ? 'b' : 'l')}"/>`,
   ];
   if (tag === 'valAx' && (ax as ValueAxis).majorGridlines) parts.push('<c:majorGridlines/>');
+  // Excel rejects axes lacking the standard tick / label / cross attrs.
+  // openpyxl serialises the same defaults; older revisions of this writer
+  // skipped them and the chart silently failed to render.
+  parts.push('<c:numFmt formatCode="General" sourceLinked="1"/>');
+  parts.push('<c:majorTickMark val="out"/>');
+  parts.push('<c:minorTickMark val="none"/>');
+  parts.push('<c:tickLblPos val="nextTo"/>');
   // ECMA-376 element order places spPr / txPr immediately before crossAx.
   if (ax.spPr) parts.push(serializeShapeProperties(ax.spPr));
   if (ax.txPr) parts.push(serializeTextBody(ax.txPr, 'c:txPr'));
   parts.push(`<c:crossAx val="${ax.crossAx}"/>`);
+  parts.push('<c:crosses val="autoZero"/>');
+  if (tag === 'catAx') {
+    parts.push('<c:auto val="1"/>');
+    parts.push('<c:lblAlgn val="ctr"/>');
+    parts.push('<c:lblOffset val="100"/>');
+    parts.push('<c:noMultiLvlLbl val="0"/>');
+  } else {
+    parts.push('<c:crossBetween val="between"/>');
+  }
   parts.push(`</c:${tag}>`);
   return parts.join('');
 };
@@ -1387,13 +1416,20 @@ const serializeChartTitle = (title: ChartTitle): string => {
     parts.push(
       '<c:tx>',
       '<c:rich>',
-      '<a:bodyPr/><a:lstStyle/><a:p>',
-      `<a:r><a:t>${escapeText(title.text)}</a:t></a:r>`,
+      '<a:bodyPr rot="0" spcFirstLastPara="1" vertOverflow="ellipsis" vert="horz" wrap="square" anchor="ctr" anchorCtr="1"/>',
+      '<a:lstStyle/>',
+      '<a:p><a:pPr><a:defRPr sz="1400" b="0" i="0" u="none" strike="noStrike" kern="1200" baseline="0">',
+      '<a:solidFill><a:schemeClr val="tx1"/></a:solidFill>',
+      '<a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/>',
+      '</a:defRPr></a:pPr>',
+      `<a:r><a:rPr lang="en-US"/><a:t>${escapeText(title.text)}</a:t></a:r>`,
       '</a:p>',
       '</c:rich>',
       '</c:tx>',
     );
   }
+  // <c:layout/> + <c:overlay> match the order Excel emits.
+  parts.push('<c:layout/>');
   if (title.overlay !== undefined) {
     parts.push(`<c:overlay val="${title.overlay ? '1' : '0'}"/>`);
   } else {
@@ -1445,11 +1481,29 @@ const serializeChartKind = (chart: ChartKind): string => {
 const serializePlotArea = (plotArea: PlotArea): string => {
   const parts: string[] = ['<c:plotArea>', '<c:layout/>'];
   parts.push(serializeChartKind(plotArea.chart));
-  if (plotArea.catAx) parts.push(serializeAxis('catAx', plotArea.catAx));
-  if (plotArea.valAx) parts.push(serializeAxis('valAx', plotArea.valAx));
+  // Excel rejects charts that reference axIds in a chart-kind element but
+  // don't define matching catAx/valAx siblings under plotArea. Fill in
+  // sensible defaults when callers omit them.
+  const axes = inferAxesForChart(plotArea);
+  for (const ax of axes) parts.push(ax);
   if (plotArea.spPr) parts.push(serializeShapeProperties(plotArea.spPr));
   parts.push('</c:plotArea>');
   return parts.join('');
+};
+
+const inferAxesForChart = (plotArea: PlotArea): string[] => {
+  const chart = plotArea.chart;
+  if (!('axIds' in chart)) return [];
+  const ids = chart.axIds;
+  if (!ids || ids.length < 2) return [];
+  // Scatter / bubble have two value axes (x and y are both numeric).
+  const isXValueAxis = chart.kind === 'scatter' || chart.kind === 'bubble';
+  const cat = plotArea.catAx ?? { axId: ids[0], crossAx: ids[1], position: isXValueAxis ? ('b' as const) : ('b' as const) };
+  const val = plotArea.valAx ?? { axId: ids[1], crossAx: ids[0], position: 'l' as const };
+  const out: string[] = [];
+  out.push(serializeAxis(isXValueAxis ? 'valAx' : 'catAx', cat));
+  out.push(serializeAxis('valAx', val));
+  return out;
 };
 
 const serializeLegend = (legend: Legend): string => {
@@ -1488,15 +1542,23 @@ export function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptio
   const parts: string[] = [
     XML_HEADER,
     `<c:chartSpace xmlns:c="${CHART_NS}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL_NS}">`,
+    // chartSpace prelude — `date1904`, `lang`, `roundedCorners` mirror
+    // what real Excel emits and a few Excel versions reject the file
+    // entirely without them.
+    '<c:date1904 val="0"/>',
+    '<c:lang val="en-US"/>',
+    '<c:roundedCorners val="0"/>',
     '<c:chart>',
   ];
   if (space.title !== undefined) parts.push(serializeChartTitle(space.title));
-  // openpyxl emits autoTitleDeleted="0" for charts that have a title; we
-  // skip it for stage-1 since Excel tolerates the absence.
+  // <c:autoTitleDeleted> follows <c:title> when present, and is required
+  // by some Excel versions when a title is set; emit `0` when we have a
+  // title and `1` (= no auto-title) otherwise.
+  parts.push(`<c:autoTitleDeleted val="${space.title === undefined ? '1' : '0'}"/>`);
   parts.push(serializePlotArea(space.plotArea));
   if (space.legend) parts.push(serializeLegend(space.legend));
-  if (space.plotVisOnly !== undefined) parts.push(`<c:plotVisOnly val="${space.plotVisOnly ? '1' : '0'}"/>`);
-  if (space.dispBlanksAs !== undefined) parts.push(`<c:dispBlanksAs val="${space.dispBlanksAs}"/>`);
+  parts.push(`<c:plotVisOnly val="${space.plotVisOnly === false ? '0' : '1'}"/>`);
+  parts.push(`<c:dispBlanksAs val="${space.dispBlanksAs ?? 'gap'}"/>`);
   parts.push('</c:chart>');
   // chartSpace-level spPr / txPr are siblings of <c:chart>, emitted after.
   if (space.spPr) parts.push(serializeShapeProperties(space.spPr));

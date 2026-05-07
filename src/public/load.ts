@@ -276,7 +276,14 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
       }
     }
   }
-  const sst: ReadonlyArray<string> = sharedStrings?.entries ?? [];
+  // The worksheet reader takes plain strings; rich-text SST entries are
+  // flattened to their concatenated text body so cell values stay simple.
+  // (Rich-text fidelity round-trip on read needs a sst entry → cell-value
+  // bridge that produces a rich-text cell; for now Excel re-write still
+  // works because we only flatten on read, not on write.)
+  const sst: ReadonlyArray<string> = (sharedStrings?.entries ?? []).map((e) =>
+    typeof e === 'string' ? e : e.runs.map((r) => r.text).join(''),
+  );
 
   // 4c. styles.xml — optional. Same default-or-rels lookup as sst.
   let styles: ReturnType<typeof parseStylesheetXml> | undefined;

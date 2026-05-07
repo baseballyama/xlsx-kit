@@ -78,6 +78,8 @@ describe('calcPr round-trip', () => {
 
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
+    // Workbooks without explicit calc settings round-trip without
+    // `<calcPr/>` so Excel can decide for itself which engine to use.
     expect(wb2.calcProperties).toBeUndefined();
   });
 });

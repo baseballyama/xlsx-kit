@@ -10,8 +10,10 @@ import { serializeXml } from '../xml/serializer';
 import { el, type XmlNode } from '../xml/tree';
 import { AlignmentSchema } from './alignment.schema';
 import { BorderSchema } from './borders.schema';
+import { getDxfs, type StylesheetWithDxfs } from './differential';
 import { fillToTree } from './fills.schema';
 import { FontSchema } from './fonts.schema';
+import { NumberFormatSchema } from './numbers.schema';
 import { ProtectionSchema } from './protection.schema';
 import type { CellXf, Stylesheet } from './stylesheet';
 
@@ -23,6 +25,10 @@ const NUMFMTS_TAG = qname(SHEET_MAIN_NS, 'numFmts');
 const NUMFMT_TAG = qname(SHEET_MAIN_NS, 'numFmt');
 const CELLSTYLEXFS_TAG = qname(SHEET_MAIN_NS, 'cellStyleXfs');
 const CELLXFS_TAG = qname(SHEET_MAIN_NS, 'cellXfs');
+const CELLSTYLES_TAG = qname(SHEET_MAIN_NS, 'cellStyles');
+const CELLSTYLE_TAG = qname(SHEET_MAIN_NS, 'cellStyle');
+const DXFS_TAG = qname(SHEET_MAIN_NS, 'dxfs');
+const DXF_TAG = qname(SHEET_MAIN_NS, 'dxf');
 const XF_TAG = qname(SHEET_MAIN_NS, 'xf');
 
 /** Serialise a Stylesheet to its `xl/styles.xml` payload. */
@@ -82,6 +88,38 @@ function buildStylesheetTree(ss: Stylesheet): XmlNode {
     for (const xf of ss.cellXfs) cellXfsEl.children.push(cellXfToTree(xf));
   }
   root.children.push(cellXfsEl);
+
+  // cellStyles — named styles entries pointing at cellStyleXfs.
+  if (ss.namedStyles && ss.namedStyles.length > 0) {
+    const cellStylesEl = el(CELLSTYLES_TAG, { count: String(ss.namedStyles.length) });
+    for (const ns of ss.namedStyles) {
+      const attrs: Record<string, string> = { name: ns.name, xfId: String(ns.xfId) };
+      if (ns.builtinId !== undefined) attrs['builtinId'] = String(ns.builtinId);
+      if (ns.iLevel !== undefined) attrs['iLevel'] = String(ns.iLevel);
+      if (ns.hidden) attrs['hidden'] = '1';
+      if (ns.customBuiltin) attrs['customBuiltin'] = '1';
+      cellStylesEl.children.push(el(CELLSTYLE_TAG, attrs));
+    }
+    root.children.push(cellStylesEl);
+  }
+
+  // dxfs — differential styles referenced by conditional formatting and tables.
+  const dxfs = getDxfs(ss as StylesheetWithDxfs);
+  if (dxfs.length > 0) {
+    const dxfsEl = el(DXFS_TAG, { count: String(dxfs.length) });
+    for (const dxf of dxfs) {
+      const dxfEl = el(DXF_TAG);
+      // Order matches openpyxl: font, numFmt, fill, alignment, border, protection.
+      if (dxf.font) dxfEl.children.push(toTree(dxf.font, FontSchema));
+      if (dxf.numFmt) dxfEl.children.push(toTree(dxf.numFmt, NumberFormatSchema));
+      if (dxf.fill) dxfEl.children.push(fillToTree(dxf.fill));
+      if (dxf.alignment) dxfEl.children.push(toTree(dxf.alignment, AlignmentSchema));
+      if (dxf.border) dxfEl.children.push(toTree(dxf.border, BorderSchema));
+      if (dxf.protection) dxfEl.children.push(toTree(dxf.protection, ProtectionSchema));
+      dxfsEl.children.push(dxfEl);
+    }
+    root.children.push(dxfsEl);
+  }
 
   return root;
 }

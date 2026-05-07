@@ -1464,6 +1464,14 @@ const decodeCachedValue = (raw: string | undefined, t: string): number | string 
   }
 };
 
+// Strip the `_xlfn.` / `_xlfn._xlws.` prefixes Excel writes to disk for
+// future-functions on read. The writer side leaves formula text as-is,
+// but loaded files (typically from real Excel) ship the prefix and we
+// surface a clean bare-name formula to consumers.
+const FUTURE_FUNCTION_PREFIX_RE = /\b_xlfn\.(?:_xlws\.)?([A-Z][A-Z0-9.]*)/g;
+const stripFutureFunctionPrefix = (s: string): string =>
+  s.length > 0 && s.includes('_xlfn.') ? s.replace(FUTURE_FUNCTION_PREFIX_RE, '$1') : s;
+
 const handleFormula = (
   cell: Cell,
   fNode: XmlNode,
@@ -1472,7 +1480,7 @@ const handleFormula = (
   sharedFormulas: Map<number, SharedFormulaCache>,
 ): void => {
   const tAttr = fNode.attrs['t'] ?? 'normal';
-  const formula = fNode.text ?? '';
+  const formula = stripFutureFunctionPrefix(fNode.text ?? '');
   const opts = cached !== undefined ? { cachedValue: cached } : undefined;
   switch (tAttr as FormulaKind) {
     case 'normal':
