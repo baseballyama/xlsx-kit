@@ -661,6 +661,7 @@ export {
   getSheet,
   getSheetByIndex,
   getSheetState,
+  getWorkbookAsCsvBundle,
   getWorkbookAsCsvRecord,
   getWorkbookCellsByKind,
   getWorkbookStats,

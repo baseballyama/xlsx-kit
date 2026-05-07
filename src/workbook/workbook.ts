@@ -13,6 +13,7 @@ import type { ExtendedProperties } from '../packaging/extended';
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import { zipSync } from 'fflate';
 import type { CellValue } from '../cell/cell';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import { addTableFromObjects } from '../worksheet/table';
@@ -690,6 +691,42 @@ export function createWorkbookFromCsv(
     ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
   });
   return wb;
+}
+
+/**
+ * Bundle every worksheet's CSV into a single ZIP archive (one
+ * `<title>.csv` entry per Worksheet). Returns the raw `Uint8Array`
+ * — caller is responsible for I/O. Forwards delimiter / lineTerminator
+ * / trailingNewline to the underlying {@link getWorksheetAsCsv}.
+ *
+ * Sheet titles are sanitised for filesystem-friendliness: characters
+ * not in `[A-Za-z0-9 _-]` are replaced with `_`. Collisions get a
+ * `_2`, `_3`, ... suffix.
+ *
+ * Empty workbook returns an empty zip (with no entries) — still a
+ * valid Uint8Array.
+ */
+export function getWorkbookAsCsvBundle(
+  wb: Workbook,
+  opts: { delimiter?: string; lineTerminator?: string; trailingNewline?: boolean } = {},
+): Uint8Array {
+  const sanitise = (s: string): string => s.replace(/[^A-Za-z0-9 _-]/g, '_');
+  const used = new Set<string>();
+  const entries: Record<string, Uint8Array> = {};
+  const encoder = new TextEncoder();
+  for (const ws of iterWorksheets(wb)) {
+    let base = `${sanitise(ws.title)}.csv`;
+    let name = base;
+    let suffix = 2;
+    while (used.has(name)) {
+      base = `${sanitise(ws.title)}_${suffix}.csv`;
+      name = base;
+      suffix++;
+    }
+    used.add(name);
+    entries[name] = encoder.encode(getWorksheetAsCsv(ws, opts));
+  }
+  return zipSync(entries);
 }
 
 /**
