@@ -37,7 +37,12 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`reduceRange(ws, range, reducer, init)` を追加** — header-driven range をユーザー定義 reducer で 1 値に折りたたむ。
+- **次のタスク**: **`forEachRow(ws, range, callback)` を追加** — readRangeAsObjects の薄い iterator (副作用 OK)。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → for (row of rows) callback(row, i)。返り値 void。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/for-each-row.test.ts` 4 件: 通常 / index passing / 空 range で callback 0 回 / row 不変参照。
+
+- **次のタスク (前回)**: **`reduceRange(ws, range, reducer, init)`** — header-driven range をユーザー定義 reducer で 1 値に折りたたむ。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → reduce(acc, row, i) → 終端値 return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/reduce-range.test.ts` 4 件: count / sum / max / 空 range で init 返す。
