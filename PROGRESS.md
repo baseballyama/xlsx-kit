@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`addTableFromObjects(wb, ws, startRef, objects, name, opts?)` を追加** — writeRangeFromObjects + addTable を 1 call に。
-  1. `src/worksheet/worksheet.ts` または table 専用ファイルに追加: writeRangeFromObjects で書いて bounding-box を取得 → ref string に変換 → addTable(ws, name, ref, headers)。
+- **次のタスク**: **`getRangeAsCsv(ws, range, opts?)` を追加** — A1 range を CSV string に。
+  1. `src/worksheet/worksheet.ts` (or 新 csv.ts) に追加: getRangeValues → 各 cell を CSV-escape (含まれる `,` `\n` `"` を quote)。`opts.delimiter` (default ',') / `opts.lineTerminator` (default '\n') / `opts.includeHeader` (default false — 既に header 込みの range を渡す前提)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/add-table-from-objects.test.ts` 4 件: 単純 case / opts.headers 順序指定 / 空配列で throw or no-op / addTable 結果に headers が反映される。
+  3. `tests/phase-5/range-as-csv.test.ts` 5 件: 通常 / quote escape / `,` 含む値 / multi-line 値 / 空 cell は空フィールド / 区切り文字 ` ; ` 切替。
 
-- **次のタスク (前回)**: **`writeRangeFromObjects(ws, startRef, objects, opts?)` readRangeAsObjects の inverse**。
+- **次のタスク (前回)**: **`addTableFromObjects(wb, ws, opts)` writeRangeFromObjects + addExcelTable を 1 call**。
+  1. `src/worksheet/table.ts` に追加: writeRangeFromObjects → bounding-box → addExcelTable。columns は header と同順。空 throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/add-table-from-objects.test.ts` 4 件: 通常 / opts.headers / 空 throw / opts.style 反映。
+
+  empirical: 2026 tests pass (was 2022, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: headers (union of keys / opts pinned) → grid → writeRange。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/write-range-from-objects.test.ts` 6 件: 通常 / 空 / opts.headers / null skip / union of keys / round-trip readRangeAsObjects。
