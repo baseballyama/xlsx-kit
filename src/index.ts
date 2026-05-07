@@ -643,6 +643,7 @@ export {
   addWorksheet,
   createWorkbook,
   createWorkbookFromCsv,
+  createWorkbookFromObjects,
   duplicateSheet,
   getActiveSheet,
   findCellInWorkbook,

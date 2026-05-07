@@ -13,9 +13,11 @@ import type { ExtendedProperties } from '../packaging/extended';
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import type { CellValue } from '../cell/cell';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
+import { addTableFromObjects } from '../worksheet/table';
 import type { CellsByKindCounts, Worksheet } from '../worksheet/worksheet';
-import { countCellsByKind, makeWorksheet } from '../worksheet/worksheet';
+import { countCellsByKind, makeWorksheet, writeRangeFromObjects } from '../worksheet/worksheet';
 
 export type SheetState = 'visible' | 'hidden' | 'veryHidden';
 
@@ -687,6 +689,56 @@ export function createWorkbookFromCsv(
     ...(opts.delimiter !== undefined ? { delimiter: opts.delimiter } : {}),
     ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
   });
+  return wb;
+}
+
+/**
+ * One-shot constructor: build a brand-new {@link Workbook} containing
+ * a single worksheet populated from a `Record[]` array (header row
+ * derived from the union of object keys, or pinned via `opts.headers`).
+ *
+ * Options:
+ *   - `sheetTitle` (default `'Sheet1'`)
+ *   - `headers` — pin column order
+ *   - `asTable` (default `false`) — when `true`, register the data as
+ *     an Excel Table named `opts.tableName ?? 'Table1'` via
+ *     {@link addTableFromObjects} (which provides AutoFilter +
+ *     structured references for free)
+ *   - `tableName` — only used with `asTable: true`
+ *   - `style` — built-in TableStyle name (only with `asTable: true`)
+ *
+ * Empty `objects` returns a workbook with an empty sheet (no throw).
+ */
+export function createWorkbookFromObjects<T extends Record<string, unknown>>(
+  objects: ReadonlyArray<T>,
+  opts: {
+    sheetTitle?: string;
+    headers?: ReadonlyArray<string>;
+    asTable?: boolean;
+    tableName?: string;
+    style?: string;
+    date1904?: boolean;
+  } = {},
+): Workbook {
+  const wb = createWorkbook(opts.date1904 !== undefined ? { date1904: opts.date1904 } : undefined);
+  const ws = addWorksheet(wb, opts.sheetTitle ?? 'Sheet1');
+  if (objects.length === 0) return wb;
+  if (opts.asTable) {
+    addTableFromObjects(wb, ws, {
+      name: opts.tableName ?? 'Table1',
+      startRef: 'A1',
+      objects: objects as ReadonlyArray<Record<string, CellValue | null | undefined>>,
+      ...(opts.headers ? { headers: opts.headers } : {}),
+      ...(opts.style !== undefined ? { style: opts.style } : {}),
+    });
+  } else {
+    writeRangeFromObjects(
+      ws,
+      'A1',
+      objects as ReadonlyArray<Record<string, CellValue | null | undefined>>,
+      opts.headers ? { headers: opts.headers } : {},
+    );
+  }
   return wb;
 }
 
