@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`hasChartsheet(wb, title)` chartsheet 専用 predicate を追加** (worksheet と区別)。
-  1. `src/workbook/workbook.ts` に追加: wb.sheets を walk + ref.kind === 'chartsheet' && title 一致。
+- **次のタスク**: **`hasWorksheet(wb, title)` worksheet 専用 predicate を追加** (chartsheet と区別)。
+  1. `src/workbook/workbook.ts` に追加: getSheet(wb, title) !== undefined の wrapper。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/has-chartsheet.test.ts` 3 件: chartsheet 在 / chartsheet 不在 / 同名 worksheet は false。
+  3. `tests/phase-3/has-worksheet.test.ts` 3 件: 在 / 不在 / 同名 chartsheet は false。
 
-- **次のタスク (前回)**: **`hasSheet(wb, title)` workbook predicate**。
+- **次のタスク (前回)**: **`hasChartsheet(wb, title)` chartsheet-only predicate**。
+  1. `src/workbook/workbook.ts` に追加: wb.sheets walk + kind 'chartsheet' && title 一致。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/has-chartsheet.test.ts` 4 件: 在 / 不在 / 同名 worksheet false / 空 wb。
+
+  empirical: 2311 tests pass (was 2307, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: getSheetIndex(wb, title) >= 0 wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/has-sheet.test.ts` 4 件: worksheet 在 / 不在 / chartsheet 在 / 空 wb。
