@@ -37,12 +37,18 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getWorksheetAsTextTable(ws)` shortcut + `getWorkbookAsTextTableRecord(wb)` を追加** — text 出力の whole-sheet + workbook export。
-  1. `src/worksheet/text.ts` に getWorksheetAsTextTable (getDataExtent → A1 → worksheetToTextTable)、`src/workbook/workbook.ts` に getWorkbookAsTextTableRecord (iterWorksheets walk)。
-  2. `src/index.ts` から re-export。
-  3. `tests/phase-5/worksheet-as-text.test.ts` 3 件 + `tests/phase-3/workbook-as-text-record.test.ts` 3 件。
+- **次のタスク**: **fixture-based export-format smoke test を追加** — 既存 xlsx fixture を load → 4 形式の workbook record 全部 invoke して non-empty 確認。
+  1. `tests/phase-3/workbook-export-formats-smoke.test.ts` 新規: load + 4 record export を walk、各 sheet が string で返ることを assert。
+  2. 新 helper 不要。
 
-- **次のタスク (前回)**: **`worksheetToTextTable(ws, range)` ASCII-art plain-text renderer**。
+- **次のタスク (前回)**: **getWorksheetAsTextTable + getWorkbookAsTextTableRecord (export-format matrix close)**。
+  1. `src/worksheet/text.ts` + `src/workbook/workbook.ts` に追加。
+  2. `src/index.ts` から re-export。
+  3. tests/phase-5/worksheet-as-text.test.ts 3 件 + tests/phase-3/workbook-as-text-record.test.ts 3 件。
+
+  empirical: 2371 tests pass (was 2365, +6)、typecheck / lint clean (14 warnings)。 export-format API matrix complete (per-range + per-sheet shortcut + workbook Record × CSV/HTML/Markdown/Text)。
+
+- **次のタスク (前回 2)**: **`worksheetToTextTable(ws, range)` ASCII-art plain-text renderer**。
   1. `src/worksheet/text.ts` 新規: 列幅 padEnd + `+---+` border、merge flatten、newline→space。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/worksheet-to-text.test.ts` 5 件: 通常 / unequal widths / merge / newline 置換 / 1 行 range。
