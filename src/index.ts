@@ -719,6 +719,7 @@ export {
   getWorkbookStats,
   hasChartsheet,
   hasSheet,
+  hasWorksheet,
   hideSheet,
   isValidSheetTitle,
   iterAllCells,

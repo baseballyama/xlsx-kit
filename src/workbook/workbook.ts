@@ -327,6 +327,15 @@ export function hasSheet(wb: Workbook, title: string): boolean {
 }
 
 /**
+ * True iff the workbook has a **worksheet** (not a chartsheet) with
+ * the given title. Distinct from {@link hasSheet} (matches either
+ * kind) and {@link hasChartsheet} (chartsheets only).
+ */
+export function hasWorksheet(wb: Workbook, title: string): boolean {
+  return getSheet(wb, title) !== undefined;
+}
+
+/**
  * True iff the workbook has a **chartsheet** (not a worksheet) with
  * the given title. Distinct from {@link hasSheet}, which matches
  * either kind. Use this when the caller needs to discriminate before
