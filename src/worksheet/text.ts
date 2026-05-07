@@ -7,8 +7,9 @@
 // left keeps its value, others are empty).
 
 import { cellValueAsString } from '../cell/cell';
+import { boundariesToRangeString } from '../utils/coordinate';
 import { parseRange } from './cell-range';
-import { getCell, getMergedCells, type Worksheet } from './worksheet';
+import { getCell, getDataExtent, getMergedCells, type Worksheet } from './worksheet';
 
 /**
  * Render a worksheet range as a plain ASCII-art table. The first
@@ -87,4 +88,16 @@ export function worksheetToTextTable(ws: Worksheet, range: string): string {
     if (row) lines.push(renderRow(row));
   }
   return lines.join('\n');
+}
+
+/**
+ * Whole-worksheet shortcut over {@link worksheetToTextTable}: serialises
+ * the sheet's data extent (`getDataExtent`) as an ASCII-art table.
+ * Returns `''` for an empty worksheet (mirrors the CSV / HTML /
+ * Markdown shortcut conventions).
+ */
+export function getWorksheetAsTextTable(ws: Worksheet): string {
+  const ext = getDataExtent(ws);
+  if (!ext) return '';
+  return worksheetToTextTable(ws, boundariesToRangeString(ext));
 }

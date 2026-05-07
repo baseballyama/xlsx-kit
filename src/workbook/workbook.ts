@@ -33,6 +33,7 @@ import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToStrin
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import { getWorksheetAsHtml } from '../worksheet/html';
 import { getWorksheetAsMarkdownTable } from '../worksheet/markdown';
+import { getWorksheetAsTextTable } from '../worksheet/text';
 import type { LegacyComment } from '../worksheet/comments';
 import type { Hyperlink } from '../worksheet/hyperlinks';
 import { addTableFromObjects } from '../worksheet/table';
@@ -1265,6 +1266,23 @@ export function getWorkbookAsMarkdownRecord(wb: Workbook): Record<string, string
   const out: Record<string, string> = {};
   for (const ws of iterWorksheets(wb)) {
     out[ws.title] = getWorksheetAsMarkdownTable(ws);
+  }
+  return out;
+}
+
+/**
+ * Workbook-wide ASCII-art text table export. Walks every Worksheet
+ * in tab-strip order, serialises each via
+ * {@link getWorksheetAsTextTable}, and returns a `Record<string,
+ * string>` keyed by sheet title. Empty worksheets are included with
+ * `""`. Chartsheets are skipped.
+ *
+ * Closes the export-format matrix (CSV / HTML / Markdown / Text).
+ */
+export function getWorkbookAsTextTableRecord(wb: Workbook): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const ws of iterWorksheets(wb)) {
+    out[ws.title] = getWorksheetAsTextTable(ws);
   }
   return out;
 }
