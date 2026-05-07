@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`describeWorkbook(wb)` を追加** — workbook 全体の overview を 1 オブジェクトで返す human-readable summary。
-  1. `src/workbook/workbook.ts` に追加: getWorkbookStats + getWorkbookCellsByKind + sheets metadata (title/state/hidden/cellCount per sheet) + defined-names + custom-properties summary を 1 オブジェクトで return。
+- **次のタスク**: **`getNonEmptyCellCount(ws, opts?)` を追加** — null/empty を除いた populated cells を count。
+  1. `src/worksheet/worksheet.ts` に追加: iterCells walk で `cell.value !== null` をカウント。`opts.includeFormulas` (default true)、`opts.includeRichText` (default true)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/describe-workbook.test.ts` 4 件: 通常 / 空 wb / 複数 sheet (worksheets + chartsheet 混在) / hidden sheets。
+  3. `tests/phase-5/non-empty-cell-count.test.ts` 5 件: 全 non-null / null 含む / 空文字列は count に含む / formula skip option / rich-text skip option。
 
-- **次のタスク (前回)**: **`getCellSummary(wb, sheetTitle, ref)` debug-friendly per-cell snapshot**。
+- **次のタスク (前回)**: **`describeWorkbook(wb)` workbook overview**。
+  1. `src/workbook/workbook.ts` に追加: getWorkbookStats + getWorkbookCellsByKind + per-sheet metadata。型 `WorkbookOverview` / `WorkbookSheetOverview` も export。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/describe-workbook.test.ts` 4 件: 空 wb / 通常 sheet / chartsheet+hidden 混在 / tab-strip 順序保持。
+
+  empirical: 2080 tests pass (was 2076, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: cell value / styleId / 解決済み style chain / hyperlink / comment / mergedRange / inTables / inDV / inCF。型 `CellSummary` も export。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/cell-summary.test.ts` 6 件: 値のみ / styled+hyperlink+comment / merge / table+DV+CF / 不正 sheet で throw / 不存在 cell で exists:false + default styles。
