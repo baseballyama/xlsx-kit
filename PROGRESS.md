@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`removeAllConditionalFormatting(ws)` 一括 wipe を追加**。
+- **次のタスク**: **`removeAllTables` / `removeAllDataValidations` 一括 wipe を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: 各 array を `[]` で空にして count を return。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/remove-all-tables-validations.test.ts` 4 件: tables 2 件削除 + count / 0 件で 0 / validations 2 件削除 + count / 0 件で 0。
+
+  empirical: 1877 tests pass (was 1873, +4)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`removeAllConditionalFormatting(ws)` 一括 wipe を追加**。
   1. `src/worksheet/worksheet.ts` に追加: `ws.conditionalFormatting = []` で全 CF block を削除し、count を return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/remove-all-conditional-formatting.test.ts` 2 件: 2 種 (cellIs+colorScale) 削除 + count / 0 件で 0。

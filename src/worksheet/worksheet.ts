@@ -1693,6 +1693,13 @@ export function listDataValidations(ws: Worksheet): ReadonlyArray<DataValidation
   return ws.dataValidations;
 }
 
+/** Drop every data validation block on the worksheet. Returns the count removed. */
+export function removeAllDataValidations(ws: Worksheet): number {
+  const n = ws.dataValidations.length;
+  ws.dataValidations = [];
+  return n;
+}
+
 // ---- autoFilter ----------------------------------------------------------
 
 /** Set or replace the worksheet's AutoFilter. Pass `undefined` to clear. */
@@ -1733,6 +1740,13 @@ export function removeTable(ws: Worksheet, displayName: string): boolean {
   if (i < 0) return false;
   ws.tables.splice(i, 1);
   return true;
+}
+
+/** Drop every Excel table on the worksheet. Returns the count removed. */
+export function removeAllTables(ws: Worksheet): number {
+  const n = ws.tables.length;
+  ws.tables = [];
+  return n;
 }
 
 // ---- legacy comments -----------------------------------------------------
