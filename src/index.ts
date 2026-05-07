@@ -313,6 +313,7 @@ export {
   findRow,
   forEachRow,
   groupBy,
+  indexOfRow,
   mapRange,
   pivotTable,
   readRangeAsObjects,

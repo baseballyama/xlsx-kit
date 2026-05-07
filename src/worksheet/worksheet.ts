@@ -1428,6 +1428,26 @@ export function pivotTable(
 }
 
 /**
+ * Find the 0-based index of the first data row that satisfies
+ * `predicate`. Returns `-1` when none match. Mirrors
+ * `Array.prototype.findIndex`. Header row is excluded; index 0 is
+ * the first data row.
+ */
+export function indexOfRow(
+  ws: Worksheet,
+  range: string,
+  predicate: (row: Record<string, CellValue | null>, index: number) => boolean,
+): number {
+  const rows = readRangeAsObjects(ws, range);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    if (predicate(row, i)) return i;
+  }
+  return -1;
+}
+
+/**
  * True iff at least one data row satisfies `predicate`. Short-
  * circuits at the first match. Mirrors `Array.prototype.some`.
  * Empty data area returns `false`.
