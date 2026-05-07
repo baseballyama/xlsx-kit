@@ -120,6 +120,7 @@ export {
   toIso8601,
   WINDOWS_EPOCH_MS,
 } from './utils/datetime';
+export { cssRecordToInlineStyle } from './utils/css';
 export { escapeCellString, unescapeCellString } from './utils/escape';
 export {
   OpenXmlError,
