@@ -360,6 +360,29 @@ export function appendRow(ws: Worksheet, values: ReadonlyArray<CellValue | undef
   return row;
 }
 
+/**
+ * Bulk version of {@link appendRow}: append a 2D array of values
+ * one row at a time. Returns `{firstRow, lastRow}` — both 1-based,
+ * inclusive. An empty input returns `{firstRow, lastRow: firstRow - 1}`
+ * so callers can detect the no-op without throwing.
+ *
+ * Common usage: `appendRows(ws, csvParsedRows)` for fast import.
+ */
+export function appendRows(
+  ws: Worksheet,
+  rows: ReadonlyArray<ReadonlyArray<CellValue | undefined>>,
+): { firstRow: number; lastRow: number } {
+  const firstRow = ws._appendRowCursor + 1;
+  if (rows.length === 0) {
+    return { firstRow, lastRow: firstRow - 1 };
+  }
+  let lastRow = firstRow - 1;
+  for (const row of rows) {
+    lastRow = appendRow(ws, row);
+  }
+  return { firstRow, lastRow };
+}
+
 export interface IterRowsOptions {
   minRow?: number;
   maxRow?: number;

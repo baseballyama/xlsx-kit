@@ -225,6 +225,7 @@ export {
   addIgnoredError,
   addTable,
   appendRow,
+  appendRows,
   countCells,
   countCellsByKind,
   deleteCell,

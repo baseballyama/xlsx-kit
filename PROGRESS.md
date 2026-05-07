@@ -37,12 +37,13 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getCellComment` overload of cell-by-coord lookup**: `getCommentByCoord(ws, "A1") → Comment | undefined` を追加 — A1 ref 直で comment 取得。
-  1. `src/worksheet/worksheet.ts` に追加: A1 → tuple → ws.legacyComments の `cellRef` フィールドと突き合わせ → 該当する Comment object を return (重複は最初に現れたもの)。
+- **次のタスク**: **`appendRows(ws, rows)` 一括 append helper を追加** — appendRow の bulk 版。
+  1. `src/worksheet/worksheet.ts` に追加: `ReadonlyArray<ReadonlyArray<CellValue | undefined>>` を受けて、各 row を順次 appendRow で追加し、`{firstRow, lastRow}` を返す。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/comment-by-coord.test.ts` 4 件: 単一 cell の comment / 存在しない coord で undefined / 不正 coord で throw / cell に複数 comment は first 戻す。
+  3. `tests/phase-5/append-rows.test.ts` 5 件: 3 row append / 空 row も cursor 進む / undefined/null は cell 作成しない / 既存 cell 後に追加 / 空配列で no-op (lastRow=firstRow-1?)。
 
-- **次のタスク (前回)**: **`getWorkbookCellsByKind(wb)` workbook-wide value-kind histogram**。
+- **次のタスク (前回)**: **`getCommentByCoord` 検討 → 既存 `getComment(ws, ref)` で代替済みのため scrap**。
+- **次のタスク (前回 2)**: **`getWorkbookCellsByKind(wb)` workbook-wide value-kind histogram**。
   1. `src/workbook/workbook.ts` に追加: iterWorksheets + countCellsByKind を sum。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-cells-by-kind.test.ts` 4 件: 空 wb / 1 sheet / 2 sheet sum / chartsheet skip。
