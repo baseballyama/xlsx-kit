@@ -348,6 +348,7 @@ export {
   unhideRows,
   unmergeCells,
   unmergeCellsAt,
+  writeRange,
 } from './worksheet/worksheet';
 export type { ColumnDimension, RowDimension } from './worksheet/dimensions';
 export { makeColumnDimension, makeRowDimension } from './worksheet/dimensions';

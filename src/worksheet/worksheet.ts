@@ -11,7 +11,7 @@ import { type Cell, cellValueAsString, makeCell, setArrayFormula, setFormula } f
 import { type InlineFont, makeRichText, type TextRun } from '../cell/rich-text';
 import type { Drawing } from '../drawing/drawing';
 import { type Color, makeColor } from '../styles/colors';
-import { columnIndexFromLetter, MAX_COL, MAX_ROW } from '../utils/coordinate';
+import { columnIndexFromLetter, coordinateToTuple, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { AutoFilter } from './auto-filter';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
@@ -381,6 +381,46 @@ export function appendRows(
     lastRow = appendRow(ws, row);
   }
   return { firstRow, lastRow };
+}
+
+/**
+ * Write a 2D array of values to the sheet starting at the given A1
+ * anchor cell. Distinct from {@link appendRows} (which always writes
+ * past `_appendRowCursor`) — this lets you place a block at an
+ * arbitrary location, e.g. mid-sheet table updates.
+ *
+ * `null` / `undefined` entries leave the corresponding cell **untouched**
+ * (existing cell + style are preserved). Pre-existing cells inside
+ * the written rectangle are overwritten in place, so their `styleId`
+ * survives the write.
+ *
+ * Returns the bounding-box of the written area as 1-based inclusive
+ * coordinates. An empty rows array returns `undefined` rather than
+ * an invalid zero-area range.
+ */
+export function writeRange(
+  ws: Worksheet,
+  startRef: string,
+  values: ReadonlyArray<ReadonlyArray<CellValue | undefined>>,
+): { minRow: number; maxRow: number; minCol: number; maxCol: number } | undefined {
+  if (values.length === 0) return undefined;
+  const { col: startCol, row: startRow } = coordinateToTuple(startRef);
+  let maxRow = startRow;
+  let maxCol = startCol;
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    if (row === undefined) continue;
+    const r = startRow + i;
+    for (let j = 0; j < row.length; j++) {
+      const v = row[j];
+      if (v === undefined || v === null) continue;
+      const c = startCol + j;
+      setCell(ws, r, c, v);
+      if (c > maxCol) maxCol = c;
+    }
+    if (r > maxRow) maxRow = r;
+  }
+  return { minRow: startRow, maxRow, minCol: startCol, maxCol };
 }
 
 export interface IterRowsOptions {
