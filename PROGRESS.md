@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`clearCellStyle(wb, c)` / `clearRangeStyle(wb, ws, range)` を追加** — Excel 「書式のクリア」相当。
-  1. `src/styles/cell-style.ts` に追加: cell の `styleId` を 0 (default) に reset。range 版は parseRange + walk + cellに対して clear。NumberFormat / Font / Fill / Border / Alignment / Protection 全部 default に戻る。
+- **次のタスク**: **`getCellsInColumn(ws, col)` / `getCellsInRow(ws, row)` を追加** — row/column の populated cell を順序付きで列挙。
+  1. `src/worksheet/worksheet.ts` に追加: row 版は `ws.rows.get(row)` から sorted col → cell array。column 版は全 row を走査して該当 col の cell があれば collect、row 順 sort。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/clear-cell-style.test.ts` 5 件: bold cell clear → styleId 0 / fill cell clear → background 戻る / range walk で全 cell clear / 既に default の cell に対して no-op / 範囲外 cell は影響なし。
+  3. `tests/phase-5/cells-in-row-column.test.ts` 5 件: row sparse 列挙 / row 空 → []  / col sparse 列挙 / col 空 → [] / 削除済み cell は skip。
 
-- **次のタスク (前回)**: **`setRangeAlignment(wb, ws, range, alignment, mode)` 一括 Alignment setter (merge/replace 両対応)**。
+- **次のタスク (前回)**: **`clearCellStyle` / `clearRangeStyle` を追加** — Excel 「書式のクリア」相当。
+  1. `src/styles/cell-style.ts` に追加: styleId を 0 reset。range 版は existing cell のみ walk (no materialisation)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/clear-cell-style.test.ts` 5 件: 単一 reset / fill+bold reset / range 全 cell reset / 空 cell は materialise しない / 範囲外 cell は影響なし。
+
+  empirical: 1954 tests pass (was 1949, +5)、typecheck / lint clean (14 warnings)。
   1. `src/styles/cell-style.ts` に追加: merge mode は per-cell mergeAlignment、replace mode は setRangeStyle 経由。
   2. `src/index.ts` から re-export。
   3. `tests/phase-2/styles/set-range-alignment.test.ts` 5 件: merge で indent preserve / replace で indent drop / merge で horizontal preserve / range 全 cell / 空 cell 作成。
