@@ -509,6 +509,64 @@ export function getDistinctValuesInRow(
   return out;
 }
 
+/**
+ * Tally populated cells by value kind. Useful for stats / debugging
+ * dashboards that want a quick "this sheet has N strings, M
+ * formulas, K dates" snapshot.
+ *
+ * Buckets:
+ *   - `null`: empty cells (cell exists but value is null)
+ *   - `string`: plain strings
+ *   - `number`: numeric primitives
+ *   - `boolean`: TRUE / FALSE
+ *   - `date`: native `Date` instances
+ *   - `duration`: `{ kind: 'duration', ms }` values
+ *   - `error`: `#REF!` / `#VALUE!` / etc. error values
+ *   - `rich-text`: `{ kind: 'rich-text', runs }` values
+ *   - `formula`: `FormulaValue` (regardless of cached value type)
+ */
+export interface CellsByKindCounts {
+  null: number;
+  string: number;
+  number: number;
+  boolean: number;
+  date: number;
+  duration: number;
+  error: number;
+  'rich-text': number;
+  formula: number;
+}
+
+export function countCellsByKind(ws: Worksheet): CellsByKindCounts {
+  const out: CellsByKindCounts = {
+    null: 0,
+    string: 0,
+    number: 0,
+    boolean: 0,
+    date: 0,
+    duration: 0,
+    error: 0,
+    'rich-text': 0,
+    formula: 0,
+  };
+  for (const cell of iterCells(ws)) {
+    const v = cell.value;
+    if (v === null) out.null++;
+    else if (typeof v === 'string') out.string++;
+    else if (typeof v === 'number') out.number++;
+    else if (typeof v === 'boolean') out.boolean++;
+    else if (v instanceof Date) out.date++;
+    else {
+      const kind = (v as { kind?: string }).kind;
+      if (kind === 'duration') out.duration++;
+      else if (kind === 'error') out.error++;
+      else if (kind === 'rich-text') out['rich-text']++;
+      else if (kind === 'formula') out.formula++;
+    }
+  }
+  return out;
+}
+
 /** Total populated cell count. */
 export function countCells(ws: Worksheet): number {
   let n = 0;
