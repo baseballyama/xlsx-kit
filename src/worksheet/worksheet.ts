@@ -1428,6 +1428,44 @@ export function pivotTable(
 }
 
 /**
+ * True iff at least one data row satisfies `predicate`. Short-
+ * circuits at the first match. Mirrors `Array.prototype.some`.
+ * Empty data area returns `false`.
+ */
+export function someRow(
+  ws: Worksheet,
+  range: string,
+  predicate: (row: Record<string, CellValue | null>, index: number) => boolean,
+): boolean {
+  const rows = readRangeAsObjects(ws, range);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    if (predicate(row, i)) return true;
+  }
+  return false;
+}
+
+/**
+ * True iff every data row satisfies `predicate`. Short-circuits at
+ * the first failing row. Mirrors `Array.prototype.every`. Empty
+ * data area returns `true` (vacuously).
+ */
+export function everyRow(
+  ws: Worksheet,
+  range: string,
+  predicate: (row: Record<string, CellValue | null>, index: number) => boolean,
+): boolean {
+  const rows = readRangeAsObjects(ws, range);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    if (!predicate(row, i)) return false;
+  }
+  return true;
+}
+
+/**
  * Find the first data row of a header-driven range that satisfies
  * `predicate`. Returns the row object or `undefined` when none
  * match. Mirrors `Array.prototype.find`. Header row is excluded
