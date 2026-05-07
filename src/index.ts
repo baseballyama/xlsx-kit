@@ -404,7 +404,9 @@ export {
   makeChartDrawingItem,
   makeDrawing,
   makePictureDrawingItem,
+  removeAllCharts,
   removeAllDrawingItems,
+  removeAllImages,
 } from './drawing/drawing';
 export type { XlsxImage } from './drawing/image';
 export { loadImage } from './drawing/image';

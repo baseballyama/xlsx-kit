@@ -166,3 +166,25 @@ export const removeAllDrawingItems = (ws: Worksheet): number => {
   ws.drawing.items = [];
   return n;
 };
+
+/**
+ * Drop every picture DrawingItem from the worksheet, leaving charts
+ * and any other content kinds untouched. Returns the count removed.
+ */
+export const removeAllImages = (ws: Worksheet): number => {
+  if (!ws.drawing) return 0;
+  const before = ws.drawing.items.length;
+  ws.drawing.items = ws.drawing.items.filter((it) => it.content.kind !== 'picture');
+  return before - ws.drawing.items.length;
+};
+
+/**
+ * Drop every chart DrawingItem from the worksheet, leaving pictures
+ * and any other content kinds untouched. Returns the count removed.
+ */
+export const removeAllCharts = (ws: Worksheet): number => {
+  if (!ws.drawing) return 0;
+  const before = ws.drawing.items.length;
+  ws.drawing.items = ws.drawing.items.filter((it) => it.content.kind !== 'chart');
+  return before - ws.drawing.items.length;
+};
