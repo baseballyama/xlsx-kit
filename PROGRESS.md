@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isCellInRange(ws, ref, range)` を追加** — A1 cell が A1 range の内側にあるか predicate。
-  1. `src/worksheet/cell-range.ts` 既存 `rangeContainsCell` を A1 string で受ける wrapper。`coordinateToTuple` + `parseRange` + `rangeContainsCell`。
+- **次のタスク**: **`isRangeInRange(inner, outer)` A1-string version of `rangeContainsRange` を追加**。
+  1. `src/worksheet/cell-range.ts` に追加: `parseRange(inner)` + `parseRange(outer)` → `rangeContainsRange(outer, inner)`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/is-cell-in-range.test.ts` 4 件: 内側 / 境界 / 外側 / 不正 ref で throw。
+  3. `tests/phase-5/is-range-in-range.test.ts` 4 件: 完全 contained / 同一 range / partial overlap で false / 不正 ref で throw。
 
-- **次のタスク (前回)**: **`getDefinedNameTarget(wb, name, scope?)` DefinedName 解決**。
+- **次のタスク (前回)**: **`isCellInRange(cellRef, rangeRef)` A1-string predicate**。
+  1. `src/worksheet/cell-range.ts` に追加: rangeContainsCell の A1 wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/is-cell-in-range.test.ts` 5 件: 内側 / 境界 inclusive / 外側 / 不正 cell / 不正 range。
+
+  empirical: 2120 tests pass (was 2115, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/defined-names.ts` に追加: `,` 区切り対応 (quoted title 内の `,` を escape)。`DefinedNameTarget` 型 export。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/get-defined-name-target.test.ts` 4 件: 単一 / quoted title / 複合 (Print_Titles) / 不存在で undefined。
