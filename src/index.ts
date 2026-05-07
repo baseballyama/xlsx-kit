@@ -308,6 +308,7 @@ export {
   removeTable,
   renameCommentAuthor,
   columnAggregates,
+  filterRange,
   groupBy,
   pivotTable,
   readRangeAsObjects,

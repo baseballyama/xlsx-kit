@@ -1428,6 +1428,55 @@ export function pivotTable(
 }
 
 /**
+ * Filter the data rows of a header-driven range in place: rows for
+ * which `predicate` returns `false` are removed; remaining rows are
+ * re-packed at the top of the data area, and the trailing rows are
+ * cleared (set to null per cell).
+ *
+ * Returns the number of rows kept.
+ *
+ * The header row is preserved. If the predicate keeps every row,
+ * the result is byte-identical to the input. If it keeps none, the
+ * data area is wholly cleared.
+ */
+export function filterRange(
+  ws: Worksheet,
+  range: string,
+  predicate: (row: Record<string, CellValue | null>, index: number) => boolean,
+): number {
+  const rows = readRangeAsObjects(ws, range);
+  const total = rows.length;
+  if (total === 0) return 0;
+  const first = rows[0];
+  if (!first) return 0;
+  const headers = Object.keys(first);
+  const kept: Array<Record<string, CellValue | null>> = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    if (predicate(row, i)) kept.push(row);
+  }
+  const { minRow, minCol } = parseRange(range);
+  // Write the kept rows starting just below the header.
+  for (let i = 0; i < kept.length; i++) {
+    const row = kept[i];
+    if (!row) continue;
+    for (let j = 0; j < headers.length; j++) {
+      const h = headers[j];
+      if (h === undefined) continue;
+      setCell(ws, minRow + i + 1, minCol + j, row[h] ?? null);
+    }
+  }
+  // Clear the remainder of the original data area to null.
+  for (let i = kept.length; i < total; i++) {
+    for (let j = 0; j < headers.length; j++) {
+      setCell(ws, minRow + i + 1, minCol + j, null);
+    }
+  }
+  return kept.length;
+}
+
+/**
  * Sort the data rows of a header-driven range by the value of one
  * column, in place. The header row is preserved at the top; the rest
  * are reordered.
