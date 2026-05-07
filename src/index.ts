@@ -659,6 +659,7 @@ export {
   getSheet,
   getSheetByIndex,
   getSheetState,
+  getWorkbookAsCsvRecord,
   getWorkbookCellsByKind,
   getWorkbookStats,
   hideSheet,

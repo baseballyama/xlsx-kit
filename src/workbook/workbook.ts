@@ -13,6 +13,7 @@ import type { ExtendedProperties } from '../packaging/extended';
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import { getWorksheetAsCsv } from '../worksheet/csv';
 import type { CellsByKindCounts, Worksheet } from '../worksheet/worksheet';
 import { countCellsByKind, makeWorksheet } from '../worksheet/worksheet';
 
@@ -654,6 +655,27 @@ export function getWorkbookCellsByKind(wb: Workbook): CellsByKindCounts {
     out.error += partial.error;
     out['rich-text'] += partial['rich-text'];
     out.formula += partial.formula;
+  }
+  return out;
+}
+
+/**
+ * Workbook-wide CSV export. Walks every Worksheet in tab-strip order
+ * and serialises each via {@link getWorksheetAsCsv}; returns a
+ * `Record<string, string>` keyed by sheet title. Empty worksheets
+ * are included with `""`. Chartsheets are skipped.
+ *
+ * Sheet titles with duplicate normalisation collapse per JS object
+ * semantics — Excel disallows duplicate titles in the first place,
+ * so this is a non-concern in practice.
+ */
+export function getWorkbookAsCsvRecord(
+  wb: Workbook,
+  opts: { delimiter?: string; lineTerminator?: string; trailingNewline?: boolean } = {},
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const ws of iterWorksheets(wb)) {
+    out[ws.title] = getWorksheetAsCsv(ws, opts);
   }
   return out;
 }
