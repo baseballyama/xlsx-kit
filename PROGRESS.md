@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`rangesOverlapStr(a, b)` A1-string version of `rangesOverlap` を追加**。
-  1. `src/worksheet/cell-range.ts` に追加: `parseRange(a)` + `parseRange(b)` → `rangesOverlap`。
+- **次のタスク**: **`unionRangeStr(a, b)` / `intersectionRangeStr(a, b)` A1-string version of bounding-box ops を追加**。
+  1. `src/worksheet/cell-range.ts` に追加: `unionRange` / `intersectionRange` の A1 wrapper。union → A1 string、intersection → A1 string or undefined (disjoint)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/ranges-overlap-str.test.ts` 5 件: 重なる / 重ならない / 境界線で接しているのみ (overlap) / 完全包含 / 不正 ref で throw。
+  3. `tests/phase-5/range-set-ops-str.test.ts` 5 件: union 通常 / union 同一 / intersect 重なり / intersect disjoint → undefined / intersect 同一。
 
-- **次のタスク (前回)**: **`isRangeInRange(inner, outer)` A1-string range containment**。
+- **次のタスク (前回)**: **`rangesOverlapStr(a, b)` A1-string range-overlap predicate**。
+  1. `src/worksheet/cell-range.ts` に追加: rangesOverlap の A1 wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/ranges-overlap-str.test.ts` 6 件: overlap / containment / disjoint / 境界共有 / 単一 cell / 不正 input。
+
+  empirical: 2132 tests pass (was 2126, +6)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/cell-range.ts` に追加: rangeContainsRange の A1 wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/is-range-in-range.test.ts` 6 件: contained / 同一 / partial overlap / disjoint / 単一 cell / 不正 input。
