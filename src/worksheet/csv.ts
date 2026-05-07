@@ -5,7 +5,8 @@
 // another tool), this is the export side.
 
 import type { CellValue } from '../cell/cell';
-import { getRangeValues, type Worksheet, writeRange } from './worksheet';
+import { boundariesToRangeString } from '../utils/coordinate';
+import { getDataExtent, getRangeValues, type Worksheet, writeRange } from './worksheet';
 
 const isObjectKind = (v: unknown, kind: string): boolean =>
   v !== null && typeof v === 'object' && (v as { kind?: string }).kind === kind;
@@ -84,6 +85,24 @@ export function getRangeAsCsv(
   let out = lines.join(lineTerminator);
   if (opts.trailingNewline && out.length > 0) out += lineTerminator;
   return out;
+}
+
+/**
+ * Whole-worksheet shortcut over {@link getRangeAsCsv}: serialises the
+ * sheet's data extent (`getDataExtent`) as CSV. Returns `''` for an
+ * empty worksheet. All `getRangeAsCsv` opts are forwarded.
+ */
+export function getWorksheetAsCsv(
+  ws: Worksheet,
+  opts: {
+    delimiter?: string;
+    lineTerminator?: string;
+    trailingNewline?: boolean;
+  } = {},
+): string {
+  const ext = getDataExtent(ws);
+  if (!ext) return '';
+  return getRangeAsCsv(ws, boundariesToRangeString(ext), opts);
 }
 
 /**
