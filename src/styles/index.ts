@@ -4,7 +4,7 @@
 // factories, and Stylesheet pools dedup equal values via stable keys.
 
 export type { Alignment, HorizontalAlignment, VerticalAlignment } from './alignment';
-export { makeAlignment } from './alignment';
+export { alignmentToCss, makeAlignment } from './alignment';
 export type { Border, Side, SideStyle } from './borders';
 export { borderToCss, makeBorder, makeSide } from './borders';
 export {

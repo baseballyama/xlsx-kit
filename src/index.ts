@@ -530,6 +530,7 @@ export {
   addNumFmt,
   alignCellHorizontal,
   alignCellVertical,
+  alignmentToCss,
   applyBuiltinStyle,
   applyNamedStyle,
   borderToCss,

@@ -102,3 +102,60 @@ export function makeAlignment(opts: Partial<Alignment> = {}): Alignment {
 }
 
 export const DEFAULT_ALIGNMENT: Alignment = makeAlignment();
+
+const HORIZONTAL_TO_TEXT_ALIGN: Record<HorizontalAlignment, string | undefined> = {
+  general: undefined, // Excel: numbers right, text left — caller decides per cell type.
+  left: 'left',
+  center: 'center',
+  right: 'right',
+  fill: 'left', // CSS has no fill; left is the closest non-stretched approximation.
+  justify: 'justify',
+  centerContinuous: 'center',
+  distributed: 'justify',
+};
+
+const VERTICAL_TO_VERTICAL_ALIGN: Record<VerticalAlignment, string | undefined> = {
+  top: 'top',
+  center: 'middle',
+  bottom: 'bottom',
+  justify: 'middle',
+  distributed: 'middle',
+};
+
+/**
+ * Translate an {@link Alignment} to a CSS-property record suitable for
+ * HTML preview. `horizontal` → `text-align`, `vertical` →
+ * `vertical-align` (table-cell semantics), `wrapText` → `white-space:
+ * pre-wrap`, `textRotation` → `transform: rotate(<-deg>)` (Excel rotates
+ * counter-clockwise relative to CSS) plus `transform-origin` to keep
+ * the text anchored, and `indent` → `padding-left: <n>em`. `255`
+ * stacked-text rotation maps to a 180° flip with `writing-mode`.
+ *
+ * Empty / undefined Alignment returns `{}`.
+ */
+export function alignmentToCss(alignment: Alignment | undefined): Record<string, string> {
+  const css: Record<string, string> = {};
+  if (!alignment) return css;
+  if (alignment.horizontal !== undefined) {
+    const ta = HORIZONTAL_TO_TEXT_ALIGN[alignment.horizontal];
+    if (ta !== undefined) css['text-align'] = ta;
+  }
+  if (alignment.vertical !== undefined) {
+    const va = VERTICAL_TO_VERTICAL_ALIGN[alignment.vertical];
+    if (va !== undefined) css['vertical-align'] = va;
+  }
+  if (alignment.wrapText) css['white-space'] = 'pre-wrap';
+  if (alignment.textRotation !== undefined) {
+    if (alignment.textRotation === 255) {
+      css['writing-mode'] = 'vertical-rl';
+    } else if (alignment.textRotation !== 0) {
+      // Excel: positive degrees rotate counter-clockwise; CSS rotate() is clockwise → negate.
+      css['transform'] = `rotate(-${alignment.textRotation}deg)`;
+      css['transform-origin'] = 'center center';
+    }
+  }
+  if (alignment.indent !== undefined && alignment.indent > 0) {
+    css['padding-left'] = `${alignment.indent}em`;
+  }
+  return css;
+}
