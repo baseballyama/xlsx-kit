@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`setCellAtAddress(wb, address, value)` を追加** — sheet-qualified A1 → 単一 cell write。
-  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → setCellByCoord。range 形式は throw。
+- **次のタスク**: **`getValueAtAddress(wb, address)` を追加** — getCellAtAddress + .value extraction の薄い wrapper (`null` を返す convention)。
+  1. `src/workbook/workbook.ts` に追加: getCellAtAddress(wb, address) → cell?.value ?? null。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/set-cell-at-address.test.ts` 4 件: bare title / quoted title / 不存在 sheet で throw / range 形式 throw。
+  3. `tests/phase-3/value-at-address.test.ts` 4 件: 値あり / 不存在 cell → null / 不存在 sheet で throw / quoted title。
 
-- **次のタスク (前回)**: **`setRangeValuesAtAddress(wb, address, values)` 2D 書き込み**。
+- **次のタスク (前回)**: **`setCellAtAddress(wb, address, value)` 単一 cell write**。
+  1. `src/workbook/workbook.ts` に追加: parseSheetRange → setCellByCoord。range は throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/set-cell-at-address.test.ts` 4 件: 通常 / quoted / 不存在 sheet throw / range throw。
+
+  empirical: 2183 tests pass (was 2179, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → setRangeValues。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/set-range-values-at-address.test.ts` 5 件: 通常 / quoted / null skip / round-trip / 不存在 sheet throw。
