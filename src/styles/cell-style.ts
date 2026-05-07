@@ -23,15 +23,15 @@ import type { Workbook } from '../workbook/workbook';
 import { parseRange } from '../worksheet/cell-range';
 import { setCell, type Worksheet } from '../worksheet/worksheet';
 import type { Alignment, HorizontalAlignment, VerticalAlignment } from './alignment';
-import { makeAlignment } from './alignment';
+import { alignmentToCss, makeAlignment } from './alignment';
 import type { Border, SideStyle } from './borders';
-import { DEFAULT_BORDER, makeBorder, makeSide } from './borders';
+import { borderToCss, DEFAULT_BORDER, makeBorder, makeSide } from './borders';
 import type { Color } from './colors';
 import { makeColor } from './colors';
 import type { Fill } from './fills';
-import { DEFAULT_EMPTY_FILL, makePatternFill } from './fills';
+import { DEFAULT_EMPTY_FILL, fillToCss, makePatternFill } from './fills';
 import type { Font, UnderlineStyle } from './fonts';
-import { DEFAULT_FONT, makeFont } from './fonts';
+import { DEFAULT_FONT, fontToCss, makeFont } from './fonts';
 import { ensureBuiltinStyle } from './named-styles';
 import { builtinFormatCode } from './numbers';
 import type { Protection } from './protection';
@@ -90,6 +90,35 @@ export function getCellNumberFormat(wb: Workbook, c: Cell): string {
   const builtin = builtinFormatCode(id);
   if (builtin !== undefined) return builtin;
   return wb.styles.numFmts.get(id) ?? GENERAL_FORMAT_CODE;
+}
+
+/**
+ * Aggregate `fontToCss` + `fillToCss` + `borderToCss` + `alignmentToCss`
+ * for a cell into a single CSS-property record. Resolves the cell's
+ * `styleId` against the workbook stylesheet, then merges the four
+ * partials. On key collision the priority is alignment > border > fill
+ * > font (alignment is most specific, font is the broad default). A
+ * fully-default cell (`styleId === 0` with empty pools) returns `{}`.
+ */
+export function cellStyleToCss(wb: Workbook, c: Cell): Record<string, string> {
+  // Don't pay the resolve cost when the cell points at the default xf and
+  // the stylesheet is still in its initial state.
+  if (c.styleId === 0) {
+    const xf = wb.styles.cellXfs[0];
+    if (!xf || (xf.fontId === 0 && xf.fillId === 0 && xf.borderId === 0 && xf.alignment === undefined)) {
+      return {};
+    }
+  }
+  const font = getCellFont(wb, c);
+  const fill = getCellFill(wb, c);
+  const border = getCellBorder(wb, c);
+  const alignment = getCellAlignment(wb, c);
+  return {
+    ...fontToCss(font),
+    ...fillToCss(fill),
+    ...borderToCss(border),
+    ...alignmentToCss(alignment),
+  };
 }
 
 // ---- write accessors -------------------------------------------------------

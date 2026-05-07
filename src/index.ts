@@ -535,6 +535,7 @@ export {
   applyNamedStyle,
   borderToCss,
   BUILTIN_NAMED_STYLES,
+  cellStyleToCss,
   centerCell,
   clearCellBackground,
   cloneCellStyle,

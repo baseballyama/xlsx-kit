@@ -12,6 +12,7 @@ export {
   alignCellVertical,
   applyBuiltinStyle,
   applyNamedStyle,
+  cellStyleToCss,
   centerCell,
   clearCellBackground,
   cloneCellStyle,
