@@ -326,6 +326,19 @@ export function hasSheet(wb: Workbook, title: string): boolean {
   return getSheetIndex(wb, title) >= 0;
 }
 
+/**
+ * True iff the workbook has a **chartsheet** (not a worksheet) with
+ * the given title. Distinct from {@link hasSheet}, which matches
+ * either kind. Use this when the caller needs to discriminate before
+ * calling chartsheet-only operations.
+ */
+export function hasChartsheet(wb: Workbook, title: string): boolean {
+  for (const ref of wb.sheets) {
+    if (ref.kind === 'chartsheet' && ref.sheet.title === title) return true;
+  }
+  return false;
+}
+
 /** Look up a Worksheet by title. Returns undefined for missing names or chartsheets. */
 export function getSheet(wb: Workbook, title: string): Worksheet | undefined {
   for (const s of wb.sheets) {

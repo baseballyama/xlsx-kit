@@ -717,6 +717,7 @@ export {
   getWorkbookAsCsvRecord,
   getWorkbookCellsByKind,
   getWorkbookStats,
+  hasChartsheet,
   hasSheet,
   hideSheet,
   isValidSheetTitle,
