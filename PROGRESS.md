@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getPopulatedRowIndices(ws)` / `getPopulatedColumnIndices(ws)` を追加**。
-  1. `src/worksheet/worksheet.ts` に追加: ws.rows のキーを sort して返す (row 版) / 全 row を走査して col 集合を集めて sort (col 版)。空 ws は `[]`。
+- **次のタスク**: **`getDistinctValuesInColumn(ws, col, opts?)` を追加** — column 内のユニーク値列挙。
+  1. `src/worksheet/worksheet.ts` に追加: getCellsInColumn → cell.value で Set。stable insertion-order で配列化。`opts.skipNull` で null 除外、`opts.skipFormulas` で FormulaValue 除外。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/distinct-column-values.test.ts` 5 件: 重複 dedupe / 順序保持 / 空 col → [] / null filter / formula filter。
+
+- **次のタスク (前回)**: **`getPopulatedRowIndices` / `getPopulatedColumnIndices` を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: row 版は ws.rows のキーを sort、col 版は全 row 走査で集合化 + sort。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/populated-indices.test.ts` 5 件: row sparse / row 空 / col sparse / col 重複 dedupe / col 空。
+
+  empirical: 1982 tests pass (was 1977, +5)、typecheck / lint clean (14 warnings)。
 
 - **次のタスク (前回)**: **`removeAllImages(ws)` / `removeAllCharts(ws)` kind 別 drawing wipe**。
   1. `src/drawing/drawing.ts` に追加: items を kind で filter。
