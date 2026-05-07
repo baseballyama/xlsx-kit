@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`createWorkbookFromCsvBundle(bundle, opts?)` を追加** — getWorkbookAsCsvBundle の inverse、zip → multi-sheet workbook。
-  1. `src/workbook/workbook.ts` に追加: unzipSync で zip 展開 → 各 entry を sheet 名にして parseCsvToRange。`opts.coerceTypes` / `opts.delimiter` 伝播。entry 名から `.csv` 拡張子は剥ぐ。
+- **次のタスク**: **`getCellSummary(wb, sheetTitle, ref)` を追加** — 1 cell の everything を 1 オブジェクトで debug 用に返す。
+  1. `src/workbook/workbook.ts` に追加: cell.value / styleId / hyperlinkId / commentId + style chain (font/fill/border/alignment/protection/numberFormat) + applied hyperlink + comment text + merged range membership + table/CF/dv 包含 を集約。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/workbook-from-csv-bundle.test.ts` 4 件: round-trip getWorkbookAsCsvBundle → createWorkbookFromCsvBundle / 単一 sheet / 空 zip → empty wb / opts.coerceTypes 伝播。
+  3. `tests/phase-3/cell-summary.test.ts` 5 件: 値だけ / styled cell / hyperlink + comment / merge 範囲内 / 不正 ref で throw。
 
-- **次のタスク (前回)**: **`getWorkbookAsCsvBundle(wb, opts?)` zip of CSVs**。
+- **次のタスク (前回)**: **`createWorkbookFromCsvBundle(bundle, opts?)` zip → workbook**。
+  1. `src/workbook/workbook.ts` に追加: unzipSync → 各 .csv entry を parseCsvToRange + pickUniqueSheetTitle で安全に dedupe + sanitise。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/workbook-from-csv-bundle.test.ts` 5 件: round-trip / 非 csv skip / 空 zip / coerceTypes / sanitise filename。
+
+  empirical: 2070 tests pass (was 2065, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: iterWorksheets + getWorksheetAsCsv → zipSync(<title>.csv → bytes)。タイトル sanitise + collision suffix。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-as-csv-bundle.test.ts` 5 件: 通常 / sanitise / chartsheet skip / opts.delimiter / 空 wb。
