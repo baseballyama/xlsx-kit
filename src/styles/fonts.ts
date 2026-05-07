@@ -7,7 +7,7 @@
 // each pattern as its own ElementDef kind.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { type Color, makeColor } from './colors';
+import { type Color, colorToHex, makeColor } from './colors';
 
 /** Underline styles per openpyxl's NestedNoneSet. */
 export type UnderlineStyle = 'single' | 'double' | 'singleAccounting' | 'doubleAccounting';
@@ -117,3 +117,46 @@ export const DEFAULT_FONT: Font = makeFont({
   scheme: 'minor',
   color: makeColor({ theme: 1 }),
 });
+
+/**
+ * Translate a {@link Font} to a CSS-property record suitable for HTML
+ * rendering / preview. Boolean toggles map to weight/style/decoration,
+ * `size` becomes `font-size: <n>pt`, and an explicit rgb/indexed
+ * `color` is rendered as `#RRGGBB` (alpha dropped). theme/auto colours
+ * are skipped — callers without a theme can't resolve them.
+ *
+ * `vertAlign='superscript'|'subscript'` lowers `font-size` to 0.83em
+ * (W3C convention) and sets `vertical-align`.
+ *
+ * Returns `{}` for an empty Font so callers can spread it without
+ * overwriting upstream defaults.
+ */
+export function fontToCss(font: Font | undefined): Record<string, string> {
+  const css: Record<string, string> = {};
+  if (!font) return css;
+  if (font.name !== undefined) {
+    // CSS expects quoted family names that contain spaces; quote unconditionally
+    // to keep the generator simple.
+    css['font-family'] = `'${font.name.replace(/'/g, "\\'")}'`;
+  }
+  if (font.size !== undefined) css['font-size'] = `${font.size}pt`;
+  if (font.bold) css['font-weight'] = 'bold';
+  if (font.italic) css['font-style'] = 'italic';
+  const decorations: string[] = [];
+  if (font.underline !== undefined) decorations.push('underline');
+  if (font.strike) decorations.push('line-through');
+  if (decorations.length > 0) css['text-decoration'] = decorations.join(' ');
+  if (font.color !== undefined) {
+    const argb = colorToHex(font.color);
+    if (argb !== undefined) {
+      // Drop alpha (CSS hex with alpha is poorly-supported in Excel-style preview).
+      css['color'] = `#${argb.slice(2)}`;
+    }
+  }
+  if (font.vertAlign === 'superscript' || font.vertAlign === 'subscript') {
+    css['vertical-align'] = font.vertAlign;
+    // Match W3C-recommended scaling for sup/sub when font-size is not explicit.
+    if (css['font-size'] === undefined) css['font-size'] = '0.83em';
+  }
+  return css;
+}

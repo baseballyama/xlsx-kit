@@ -78,7 +78,7 @@ export {
 export type { Fill, GradientFill, GradientFillType, GradientStop, PatternFill, PatternType } from './fills';
 export { makeFill, makeGradientFill, makeGradientStop, makePatternFill } from './fills';
 export type { Font, FontScheme, UnderlineStyle, VertAlign } from './fonts';
-export { DEFAULT_FONT, makeFont } from './fonts';
+export { DEFAULT_FONT, fontToCss, makeFont } from './fonts';
 export type { Protection } from './protection';
 export { makeProtection } from './protection';
 export type { CellXf, Stylesheet } from './stylesheet';
