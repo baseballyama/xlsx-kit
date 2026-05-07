@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getDistinctValuesInColumn(ws, col, opts?)` を追加** — column 内のユニーク値列挙。
-  1. `src/worksheet/worksheet.ts` に追加: getCellsInColumn → cell.value で Set。stable insertion-order で配列化。`opts.skipNull` で null 除外、`opts.skipFormulas` で FormulaValue 除外。
+- **次のタスク**: **`getDistinctValuesInRow(ws, row, opts?)` を追加** — row 版 (column 版と対称)。
+  1. `src/worksheet/worksheet.ts` に追加: getCellsInRow → cell.value で Set + insertion-order で配列。`opts.skipNull` / `opts.skipFormulas` 引き継ぎ。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/distinct-column-values.test.ts` 5 件: 重複 dedupe / 順序保持 / 空 col → [] / null filter / formula filter。
+  3. `tests/phase-5/distinct-row-values.test.ts` 5 件: 重複 dedupe / 順序保持 / 空 row / null filter / formula filter。
 
-- **次のタスク (前回)**: **`getPopulatedRowIndices` / `getPopulatedColumnIndices` を追加**。
+- **次のタスク (前回)**: **`getDistinctValuesInColumn(ws, col, opts?)` を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: getCellsInColumn → Set で dedupe、first-seen 順、skipNull/skipFormulas opts。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/distinct-column-values.test.ts` 5 件: primitive dedupe / 混合型 / 空 col / skipNull / skipFormulas。
+
+  empirical: 1987 tests pass (was 1982, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: row 版は ws.rows のキーを sort、col 版は全 row 走査で集合化 + sort。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/populated-indices.test.ts` 5 件: row sparse / row 空 / col sparse / col 重複 dedupe / col 空。
