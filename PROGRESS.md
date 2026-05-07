@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getCellsInColumn(ws, col)` / `getCellsInRow(ws, row)` を追加** — row/column の populated cell を順序付きで列挙。
-  1. `src/worksheet/worksheet.ts` に追加: row 版は `ws.rows.get(row)` から sorted col → cell array。column 版は全 row を走査して該当 col の cell があれば collect、row 順 sort。
+- **次のタスク**: **`freezeFirstRow(ws)` / `freezeFirstColumn(ws)` / `freezeFirstRowAndColumn(ws)` shortcut を追加** — 一番よく使う freeze pane プリセット。
+  1. `src/worksheet/worksheet.ts` に追加: 既存 `freezePanes(ws, ...)` を呼ぶだけの薄い wrapper。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/cells-in-row-column.test.ts` 5 件: row sparse 列挙 / row 空 → []  / col sparse 列挙 / col 空 → [] / 削除済み cell は skip。
+  3. `tests/phase-5/freeze-shortcuts.test.ts` 4 件: firstRow / firstColumn / both / 既存 freeze 上書き。
 
-- **次のタスク (前回)**: **`clearCellStyle` / `clearRangeStyle` を追加** — Excel 「書式のクリア」相当。
+- **次のタスク (前回)**: **`getCellsInRow(ws, row)` / `getCellsInColumn(ws, col)` を追加**。
+  1. `src/worksheet/worksheet.ts` に追加: row/column ごとに populated Cell[] を coordinate 順 sort で返す。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/cells-in-row-column.test.ts` 5 件: row sparse / row 空 / col sparse / col 空 / col 順序保証。
+
+  empirical: 1959 tests pass (was 1954, +5)、typecheck / lint clean (14 warnings)。
   1. `src/styles/cell-style.ts` に追加: styleId を 0 reset。range 版は existing cell のみ walk (no materialisation)。
   2. `src/index.ts` から re-export。
   3. `tests/phase-2/styles/clear-cell-style.test.ts` 5 件: 単一 reset / fill+bold reset / range 全 cell reset / 空 cell は materialise しない / 範囲外 cell は影響なし。
