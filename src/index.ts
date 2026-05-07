@@ -309,6 +309,7 @@ export {
   renameCommentAuthor,
   columnAggregates,
   filterRange,
+  findRow,
   forEachRow,
   groupBy,
   mapRange,

@@ -1428,6 +1428,26 @@ export function pivotTable(
 }
 
 /**
+ * Find the first data row of a header-driven range that satisfies
+ * `predicate`. Returns the row object or `undefined` when none
+ * match. Mirrors `Array.prototype.find`. Header row is excluded
+ * from iteration.
+ */
+export function findRow(
+  ws: Worksheet,
+  range: string,
+  predicate: (row: Record<string, CellValue | null>, index: number) => boolean,
+): Record<string, CellValue | null> | undefined {
+  const rows = readRangeAsObjects(ws, range);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    if (predicate(row, i)) return row;
+  }
+  return undefined;
+}
+
+/**
  * Iterate every data row of a header-driven range, invoking
  * `callback(row, index)` for each. Side-effect-only — returns void.
  * Use {@link mapRange} to write back transformations or
