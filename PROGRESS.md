@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`filterRange(ws, range, predicate)` を追加** — predicate に true を返す行だけ残して再書き込み。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → predicate で filter → 残った rows を range 起点に書き直し、余り行は null で clear。
+- **次のタスク**: **`mapRange(ws, range, transform)` を追加** — header-driven range の各 row を transform 関数で書き換え。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → 各 row を transform → setCell で書き戻し。新しい header (transform で追加された key) は丸ごと無視 (or 警告)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/filter-range.test.ts` 4 件: 通常 / 全部削除 / null cell の clear 確認 / 多列 row preservation。
+  3. `tests/phase-5/map-range.test.ts` 4 件: 通常 / null 設定で cell clear / multi-column / 不要 key は無視。
 
-- **次のタスク (前回)**: **`sortRange(ws, range, byColumn, opts?)` row sort**。
+- **次のタスク (前回)**: **`filterRange(ws, range, predicate)` row filter**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → predicate filter → 残行を re-pack、余り行を null clear。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/filter-range.test.ts` 4 件: 通常 / 全削除 / 全保持 / multi-column。
+
+  empirical: 2216 tests pass (was 2212, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → sort → setCell で書き戻し (null overwrite)。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/sort-range.test.ts` 6 件: 文字列 / 数値 / descending / null last / multi-column / 不存在 column throw。
