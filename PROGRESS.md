@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`createWorkbookFromCsv(csv, opts?)` shortcut を追加** — CSV string → 1-sheet workbook を一発で作成。
-  1. `src/workbook/workbook.ts` に追加: createWorkbook → addWorksheet (`opts.sheetTitle` ?? 'Sheet1') → parseCsvToRange(ws, 'A1', csv, opts)。返り値は new Workbook。
+- **次のタスク**: **`createWorkbookFromObjects(objects, opts?)` を追加** — Record[] → 1-sheet workbook 一発。
+  1. `src/workbook/workbook.ts` に追加: createWorkbook → addWorksheet → addTableFromObjects (or writeRangeFromObjects)。`opts.asTable: true` で table 化、それ以外は単純 write。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/workbook-from-csv.test.ts` 4 件: 通常 / 空 csv → empty wb (1 sheet) / opts.sheetTitle / opts.coerceTypes 伝播。
+  3. `tests/phase-3/workbook-from-objects.test.ts` 4 件: 通常 / opts.sheetTitle / opts.asTable で table 化 / opts.headers 順序指定。
 
-- **次のタスク (前回)**: **`getWorkbookAsCsvRecord(wb, opts?)` workbook-wide CSV export**。
+- **次のタスク (前回)**: **`createWorkbookFromCsv(csv, opts?)` CSV → Workbook 一発**。
+  1. `src/workbook/workbook.ts` に追加: createWorkbook → addWorksheet → parseCsvToRange。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/workbook-from-csv.test.ts` 4 件: 通常 / opts.sheetTitle / opts.coerceTypes / 空 input。
+
+  empirical: 2055 tests pass (was 2051, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: iterWorksheets walk + getWorksheetAsCsv → Record<title, csv>。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-as-csv-record.test.ts` 5 件: 通常 / 空 sheet / 空 wb / chartsheet skip / opts.delimiter 伝播。
