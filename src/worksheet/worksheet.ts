@@ -630,6 +630,35 @@ export function countCellsByKind(ws: Worksheet): CellsByKindCounts {
   return out;
 }
 
+/**
+ * Count non-empty cells. Distinct from {@link countCells} which counts
+ * every materialised cell (including ones whose `value === null`):
+ * this skips cells with a `null` value, plus optionally formulas /
+ * rich-text per the opts.
+ *
+ * Useful for "how many real values does this sheet contain" stats
+ * vs the materialised footprint.
+ */
+export function getNonEmptyCellCount(
+  ws: Worksheet,
+  opts: { includeFormulas?: boolean; includeRichText?: boolean } = {},
+): number {
+  const includeFormulas = opts.includeFormulas ?? true;
+  const includeRichText = opts.includeRichText ?? true;
+  let n = 0;
+  for (const cell of iterCells(ws)) {
+    const v = cell.value;
+    if (v === null) continue;
+    if (typeof v === 'object' && v !== null) {
+      const kind = (v as { kind?: string }).kind;
+      if (kind === 'formula' && !includeFormulas) continue;
+      if (kind === 'rich-text' && !includeRichText) continue;
+    }
+    n++;
+  }
+  return n;
+}
+
 /** Total populated cell count. */
 export function countCells(ws: Worksheet): number {
   let n = 0;
