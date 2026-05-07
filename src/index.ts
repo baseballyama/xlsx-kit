@@ -218,7 +218,7 @@ export { makeRichText, makeTextRun, richTextToString } from './cell/rich-text';
 // hyperlinks / data-validations / autoFilter / tables / comments /
 // conditional-formatting are reachable through the Worksheet object).
 export type { CellsByKindCounts, Worksheet } from './worksheet/worksheet';
-export type { CellSummary } from './workbook/workbook';
+export type { CellSummary, WorkbookOverview, WorkbookSheetOverview } from './workbook/workbook';
 export {
   addCellWatch,
   addConditionalFormatting,
@@ -661,6 +661,7 @@ export {
   getAllTables,
   getChartsheet,
   getSheet,
+  describeWorkbook,
   getCellSummary,
   getSheetByIndex,
   getSheetState,

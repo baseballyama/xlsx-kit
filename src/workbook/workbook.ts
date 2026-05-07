@@ -719,6 +719,90 @@ export function createWorkbookFromCsv(
 }
 
 /**
+ * Per-sheet entry inside {@link WorkbookOverview}. Holds enough metadata
+ * to make a "what's in this workbook" panel useful without forcing
+ * the caller to walk every worksheet themselves.
+ */
+export interface WorkbookSheetOverview {
+  title: string;
+  kind: 'worksheet' | 'chartsheet';
+  state: SheetState;
+  /** Populated cells in the sheet (0 for chartsheets). */
+  cellCount: number;
+  /** Populated formula cells (0 for chartsheets). */
+  formulaCount: number;
+  /** Tables registered on the sheet. */
+  tableCount: number;
+  /** Drawing items (charts + pictures) on the sheet. */
+  drawingItemCount: number;
+}
+
+/**
+ * High-level "what's in this workbook" snapshot. Combines the
+ * aggregate counts from {@link getWorkbookStats} and value-kind
+ * histogram from {@link getWorkbookCellsByKind} with per-sheet
+ * metadata. JSON-serialisable; suitable for a UI banner / debug
+ * dump.
+ */
+export interface WorkbookOverview {
+  worksheetCount: number;
+  chartsheetCount: number;
+  cellCount: number;
+  formulaCount: number;
+  commentCount: number;
+  hyperlinkCount: number;
+  mergedRangeCount: number;
+  tableCount: number;
+  definedNameCount: number;
+  customPropertyCount: number;
+  cellsByKind: CellsByKindCounts;
+  sheets: WorkbookSheetOverview[];
+}
+
+export function describeWorkbook(wb: Workbook): WorkbookOverview {
+  const stats = getWorkbookStats(wb);
+  const cellsByKind = getWorkbookCellsByKind(wb);
+  const sheets: WorkbookSheetOverview[] = wb.sheets.map((ref) => {
+    if (ref.kind === 'worksheet') {
+      const ws = ref.sheet;
+      let formulaCount = 0;
+      let cellCount = 0;
+      for (const rowMap of ws.rows.values()) {
+        for (const cell of rowMap.values()) {
+          cellCount++;
+          if (
+            typeof cell.value === 'object' &&
+            cell.value !== null &&
+            (cell.value as { kind?: string }).kind === 'formula'
+          ) {
+            formulaCount++;
+          }
+        }
+      }
+      return {
+        title: ws.title,
+        kind: 'worksheet',
+        state: ref.state,
+        cellCount,
+        formulaCount,
+        tableCount: ws.tables.length,
+        drawingItemCount: ws.drawing?.items.length ?? 0,
+      };
+    }
+    return {
+      title: ref.sheet.title,
+      kind: 'chartsheet',
+      state: ref.state,
+      cellCount: 0,
+      formulaCount: 0,
+      tableCount: 0,
+      drawingItemCount: ref.sheet.drawing?.items.length ?? 0,
+    };
+  });
+  return { ...stats, cellsByKind, sheets };
+}
+
+/**
  * Debug-friendly snapshot of everything resolved for a single cell:
  * its value, the full style chain (font / fill / border / alignment /
  * protection / numberFormat), the applied hyperlink + comment, the
