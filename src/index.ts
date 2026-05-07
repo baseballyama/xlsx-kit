@@ -309,6 +309,7 @@ export {
   renameCommentAuthor,
   addColumn,
   columnAggregates,
+  columnIndexOf,
   countRows,
   everyRow,
   fillColumn,

@@ -1648,6 +1648,25 @@ export function hasColumn(ws: Worksheet, range: string, name: string): boolean {
 }
 
 /**
+ * Find the 0-based column index (relative to the start of the range)
+ * for a header `name`, or `-1` when not present. Distinct from
+ * {@link hasColumn} when the caller wants to *use* the index for
+ * downstream `tabularData` / `setCell` arithmetic.
+ *
+ * Note: returns the in-range index, not the absolute worksheet
+ * column number. Add `parseRange(range).minCol` to convert.
+ */
+export function columnIndexOf(ws: Worksheet, range: string, name: string): number {
+  const { minRow, minCol, maxCol } = parseRange(range);
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    const cell = v === null || v === undefined ? '' : String(v);
+    if (cell === name) return c - minCol;
+  }
+  return -1;
+}
+
+/**
  * Read the header row of a header-driven range as a string array.
  * Non-string header cells are coerced via `String(value)`; null /
  * unmaterialised header cells become `""`. The array always has
