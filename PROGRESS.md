@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`countRows(ws, range, predicate?)` を追加** — header-driven row 数を数える (predicate なら true row の数)。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → predicate なら filter count、なければ length。空 range は 0。
+- **次のタスク**: **`pluckColumn(ws, range, column)` を追加** — header-driven range の 1 column を array で抽出 (`tabularData[col]` の薄い shortcut)。
+  1. `src/worksheet/worksheet.ts` に追加: tabularData(ws, range) → out[column]。column が無いと throw。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/count-rows.test.ts` 4 件: 全 row count / predicate true row count / 空 range で 0 / 全 false で 0。
+  3. `tests/phase-5/pluck-column.test.ts` 4 件: 通常 / 不存在 column throw / null 含む / multi-column の選択。
 
-- **次のタスク (前回)**: **`indexOfRow` Array.findIndex for rows**。
+- **次のタスク (前回)**: **`countRows(ws, range, predicate?)` row count**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → length / filter count。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/count-rows.test.ts` 4 件: 全 row / predicate / 空 / 全 reject。
+
+  empirical: 2250 tests pass (was 2246, +4) — 300 test files crossed、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects 短絡。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/index-of-row.test.ts` 4 件: hit / no match -1 / 空 -1 / 短絡。
