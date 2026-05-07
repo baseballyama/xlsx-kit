@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`groupBy(ws, range, byColumn)` を追加** — readRangeAsObjects + 任意 column key で group。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects(ws, range) → key column の値で group (`Record<string, Record<string, CellValue|null>[]>`)。null key は `'__null__'` または skip。
+- **次のタスク**: **`pivotTable(ws, range, opts)` を追加** — rows × cols pivot で aggregate。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → `opts.rowKey` / `opts.colKey` / `opts.valueKey` で row-major nested Record。`opts.aggregate` (sum / count / max / min / mean) で集計。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/group-by.test.ts` 4 件: 通常 / null key handling / 不存在 column で throw / 単一 group。
+  3. `tests/phase-5/pivot-table.test.ts` 5 件: 通常 sum / count / max / 数値以外で 0 / 不存在 column throw。
 
-- **次のタスク (前回)**: **`columnAggregates(ws, range)` per-column stats**。
+- **次のタスク (前回)**: **`groupBy(ws, range, byColumn)` row grouping**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → `Record<keyValue, rowObj[]>`。null は `''` bucket、不存在 column で throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/group-by.test.ts` 5 件: 通常 / 単一 group / null key '' bucket / 不存在 column throw / header-only で {}。
+
+  empirical: 2201 tests pass (was 2196, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: tabularData → sum/mean/min/max/count/numericCount。numericCount===0 は NaN。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/column-aggregates.test.ts` 4 件: 数値列 / 文字列のみ列 NaN / mixed types / multi-column 独立。
