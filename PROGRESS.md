@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`setRangeAlignment(wb, ws, range, alignment)` 一括 Alignment setter (full replace + merge mode 両対応)**。
-  1. `src/styles/cell-style.ts` に追加: 既存 `setRangeStyle` の alignment 経由 (full replace) と、partial を `mergeAlignment` で各 cell の現状にマージするモードを別 fn (`setRangeAlignmentMerge` / `setRangeAlignmentReplace`) で提供。デフォルトは merge 動作 (= 普通の人間に優しい)。
+- **次のタスク**: **`clearCellStyle(wb, c)` / `clearRangeStyle(wb, ws, range)` を追加** — Excel 「書式のクリア」相当。
+  1. `src/styles/cell-style.ts` に追加: cell の `styleId` を 0 (default) に reset。range 版は parseRange + walk + cellに対して clear。NumberFormat / Font / Fill / Border / Alignment / Protection 全部 default に戻る。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/set-range-alignment.test.ts` 5 件: replace 全 cell / merge horizontal だけ / merge vertical 既存 horizontal preserve / replace で既存 indent 消える / merge で indent 共存。
+  3. `tests/phase-2/styles/clear-cell-style.test.ts` 5 件: bold cell clear → styleId 0 / fill cell clear → background 戻る / range walk で全 cell clear / 既に default の cell に対して no-op / 範囲外 cell は影響なし。
+
+- **次のタスク (前回)**: **`setRangeAlignment(wb, ws, range, alignment, mode)` 一括 Alignment setter (merge/replace 両対応)**。
+  1. `src/styles/cell-style.ts` に追加: merge mode は per-cell mergeAlignment、replace mode は setRangeStyle 経由。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/set-range-alignment.test.ts` 5 件: merge で indent preserve / replace で indent drop / merge で horizontal preserve / range 全 cell / 空 cell 作成。
+
+  empirical: 1949 tests pass (was 1944, +5)、typecheck / lint clean (14 warnings)。
 
 - **次のタスク (前回)**: **`setRangeWrapText(wb, ws, range, on=true)` 一括 wrap helper を追加**。
   1. `src/styles/cell-style.ts` に追加: range walk + wrapCellText per cell で既存 alignment 保持。
