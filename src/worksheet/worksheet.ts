@@ -484,6 +484,31 @@ export function getDistinctValuesInColumn(
   return out;
 }
 
+/**
+ * Distinct cell values in a row, in first-seen column order. Mirror of
+ * {@link getDistinctValuesInColumn}; same equality semantics and
+ * `skipNull` / `skipFormulas` options.
+ */
+export function getDistinctValuesInRow(
+  ws: Worksheet,
+  row: number,
+  opts: { skipNull?: boolean; skipFormulas?: boolean } = {},
+): CellValue[] {
+  const seen = new Set<unknown>();
+  const out: CellValue[] = [];
+  for (const cell of getCellsInRow(ws, row)) {
+    const v = cell.value;
+    if (opts.skipNull && v === null) continue;
+    if (opts.skipFormulas && v !== null && typeof v === 'object' && (v as { kind?: string }).kind === 'formula') {
+      continue;
+    }
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
 /** Total populated cell count. */
 export function countCells(ws: Worksheet): number {
   let n = 0;

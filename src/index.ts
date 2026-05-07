@@ -247,6 +247,7 @@ export {
   getDataExtent,
   getDataExtentRef,
   getDistinctValuesInColumn,
+  getDistinctValuesInRow,
   getFreezePanes,
   getHyperlink,
   getMaxCol,
