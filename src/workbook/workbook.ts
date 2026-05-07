@@ -327,6 +327,25 @@ export function hasSheet(wb: Workbook, title: string): boolean {
 }
 
 /**
+ * Sheet titles in tab-strip order. By default returns titles for
+ * every sheet (worksheets + chartsheets). Optional filters narrow
+ * to one kind (`'worksheet'` / `'chartsheet'`) or one state
+ * (`'visible' | 'hidden' | 'veryHidden'`).
+ */
+export function getSheetTitles(
+  wb: Workbook,
+  opts: { kind?: 'worksheet' | 'chartsheet'; state?: SheetState } = {},
+): string[] {
+  const out: string[] = [];
+  for (const ref of wb.sheets) {
+    if (opts.kind !== undefined && ref.kind !== opts.kind) continue;
+    if (opts.state !== undefined && ref.state !== opts.state) continue;
+    out.push(ref.sheet.title);
+  }
+  return out;
+}
+
+/**
  * True iff the workbook has a **worksheet** (not a chartsheet) with
  * the given title. Distinct from {@link hasSheet} (matches either
  * kind) and {@link hasChartsheet} (chartsheets only).

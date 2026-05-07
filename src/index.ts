@@ -713,6 +713,7 @@ export {
   getSheetByIndex,
   getSheetIndex,
   getSheetState,
+  getSheetTitles,
   getWorkbookAsCsvBundle,
   getWorkbookAsCsvRecord,
   getWorkbookCellsByKind,
