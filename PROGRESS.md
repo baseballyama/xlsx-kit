@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isWorkbookEmpty(wb)` predicate を追加** — workbook level、全 worksheet が isWorksheetEmpty。
-  1. `src/workbook/workbook.ts` に追加: iterWorksheets walk + isWorksheetEmpty で短絡判定。chartsheet は cells を持たないので無視。
+- **次のタスク**: **`getCellAddress(ws, c)` を追加** — Cell から `'Sheet1!A1'` 形式の sheet-qualified ref を返す。
+  1. `src/worksheet/worksheet.ts` (or 新 helper) に追加: `getCoordinate(c)` + `ws.title` を escape (apostrophe や space を含む場合 `'`-quote)。返り値は `"<sheet>!<ref>"` 形式。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/workbook-empty-predicate.test.ts` 4 件: 空 wb / 1 sheet 空 / 1 sheet で値あり / 2 sheet 一方のみ値あり。
+  3. `tests/phase-2/cell-address.test.ts` 5 件: plain title / space を含む title (quote 必要) / apostrophe を含む title (escape) / 数字-only title / コロンを含む？ Excel 禁止なので skip。
 
-- **次のタスク (前回)**: **`isWorksheetEmpty(ws)` predicate**。`isCellEmpty` は既存 `isEmptyCell` で代替済みのため scrap。
+- **次のタスク (前回)**: **`isWorkbookEmpty(wb)` workbook 全体 emptiness check**。
+  1. `src/workbook/workbook.ts` に追加: iterWorksheets + isWorksheetEmpty 短絡判定。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/workbook-empty-predicate.test.ts` 5 件: 空 wb / 全 ws 空 / 1 つ値あり / chartsheet only / 全 null。
+
+  empirical: 2094 tests pass (was 2089, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: iterCells walk + value !== null で短絡判定。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/worksheet-empty-predicate.test.ts` 4 件: 空 sheet / 値あり / null cell は empty 扱い / 空文字列は non-empty。
