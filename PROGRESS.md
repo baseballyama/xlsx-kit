@@ -37,13 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`appendRows(ws, rows)` 一括 append helper を追加** — appendRow の bulk 版。
-  1. `src/worksheet/worksheet.ts` に追加: `ReadonlyArray<ReadonlyArray<CellValue | undefined>>` を受けて、各 row を順次 appendRow で追加し、`{firstRow, lastRow}` を返す。
+- **次のタスク**: **`writeRange(ws, startRef, values)` を追加** — 2D 配列を任意の起点に書き込む。
+  1. `src/worksheet/worksheet.ts` に追加: A1 → tuple → 行ごと/列ごとに setCell。`null/undefined` は cell skip。返り値は `{minRow, maxRow, minCol, maxCol}` の 4 つ組。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/append-rows.test.ts` 5 件: 3 row append / 空 row も cursor 進む / undefined/null は cell 作成しない / 既存 cell 後に追加 / 空配列で no-op (lastRow=firstRow-1?)。
+  3. `tests/phase-5/write-range.test.ts` 5 件: B2 起点 3×2 / null skip / 空配列 throw or skip / 既存 cell 上書き / styleId 保持。
+
+- **次のタスク (前回)**: **`appendRows(ws, rows)` 一括 append helper**。
+  1. `src/worksheet/worksheet.ts` に追加: 2D values を順次 appendRow → `{firstRow, lastRow}`。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/append-rows.test.ts` 5 件: 3 row append / 空 row も cursor 進む / undefined/null skip / 既存 row 後に追加 / 空配列で no-op。
+
+  empirical: 2006 tests pass (was 2001, +5)、typecheck / lint clean (14 warnings)。
 
 - **次のタスク (前回)**: **`getCommentByCoord` 検討 → 既存 `getComment(ws, ref)` で代替済みのため scrap**。
-- **次のタスク (前回 2)**: **`getWorkbookCellsByKind(wb)` workbook-wide value-kind histogram**。
   1. `src/workbook/workbook.ts` に追加: iterWorksheets + countCellsByKind を sum。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-cells-by-kind.test.ts` 4 件: 空 wb / 1 sheet / 2 sheet sum / chartsheet skip。
