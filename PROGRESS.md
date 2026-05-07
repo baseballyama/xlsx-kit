@@ -37,10 +37,15 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`forEachRow(ws, range, callback)` を追加** — readRangeAsObjects の薄い iterator (副作用 OK)。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → for (row of rows) callback(row, i)。返り値 void。
+- **次のタスク**: **`findRow(ws, range, predicate)` を追加** — header-driven range で最初の matching row を返す (Array.find の row 版)。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → for ... if predicate return row。none → undefined。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/for-each-row.test.ts` 4 件: 通常 / index passing / 空 range で callback 0 回 / row 不変参照。
+  3. `tests/phase-5/find-row.test.ts` 4 件: hit / first match のみ / no match / 空 range で undefined。
+
+- **次のタスク (前回)**: **`forEachRow(ws, range, callback)` row iteration**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → for callback。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/for-each-row.test.ts` 4 件: 通常 / index / 空 / row shape。
 
 - **次のタスク (前回)**: **`reduceRange(ws, range, reducer, init)`** — header-driven range をユーザー定義 reducer で 1 値に折りたたむ。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → reduce(acc, row, i) → 終端値 return。
