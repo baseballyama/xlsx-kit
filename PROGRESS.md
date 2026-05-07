@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`borderToCss(border)` Border → CSS border-property record helper を追加**。
-  1. `src/styles/borders.ts` に追加: 4 sides ごとに style → CSS border style (thin→1px solid / medium→2px solid / thick→3px solid / dashed→1px dashed / dotted→1px dotted / double→3px double / none → 省略) + color → `#RRGGBB`。出力 key は `border-top` / `-right` / `-bottom` / `-left`。空 Border → `{}`。
+- **次のタスク**: **`alignmentToCss(alignment)` Alignment → CSS text-align/vertical-align/wrap record helper を追加**。
+  1. `src/styles/alignment.ts` に追加: horizontal → text-align (left/center/right/justify; fill → 'left' approx) / vertical → vertical-align (top/middle/bottom) / wrapText → white-space: pre-wrap / textRotation → transform: rotate(-deg) (Excel: 0..180 cw → CSS counter-cw) / indent → padding-left: <n>em。空 Alignment → {}。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/border-to-css.test.ts` 6 件: 全辺 thin / medium 1辺 / thick double 混在 / dashed dotted / theme-only color skip / 空 Border → {}。
+  3. `tests/phase-2/styles/alignment-to-css.test.ts` 6 件: empty / horizontal 4 種 / vertical 3 種 / wrapText / textRotation 90 / indent 2。
+
+- **次のタスク (前回)**: **`borderToCss(border)` Border → CSS border-property record helper を追加**。
+  1. `src/styles/borders.ts` に追加: 4 sides を CSS border shorthand (`<width> <style> <#color>`) に。Excel SideStyle → CSS mapping (thin/hair→1px solid / medium→2px solid / thick→3px solid / double→3px double / dotted→1px dotted / dashed family→1px dashed / mediumDashed family→2px dashed)。色未指定 / theme は `currentColor` フォールバック。diagonal / vertical / horizontal sides は無視。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/border-to-css.test.ts` 6 件: 空 / 全辺 thin + rgb / 1辺だけ + style 無し skip / thick/double/dashed/dotted variants / currentColor fallback / diagonal は skip。
+
+  empirical: 1919 tests pass (was 1913, +6)、typecheck / lint clean (16 warnings)。
 
 - **次のタスク (前回)**: **`fillToCss(fill)` Fill → CSS background-property record helper を追加**。
   1. `src/styles/fills.ts` に追加: PatternFill ('solid' → fgColor を `background-color`) / non-solid → bgColor 折り畳み / GradientFill (linear/path → `linear-gradient` / `radial-gradient` の `background-image`)。
