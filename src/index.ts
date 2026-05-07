@@ -474,7 +474,7 @@ export {
 export type { TableColumn, TableDefinition, TableStyleInfo } from './worksheet/table';
 export { addExcelTable, addTableFromObjects, makeTableColumn, makeTableDefinition } from './worksheet/table';
 export { getRangeAsCsv, getWorksheetAsCsv, parseCsv, parseCsvToRange } from './worksheet/csv';
-export { worksheetToHtml } from './worksheet/html';
+export { getWorksheetAsHtml, worksheetToHtml } from './worksheet/html';
 export type { CellWatch, IgnoredError } from './worksheet/errors';
 export { makeCellWatch, makeIgnoredError } from './worksheet/errors';
 export type { OutlineProperties, PageSetupProperties, SheetProperties } from './worksheet/properties';

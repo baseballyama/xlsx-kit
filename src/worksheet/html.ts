@@ -9,11 +9,12 @@
 // needed.
 
 import { cellStyleToCss } from '../styles/cell-style';
+import { boundariesToRangeString } from '../utils/coordinate';
 import { cssRecordToInlineStyle } from '../utils/css';
 import { cellValueAsString } from '../cell/cell';
 import type { Workbook } from '../workbook/workbook';
 import { parseRange } from './cell-range';
-import { getCell, getMergedCells, type Worksheet } from './worksheet';
+import { getCell, getDataExtent, getMergedCells, type Worksheet } from './worksheet';
 
 const escapeHtml = (s: string): string =>
   s
@@ -79,4 +80,16 @@ export function worksheetToHtml(wb: Workbook, ws: Worksheet, range: string): str
   }
   lines.push('</table>');
   return lines.join('');
+}
+
+/**
+ * Whole-worksheet shortcut over {@link worksheetToHtml}: serialises
+ * the sheet's data extent (`getDataExtent`) as an HTML `<table>`.
+ * Returns `''` for an empty worksheet (mirrors
+ * {@link getWorksheetAsCsv}'s convention).
+ */
+export function getWorksheetAsHtml(wb: Workbook, ws: Worksheet): string {
+  const ext = getDataExtent(ws);
+  if (!ext) return '';
+  return worksheetToHtml(wb, ws, boundariesToRangeString(ext));
 }
