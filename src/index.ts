@@ -290,6 +290,7 @@ export {
   removeSheetTabColor,
   removeTable,
   renameCommentAuthor,
+  readRangeAsObjects,
   replaceCellValues,
   replaceInRange,
   applyToRange,

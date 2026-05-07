@@ -37,12 +37,13 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`readRange(ws, range)` を追加** — A1 range の値を 2D 配列で読み出す。
-  1. `src/worksheet/worksheet.ts` に追加: parseRange + 行ごとに `(CellValue | null)[]` を return。getRangeValues に近いが、対象 range を引数で受ける versatility。
+- **次のタスク**: **`readRangeAsObjects(ws, range, opts?)` を追加** — 1 行目を header に rows を `Record<string, CellValue|null>[]` に。
+  1. `src/worksheet/worksheet.ts` に追加: getRangeValues の上に header 抽出 + 残り行を obj に変換。`opts.headerRow` (default true)、`opts.skipEmptyRows` も。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/read-range.test.ts` 5 件: B2:D4 / 空 cell は null / 単一 cell range / 1 row range / 1 column range。
+  3. `tests/phase-5/read-range-as-objects.test.ts` 5 件: 通常 header+data / header skip option / 空 row skip / range が単一行で `[]` / 列名重複は last-wins。
 
-- **次のタスク (前回)**: **`writeRange(ws, startRef, values)` 任意起点 2D write**。
+- **次のタスク (前回)**: **`readRange(ws, range)` を queue → 既存 `getRangeValues` と重複のため scrap**。
+- **次のタスク (前回 2)**: **`writeRange(ws, startRef, values)` 任意起点 2D write**。
   1. `src/worksheet/worksheet.ts` に追加: A1 → tuple → 行ごと/列ごとに setCell。null/undefined は skip。bounding-box を return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/write-range.test.ts` 5 件: B2 起点 / null skip / 空配列 → undefined / 既存 styleId preserve / 単一 cell。

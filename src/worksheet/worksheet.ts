@@ -1204,6 +1204,48 @@ export function applyToRange(
 }
 
 /**
+ * Read a rectangular range as an array of objects keyed by header
+ * names from the first row. Useful for CSV-style table reads where
+ * the spreadsheet's first row is column titles and the rest are data
+ * rows.
+ *
+ * Header cell values are coerced to strings via `String(value)`;
+ * empty header cells become `""` (collisions across columns are
+ * "last-wins" per JS object semantics, so dedupe upstream if needed).
+ *
+ * `opts.skipEmptyRows` (default `false`) drops data rows where every
+ * column is `null`. Useful for trailing whitespace at the end of a
+ * sheet that's been "cleared" by selection-delete.
+ *
+ * Returns `[]` when the range covers only the header row (no data).
+ */
+export function readRangeAsObjects(
+  ws: Worksheet,
+  range: string,
+  opts: { skipEmptyRows?: boolean } = {},
+): Array<Record<string, CellValue | null>> {
+  const grid = getRangeValues(ws, range);
+  if (grid.length < 2) return [];
+  const header = grid[0];
+  if (!header) return [];
+  const headers = header.map((v) => (v === null ? '' : String(v)));
+  const out: Array<Record<string, CellValue | null>> = [];
+  for (let i = 1; i < grid.length; i++) {
+    const row = grid[i];
+    if (!row) continue;
+    if (opts.skipEmptyRows && row.every((v) => v === null)) continue;
+    const obj: Record<string, CellValue | null> = {};
+    for (let j = 0; j < headers.length; j++) {
+      const key = headers[j];
+      if (key === undefined) continue;
+      obj[key] = row[j] ?? null;
+    }
+    out.push(obj);
+  }
+  return out;
+}
+
+/**
  * Read a rectangular range as a dense 2-D array of values. Empty
  * cells yield `null`. The shape is `[maxRow - minRow + 1] ×
  * [maxCol - minCol + 1]`. Inverse of {@link setRangeValues}.
