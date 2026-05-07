@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`tabularData(ws, range, opts?)` を追加** — `readRangeAsObjects` の bag of-utils 拡張版 (column → array per key)。
-  1. `src/worksheet/worksheet.ts` に追加: getRangeValues + 1 行目 header → `Record<string, (CellValue | null)[]>` (列志向。AKA "DataFrame の column store")。
+- **次のタスク**: **`columnAggregates(ws, range, opts?)` を追加** — tabularData の上で aggregate を計算 (sum / mean / min / max / count) per column。
+  1. `src/worksheet/worksheet.ts` に追加: tabularData → 各列で number だけ filter → sum / mean / min / max / count を構築。`opts.functions` で計算する関数を選択 (default 全部)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/tabular-data.test.ts` 5 件: 通常 (列ごと配列) / 単一 row 範囲で空 columns / quoted header / 重複 header (last-wins) / 空 range で throw or {}。
+  3. `tests/phase-5/column-aggregates.test.ts` 4 件: 数値列の sum/mean/min/max/count / 文字列列はスキップ / null 含む列で count は non-null だけ / opts.functions 限定。
 
-- **次のタスク (前回)**: **`getValueAtAddress(wb, address)` cell value 直読み**。
+- **次のタスク (前回)**: **`tabularData(ws, range)` 列志向 read**。
+  1. `src/worksheet/worksheet.ts` に追加: getRangeValues → 列 store。重複 header は concat。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/tabular-data.test.ts` 5 件: 通常 / header-only で空 columns / null 列 / header coercion / 重複 header concat。
+
+  empirical: 2192 tests pass (was 2187, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: getCellAtAddress + .value extraction (null fallback)。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/value-at-address.test.ts` 4 件: 値あり / 不存在 cell null / quoted title / 不存在 sheet throw。
