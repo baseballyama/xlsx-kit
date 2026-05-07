@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getDefinedNameTarget(wb, name, scope?)` を追加** — DefinedName の value を parseSheetRange で解決して `{sheet, range, bounds}` を返す。
-  1. `src/workbook/defined-names.ts` に追加: getDefinedName + parseSheetRange を組み合わせて、ref が複数 (`Sheet!A:A,Sheet!1:1` のように `,` 区切り) の場合は array で return。
+- **次のタスク**: **`isCellInRange(ws, ref, range)` を追加** — A1 cell が A1 range の内側にあるか predicate。
+  1. `src/worksheet/cell-range.ts` 既存 `rangeContainsCell` を A1 string で受ける wrapper。`coordinateToTuple` + `parseRange` + `rangeContainsCell`。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/get-defined-name-target.test.ts` 4 件: 単一 ref / quoted title / 複合 ref (Print_Titles 風) / 不存在で undefined。
+  3. `tests/phase-5/is-cell-in-range.test.ts` 4 件: 内側 / 境界 / 外側 / 不正 ref で throw。
 
-- **次のタスク (前回)**: **`addDefinedNameForRange(wb, name, ws, range, opts?)` sheet-qualified DefinedName builder**。
+- **次のタスク (前回)**: **`getDefinedNameTarget(wb, name, scope?)` DefinedName 解決**。
+  1. `src/workbook/defined-names.ts` に追加: `,` 区切り対応 (quoted title 内の `,` を escape)。`DefinedNameTarget` 型 export。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/get-defined-name-target.test.ts` 4 件: 単一 / quoted title / 複合 (Print_Titles) / 不存在で undefined。
+
+  empirical: 2115 tests pass (was 2111, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/defined-names.ts` に追加: getRangeAddress + addDefinedName。`opts.localToSheet` で scope。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/add-defined-name-for-range.test.ts` 5 件: workbook-scope / quoted title / localToSheet で scope / 不正 ws で throw / 同 name 上書き。
