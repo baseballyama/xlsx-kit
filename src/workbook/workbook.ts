@@ -44,6 +44,7 @@ import {
   getRangeValues,
   isWorksheetEmpty,
   makeWorksheet,
+  setCellByCoord,
   setRangeValues,
   writeRangeFromObjects,
 } from '../worksheet/worksheet';
@@ -738,6 +739,29 @@ export function getRangeValuesAtAddress(
     throw new OpenXmlSchemaError(`getRangeValuesAtAddress: sheet "${sheetTitle}" not found`);
   }
   return getRangeValues(ws, range);
+}
+
+/**
+ * Set a single cell by sheet-qualified A1 address. Resolves the
+ * sheet, then delegates to {@link setCellByCoord}. Throws on
+ * malformed addresses, missing sheets, or range inputs.
+ */
+export function setCellAtAddress(
+  wb: Workbook,
+  address: string,
+  value: CellValue,
+): import('../cell/cell').Cell {
+  const { sheet: sheetTitle, range } = parseSheetRange(address);
+  if (range.includes(':')) {
+    throw new OpenXmlSchemaError(
+      `setCellAtAddress: address "${address}" refers to a range, not a single cell`,
+    );
+  }
+  const ws = getSheet(wb, sheetTitle);
+  if (!ws) {
+    throw new OpenXmlSchemaError(`setCellAtAddress: sheet "${sheetTitle}" not found`);
+  }
+  return setCellByCoord(ws, range, value);
 }
 
 /**
