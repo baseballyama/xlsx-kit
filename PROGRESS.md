@@ -37,11 +37,16 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **fixture-based export-format smoke test を追加** — 既存 xlsx fixture を load → 4 形式の workbook record 全部 invoke して non-empty 確認。
-  1. `tests/phase-3/workbook-export-formats-smoke.test.ts` 新規: load + 4 record export を walk、各 sheet が string で返ることを assert。
+- **次のタスク**: **`worksheetToJson(ws, range, opts?)` を追加** — readRangeAsObjects → JSON.stringify (export matrix に JSON を追加)。
+  1. `src/worksheet/json.ts` 新規: readRangeAsObjects → JSON.stringify。`opts.pretty` で 2-space indent。Date は ISO、cell の独自オブジェクト (formula / rich-text / duration / error) は値型 mapping (formula→cachedValue or formula text、duration→ms、error→code、rich-text→concat text)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/worksheet-to-json.test.ts` 5 件: 通常 / pretty 改行 / Date / formula cached / rich-text concat。
+
+- **次のタスク (前回)**: **export-format smoke test (CSV/HTML/MD/Text 全部 record exercise)**。
+  1. `tests/phase-3/workbook-export-formats-smoke.test.ts` 新規: 自前 wb 生成 + 4 record export + bundle + describeWorkbook を一気に走らせる integration check。
   2. 新 helper 不要。
 
-- **次のタスク (前回)**: **getWorksheetAsTextTable + getWorkbookAsTextTableRecord (export-format matrix close)**。
+- **次のタスク (前回 2)**: **getWorksheetAsTextTable + getWorkbookAsTextTableRecord (matrix close)**。
   1. `src/worksheet/text.ts` + `src/workbook/workbook.ts` に追加。
   2. `src/index.ts` から re-export。
   3. tests/phase-5/worksheet-as-text.test.ts 3 件 + tests/phase-3/workbook-as-text-record.test.ts 3 件。
