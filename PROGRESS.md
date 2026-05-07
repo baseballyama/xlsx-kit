@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`expandRangeStr(range, deltaRows, deltaCols)` を追加** — A1 range の上下・左右に追加領域を加算。
-  1. `src/worksheet/cell-range.ts` に追加: parseRange → maxRow + deltaRows、maxCol + deltaCols (minRow/minCol は据え置き)。負の delta も対応 (rows/cols 1 を下回らないよう clamp or throw)。
+- **次のタスク**: **`getCellAtAddress(wb, address)` を追加** — `'Sheet1!A1'` 文字列から Cell | undefined を解決 (getCellAddress の inverse)。
+  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getCell。range part が単一 cell でない場合は throw。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/expand-range-str.test.ts` 5 件: 拡張 / 0 で同じ / 列のみ拡張 / 単一 cell + 拡張 / 過剰 reduction で throw。
+  3. `tests/phase-3/cell-at-address.test.ts` 5 件: bare title / quoted title / 不存在 sheet で throw / 不存在 cell で undefined / 範囲指定で throw。
 
-- **次のタスク (前回)**: **`rangeDimensionsStr(range)` rows/cols structured output**。
+- **次のタスク (前回)**: **`expandRangeStr(range, deltaRows, deltaCols)` 範囲 resize**。
+  1. `src/worksheet/cell-range.ts` に追加: maxRow/maxCol を delta だけ伸縮。makeCellRange で validation (零次元で throw)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/expand-range-str.test.ts` 7 件: 拡張 / 0,0 / 単一軸 / 単一 cell promotion / 縮小 / 零次元 throw / 非整数 throw。
+
+  empirical: 2163 tests pass (was 2156, +7)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/cell-range.ts` に追加: parseRange → `{rows, cols}`。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/range-dimensions-str.test.ts` 5 件: 単一 / 矩形 / col / row / 不正 input。
