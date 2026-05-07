@@ -532,6 +532,7 @@ export {
   alignCellVertical,
   applyBuiltinStyle,
   applyNamedStyle,
+  borderToCss,
   BUILTIN_NAMED_STYLES,
   centerCell,
   clearCellBackground,

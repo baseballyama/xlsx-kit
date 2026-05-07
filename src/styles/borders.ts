@@ -7,7 +7,7 @@
 // pool can dedupe by reference identity once we wire it up.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { type Color, makeColor } from './colors';
+import { type Color, colorToHex, makeColor } from './colors';
 
 export type SideStyle =
   | 'thin'
@@ -103,3 +103,63 @@ const freezeSide = (s: Side): Side => (Object.isFrozen(s) ? s : makeSide(s));
 export const EMPTY_SIDE: Side = makeSide();
 /** Default empty border — every cell starts here until styled otherwise. */
 export const DEFAULT_BORDER: Border = makeBorder();
+
+/**
+ * Map an Excel {@link SideStyle} to a CSS `border` shorthand fragment
+ * (`<width> <style>`). Returns `undefined` for unmappable styles or
+ * a missing/no-style side. Colour is appended by the caller.
+ */
+function sideStyleToCss(style: SideStyle | undefined): string | undefined {
+  switch (style) {
+    case 'thin':
+    case 'hair':
+      return '1px solid';
+    case 'medium':
+      return '2px solid';
+    case 'thick':
+      return '3px solid';
+    case 'double':
+      return '3px double';
+    case 'dotted':
+      return '1px dotted';
+    case 'dashed':
+    case 'dashDot':
+    case 'dashDotDot':
+      return '1px dashed';
+    case 'mediumDashed':
+    case 'mediumDashDot':
+    case 'mediumDashDotDot':
+    case 'slantDashDot':
+      return '2px dashed';
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Translate a {@link Border} to a CSS-property record suitable for
+ * HTML preview. Each present side becomes `border-<edge>: <width>
+ * <style> <#color>`. Theme/auto/missing colours fall back to
+ * `currentColor`. Diagonal / vertical / horizontal sides are skipped
+ * (CSS has no native equivalent for in-cell strokes). Empty Border
+ * returns `{}`.
+ */
+export function borderToCss(border: Border | undefined): Record<string, string> {
+  const css: Record<string, string> = {};
+  if (!border) return css;
+  const sides: Array<['top' | 'right' | 'bottom' | 'left', Side | undefined]> = [
+    ['top', border.top],
+    ['right', border.right],
+    ['bottom', border.bottom],
+    ['left', border.left],
+  ];
+  for (const [edge, side] of sides) {
+    if (!side) continue;
+    const stroke = sideStyleToCss(side.style);
+    if (stroke === undefined) continue;
+    const argb = colorToHex(side.color);
+    const colour = argb !== undefined ? `#${argb.slice(2)}` : 'currentColor';
+    css[`border-${edge}`] = `${stroke} ${colour}`;
+  }
+  return css;
+}
