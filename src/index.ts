@@ -246,6 +246,7 @@ export {
   getConditionalFormatting,
   getDataExtent,
   getDataExtentRef,
+  getDistinctValuesInColumn,
   getFreezePanes,
   getHyperlink,
   getMaxCol,

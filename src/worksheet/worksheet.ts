@@ -451,6 +451,39 @@ export function getPopulatedColumnIndices(ws: Worksheet): number[] {
   return [...seen].sort((a, b) => a - b);
 }
 
+/**
+ * Distinct cell values in a column, in first-seen row order. Use for
+ * filter-UI affordances or quick deduplication of categorical data.
+ *
+ * Equality is reference-based for object values (formulas, rich-text,
+ * Dates), value-based for primitives — i.e. two `Date` instances with
+ * the same epoch will appear as separate values. Pass primitives
+ * (numbers / strings / booleans) when you want set semantics.
+ *
+ * Options:
+ *   - `skipNull` — drop `null` cell values (default `false`).
+ *   - `skipFormulas` — drop `FormulaValue` cells (default `false`).
+ */
+export function getDistinctValuesInColumn(
+  ws: Worksheet,
+  col: number,
+  opts: { skipNull?: boolean; skipFormulas?: boolean } = {},
+): CellValue[] {
+  const seen = new Set<unknown>();
+  const out: CellValue[] = [];
+  for (const cell of getCellsInColumn(ws, col)) {
+    const v = cell.value;
+    if (opts.skipNull && v === null) continue;
+    if (opts.skipFormulas && v !== null && typeof v === 'object' && (v as { kind?: string }).kind === 'formula') {
+      continue;
+    }
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
 /** Total populated cell count. */
 export function countCells(ws: Worksheet): number {
   let n = 0;
