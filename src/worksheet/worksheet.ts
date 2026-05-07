@@ -1428,6 +1428,25 @@ export function pivotTable(
 }
 
 /**
+ * Iterate every data row of a header-driven range, invoking
+ * `callback(row, index)` for each. Side-effect-only — returns void.
+ * Use {@link mapRange} to write back transformations or
+ * {@link reduceRange} to fold to a value.
+ */
+export function forEachRow(
+  ws: Worksheet,
+  range: string,
+  callback: (row: Record<string, CellValue | null>, index: number) => void,
+): void {
+  const rows = readRangeAsObjects(ws, range);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    callback(row, i);
+  }
+}
+
+/**
  * Reduce the data rows of a header-driven range to a single value via
  * a user-supplied reducer. Mirrors `Array.prototype.reduce`. Header
  * row is excluded from iteration. Empty data area returns `init`.

@@ -309,6 +309,7 @@ export {
   renameCommentAuthor,
   columnAggregates,
   filterRange,
+  forEachRow,
   groupBy,
   mapRange,
   pivotTable,
