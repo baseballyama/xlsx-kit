@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getRangeAddress(ws, range)` を追加** — A1 range → `'Sheet1!A1:B5'` sheet-qualified 形式。
-  1. `src/worksheet/worksheet.ts` に追加: `formatSheetQualifiedRef(ws.title, range)` を呼ぶだけの薄い wrapper。range は何でも (A1 / A1:B2 / multiple)。validation は parseRange で行う、または raw 文字列のまま (caller 責任)。
+- **次のタスク**: **`addDefinedNameForRange(wb, name, ws, range)` を追加** — sheet-qualified ref から DefinedName を 1 call で。
+  1. `src/workbook/defined-names.ts` (or workbook.ts) に追加: `getRangeAddress(ws, range)` で `<sheet>!<range>` を作って `addDefinedName({ name, formula, ... })` を呼ぶ。`opts.localSheetIndex` で worksheet-local も対応。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/range-address.test.ts` 4 件: 単一 cell / 矩形 / 空 title 不可 / quoted title。
+  3. `tests/phase-3/add-defined-name-for-range.test.ts` 4 件: workbook-global / 局所 sheet / quoted title / 既存 name に上書きで throw or replace。
 
-- **次のタスク (前回)**: **`getCellAddress(ws, c)` + `formatSheetQualifiedRef` sheet-qualified A1**。
+- **次のタスク (前回)**: **`getRangeAddress(ws, range)` sheet-qualified A1 range**。
+  1. `src/worksheet/worksheet.ts` に追加: formatSheetQualifiedRef(ws.title, range) wrapper。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/range-address.test.ts` 4 件: 単一 cell / 矩形 / quoted title / row/column span pass-through。
+
+  empirical: 2106 tests pass (was 2102, +4)、typecheck / lint clean (14 warnings)。
   1. `src/utils/coordinate.ts` に formatSheetQualifiedRef、`src/worksheet/worksheet.ts` に getCellAddress wrapper。Excel 標準の quote rule (bare = `^[A-Za-z_][A-Za-z0-9_]*$`、それ以外は single-quote + 内部 `'` doubling)。
   2. `src/index.ts` から re-export。
   3. `tests/phase-2/cell-address.test.ts` 8 件: bare / space / apostrophe / 数字始まり / 句読点 / round-trip parseSheetRange / getCellAddress 通常 / quoted title。
