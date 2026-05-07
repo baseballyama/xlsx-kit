@@ -310,6 +310,7 @@ export {
   columnAggregates,
   countRows,
   everyRow,
+  fillColumn,
   filterRange,
   findRow,
   forEachRow,

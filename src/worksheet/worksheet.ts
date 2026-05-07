@@ -1445,6 +1445,56 @@ export function pluckColumn(
 }
 
 /**
+ * Fill every data cell of a header-driven range's column with a
+ * given value, or a value computed per row via a function. The
+ * header is unchanged.
+ *
+ * Pass `valueOrFn` as a `CellValue | null` to stamp the same value
+ * into every row, or as a `(row, index) => CellValue | null`
+ * function to compute per-row. The function receives the original
+ * row object (not a snapshot of partial mutations from earlier
+ * iterations of this fill).
+ *
+ * Throws when `column` isn't in the header row.
+ */
+export function fillColumn(
+  ws: Worksheet,
+  range: string,
+  column: string,
+  valueOrFn:
+    | CellValue
+    | null
+    | ((row: Record<string, CellValue | null>, index: number) => CellValue | null),
+): void {
+  const { minRow, minCol, maxRow, maxCol } = parseRange(range);
+  let targetCol = -1;
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    const name = v === null || v === undefined ? '' : String(v);
+    if (name === column) {
+      targetCol = c;
+      break;
+    }
+  }
+  if (targetCol < 0) {
+    throw new OpenXmlSchemaError(`fillColumn: column "${column}" not found in the header row`);
+  }
+  const isFn = typeof valueOrFn === 'function';
+  // Snapshot row objects up-front so the callback sees the pre-fill state.
+  const rows = isFn ? readRangeAsObjects(ws, range) : null;
+  for (let r = minRow + 1; r <= maxRow; r++) {
+    const i = r - minRow - 1;
+    const v = isFn
+      ? (valueOrFn as (row: Record<string, CellValue | null>, index: number) => CellValue | null)(
+          rows?.[i] ?? {},
+          i,
+        )
+      : (valueOrFn as CellValue | null);
+    setCell(ws, r, targetCol, v ?? null);
+  }
+}
+
+/**
  * Rename a column in the header row of a header-driven range. Only
  * the header cell is rewritten; the data column is unchanged.
  *
