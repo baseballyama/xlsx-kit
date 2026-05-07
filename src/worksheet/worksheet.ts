@@ -1135,6 +1135,39 @@ export function getRowValues(
   return out;
 }
 
+/**
+ * Enumerate the populated cells of a row in column order. Unlike
+ * {@link getRowValues}, this skips empty columns and yields the cell
+ * objects (not just their values). Returns `[]` when the row is
+ * absent or empty.
+ */
+export function getCellsInRow(ws: Worksheet, row: number): Cell[] {
+  const rowMap = ws.rows.get(row);
+  if (!rowMap || rowMap.size === 0) return [];
+  const sortedCols = [...rowMap.keys()].sort((a, b) => a - b);
+  const out: Cell[] = [];
+  for (const col of sortedCols) {
+    const cell = rowMap.get(col);
+    if (cell) out.push(cell);
+  }
+  return out;
+}
+
+/**
+ * Enumerate the populated cells of a column in row order. Walks the
+ * row map and collects whichever rows carry the column. Returns `[]`
+ * when the worksheet has no cell in that column.
+ */
+export function getCellsInColumn(ws: Worksheet, col: number): Cell[] {
+  const sortedRows = [...ws.rows.keys()].sort((a, b) => a - b);
+  const out: Cell[] = [];
+  for (const r of sortedRows) {
+    const cell = ws.rows.get(r)?.get(col);
+    if (cell) out.push(cell);
+  }
+  return out;
+}
+
 // ---- column / row dimensions ----------------------------------------------
 
 /**
