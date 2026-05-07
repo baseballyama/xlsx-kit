@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`setRangeProtection(wb, ws, range, protection)` を追加** — bulk Protection setter。
-  1. `src/styles/cell-style.ts` に追加: 既存 `setRangeStyle` の Protection 対応を切り出して、range 全 cell に対して `setCellProtection(wb, c, protection)` を呼ぶ。`makeProtection({ locked, hidden })` を `Protection | Partial<Protection>` として受ける。
+- **次のタスク**: **`setRangeWrapText(wb, ws, range, on=true)` 一括 wrap helper を追加**。
+  1. `src/styles/cell-style.ts` に追加: range 全 cell に対して `setCellAlignment` で wrapText を patch。既存 alignment は preserve。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/styles/set-range-protection.test.ts` 4 件: locked=false 全 cell / hidden=true 全 cell / 既存 style と protection 共存 / 空 range は no-op。
+  3. `tests/phase-2/styles/set-range-wrap-text.test.ts` 4 件: 全 cell wrap on / wrap off / horizontal alignment 既存値 preserve / 空 range no-op。
+
+- **次のタスク (前回)**: **`setRangeProtection(wb, ws, range, protection)` 一括 Protection setter を追加**。
+  1. `src/styles/cell-style.ts` に追加: `setRangeStyle` 経由で range 全 cell に Protection を stamp。`Protection | Partial<Protection>` を受け、partials は missing fields を `false` にデフォルト。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/set-range-protection.test.ts` 4 件: locked=false 全 cell / hidden=true partial 適用 / bold + protection 共存 / 空 range で cell 作成。
+
+  empirical: 1940 tests pass (was 1936, +4)、typecheck / lint clean (16 warnings)。
 
 - **次のタスク (前回)**: **`cssRecordToInlineStyle(record)` helper を追加** — `Record<string,string>` → HTML `style="…"` inline 文字列。
   1. `src/utils/css.ts` (新規) に追加: alphabetical sort で `k: v;` 連結。空 record / `undefined` → ''。空文字値 skip。値に `;` 含むものは drop (defense against attribute-injection)。
