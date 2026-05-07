@@ -269,6 +269,7 @@ export {
   hideRow,
   hideRows,
   isMergedCell,
+  isWorksheetEmpty,
   iterCells as iterWorksheetCells,
   iterRows as iterWorksheetRows,
   iterValues as iterWorksheetValues,

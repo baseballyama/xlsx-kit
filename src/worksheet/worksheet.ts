@@ -631,6 +631,19 @@ export function countCellsByKind(ws: Worksheet): CellsByKindCounts {
 }
 
 /**
+ * True iff the worksheet has zero non-empty cells. Equivalent to
+ * `getNonEmptyCellCount(ws) === 0` but short-circuits on the first
+ * non-null value found, so the cost is O(first non-empty cell)
+ * rather than O(populated cells).
+ */
+export function isWorksheetEmpty(ws: Worksheet): boolean {
+  for (const cell of iterCells(ws)) {
+    if (cell.value !== null) return false;
+  }
+  return true;
+}
+
+/**
  * Count non-empty cells. Distinct from {@link countCells} which counts
  * every materialised cell (including ones whose `value === null`):
  * this skips cells with a `null` value, plus optionally formulas /
