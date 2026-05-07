@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isCellEmpty(cell)` / `isWorksheetEmpty(ws)` predicates を追加** — null & populated check。
-  1. `src/cell/cell.ts` に `isCellEmpty(c) → c.value === null` を追加。`src/worksheet/worksheet.ts` に `isWorksheetEmpty(ws) → getNonEmptyCellCount(ws) === 0` を追加。
+- **次のタスク**: **`isWorkbookEmpty(wb)` predicate を追加** — workbook level、全 worksheet が isWorksheetEmpty。
+  1. `src/workbook/workbook.ts` に追加: iterWorksheets walk + isWorksheetEmpty で短絡判定。chartsheet は cells を持たないので無視。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/cell-predicates.test.ts` 4 件: null cell / 値あり / 空文字列は !empty / 削除済み (rows.delete)。`tests/phase-5/worksheet-empty-predicate.test.ts` 3 件。
+  3. `tests/phase-3/workbook-empty-predicate.test.ts` 4 件: 空 wb / 1 sheet 空 / 1 sheet で値あり / 2 sheet 一方のみ値あり。
 
-- **次のタスク (前回)**: **`getNonEmptyCellCount(ws, opts?)` populated minus null**。
+- **次のタスク (前回)**: **`isWorksheetEmpty(ws)` predicate**。`isCellEmpty` は既存 `isEmptyCell` で代替済みのため scrap。
+  1. `src/worksheet/worksheet.ts` に追加: iterCells walk + value !== null で短絡判定。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/worksheet-empty-predicate.test.ts` 4 件: 空 sheet / 値あり / null cell は empty 扱い / 空文字列は non-empty。
+
+  empirical: 2089 tests pass (was 2085, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: iterCells walk + `value !== null` + opts.includeFormulas / opts.includeRichText。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/non-empty-cell-count.test.ts` 5 件: 全 non-null / null skip / '' は count / formula skip / rich-text skip。
