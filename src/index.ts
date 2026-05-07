@@ -92,7 +92,14 @@ export { defineSchema, fromTree, toTree } from './schema';
 // Utility surfaces — coordinate / datetime / units / inference / escape /
 // exception types.
 export type { CellCoordinate, CellCoordinateNumeric, CellRangeBoundaries } from './utils/coordinate';
-export { cellRangeFromCells, isCellInRange, isRangeInRange, rangesOverlapStr } from './worksheet/cell-range';
+export {
+  cellRangeFromCells,
+  intersectionRangeStr,
+  isCellInRange,
+  isRangeInRange,
+  rangesOverlapStr,
+  unionRangeStr,
+} from './worksheet/cell-range';
 export {
   boundariesToRangeString,
   columnIndexFromLetter,

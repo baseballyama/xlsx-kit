@@ -121,6 +121,25 @@ export function rangesOverlapStr(a: string, b: string): boolean {
   return rangesOverlap(parseRange(a), parseRange(b));
 }
 
+/**
+ * A1-string convenience for {@link unionRange}. Returns the smallest
+ * A1 range that contains both inputs (always non-null; ranges that
+ * don't overlap still get a valid bounding box).
+ */
+export function unionRangeStr(a: string, b: string): string {
+  return rangeToString(unionRange(parseRange(a), parseRange(b)));
+}
+
+/**
+ * A1-string convenience for {@link intersectionRange}. Returns the
+ * shared rectangular sub-range as A1 string, or `undefined` when
+ * the inputs are disjoint.
+ */
+export function intersectionRangeStr(a: string, b: string): string | undefined {
+  const r = intersectionRange(parseRange(a), parseRange(b));
+  return r === null ? undefined : rangeToString(r);
+}
+
 /** Inclusive containment of `inner` within `outer`. */
 export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean {
   return (
