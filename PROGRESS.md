@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`rangeDimensionsStr(range)` を追加** — A1 range → `{ rows, cols }`。
-  1. `src/worksheet/cell-range.ts` に追加: parseRange → `{rows: maxRow - minRow + 1, cols: maxCol - minCol + 1}`。
+- **次のタスク**: **`expandRangeStr(range, deltaRows, deltaCols)` を追加** — A1 range の上下・左右に追加領域を加算。
+  1. `src/worksheet/cell-range.ts` に追加: parseRange → maxRow + deltaRows、maxCol + deltaCols (minRow/minCol は据え置き)。負の delta も対応 (rows/cols 1 を下回らないよう clamp or throw)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/range-dimensions-str.test.ts` 4 件: 単一 cell {1,1} / 3×5 / 1 col / 1 row / 不正 input。
+  3. `tests/phase-5/expand-range-str.test.ts` 5 件: 拡張 / 0 で同じ / 列のみ拡張 / 単一 cell + 拡張 / 過剰 reduction で throw。
 
-- **次のタスク (前回)**: **`rangeAreaStr(range)` A1 area helper**。
+- **次のタスク (前回)**: **`rangeDimensionsStr(range)` rows/cols structured output**。
+  1. `src/worksheet/cell-range.ts` に追加: parseRange → `{rows, cols}`。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/range-dimensions-str.test.ts` 5 件: 単一 / 矩形 / col / row / 不正 input。
+
+  empirical: 2156 tests pass (was 2151, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/cell-range.ts` に追加: rangeArea の A1 wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/range-area-str.test.ts` 5 件: 単一 cell=1 / 矩形 / 単一 col / 単一 row / 不正 input。
