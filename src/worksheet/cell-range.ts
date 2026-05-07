@@ -150,6 +150,15 @@ export function shiftRangeStr(range: string, dr: number, dc: number): string {
   return rangeToString(shiftRange(parseRange(range), dr, dc));
 }
 
+/**
+ * A1-string convenience for {@link rangeArea}. Returns the inclusive
+ * cell count covered by the range (rows × cols). Single-cell refs
+ * return 1.
+ */
+export function rangeAreaStr(range: string): number {
+  return rangeArea(parseRange(range));
+}
+
 /** Inclusive containment of `inner` within `outer`. */
 export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean {
   return (

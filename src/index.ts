@@ -97,6 +97,7 @@ export {
   intersectionRangeStr,
   isCellInRange,
   isRangeInRange,
+  rangeAreaStr,
   rangesOverlapStr,
   shiftRangeStr,
   unionRangeStr,
