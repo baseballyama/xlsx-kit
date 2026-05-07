@@ -6,12 +6,14 @@
 // operations (containment, shift, union, intersection, iteration) and
 // a `MultiCellRange` lite wrapper for sqref-style attributes.
 
+import type { Cell } from '../cell/cell';
 import {
   boundariesToRangeString,
   type CellRangeBoundaries,
   MAX_COL,
   MAX_ROW,
   rangeBoundaries,
+  tupleToCoordinate,
 } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 
@@ -50,6 +52,36 @@ export function parseRange(input: string): CellRange {
 /** Format a CellRange back into the canonical OOXML string. */
 export function rangeToString(r: CellRange): string {
   return boundariesToRangeString(r);
+}
+
+/**
+ * Compute the bounding A1-style range string for a list of cells.
+ * Walks the input once to find min/max row+col. A single-cell input
+ * returns a single-cell ref (`"A1"`); two or more cells (even
+ * collinear) return the `"A1:B5"` form.
+ *
+ * Throws when the array is empty — there's no meaningful zero-cell
+ * range, and silently returning `""` would defeat downstream
+ * `parseRange` consumers.
+ */
+export function cellRangeFromCells(cells: ReadonlyArray<Pick<Cell, 'row' | 'col'>>): string {
+  if (cells.length === 0) {
+    throw new OpenXmlSchemaError('cellRangeFromCells: cells array must be non-empty');
+  }
+  let minRow = Number.POSITIVE_INFINITY;
+  let maxRow = Number.NEGATIVE_INFINITY;
+  let minCol = Number.POSITIVE_INFINITY;
+  let maxCol = Number.NEGATIVE_INFINITY;
+  for (const c of cells) {
+    if (c.row < minRow) minRow = c.row;
+    if (c.row > maxRow) maxRow = c.row;
+    if (c.col < minCol) minCol = c.col;
+    if (c.col > maxCol) maxCol = c.col;
+  }
+  if (minRow === maxRow && minCol === maxCol) {
+    return tupleToCoordinate(minCol, minRow);
+  }
+  return boundariesToRangeString({ minRow, minCol, maxRow, maxCol });
 }
 
 /** Inclusive containment of a single (row, col) within a range. */

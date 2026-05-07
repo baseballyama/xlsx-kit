@@ -92,6 +92,7 @@ export { defineSchema, fromTree, toTree } from './schema';
 // Utility surfaces — coordinate / datetime / units / inference / escape /
 // exception types.
 export type { CellCoordinate, CellCoordinateNumeric, CellRangeBoundaries } from './utils/coordinate';
+export { cellRangeFromCells } from './worksheet/cell-range';
 export {
   boundariesToRangeString,
   columnIndexFromLetter,
