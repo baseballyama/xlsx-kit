@@ -31,6 +31,7 @@ import type { Protection } from '../styles/protection';
 import { coordinateToTuple, parseSheetRange } from '../utils/coordinate';
 import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToString } from '../worksheet/cell-range';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
+import { getWorksheetAsHtml } from '../worksheet/html';
 import type { LegacyComment } from '../worksheet/comments';
 import type { Hyperlink } from '../worksheet/hyperlinks';
 import { addTableFromObjects } from '../worksheet/table';
@@ -1229,6 +1230,22 @@ export function getWorkbookAsCsvRecord(
   const out: Record<string, string> = {};
   for (const ws of iterWorksheets(wb)) {
     out[ws.title] = getWorksheetAsCsv(ws, opts);
+  }
+  return out;
+}
+
+/**
+ * Workbook-wide HTML export. Walks every Worksheet in tab-strip
+ * order and serialises each via {@link getWorksheetAsHtml}; returns
+ * `Record<string, string>` keyed by sheet title. Empty worksheets
+ * are included with `""`. Chartsheets are skipped (no cells).
+ *
+ * Mirror of {@link getWorkbookAsCsvRecord} for the HTML side.
+ */
+export function getWorkbookAsHtmlRecord(wb: Workbook): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const ws of iterWorksheets(wb)) {
+    out[ws.title] = getWorksheetAsHtml(wb, ws);
   }
   return out;
 }

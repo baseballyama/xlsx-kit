@@ -719,6 +719,7 @@ export {
   getSheetTitles,
   getWorkbookAsCsvBundle,
   getWorkbookAsCsvRecord,
+  getWorkbookAsHtmlRecord,
   getWorkbookCellsByKind,
   getWorkbookStats,
   hasChartsheet,
