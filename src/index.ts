@@ -672,6 +672,14 @@ export {
   protectWorkbook,
   unprotectWorkbook,
 } from './workbook/protection';
+export type { SharedStringsTable } from './workbook/shared-strings';
+export {
+  addSharedString,
+  getSharedStringAt,
+  getSharedStringIndex,
+  makeSharedStrings,
+  sharedStringCount,
+} from './workbook/shared-strings';
 export type {
   CustomViewShowComments,
   CustomViewShowObjects,

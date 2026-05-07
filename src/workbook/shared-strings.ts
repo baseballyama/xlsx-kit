@@ -55,6 +55,21 @@ export function addSharedString(table: SharedStringsTable, value: string): numbe
   return id;
 }
 
+/** Look up a shared-string index by its literal text. Returns `undefined` for unknown values. */
+export function getSharedStringIndex(table: SharedStringsTable, value: string): number | undefined {
+  return table.index.get(value);
+}
+
+/** Read a shared-string by its 0-based index. Returns `undefined` for out-of-range. */
+export function getSharedStringAt(table: SharedStringsTable, index: number): string | undefined {
+  return table.entries[index];
+}
+
+/** Number of unique entries in the SST. */
+export function sharedStringCount(table: SharedStringsTable): number {
+  return table.entries.length;
+}
+
 // ---- read ------------------------------------------------------------------
 
 /** Concatenate every `<t>` text node found inside an arbitrary XmlNode tree. */

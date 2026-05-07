@@ -37,7 +37,14 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`removeAllTables` / `removeAllDataValidations` 一括 wipe を追加**。
+- **次のタスク**: **SST helpers (`getSharedStringIndex` / `getSharedStringAt` / `sharedStringCount`) + public API export を追加**。
+  1. `src/workbook/shared-strings.ts` に追加: 3 helpers + 既存 SST モジュール一式 (`SharedStringsTable` / `addSharedString` / `makeSharedStrings`) を src/index.ts から正式 re-export (これまで未公開)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/shared-strings-helpers.test.ts` 6 件: count growth / dedupe で count 不変 / index lookup / unknown で undefined / at lookup / out-of-range で undefined。
+
+  empirical: 1883 tests pass (was 1877, +6)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`removeAllTables` / `removeAllDataValidations` 一括 wipe を追加**。
   1. `src/worksheet/worksheet.ts` に追加: 各 array を `[]` で空にして count を return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/remove-all-tables-validations.test.ts` 4 件: tables 2 件削除 + count / 0 件で 0 / validations 2 件削除 + count / 0 件で 0。
