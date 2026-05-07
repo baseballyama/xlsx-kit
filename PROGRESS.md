@@ -37,17 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`countSheets(wb, opts?)` を追加** — getSheetTitles(...).length の薄い shortcut。
+- **次のタスク**: **`getActiveSheetTitle(wb)` を追加** — wb.activeSheetIndex から sheet title を引く。
+  1. `src/workbook/workbook.ts` に追加: wb.sheets[activeSheetIndex]?.sheet.title。out-of-range / 空 wb で undefined。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/get-active-sheet-title.test.ts` 4 件: 通常 / activeSheetIndex 別位置 / 空 wb / out-of-range。
+
+- **次のタスク (前回)**: **`countSheets(wb, opts?)` sheet count + filter**。
   1. `src/workbook/workbook.ts` に追加: kind/state filter で count。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/count-sheets.test.ts` 4 件: 通常 / kind=worksheet / kind=chartsheet / state filter。
+  3. `tests/phase-3/count-sheets.test.ts` 5 件: 全 / kind=worksheet / kind=chartsheet / state / 空 wb。
 
-- **次のタスク (前回)**: **`getSheetTitles(wb, opts?)` 全 sheet タイトル**。
-  1. `src/workbook/workbook.ts` に追加: kind/state で filter 可能。
-  2. `src/index.ts` から re-export。
-  3. `tests/phase-3/get-sheet-titles.test.ts` 5 件: 全 sheet / kind=worksheet / kind=chartsheet / state / 空 wb。
-
-  empirical: 2320 tests pass (was 2315, +5)、typecheck / lint clean (14 warnings)。
+  empirical: 2325 tests pass (was 2320, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: getSheet(wb, title) !== undefined wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/has-worksheet.test.ts` 4 件: 在 / 同名 chartsheet false / 不在 / 空 wb。
