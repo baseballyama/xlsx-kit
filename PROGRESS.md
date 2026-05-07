@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getRangeAsCsv(ws, range, opts?)` を追加** — A1 range を CSV string に。
-  1. `src/worksheet/worksheet.ts` (or 新 csv.ts) に追加: getRangeValues → 各 cell を CSV-escape (含まれる `,` `\n` `"` を quote)。`opts.delimiter` (default ',') / `opts.lineTerminator` (default '\n') / `opts.includeHeader` (default false — 既に header 込みの range を渡す前提)。
+- **次のタスク**: **`parseCsvToRange(ws, startRef, csv, opts?)` を追加** — getRangeAsCsv の inverse。
+  1. `src/worksheet/csv.ts` に追加: RFC 4180 parse (quoted fields with embedded `"` and newlines support) → 2D string[][] → writeRange。`opts.delimiter` / `opts.coerceTypes` (default false — keep all as strings; true で number/boolean を try-coerce)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/range-as-csv.test.ts` 5 件: 通常 / quote escape / `,` 含む値 / multi-line 値 / 空 cell は空フィールド / 区切り文字 ` ; ` 切替。
+  3. `tests/phase-5/parse-csv-to-range.test.ts` 6 件: 通常 / quoted field / 埋め込み newline / 埋め込み `""` / coerceTypes 数値・boolean 化 / 空文字 → empty cell skip。
 
-- **次のタスク (前回)**: **`addTableFromObjects(wb, ws, opts)` writeRangeFromObjects + addExcelTable を 1 call**。
+- **次のタスク (前回)**: **`getRangeAsCsv(ws, range, opts?)` range → CSV string**。
+  1. `src/worksheet/csv.ts` 新規追加: getRangeValues → CellValue → CSV-escape (RFC 4180)、Date は ISO、formula は cached value or formula source。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/range-as-csv.test.ts` 6 件: 通常 / quote escape / `,` 含む / newline / 空 cell / delimiter+trailingNewline / Date+bool+number coerce。
+
+  empirical: 2032 tests pass (was 2026, +6)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/table.ts` に追加: writeRangeFromObjects → bounding-box → addExcelTable。columns は header と同順。空 throw。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/add-table-from-objects.test.ts` 4 件: 通常 / opts.headers / 空 throw / opts.style 反映。
