@@ -10,7 +10,7 @@
 
 ## 次の作業者への引き継ぎ (Handoff @ 2026-05-05)
 
-**現状サマリ**: 2001 tests pass / typecheck + lint clean (14 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。直近で *ToCss helpers (color/font/fill/border/alignment/cellStyle) + cssRecordToInlineStyle + setRange{Protection,WrapText,Alignment} + clearCellStyle + getCellsInRow/Column + freezeFirstRow/Column shortcuts + cellRangeFromCells + iterCells + removeAllImages/Charts + getPopulatedRow/ColumnIndices + getDistinctValuesInColumn/Row + countCellsByKind + getWorkbookCellsByKind を積み増し (+108 tests / 1893 → 2001)。
+**現状サマリ**: 2060 tests pass / typecheck + lint clean (14 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。直近で *ToCss helpers + cssRecordToInlineStyle + setRange{Protection,WrapText,Alignment} + clearCellStyle + getCellsInRow/Column + freezeFirstRow/Column shortcuts + cellRangeFromCells + iterCells + removeAllImages/Charts + getPopulatedRow/ColumnIndices + getDistinctValuesInColumn/Row + countCellsByKind + getWorkbookCellsByKind + appendRows + writeRange + readRangeAsObjects + writeRangeFromObjects + addTableFromObjects + getRangeAsCsv + parseCsv/parseCsvToRange + getWorksheetAsCsv + getWorkbookAsCsvRecord + createWorkbookFromCsv + createWorkbookFromObjects を積み増し (+167 tests / 1893 → 2060)。CSV / Record[] ↔ Workbook の双方向 ergonomic API 完備。
 
 ### 直近 100+ commit のテーマ (今ブランチで積んだ作業)
 
@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`createWorkbookFromObjects(objects, opts?)` を追加** — Record[] → 1-sheet workbook 一発。
-  1. `src/workbook/workbook.ts` に追加: createWorkbook → addWorksheet → addTableFromObjects (or writeRangeFromObjects)。`opts.asTable: true` で table 化、それ以外は単純 write。
+- **次のタスク**: **`getWorkbookAsCsvBundle(wb, opts?)` を追加** — getWorkbookAsCsvRecord の zip 化版 (workbook.csv.zip 風)。
+  1. `src/workbook/workbook.ts` に追加: getWorkbookAsCsvRecord → fflate を使って "<title>.csv" entries の zip Uint8Array を return。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/workbook-from-objects.test.ts` 4 件: 通常 / opts.sheetTitle / opts.asTable で table 化 / opts.headers 順序指定。
+  3. `tests/phase-3/workbook-as-csv-bundle.test.ts` 4 件: zip 形式チェック / 全 sheet entry 含む / 空 wb で空 zip / opts.delimiter 伝播。
 
-- **次のタスク (前回)**: **`createWorkbookFromCsv(csv, opts?)` CSV → Workbook 一発**。
+- **次のタスク (前回)**: **`createWorkbookFromObjects(objects, opts?)` Record[] → Workbook 一発**。
+  1. `src/workbook/workbook.ts` に追加: createWorkbook → addWorksheet → writeRangeFromObjects (or addTableFromObjects)。opts.asTable で table 化分岐。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/workbook-from-objects.test.ts` 5 件: 通常 / opts.sheetTitle / opts.asTable で table / opts.headers / 空 [] で empty sheet。
+
+  empirical: 2060 tests pass (was 2055, +5)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: createWorkbook → addWorksheet → parseCsvToRange。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-from-csv.test.ts` 4 件: 通常 / opts.sheetTitle / opts.coerceTypes / 空 input。
