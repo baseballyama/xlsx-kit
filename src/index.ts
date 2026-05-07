@@ -307,6 +307,7 @@ export {
   removeSheetTabColor,
   removeTable,
   renameCommentAuthor,
+  addColumn,
   columnAggregates,
   countRows,
   everyRow,

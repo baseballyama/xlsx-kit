@@ -1445,6 +1445,50 @@ export function pluckColumn(
 }
 
 /**
+ * Append a new column to a header-driven range. Writes the new
+ * header at column `maxCol + 1` and fills the data rows with
+ * either a fixed value or a per-row computed value via a function.
+ *
+ * Returns the new range string (`'A1:C5'`-style) covering the
+ * original range plus the new column. Throws when the new header
+ * `name` already exists in the original range.
+ */
+export function addColumn(
+  ws: Worksheet,
+  range: string,
+  name: string,
+  valueOrFn:
+    | CellValue
+    | null
+    | ((row: Record<string, CellValue | null>, index: number) => CellValue | null),
+): string {
+  const { minRow, minCol, maxRow, maxCol } = parseRange(range);
+  // Reject duplicate header names.
+  for (let c = minCol; c <= maxCol; c++) {
+    const v = ws.rows.get(minRow)?.get(c)?.value;
+    const existing = v === null || v === undefined ? '' : String(v);
+    if (existing === name) {
+      throw new OpenXmlSchemaError(`addColumn: column "${name}" already exists in the range`);
+    }
+  }
+  const newCol = maxCol + 1;
+  setCell(ws, minRow, newCol, name);
+  const isFn = typeof valueOrFn === 'function';
+  const rows = isFn ? readRangeAsObjects(ws, range) : null;
+  for (let r = minRow + 1; r <= maxRow; r++) {
+    const i = r - minRow - 1;
+    const v = isFn
+      ? (valueOrFn as (row: Record<string, CellValue | null>, index: number) => CellValue | null)(
+          rows?.[i] ?? {},
+          i,
+        )
+      : (valueOrFn as CellValue | null);
+    setCell(ws, r, newCol, v ?? null);
+  }
+  return tupleToCoordinate(minCol, minRow) + ':' + tupleToCoordinate(newCol, maxRow);
+}
+
+/**
  * Fill every data cell of a header-driven range's column with a
  * given value, or a value computed per row via a function. The
  * header is unchanged.
