@@ -11,7 +11,14 @@ import { type Cell, cellValueAsString, makeCell, setArrayFormula, setFormula } f
 import { type InlineFont, makeRichText, type TextRun } from '../cell/rich-text';
 import type { Drawing } from '../drawing/drawing';
 import { type Color, makeColor } from '../styles/colors';
-import { columnIndexFromLetter, coordinateToTuple, MAX_COL, MAX_ROW } from '../utils/coordinate';
+import {
+  columnIndexFromLetter,
+  coordinateToTuple,
+  formatSheetQualifiedRef,
+  MAX_COL,
+  MAX_ROW,
+  tupleToCoordinate,
+} from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { AutoFilter } from './auto-filter';
 import { type CellRange, parseRange, rangeContainsCell, rangesOverlap, rangeToString } from './cell-range';
@@ -628,6 +635,19 @@ export function countCellsByKind(ws: Worksheet): CellsByKindCounts {
     }
   }
   return out;
+}
+
+/**
+ * Sheet-qualified A1 address for a cell — `'Sheet1!A1'` for plain
+ * titles, `'\'Quarter 1\'!A1'` for titles needing quoting (spaces,
+ * apostrophes, punctuation, leading-digit). Round-trips with
+ * {@link parseSheetRange}.
+ *
+ * Useful when constructing formulas / defined-names that reference a
+ * specific cell across sheets without hand-rolling the quote logic.
+ */
+export function getCellAddress(ws: Worksheet, c: Cell): string {
+  return formatSheetQualifiedRef(ws.title, tupleToCoordinate(c.col, c.row));
 }
 
 /**

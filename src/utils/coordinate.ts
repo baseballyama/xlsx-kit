@@ -322,3 +322,20 @@ export function parseSheetRange(input: string): {
   const sheet = quoted !== undefined ? quoted.replace(/''/g, "'") : (bare ?? '');
   return { sheet, range, bounds: rangeBoundaries(range) };
 }
+
+const BARE_SHEET_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/**
+ * Inverse of {@link parseSheetRange}: format a sheet title + range
+ * (or single-cell ref) as `Sheet1!A1` or `'Quarter 1'!A1` per
+ * Excel's sheet-qualified syntax. Single quotes inside the title are
+ * escaped by doubling (`'Bob''s Sheet'`).
+ *
+ * Quoting rule: sheet titles consisting only of `[A-Za-z_][A-Za-z0-9_]*`
+ * are emitted bare; everything else (spaces, digits-leading, hyphens,
+ * apostrophes, punctuation…) gets wrapped in single quotes.
+ */
+export function formatSheetQualifiedRef(sheet: string, ref: string): string {
+  if (BARE_SHEET_NAME.test(sheet)) return `${sheet}!${ref}`;
+  return `'${sheet.replace(/'/g, "''")}'!${ref}`;
+}
