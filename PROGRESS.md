@@ -37,12 +37,18 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`renameSheet(wb, oldTitle, newTitle)` の存在確認** — もし無ければ追加 (worksheet 系の rename 1 sheet)。あれば skip。
-  1. `src/workbook/workbook.ts` 確認: 既存 `renameSheetByIndex` などで対応済みなら scrap、無ければ getSheet → validateSheetTitle → ws.title 書き換え。
-  2. `src/index.ts` から re-export (新規時)。
-  3. `tests/phase-3/rename-sheet.test.ts` 4 件: 通常 / 不存在 oldTitle throw / 不正 newTitle throw / 重複 newTitle throw。
+- **次のタスク**: **`getSheetIndex(wb, title)` を追加** — sheet の 0-based tab-strip index (不在で -1)。renameSheet は既存。
+  1. `src/workbook/workbook.ts` に追加: `wb.sheets.findIndex((s) => s.sheet.title === title)`。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/get-sheet-index.test.ts` 4 件: 在 / 不在 -1 / 複数 sheet 順序 / chartsheet 含む。
 
-- **次のタスク (前回)**: **`columnIndexOf(ws, range, name)` 0-based in-range index**。
+- **次のタスク (前回)**: **`renameSheet` 確認 → 既存のため scrap**。
+- **次のタスク (前回 2)**: **`columnIndexOf(ws, range, name)` 0-based in-range index**。
+  1. `src/worksheet/worksheet.ts` に追加: header walk + minCol 相対 index、不在で -1。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/column-index-of.test.ts` 3 件: 在 / 不在 -1 / range 相対。
+
+  empirical: 2299 tests pass (was 2296, +3)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: header walk + minCol 相対 index、不在で -1。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/column-index-of.test.ts` 3 件: 在 / 不在 -1 / range 相対。

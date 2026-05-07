@@ -711,6 +711,7 @@ export {
   setCellAtAddress,
   setRangeValuesAtAddress,
   getSheetByIndex,
+  getSheetIndex,
   getSheetState,
   getWorkbookAsCsvBundle,
   getWorkbookAsCsvRecord,

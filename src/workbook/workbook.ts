@@ -303,6 +303,21 @@ export function addWorksheet(wb: Workbook, title: string, opts?: { index?: numbe
   return sheet;
 }
 
+/**
+ * 0-based tab-strip index of the sheet (worksheet *or* chartsheet)
+ * with the given title, or `-1` when not present. Useful when the
+ * caller wants to act on the index for `setActiveSheet` /
+ * `swapSheets` / similar operations without manually scanning
+ * `wb.sheets`.
+ */
+export function getSheetIndex(wb: Workbook, title: string): number {
+  for (let i = 0; i < wb.sheets.length; i++) {
+    const ref = wb.sheets[i];
+    if (ref && ref.sheet.title === title) return i;
+  }
+  return -1;
+}
+
 /** Look up a Worksheet by title. Returns undefined for missing names or chartsheets. */
 export function getSheet(wb: Workbook, title: string): Worksheet | undefined {
   for (const s of wb.sheets) {
