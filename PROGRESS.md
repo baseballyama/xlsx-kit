@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getCellSummary(wb, sheetTitle, ref)` を追加** — 1 cell の everything を 1 オブジェクトで debug 用に返す。
-  1. `src/workbook/workbook.ts` に追加: cell.value / styleId / hyperlinkId / commentId + style chain (font/fill/border/alignment/protection/numberFormat) + applied hyperlink + comment text + merged range membership + table/CF/dv 包含 を集約。
+- **次のタスク**: **`describeWorkbook(wb)` を追加** — workbook 全体の overview を 1 オブジェクトで返す human-readable summary。
+  1. `src/workbook/workbook.ts` に追加: getWorkbookStats + getWorkbookCellsByKind + sheets metadata (title/state/hidden/cellCount per sheet) + defined-names + custom-properties summary を 1 オブジェクトで return。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/cell-summary.test.ts` 5 件: 値だけ / styled cell / hyperlink + comment / merge 範囲内 / 不正 ref で throw。
+  3. `tests/phase-3/describe-workbook.test.ts` 4 件: 通常 / 空 wb / 複数 sheet (worksheets + chartsheet 混在) / hidden sheets。
 
-- **次のタスク (前回)**: **`createWorkbookFromCsvBundle(bundle, opts?)` zip → workbook**。
+- **次のタスク (前回)**: **`getCellSummary(wb, sheetTitle, ref)` debug-friendly per-cell snapshot**。
+  1. `src/workbook/workbook.ts` に追加: cell value / styleId / 解決済み style chain / hyperlink / comment / mergedRange / inTables / inDV / inCF。型 `CellSummary` も export。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/cell-summary.test.ts` 6 件: 値のみ / styled+hyperlink+comment / merge / table+DV+CF / 不正 sheet で throw / 不存在 cell で exists:false + default styles。
+
+  empirical: 2076 tests pass (was 2070, +6)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: unzipSync → 各 .csv entry を parseCsvToRange + pickUniqueSheetTitle で安全に dedupe + sanitise。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-from-csv-bundle.test.ts` 5 件: round-trip / 非 csv skip / 空 zip / coerceTypes / sanitise filename。
