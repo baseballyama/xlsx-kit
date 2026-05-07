@@ -690,6 +690,7 @@ export {
   createWorkbookFromObjects,
   duplicateSheet,
   getActiveSheet,
+  getActiveSheetTitle,
   findCellInWorkbook,
   findCellsInWorkbook,
   findTable,

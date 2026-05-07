@@ -1531,6 +1531,19 @@ export function getActiveSheet(wb: Workbook): Worksheet | undefined {
   return ref?.kind === 'worksheet' ? ref.sheet : undefined;
 }
 
+/**
+ * Title of whichever sheet (worksheet *or* chartsheet) is currently
+ * marked active via `wb.activeSheetIndex`. Returns `undefined` for
+ * an empty workbook or an out-of-range index.
+ *
+ * Distinct from {@link getActiveSheet} (which only returns worksheets
+ * and yields `undefined` when the active slot is a chartsheet) — this
+ * matches `wb.activeSheetIndex` regardless of kind.
+ */
+export function getActiveSheetTitle(wb: Workbook): string | undefined {
+  return wb.sheets[wb.activeSheetIndex]?.sheet.title;
+}
+
 /** Read-only view onto the customXml/* pass-through parts. */
 export function listCustomXmlParts(wb: Workbook): Array<{ path: string; content: Uint8Array }> {
   if (!wb.passthrough) return [];
