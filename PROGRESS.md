@@ -37,17 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getWorksheetAsHtml(wb, ws)` shortcut を追加** — getDataExtentRef + worksheetToHtml の 1 call (CSV と対称)。
-  1. `src/worksheet/html.ts` に追加: getDataExtent → A1 化 → worksheetToHtml。空 ws は `''`。
+- **次のタスク**: **`getWorkbookAsHtmlRecord(wb)` を追加** — sheet title → HTML string の Record (CSV bundle と対称)。
+  1. `src/workbook/workbook.ts` に追加: iterWorksheets walk + getWorksheetAsHtml → Record<title, html>。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/worksheet-as-html.test.ts` 4 件: 通常 / 空 ws / sparse data extent / merge 含む。
+  3. `tests/phase-3/workbook-as-html-record.test.ts` 4 件: 1 sheet / 2 sheet / 空 sheet / chartsheet skip。
 
-- **次のタスク (前回)**: **`worksheetToHtml(wb, ws, range)` *ToCss payoff**。
-  1. `src/worksheet/html.ts` (新規) に追加: range walk + cellStyleToCss → cssRecordToInlineStyle、merge rowspan/colspan、HTML-escape。
+- **次のタスク (前回)**: **`getWorksheetAsHtml(wb, ws)` whole-sheet HTML shortcut**。
+  1. `src/worksheet/html.ts` に追加: getDataExtent → A1 → worksheetToHtml。空 ws ''。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/worksheet-to-html.test.ts` 6 件: 通常 / inline-style / merge / 空 cell / HTML escape / 範囲外 skip。
+  3. `tests/phase-5/worksheet-as-html.test.ts` 4 件: 通常 / 空 / sparse / merge。
 
-  empirical: 2339 tests pass (was 2333, +6)、typecheck / lint clean (14 warnings)。
+  empirical: 2343 tests pass (was 2339, +4)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: wb.sheets[activeSheetIndex]?.sheet.title。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/get-active-sheet-title.test.ts` 4 件: 通常 / setActiveSheet / chartsheet active / 空 wb。
