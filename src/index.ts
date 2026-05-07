@@ -291,6 +291,7 @@ export {
   removeTable,
   renameCommentAuthor,
   readRangeAsObjects,
+  writeRangeFromObjects,
   replaceCellValues,
   replaceInRange,
   applyToRange,

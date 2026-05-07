@@ -1204,6 +1204,54 @@ export function applyToRange(
 }
 
 /**
+ * Inverse of {@link readRangeAsObjects}: write an array of objects to
+ * the sheet starting at `startRef`. The first row holds the headers
+ * (column keys) and subsequent rows the values, looked up by key.
+ *
+ * `opts.headers` pins the column order — when omitted, headers are
+ * the union of every object's keys, ordered by first appearance.
+ * Missing keys on a row write `null` (i.e. skip the cell), matching
+ * `writeRange` semantics. Values explicitly `null` / `undefined`
+ * also skip.
+ *
+ * Returns the bounding-box of the written area or `undefined` for
+ * empty input.
+ */
+export function writeRangeFromObjects(
+  ws: Worksheet,
+  startRef: string,
+  objects: ReadonlyArray<Record<string, CellValue | null | undefined>>,
+  opts: { headers?: ReadonlyArray<string> } = {},
+): { minRow: number; maxRow: number; minCol: number; maxCol: number } | undefined {
+  if (objects.length === 0) return undefined;
+  let headers: string[];
+  if (opts.headers) {
+    headers = [...opts.headers];
+  } else {
+    const seen = new Set<string>();
+    headers = [];
+    for (const obj of objects) {
+      for (const k of Object.keys(obj)) {
+        if (!seen.has(k)) {
+          seen.add(k);
+          headers.push(k);
+        }
+      }
+    }
+  }
+  if (headers.length === 0) return undefined;
+  const grid: Array<Array<CellValue | undefined>> = [headers];
+  for (const obj of objects) {
+    const row: Array<CellValue | undefined> = headers.map((h) => {
+      const v = obj[h];
+      return v === undefined || v === null ? undefined : v;
+    });
+    grid.push(row);
+  }
+  return writeRange(ws, startRef, grid);
+}
+
+/**
  * Read a rectangular range as an array of objects keyed by header
  * names from the first row. Useful for CSV-style table reads where
  * the spreadsheet's first row is column titles and the rest are data
