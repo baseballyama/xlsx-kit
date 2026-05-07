@@ -391,9 +391,12 @@ export type {
 export {
   addChartAt,
   addImageAt,
+  listChartsOnSheet,
+  listImagesOnSheet,
   makeChartDrawingItem,
   makeDrawing,
   makePictureDrawingItem,
+  removeAllDrawingItems,
 } from './drawing/drawing';
 export type { XlsxImage } from './drawing/image';
 export { loadImage } from './drawing/image';

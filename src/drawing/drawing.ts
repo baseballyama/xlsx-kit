@@ -133,3 +133,36 @@ export const addChartAt = (
   ws.drawing.items.push(item);
   return item;
 };
+
+/**
+ * Read-only snapshot of every picture DrawingItem on the sheet.
+ * Returns the matching items (each with its anchor + picture
+ * reference). Empty array when the sheet has no drawing or only
+ * non-picture items.
+ */
+export const listImagesOnSheet = (ws: Worksheet): ReadonlyArray<DrawingItem> => {
+  if (!ws.drawing) return [];
+  return ws.drawing.items.filter((it) => it.content.kind === 'picture');
+};
+
+/**
+ * Read-only snapshot of every chart DrawingItem on the sheet.
+ * Each item has its anchor + chart reference.
+ */
+export const listChartsOnSheet = (ws: Worksheet): ReadonlyArray<DrawingItem> => {
+  if (!ws.drawing) return [];
+  return ws.drawing.items.filter((it) => it.content.kind === 'chart');
+};
+
+/**
+ * Drop every DrawingItem from the worksheet. Returns the count
+ * removed. The `ws.drawing` field itself is left in place (empty)
+ * so subsequent `addImageAt` / `addChartAt` calls don't have to
+ * re-allocate.
+ */
+export const removeAllDrawingItems = (ws: Worksheet): number => {
+  if (!ws.drawing) return 0;
+  const n = ws.drawing.items.length;
+  ws.drawing.items = [];
+  return n;
+};
