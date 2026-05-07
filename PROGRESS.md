@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getCellAtAddress(wb, address)` を追加** — `'Sheet1!A1'` 文字列から Cell | undefined を解決 (getCellAddress の inverse)。
-  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getCell。range part が単一 cell でない場合は throw。
+- **次のタスク**: **`getRangeValuesAtAddress(wb, address)` を追加** — `'Sheet1!A1:B5'` から 2D values 配列。
+  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getRangeValues。range が単一 cell でも 2D 配列で return。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/cell-at-address.test.ts` 5 件: bare title / quoted title / 不存在 sheet で throw / 不存在 cell で undefined / 範囲指定で throw。
+  3. `tests/phase-3/range-values-at-address.test.ts` 4 件: 通常 / 単一 cell / quoted title / 不存在 sheet で throw。
 
-- **次のタスク (前回)**: **`expandRangeStr(range, deltaRows, deltaCols)` 範囲 resize**。
+- **次のタスク (前回)**: **`getCellAtAddress(wb, address)` sheet-qualified A1 → Cell**。
+  1. `src/workbook/workbook.ts` に追加: parseSheetRange → getSheet → getCell。range は throw、不存在 sheet は throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/cell-at-address.test.ts` 6 件: bare / quoted / 不存在 cell undefined / 不存在 sheet throw / range throw / round-trip。
+
+  empirical: 2169 tests pass (was 2163, +6)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/cell-range.ts` に追加: maxRow/maxCol を delta だけ伸縮。makeCellRange で validation (零次元で throw)。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/expand-range-str.test.ts` 7 件: 拡張 / 0,0 / 単一軸 / 単一 cell promotion / 縮小 / 零次元 throw / 非整数 throw。
