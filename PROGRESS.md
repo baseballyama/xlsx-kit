@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`addDefinedNameForRange(wb, name, ws, range)` を追加** — sheet-qualified ref から DefinedName を 1 call で。
-  1. `src/workbook/defined-names.ts` (or workbook.ts) に追加: `getRangeAddress(ws, range)` で `<sheet>!<range>` を作って `addDefinedName({ name, formula, ... })` を呼ぶ。`opts.localSheetIndex` で worksheet-local も対応。
+- **次のタスク**: **`getDefinedNameTarget(wb, name, scope?)` を追加** — DefinedName の value を parseSheetRange で解決して `{sheet, range, bounds}` を返す。
+  1. `src/workbook/defined-names.ts` に追加: getDefinedName + parseSheetRange を組み合わせて、ref が複数 (`Sheet!A:A,Sheet!1:1` のように `,` 区切り) の場合は array で return。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-3/add-defined-name-for-range.test.ts` 4 件: workbook-global / 局所 sheet / quoted title / 既存 name に上書きで throw or replace。
+  3. `tests/phase-3/get-defined-name-target.test.ts` 4 件: 単一 ref / quoted title / 複合 ref (Print_Titles 風) / 不存在で undefined。
 
-- **次のタスク (前回)**: **`getRangeAddress(ws, range)` sheet-qualified A1 range**。
+- **次のタスク (前回)**: **`addDefinedNameForRange(wb, name, ws, range, opts?)` sheet-qualified DefinedName builder**。
+  1. `src/workbook/defined-names.ts` に追加: getRangeAddress + addDefinedName。`opts.localToSheet` で scope。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-3/add-defined-name-for-range.test.ts` 5 件: workbook-scope / quoted title / localToSheet で scope / 不正 ws で throw / 同 name 上書き。
+
+  empirical: 2111 tests pass (was 2106, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: formatSheetQualifiedRef(ws.title, range) wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/range-address.test.ts` 4 件: 単一 cell / 矩形 / quoted title / row/column span pass-through。
