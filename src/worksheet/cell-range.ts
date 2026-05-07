@@ -101,6 +101,16 @@ export function isCellInRange(cellRef: string, rangeRef: string): boolean {
   return rangeContainsCell(parseRange(rangeRef), row, col);
 }
 
+/**
+ * A1-string convenience for {@link rangeContainsRange}. Returns
+ * `true` iff the `inner` range is wholly contained by `outer`
+ * (boundary-inclusive). Single-cell refs are accepted on either
+ * side via parseRange. Throws on malformed input.
+ */
+export function isRangeInRange(inner: string, outer: string): boolean {
+  return rangeContainsRange(parseRange(outer), parseRange(inner));
+}
+
 /** Inclusive containment of `inner` within `outer`. */
 export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean {
   return (
