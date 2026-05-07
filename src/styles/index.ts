@@ -51,6 +51,7 @@ export {
   setRangeBorderBox,
   setRangeFont,
   setRangeNumberFormat,
+  setRangeAlignment,
   setRangeProtection,
   setRangeStyle,
   setRangeWrapText,

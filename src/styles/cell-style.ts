@@ -444,6 +444,43 @@ export function setRangeWrapText(wb: Workbook, ws: Worksheet, range: string, on 
   }
 }
 
+/**
+ * Range-level Alignment setter. Two modes:
+ *
+ *   - `mode: 'merge'` (default) — each cell's existing alignment is
+ *     preserved; the supplied partial overlays it. Use this when you
+ *     want to set just `horizontal` or `vertical` without wiping the
+ *     other axes.
+ *   - `mode: 'replace'` — each cell's alignment is **wholly replaced**
+ *     by the supplied value. Indent / textRotation / wrapText that
+ *     weren't supplied are dropped.
+ *
+ * Empty cells in the range are materialised so the patch is
+ * observable on round-trip.
+ */
+export function setRangeAlignment(
+  wb: Workbook,
+  ws: Worksheet,
+  range: string,
+  alignment: Partial<Alignment>,
+  mode: 'merge' | 'replace' = 'merge',
+): void {
+  reserveDefaultXfSlot(wb);
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  if (mode === 'replace') {
+    setRangeStyle(wb, ws, range, { alignment: makeAlignment(alignment) });
+    return;
+  }
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      let cell = ws.rows.get(r)?.get(c);
+      if (!cell) cell = setCell(ws, r, c);
+      const cur = currentXf(wb.styles, cell).alignment;
+      setCellAlignment(wb, cell, mergeAlignment(cur, alignment));
+    }
+  }
+}
+
 // ---- font presets -------------------------------------------------------
 
 const mergeFont = (current: Font, patch: Partial<Font>): Font => makeFont({ ...current, ...patch });
