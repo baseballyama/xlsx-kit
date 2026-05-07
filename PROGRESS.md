@@ -37,10 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`countCellsByKind(ws)` を追加** — populated cells を value 種別 (string/number/boolean/date/duration/formula/error/rich-text/null) で分類して count を return。
-  1. `src/worksheet/worksheet.ts` に追加: iterCells walk + value の typeof / object kind 検査で sum into `Record<string, number>`。空 ws は全 0 のオブジェクト。
+- **次のタスク**: **`getWorkbookCellsByKind(wb)` workbook-wide aggregator を追加** — countCellsByKind の workbook 集計版。
+  1. `src/workbook/workbook.ts` に追加: iterWorksheets walk + countCellsByKind を sum。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/count-cells-by-kind.test.ts` 5 件: 全 kind 1 件ずつ / 重複 count / 空 / 数値 + 文字列 mixed / Date は 'date' に分類。
+  3. `tests/phase-3/workbook-cells-by-kind.test.ts` 4 件: 1 sheet / 2 sheet sum / 空 wb / chartsheet 無視。
+
+- **次のタスク (前回)**: **`countCellsByKind(ws)` value-kind histogram**。
+  1. `src/worksheet/worksheet.ts` に追加: iterCells walk + typeof/{kind} 判定。`CellsByKindCounts` interface も export。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/count-cells-by-kind.test.ts` 5 件: 空 / 全 kind 1 件ずつ / 重複 sum / sparse layout / row delete 後。
+
+  empirical: 1997 tests pass (was 1992, +5)、typecheck / lint clean (14 warnings)。
 
 - **次のタスク (前回)**: **`getDistinctValuesInRow(ws, row, opts?)` を追加** — column 版と対称。
   1. `src/worksheet/worksheet.ts` に追加: getCellsInRow → Set dedupe、column-order、skipNull/skipFormulas opts。
