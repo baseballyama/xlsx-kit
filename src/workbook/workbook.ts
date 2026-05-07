@@ -1544,6 +1544,14 @@ export function getActiveSheetTitle(wb: Workbook): string | undefined {
   return wb.sheets[wb.activeSheetIndex]?.sheet.title;
 }
 
+/**
+ * True iff `title` matches the workbook's currently active sheet
+ * (any kind). Empty workbook returns `false` (no active sheet).
+ */
+export function isActiveSheet(wb: Workbook, title: string): boolean {
+  return getActiveSheetTitle(wb) === title;
+}
+
 /** Read-only view onto the customXml/* pass-through parts. */
 export function listCustomXmlParts(wb: Workbook): Array<{ path: string; content: Uint8Array }> {
   if (!wb.passthrough) return [];

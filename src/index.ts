@@ -724,6 +724,7 @@ export {
   hasSheet,
   hasWorksheet,
   hideSheet,
+  isActiveSheet,
   isValidSheetTitle,
   iterAllCells,
   iterChartsheets,
