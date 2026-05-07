@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`addColumn(ws, range, name, valueOrFn)` を追加** — header-driven range の 1 列 right に新 column を追加。
-  1. `src/worksheet/worksheet.ts` に追加: parseRange → maxCol+1 を新 column 位置にして header に name を書き、各 data row に value/fn 適用。重複 header で throw。
+- **次のタスク**: **`removeColumn(ws, range, column)` を追加** — header-driven range から 1 column を消す (右側 column を 1 つ左に shift)。
+  1. `src/worksheet/worksheet.ts` に追加: column index を見つけて、その列 + 各 data row の cell を null に、右側列の値を 1 つ左へ shift (setCell)。最右列は null clear。返り値は new bounding range string。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/add-column.test.ts` 4 件: 通常 / fn 計算 / 重複 name で throw / 空 data area。
+  3. `tests/phase-5/remove-column.test.ts` 4 件: 中央列削除 / 最右列削除 / 不存在 column throw / 単一列 range 削除で empty range。
 
-- **次のタスク (前回)**: **`fillColumn(ws, range, column, valueOrFn)` 1 column data 書き換え**。
+- **次のタスク (前回)**: **`addColumn` 新 column 追加**。
+  1. `src/worksheet/worksheet.ts` に追加: header + data 値 (value/fn) を maxCol+1 に書き込み、新 range を return。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/add-column.test.ts` 4 件: 通常 / fn 計算 / 重複 name throw / header-only range。
+
+  empirical: 2272 tests pass (was 2268, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: parseRange で column index → 各 data row に value/fn 適用。header 不変。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/fill-column.test.ts` 5 件: 同値 / fn / header preservation / 不存在 throw / 空 data area。
