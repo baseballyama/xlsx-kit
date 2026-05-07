@@ -53,6 +53,7 @@ export {
   setRangeNumberFormat,
   setRangeProtection,
   setRangeStyle,
+  setRangeWrapText,
 } from './cell-style';
 export type { DifferentialStyle } from './differential';
 export { addDxf, makeDifferentialStyle } from './differential';

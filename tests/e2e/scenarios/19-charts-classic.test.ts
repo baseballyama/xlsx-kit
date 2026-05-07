@@ -53,6 +53,8 @@ describe('e2e 19 — classic chart kinds', () => {
       makeBarSeries({ idx: 1, val: { ref: 'Data!$C$2:$C$6', cache: seriesB }, cat, tx: { kind: 'ref', ref: 'Data!$C$1' } }),
       makeBarSeries({ idx: 2, val: { ref: 'Data!$D$2:$D$6', cache: seriesC }, cat, tx: { kind: 'ref', ref: 'Data!$D$1' } }),
     ];
+    const firstSeries = seriesABC[0];
+    if (!firstSeries) throw new Error('seriesABC[0] missing');
 
     const charts: Array<{ anchor: string; space: ChartSpace }> = [
       {
@@ -65,11 +67,11 @@ describe('e2e 19 — classic chart kinds', () => {
       },
       {
         anchor: 'F38',
-        space: makeChartSpace({ title: 'Pie (series A only)', plotArea: { chart: makePieChart({ series: [seriesABC[0]!] }) }, legend: { position: 'b' } }),
+        space: makeChartSpace({ title: 'Pie (series A only)', plotArea: { chart: makePieChart({ series: [firstSeries] }) }, legend: { position: 'b' } }),
       },
       {
         anchor: 'O2',
-        space: makeChartSpace({ title: 'Doughnut', plotArea: { chart: makeDoughnutChart({ series: [seriesABC[0]!], holeSize: 50 }) }, legend: { position: 'b' } }),
+        space: makeChartSpace({ title: 'Doughnut', plotArea: { chart: makeDoughnutChart({ series: [firstSeries], holeSize: 50 }) }, legend: { position: 'b' } }),
       },
       {
         anchor: 'O20',

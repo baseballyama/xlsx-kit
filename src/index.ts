@@ -611,6 +611,7 @@ export {
   setRangeNumberFormat,
   setRangeProtection,
   setRangeStyle,
+  setRangeWrapText,
 } from './styles';
 
 // Workbook root model.

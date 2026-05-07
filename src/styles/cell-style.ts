@@ -425,6 +425,25 @@ export function setRangeProtection(
   setRangeStyle(wb, ws, range, { protection: p });
 }
 
+/**
+ * Range-level shortcut for `wrapCellText`. Toggles "Wrap Text" on
+ * every cell in the range while preserving each cell's existing
+ * alignment (horizontal / vertical / textRotation / indent are not
+ * touched). Empty cells in the range are materialised so the
+ * alignment patch is observable on round-trip.
+ */
+export function setRangeWrapText(wb: Workbook, ws: Worksheet, range: string, on = true): void {
+  reserveDefaultXfSlot(wb);
+  const { minRow, maxRow, minCol, maxCol } = parseRange(range);
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      let cell = ws.rows.get(r)?.get(c);
+      if (!cell) cell = setCell(ws, r, c);
+      wrapCellText(wb, cell, on);
+    }
+  }
+}
+
 // ---- font presets -------------------------------------------------------
 
 const mergeFont = (current: Font, patch: Partial<Font>): Font => makeFont({ ...current, ...patch });
