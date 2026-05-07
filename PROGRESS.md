@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`pluckColumn(ws, range, column)` を追加** — header-driven range の 1 column を array で抽出 (`tabularData[col]` の薄い shortcut)。
-  1. `src/worksheet/worksheet.ts` に追加: tabularData(ws, range) → out[column]。column が無いと throw。
+- **次のタスク**: **`uniqueColumn(ws, range, column)` を追加** — pluckColumn + Set dedupe。
+  1. `src/worksheet/worksheet.ts` に追加: pluckColumn → first-seen-order array で dedupe (Set)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/pluck-column.test.ts` 4 件: 通常 / 不存在 column throw / null 含む / multi-column の選択。
+  3. `tests/phase-5/unique-column.test.ts` 4 件: 重複 dedupe / null は 1 値として保持 / 単一 cell column / 不存在 column throw。
 
-- **次のタスク (前回)**: **`countRows(ws, range, predicate?)` row count**。
+- **次のタスク (前回)**: **`pluckColumn(ws, range, column)` 1 column 抽出**。
+  1. `src/worksheet/worksheet.ts` に追加: tabularData[column]、不存在 column で throw。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/pluck-column.test.ts` 4 件: 通常 / null / 不存在 throw / 空 range []。
+
+  empirical: 2254 tests pass (was 2250, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → length / filter count。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/count-rows.test.ts` 4 件: 全 row / predicate / 空 / 全 reject。
