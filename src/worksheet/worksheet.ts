@@ -1324,6 +1324,65 @@ export function writeRangeFromObjects(
   return writeRange(ws, startRef, grid);
 }
 
+export interface ColumnAggregates {
+  /** Sum of numeric values in the column (NaN safe — non-numbers skipped). */
+  sum: number;
+  /** Arithmetic mean over numeric values. `NaN` when the column has no numbers. */
+  mean: number;
+  /** Smallest numeric value. `NaN` when the column has no numbers. */
+  min: number;
+  /** Largest numeric value. `NaN` when the column has no numbers. */
+  max: number;
+  /** Count of non-null cells (regardless of type). */
+  count: number;
+  /** Count of cells whose value is a JS `number`. */
+  numericCount: number;
+}
+
+/**
+ * Compute per-column aggregates over a header-driven range. Each
+ * key in the result maps to a {@link ColumnAggregates} with sum /
+ * mean / min / max plus count + numericCount. Useful for quick
+ * "what does this column look like" stats without reaching for a
+ * heavier dataframe library.
+ *
+ * Header coercion + dedupe semantics match {@link tabularData}.
+ * Non-numeric cells contribute to `count` (when non-null) but are
+ * skipped for sum / mean / min / max. A column with zero numeric
+ * cells reports `NaN` for those four (matching JS arithmetic on
+ * empty inputs); `numericCount === 0` flags the case explicitly.
+ */
+export function columnAggregates(ws: Worksheet, range: string): Record<string, ColumnAggregates> {
+  const cols = tabularData(ws, range);
+  const out: Record<string, ColumnAggregates> = {};
+  for (const [header, values] of Object.entries(cols)) {
+    let sum = 0;
+    let min = Number.POSITIVE_INFINITY;
+    let max = Number.NEGATIVE_INFINITY;
+    let count = 0;
+    let numericCount = 0;
+    for (const v of values) {
+      if (v === null) continue;
+      count++;
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        numericCount++;
+        sum += v;
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+    }
+    out[header] = {
+      sum: numericCount === 0 ? Number.NaN : sum,
+      mean: numericCount === 0 ? Number.NaN : sum / numericCount,
+      min: numericCount === 0 ? Number.NaN : min,
+      max: numericCount === 0 ? Number.NaN : max,
+      count,
+      numericCount,
+    };
+  }
+  return out;
+}
+
 /**
  * Read a rectangular range as a column store: a `Record<string,
  * (CellValue | null)[]>` keyed by header names from the first row.

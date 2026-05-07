@@ -229,7 +229,7 @@ export { makeRichText, makeTextRun, richTextToString } from './cell/rich-text';
 // Worksheet model + helpers (mergeCells / freezePanes / dimensions /
 // hyperlinks / data-validations / autoFilter / tables / comments /
 // conditional-formatting are reachable through the Worksheet object).
-export type { CellsByKindCounts, Worksheet } from './worksheet/worksheet';
+export type { CellsByKindCounts, ColumnAggregates, Worksheet } from './worksheet/worksheet';
 export type { CellSummary, WorkbookOverview, WorkbookSheetOverview } from './workbook/workbook';
 export {
   addCellWatch,
@@ -307,6 +307,7 @@ export {
   removeSheetTabColor,
   removeTable,
   renameCommentAuthor,
+  columnAggregates,
   readRangeAsObjects,
   tabularData,
   writeRangeFromObjects,
