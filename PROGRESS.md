@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`freezeFirstRow(ws)` / `freezeFirstColumn(ws)` / `freezeFirstRowAndColumn(ws)` shortcut を追加** — 一番よく使う freeze pane プリセット。
-  1. `src/worksheet/worksheet.ts` に追加: 既存 `freezePanes(ws, ...)` を呼ぶだけの薄い wrapper。
+- **次のタスク**: **`cellRangeFromCells(cells)` を追加** — Cell[] から包含 range A1 表記を計算。
+  1. `src/worksheet/cell-range.ts` に追加: 各 cell の row/col の min/max を取って `A1:B5` 形式の string を返す。`[]` で `OpenXmlSchemaError`。1 cell だけの場合は単一参照 (例 `A1`) を返す。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/cell-range-from-cells.test.ts` 5 件: 単一 cell / 4 cell 矩形 / 飛び飛び cells でも min/max bounding / 1 col 連続 / 空配列で throw。
+
+- **次のタスク (前回)**: **`freezeFirstRow` / `freezeFirstColumn` / `freezeFirstRowAndColumn` shortcut**。
+  1. `src/worksheet/worksheet.ts` に追加: 既存 freezePanes/freezeRows/freezeColumns の薄い wrapper。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/freeze-shortcuts.test.ts` 4 件: firstRow / firstColumn / both / 既存 freeze 上書き。
 
-- **次のタスク (前回)**: **`getCellsInRow(ws, row)` / `getCellsInColumn(ws, col)` を追加**。
+  empirical: 1963 tests pass (was 1959, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: row/column ごとに populated Cell[] を coordinate 順 sort で返す。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/cells-in-row-column.test.ts` 5 件: row sparse / row 空 / col sparse / col 空 / col 順序保証。
