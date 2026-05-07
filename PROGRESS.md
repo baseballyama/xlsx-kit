@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`removeAllImages(ws)` / `removeAllCharts(ws)` を追加** — kind ごとの drawing wipe。
-  1. `src/drawing/drawing.ts` に追加: `ws.drawing?.items` を kind で filter して残す/削除。`removeAllDrawingItems` の split 版で count を返す。
+- **次のタスク**: **`getCellRef(c)` / `setCellByRef(ws, ref, value)` を追加** — A1 string と Cell の架け橋。
+  1. `src/cell/cell.ts` に追加: `getCellRef(cell) → "A1"` (cell.col/row → tupleToCoordinate)。worksheet.ts に `setCellByRef(ws, "A1", value) → cell` (coordinateToTuple → setCell)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-6/remove-by-kind.test.ts` 4 件: image だけ削除 (chart 残る) / chart だけ削除 (image 残る) / drawing 無し sheet で 0 / 全 image/chart 削除でも items[] は残る。
+  3. `tests/phase-2/cell-ref-helpers.test.ts` 5 件: getCellRef A1/AA10 / setCellByRef A1 = ws.rows.get(1)?.get(1) / 既存 cell に上書き / 不正 ref で throw / row/col 0 で throw。
 
-- **次のタスク (前回)**: **`iterCells(ws)` flat 単一 cell iterator を追加**。
+- **次のタスク (前回)**: **`removeAllImages(ws)` / `removeAllCharts(ws)` kind 別 drawing wipe**。
+  1. `src/drawing/drawing.ts` に追加: items を kind で filter。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-6/remove-by-kind.test.ts` 4 件: image 削除 chart 残 / chart 削除 image 残 / no drawing → 0 (×2)。
+
+  empirical: 1977 tests pass (was 1973, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: `iterRows` を flatten して 1 cell ずつ yield。min/max bounds は `IterRowsOptions` を継承。
   2. `src/index.ts` から re-export (`iterWorksheetCells` alias)。
   3. `tests/phase-5/iter-cells.test.ts` 4 件: 順序 / 空 / bounds / 挿入順序非依存。
