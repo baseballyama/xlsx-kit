@@ -705,6 +705,7 @@ export {
 export type { DefinedName } from './workbook/defined-names';
 export {
   addDefinedName,
+  addDefinedNameForRange,
   getDefinedName,
   listDefinedNames,
   listPrintAreas,

@@ -36,6 +36,8 @@ export function makeDefinedName(opts: Partial<DefinedName> & { name: string; val
 
 // ---- Workbook ergonomic helpers -----------------------------------------
 
+import type { Worksheet } from '../worksheet/worksheet';
+import { getRangeAddress } from '../worksheet/worksheet';
 import type { Workbook } from './workbook';
 
 /**
@@ -57,6 +59,46 @@ export const addDefinedName = (
     wb.definedNames.push(dn);
   }
   return dn;
+};
+
+/**
+ * High-level: register a defined name pointing at a worksheet range.
+ * Combines {@link getRangeAddress} (sheet-qualified, properly quoted)
+ * with {@link addDefinedName}, so the caller doesn't have to assemble
+ * the formula string by hand.
+ *
+ * Pass `opts.localToSheet: true` to scope the name to the worksheet
+ * (instead of the workbook). Re-using the same `name` + scope replaces
+ * the previous entry (Excel's per-scope-uniqueness rule).
+ *
+ * Throws when `localToSheet: true` is set but the worksheet isn't on
+ * `wb.sheets` — that would be a stale Worksheet reference.
+ */
+export const addDefinedNameForRange = (
+  wb: Workbook,
+  name: string,
+  ws: Worksheet,
+  range: string,
+  opts: { localToSheet?: boolean; hidden?: boolean; comment?: string } = {},
+): DefinedName => {
+  const value = getRangeAddress(ws, range);
+  let scope: number | undefined;
+  if (opts.localToSheet) {
+    const idx = wb.sheets.findIndex((s) => s.sheet === ws);
+    if (idx < 0) {
+      throw new OpenXmlSchemaError(
+        `addDefinedNameForRange: worksheet "${ws.title}" is not registered on this workbook`,
+      );
+    }
+    scope = idx;
+  }
+  return addDefinedName(wb, {
+    name,
+    value,
+    ...(scope !== undefined ? { scope } : {}),
+    ...(opts.hidden !== undefined ? { hidden: opts.hidden } : {}),
+    ...(opts.comment !== undefined ? { comment: opts.comment } : {}),
+  });
 };
 
 /** Look up a defined name by identifier and (optional) sheet scope. */
