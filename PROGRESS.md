@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getCellAddress(ws, c)` を追加** — Cell から `'Sheet1!A1'` 形式の sheet-qualified ref を返す。
-  1. `src/worksheet/worksheet.ts` (or 新 helper) に追加: `getCoordinate(c)` + `ws.title` を escape (apostrophe や space を含む場合 `'`-quote)。返り値は `"<sheet>!<ref>"` 形式。
+- **次のタスク**: **`getRangeAddress(ws, range)` を追加** — A1 range → `'Sheet1!A1:B5'` sheet-qualified 形式。
+  1. `src/worksheet/worksheet.ts` に追加: `formatSheetQualifiedRef(ws.title, range)` を呼ぶだけの薄い wrapper。range は何でも (A1 / A1:B2 / multiple)。validation は parseRange で行う、または raw 文字列のまま (caller 責任)。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-2/cell-address.test.ts` 5 件: plain title / space を含む title (quote 必要) / apostrophe を含む title (escape) / 数字-only title / コロンを含む？ Excel 禁止なので skip。
+  3. `tests/phase-5/range-address.test.ts` 4 件: 単一 cell / 矩形 / 空 title 不可 / quoted title。
 
-- **次のタスク (前回)**: **`isWorkbookEmpty(wb)` workbook 全体 emptiness check**。
+- **次のタスク (前回)**: **`getCellAddress(ws, c)` + `formatSheetQualifiedRef` sheet-qualified A1**。
+  1. `src/utils/coordinate.ts` に formatSheetQualifiedRef、`src/worksheet/worksheet.ts` に getCellAddress wrapper。Excel 標準の quote rule (bare = `^[A-Za-z_][A-Za-z0-9_]*$`、それ以外は single-quote + 内部 `'` doubling)。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/cell-address.test.ts` 8 件: bare / space / apostrophe / 数字始まり / 句読点 / round-trip parseSheetRange / getCellAddress 通常 / quoted title。
+
+  empirical: 2102 tests pass (was 2094, +8)、typecheck / lint clean (14 warnings)。
   1. `src/workbook/workbook.ts` に追加: iterWorksheets + isWorksheetEmpty 短絡判定。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/workbook-empty-predicate.test.ts` 5 件: 空 wb / 全 ws 空 / 1 つ値あり / chartsheet only / 全 null。
