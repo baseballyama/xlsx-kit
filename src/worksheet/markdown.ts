@@ -7,8 +7,9 @@
 // newlines are replaced with `<br>` to keep one-row-per-line.
 
 import { cellValueAsString } from '../cell/cell';
+import { boundariesToRangeString } from '../utils/coordinate';
 import { parseRange } from './cell-range';
-import { getCell, getMergedCells, type Worksheet } from './worksheet';
+import { getCell, getDataExtent, getMergedCells, type Worksheet } from './worksheet';
 
 const escapeMarkdownCell = (s: string): string =>
   s
@@ -72,4 +73,16 @@ export function worksheetToMarkdownTable(ws: Worksheet, range: string): string {
     lines.push(renderRow(r));
   }
   return lines.join('\n');
+}
+
+/**
+ * Whole-worksheet shortcut over {@link worksheetToMarkdownTable}:
+ * serialises the sheet's data extent (`getDataExtent`) as a GFM
+ * markdown table. Returns `''` for an empty worksheet (mirrors the
+ * CSV / HTML shortcut conventions).
+ */
+export function getWorksheetAsMarkdownTable(ws: Worksheet): string {
+  const ext = getDataExtent(ws);
+  if (!ext) return '';
+  return worksheetToMarkdownTable(ws, boundariesToRangeString(ext));
 }
