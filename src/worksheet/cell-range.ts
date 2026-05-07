@@ -140,6 +140,16 @@ export function intersectionRangeStr(a: string, b: string): string | undefined {
   return r === null ? undefined : rangeToString(r);
 }
 
+/**
+ * A1-string convenience for {@link shiftRange}. Translates the range
+ * by `(dr, dc)` integer offsets and re-serialises. Negative offsets
+ * shift up/left. Throws when the resulting bounds fall outside the
+ * OOXML grid (rows 1..1048576, cols 1..16384).
+ */
+export function shiftRangeStr(range: string, dr: number, dc: number): string {
+  return rangeToString(shiftRange(parseRange(range), dr, dc));
+}
+
 /** Inclusive containment of `inner` within `outer`. */
 export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean {
   return (

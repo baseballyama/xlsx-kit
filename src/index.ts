@@ -98,6 +98,7 @@ export {
   isCellInRange,
   isRangeInRange,
   rangesOverlapStr,
+  shiftRangeStr,
   unionRangeStr,
 } from './worksheet/cell-range';
 export {
