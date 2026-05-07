@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`columnAggregates(ws, range, opts?)` を追加** — tabularData の上で aggregate を計算 (sum / mean / min / max / count) per column。
-  1. `src/worksheet/worksheet.ts` に追加: tabularData → 各列で number だけ filter → sum / mean / min / max / count を構築。`opts.functions` で計算する関数を選択 (default 全部)。
+- **次のタスク**: **`groupBy(ws, range, byColumn)` を追加** — readRangeAsObjects + 任意 column key で group。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects(ws, range) → key column の値で group (`Record<string, Record<string, CellValue|null>[]>`)。null key は `'__null__'` または skip。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/column-aggregates.test.ts` 4 件: 数値列の sum/mean/min/max/count / 文字列列はスキップ / null 含む列で count は non-null だけ / opts.functions 限定。
+  3. `tests/phase-5/group-by.test.ts` 4 件: 通常 / null key handling / 不存在 column で throw / 単一 group。
 
-- **次のタスク (前回)**: **`tabularData(ws, range)` 列志向 read**。
+- **次のタスク (前回)**: **`columnAggregates(ws, range)` per-column stats**。
+  1. `src/worksheet/worksheet.ts` に追加: tabularData → sum/mean/min/max/count/numericCount。numericCount===0 は NaN。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/column-aggregates.test.ts` 4 件: 数値列 / 文字列のみ列 NaN / mixed types / multi-column 独立。
+
+  empirical: 2196 tests pass (was 2192, +4)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: getRangeValues → 列 store。重複 header は concat。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/tabular-data.test.ts` 5 件: 通常 / header-only で空 columns / null 列 / header coercion / 重複 header concat。
