@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`parseCsvToRange(ws, startRef, csv, opts?)` を追加** — getRangeAsCsv の inverse。
-  1. `src/worksheet/csv.ts` に追加: RFC 4180 parse (quoted fields with embedded `"` and newlines support) → 2D string[][] → writeRange。`opts.delimiter` / `opts.coerceTypes` (default false — keep all as strings; true で number/boolean を try-coerce)。
+- **次のタスク**: **`getWorksheetAsCsv(ws, opts?)` shortcut を追加** — getDataExtentRef + getRangeAsCsv を 1 call に。
+  1. `src/worksheet/csv.ts` に追加: getDataExtent → 範囲を A1 化 → getRangeAsCsv。空 ws は ''。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/parse-csv-to-range.test.ts` 6 件: 通常 / quoted field / 埋め込み newline / 埋め込み `""` / coerceTypes 数値・boolean 化 / 空文字 → empty cell skip。
+  3. `tests/phase-5/worksheet-as-csv.test.ts` 4 件: 通常 / 空 ws → '' / sparse layout で正しい dims / opts.delimiter 伝播。
 
-- **次のタスク (前回)**: **`getRangeAsCsv(ws, range, opts?)` range → CSV string**。
+- **次のタスク (前回)**: **`parseCsv` + `parseCsvToRange` getRangeAsCsv の inverse**。
+  1. `src/worksheet/csv.ts` に追加: RFC 4180 parser + writeRange。opts.coerceTypes で number/boolean coerce。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/parse-csv-to-range.test.ts` 10 件 (parseCsv 5 + parseCsvToRange 5): 標準 / quote / newline / 末尾 \n 扱い / 空 / write 通常 / coerceTypes / round-trip / delimiter / 空 input。
+
+  empirical: 2042 tests pass (was 2032, +10)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/csv.ts` 新規追加: getRangeValues → CellValue → CSV-escape (RFC 4180)、Date は ISO、formula は cached value or formula source。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/range-as-csv.test.ts` 6 件: 通常 / quote escape / `,` 含む / newline / 空 cell / delimiter+trailingNewline / Date+bool+number coerce。
