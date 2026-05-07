@@ -665,6 +665,7 @@ export {
   getSheet,
   describeWorkbook,
   getCellSummary,
+  isWorkbookEmpty,
   getSheetByIndex,
   getSheetState,
   getWorkbookAsCsvBundle,

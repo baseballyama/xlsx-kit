@@ -41,6 +41,7 @@ import {
   getCellComment,
   getCellHyperlink,
   getMergedRangeAt,
+  isWorksheetEmpty,
   makeWorksheet,
   writeRangeFromObjects,
 } from '../worksheet/worksheet';
@@ -716,6 +717,21 @@ export function createWorkbookFromCsv(
     ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
   });
   return wb;
+}
+
+/**
+ * True iff every Worksheet in the workbook is empty (per
+ * {@link isWorksheetEmpty}). Chartsheets carry no cells so they
+ * never affect the result. A workbook with zero worksheets is also
+ * empty by this definition.
+ *
+ * Short-circuits on the first non-empty worksheet.
+ */
+export function isWorkbookEmpty(wb: Workbook): boolean {
+  for (const ws of iterWorksheets(wb)) {
+    if (!isWorksheetEmpty(ws)) return false;
+  }
+  return true;
 }
 
 /**
