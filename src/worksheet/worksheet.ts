@@ -1428,6 +1428,28 @@ export function pivotTable(
 }
 
 /**
+ * Count the data rows of a header-driven range. With no predicate,
+ * returns the total row count. With a predicate, returns only rows
+ * for which it returns true (Array.prototype.filter().length without
+ * the intermediate array).
+ */
+export function countRows(
+  ws: Worksheet,
+  range: string,
+  predicate?: (row: Record<string, CellValue | null>, index: number) => boolean,
+): number {
+  const rows = readRangeAsObjects(ws, range);
+  if (predicate === undefined) return rows.length;
+  let n = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    if (predicate(row, i)) n++;
+  }
+  return n;
+}
+
+/**
  * Find the 0-based index of the first data row that satisfies
  * `predicate`. Returns `-1` when none match. Mirrors
  * `Array.prototype.findIndex`. Header row is excluded; index 0 is

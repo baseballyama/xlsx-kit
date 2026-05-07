@@ -308,6 +308,7 @@ export {
   removeTable,
   renameCommentAuthor,
   columnAggregates,
+  countRows,
   everyRow,
   filterRange,
   findRow,
