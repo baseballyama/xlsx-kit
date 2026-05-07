@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`writeRange(ws, startRef, values)` を追加** — 2D 配列を任意の起点に書き込む。
-  1. `src/worksheet/worksheet.ts` に追加: A1 → tuple → 行ごと/列ごとに setCell。`null/undefined` は cell skip。返り値は `{minRow, maxRow, minCol, maxCol}` の 4 つ組。
+- **次のタスク**: **`readRange(ws, range)` を追加** — A1 range の値を 2D 配列で読み出す。
+  1. `src/worksheet/worksheet.ts` に追加: parseRange + 行ごとに `(CellValue | null)[]` を return。getRangeValues に近いが、対象 range を引数で受ける versatility。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/write-range.test.ts` 5 件: B2 起点 3×2 / null skip / 空配列 throw or skip / 既存 cell 上書き / styleId 保持。
+  3. `tests/phase-5/read-range.test.ts` 5 件: B2:D4 / 空 cell は null / 単一 cell range / 1 row range / 1 column range。
 
-- **次のタスク (前回)**: **`appendRows(ws, rows)` 一括 append helper**。
+- **次のタスク (前回)**: **`writeRange(ws, startRef, values)` 任意起点 2D write**。
+  1. `src/worksheet/worksheet.ts` に追加: A1 → tuple → 行ごと/列ごとに setCell。null/undefined は skip。bounding-box を return。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/write-range.test.ts` 5 件: B2 起点 / null skip / 空配列 → undefined / 既存 styleId preserve / 単一 cell。
+
+  empirical: 2011 tests pass (was 2006, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: 2D values を順次 appendRow → `{firstRow, lastRow}`。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/append-rows.test.ts` 5 件: 3 row append / 空 row も cursor 進む / undefined/null skip / 既存 row 後に追加 / 空配列で no-op。
