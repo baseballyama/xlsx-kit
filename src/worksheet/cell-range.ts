@@ -111,6 +111,16 @@ export function isRangeInRange(inner: string, outer: string): boolean {
   return rangeContainsRange(parseRange(outer), parseRange(inner));
 }
 
+/**
+ * A1-string convenience for {@link rangesOverlap}. Returns `true`
+ * iff the two ranges share at least one cell. Boundary-inclusive
+ * (a 1-row gap = no overlap). Single-cell refs are accepted via
+ * parseRange. Throws on malformed input.
+ */
+export function rangesOverlapStr(a: string, b: string): boolean {
+  return rangesOverlap(parseRange(a), parseRange(b));
+}
+
 /** Inclusive containment of `inner` within `outer`. */
 export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean {
   return (
