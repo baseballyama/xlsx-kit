@@ -10,7 +10,7 @@
 
 ## 次の作業者への引き継ぎ (Handoff @ 2026-05-05)
 
-**現状サマリ**: 2060 tests pass / typecheck + lint clean (14 warnings baseline)。フェーズ1〜7 のコア実装+ streaming acceptance + edge fixture acceptance + 多数の ergonomic helper 追加すべて完了。1.0 候補レベル。直近で *ToCss helpers + cssRecordToInlineStyle + setRange{Protection,WrapText,Alignment} + clearCellStyle + getCellsInRow/Column + freezeFirstRow/Column shortcuts + cellRangeFromCells + iterCells + removeAllImages/Charts + getPopulatedRow/ColumnIndices + getDistinctValuesInColumn/Row + countCellsByKind + getWorkbookCellsByKind + appendRows + writeRange + readRangeAsObjects + writeRangeFromObjects + addTableFromObjects + getRangeAsCsv + parseCsv/parseCsvToRange + getWorksheetAsCsv + getWorkbookAsCsvRecord + createWorkbookFromCsv + createWorkbookFromObjects を積み増し (+167 tests / 1893 → 2060)。CSV / Record[] ↔ Workbook の双方向 ergonomic API 完備。
+**現状サマリ**: 2221 tests pass / typecheck + lint clean (14 warnings baseline)。フェーズ1〜7 のコア実装+ streaming + edge acceptance + 多数の ergonomic helper 追加完了。1.0 候補。直近で *ToCss / setRange* / clearCellStyle / iter+enumeration / drawing wipe / kind histogram / append/write/readRange (+Objects) / addTableFromObjects / CSV bundle round-trip / createWorkbookFromCsv/Objects / cell+workbook summaries / empty predicates / sheet-qualified address API (formatSheetQualifiedRef + getCellAddress/getRangeAddress + getCellAtAddress/setCellAtAddress + getValueAtAddress + getRangeValuesAtAddress/setRangeValuesAtAddress) / DefinedName ergonomics (addDefinedNameForRange + getDefinedNameTarget) / A1-string range predicates+ops (isCellInRange/isRangeInRange/rangesOverlapStr/unionRangeStr/intersectionRangeStr/shiftRangeStr/expandRangeStr/rangeAreaStr/rangeDimensionsStr) / analytics primitives (tabularData/columnAggregates/groupBy/pivotTable/sortRange/filterRange/mapRange) を積み増し (+328 tests / 1893 → 2221)。
 
 ### 直近 100+ commit のテーマ (今ブランチで積んだ作業)
 
@@ -37,12 +37,17 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`mapRange(ws, range, transform)` を追加** — header-driven range の各 row を transform 関数で書き換え。
-  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → 各 row を transform → setCell で書き戻し。新しい header (transform で追加された key) は丸ごと無視 (or 警告)。
+- **次のタスク**: **`reduceRange(ws, range, reducer, init)` を追加** — header-driven range をユーザー定義 reducer で 1 値に折りたたむ。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → reduce(acc, row, i) → 終端値 return。
   2. `src/index.ts` から re-export。
-  3. `tests/phase-5/map-range.test.ts` 4 件: 通常 / null 設定で cell clear / multi-column / 不要 key は無視。
+  3. `tests/phase-5/reduce-range.test.ts` 4 件: count / sum / max / 空 range で init 返す。
 
-- **次のタスク (前回)**: **`filterRange(ws, range, predicate)` row filter**。
+- **次のタスク (前回)**: **`mapRange(ws, range, transform)` row transform**。
+  1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → transform → setCell 書き戻し。欠損 key で null clear、未知 key skip。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-5/map-range.test.ts` 5 件: identity-mod / null clear / 未知 key skip / 欠損 key clear / multi-column 共参照。
+
+  empirical: 2221 tests pass (was 2216, +5)、typecheck / lint clean (14 warnings)。
   1. `src/worksheet/worksheet.ts` に追加: readRangeAsObjects → predicate filter → 残行を re-pack、余り行を null clear。
   2. `src/index.ts` から re-export。
   3. `tests/phase-5/filter-range.test.ts` 4 件: 通常 / 全削除 / 全保持 / multi-column。
