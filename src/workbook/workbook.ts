@@ -10,15 +10,40 @@ import { type ChartReference, makeChartDrawingItem, makeDrawing } from '../drawi
 import type { CoreProperties } from '../packaging/core';
 import type { CustomProperties } from '../packaging/custom';
 import type { ExtendedProperties } from '../packaging/extended';
+import {
+  getCellAlignment,
+  getCellBorder,
+  getCellFill,
+  getCellFont,
+  getCellNumberFormat,
+  getCellProtection,
+} from '../styles/cell-style';
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { unzipSync, zipSync } from 'fflate';
 import type { CellValue } from '../cell/cell';
+import type { Alignment } from '../styles/alignment';
+import type { Border } from '../styles/borders';
+import type { Fill } from '../styles/fills';
+import type { Font } from '../styles/fonts';
+import type { Protection } from '../styles/protection';
+import { coordinateToTuple } from '../utils/coordinate';
+import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToString } from '../worksheet/cell-range';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
+import type { LegacyComment } from '../worksheet/comments';
+import type { Hyperlink } from '../worksheet/hyperlinks';
 import { addTableFromObjects } from '../worksheet/table';
 import type { CellsByKindCounts, Worksheet } from '../worksheet/worksheet';
-import { countCellsByKind, makeWorksheet, writeRangeFromObjects } from '../worksheet/worksheet';
+import {
+  countCellsByKind,
+  getCell,
+  getCellComment,
+  getCellHyperlink,
+  getMergedRangeAt,
+  makeWorksheet,
+  writeRangeFromObjects,
+} from '../worksheet/worksheet';
 
 export type SheetState = 'visible' | 'hidden' | 'veryHidden';
 
@@ -691,6 +716,82 @@ export function createWorkbookFromCsv(
     ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
   });
   return wb;
+}
+
+/**
+ * Debug-friendly snapshot of everything resolved for a single cell:
+ * its value, the full style chain (font / fill / border / alignment /
+ * protection / numberFormat), the applied hyperlink + comment, the
+ * merged range it sits inside (if any), and the names of any tables /
+ * the count of CF / DV blocks that target it.
+ *
+ * Designed for `console.log`-style introspection — JSON-serialisable
+ * and stable in shape regardless of which axes are populated.
+ *
+ * Throws when `sheetTitle` doesn't resolve. When `ref` is a valid A1
+ * coordinate but no cell exists there, `exists` is `false` and the
+ * style chain reflects the workbook defaults.
+ */
+export interface CellSummary {
+  ref: string;
+  sheet: string;
+  exists: boolean;
+  value: CellValue | undefined;
+  styleId: number;
+  font: Font;
+  fill: Fill;
+  border: Border;
+  alignment: Alignment;
+  protection: Protection;
+  numberFormat: string;
+  hyperlink: Hyperlink | undefined;
+  comment: LegacyComment | undefined;
+  mergedRange: string | undefined;
+  inTables: string[];
+  inDataValidations: number;
+  inConditionalFormatting: number;
+}
+
+export function getCellSummary(wb: Workbook, sheetTitle: string, ref: string): CellSummary {
+  const ws = getSheet(wb, sheetTitle);
+  if (!ws) throw new OpenXmlSchemaError(`getCellSummary: sheet "${sheetTitle}" not found`);
+  const { col, row } = coordinateToTuple(ref);
+  const cell = getCell(ws, row, col);
+  // Synthesize a placeholder cell so getCell* helpers can resolve defaults
+  // even for unmaterialised coordinates.
+  const probe = cell ?? { row, col, value: null, styleId: 0 };
+  const merged = getMergedRangeAt(ws, row, col);
+  const inTables: string[] = [];
+  for (const t of ws.tables) {
+    if (rangeContainsCell(parseRange(t.ref), row, col)) inTables.push(t.displayName);
+  }
+  let inDv = 0;
+  for (const dv of ws.dataValidations) {
+    if (multiCellRangeContainsCell(dv.sqref, row, col)) inDv++;
+  }
+  let inCf = 0;
+  for (const cf of ws.conditionalFormatting) {
+    if (multiCellRangeContainsCell(cf.sqref, row, col)) inCf++;
+  }
+  return {
+    ref,
+    sheet: sheetTitle,
+    exists: cell !== undefined,
+    value: cell?.value,
+    styleId: probe.styleId,
+    font: getCellFont(wb, probe),
+    fill: getCellFill(wb, probe),
+    border: getCellBorder(wb, probe),
+    alignment: getCellAlignment(wb, probe),
+    protection: getCellProtection(wb, probe),
+    numberFormat: getCellNumberFormat(wb, probe),
+    hyperlink: cell ? getCellHyperlink(ws, cell) : undefined,
+    comment: cell ? getCellComment(ws, cell) : undefined,
+    mergedRange: merged ? rangeToString(merged) : undefined,
+    inTables,
+    inDataValidations: inDv,
+    inConditionalFormatting: inCf,
+  };
 }
 
 /**
