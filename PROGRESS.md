@@ -37,7 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getAllImages(wb)` / `getAllCharts(wb)` workbook-wide drawing aggregator を追加**。
+- **次のタスク**: **`fontToCss(font)` Font → CSS font-shorthand 変換 helper を追加**。
+  1. `src/styles/fonts.ts` (or new `font-css.ts`) に追加: `Font` を読んで CSS font-shorthand 風 string ("italic bold 12pt 'Calibri'" など) を返す。html/preview ユーティリティ向け。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/font-to-css.test.ts` で plain / bold / italic / underline / strike / size+name / 空 Font → 'inherit' を覆う 6 件テスト。
+
+- **次のタスク (前回)**: **`colorToHex(color)` Color → ARGB hex readback を追加**。
+  1. `src/styles/colors.ts` に追加: `rgb` あれば normaliseRgb / `indexed` あれば palette lookup / theme・auto・空は undefined を返す。
+  2. `src/index.ts` から re-export。
+  3. `tests/phase-2/styles/color-to-hex.test.ts` 6 件: rgb / indexed / theme / auto / empty / undefined / rgb wins over indexed。
+
+  empirical: 1899 tests pass (was 1893, +6)、typecheck / lint clean (16 warnings)。
+
+- **次のタスク (前回)**: **`getAllImages(wb)` / `getAllCharts(wb)` workbook-wide drawing aggregator を追加**。
   1. `src/workbook/workbook.ts` に追加: `iterWorksheets` で全 sheet 巡回 → `ws.drawing?.items` の content.kind で picture / chart を分けて `{sheet, item}` 配列で return。
   2. `src/index.ts` から re-export。
   3. `tests/phase-3/all-images-charts.test.ts` 4 件: 2 sheet image 集約 + chart 混在 / 空 wb / 2 sheet chart 集約 + image 混在 / drawing 無し sheet skip。
