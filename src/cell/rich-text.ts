@@ -259,6 +259,24 @@ export function findLastRichTextIndex(rt: RichText, search: string, fromIndex?: 
 }
 
 /**
+ * Return every non-overlapping occurrence index of `search` in the
+ * concatenated text of `rt`, in ascending order. An empty `search` yields
+ * `[]` (avoiding the `String.prototype.indexOf` infinite-loop trap).
+ */
+export function findAllRichTextIndex(rt: RichText, search: string): number[] {
+  if (search === '') return [];
+  const s = richTextToString(rt);
+  const out: number[] = [];
+  let from = 0;
+  for (;;) {
+    const idx = s.indexOf(search, from);
+    if (idx < 0) return out;
+    out.push(idx);
+    from = idx + search.length;
+  }
+}
+
+/**
  * Count non-overlapping occurrences of `search` in the concatenated text of
  * `rt`. An empty `search` returns 0 (avoiding the `String.prototype.indexOf`
  * infinite-loop trap).

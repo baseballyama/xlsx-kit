@@ -48,6 +48,7 @@ export {
   clearFontsInRichText,
   concatRichText,
   countRichTextOccurrences,
+  findAllRichTextIndex,
   findLastRichTextIndex,
   findRichTextIndex,
   insertRichText,
