@@ -36,6 +36,7 @@ import {
   getWorksheetAsJson,
   getWorksheetRowsAsJson,
   type JsonRow,
+  parseJsonToRange,
   type WorksheetToJsonOptions,
 } from '../worksheet/json';
 import { getWorksheetAsMarkdownTable } from '../worksheet/markdown';
@@ -1338,6 +1339,74 @@ export function getWorkbookAsJsonString(
     out[ws.title] = getWorksheetRowsAsJson(ws, opts);
   }
   return JSON.stringify(out, null, opts.pretty ? 2 : undefined);
+}
+
+export interface ParseJsonStringToWorkbookOptions {
+  /** Top-left cell where each sheet's header row begins. Default `'A1'`. */
+  topLeft?: string;
+  /**
+   * If `true`, an existing sheet with the same title is removed before
+   * the new one is added. Default `false` — collisions throw.
+   */
+  replace?: boolean;
+  /**
+   * Per-sheet header order override, keyed by sheet title. Each value
+   * is forwarded as `opts.keys` to {@link parseJsonToRange}. Sheet
+   * titles not in the map use the row object's own key order.
+   */
+  keys?: Record<string, string[]>;
+}
+
+/**
+ * Inverse of {@link getWorkbookAsJsonString}: parse a JSON document
+ * of the shape `{"<sheetTitle>":[…rows]}` and materialise each entry
+ * as a worksheet on `wb`. Returns the array of created worksheet
+ * titles in the order they were added.
+ *
+ * For each top-level key, a worksheet is added (in the order keys
+ * appear in the JSON) and its rows are written via
+ * {@link parseJsonToRange} starting at `opts.topLeft` (default
+ * `'A1'`). Sheets with empty `[]` rows are still added but receive
+ * no cells.
+ *
+ * Collisions with existing sheet titles throw `OpenXmlSchemaError`
+ * by default; pass `opts.replace = true` to remove the existing
+ * sheet first.
+ *
+ * `opts.keys[title]` overrides the column header order for that
+ * sheet; otherwise the first row's own key order is used.
+ */
+export function parseJsonStringToWorkbook(
+  wb: Workbook,
+  json: string | Record<string, readonly unknown[]>,
+  opts: ParseJsonStringToWorkbookOptions = {},
+): string[] {
+  const decoded = typeof json === 'string' ? (JSON.parse(json) as unknown) : json;
+  if (decoded === null || typeof decoded !== 'object' || Array.isArray(decoded)) {
+    throw new TypeError('parseJsonStringToWorkbook: expected a JSON object of {sheet: rows[]}');
+  }
+  const topLeft = opts.topLeft ?? 'A1';
+  const created: string[] = [];
+  for (const [title, rows] of Object.entries(decoded as Record<string, unknown>)) {
+    if (!Array.isArray(rows)) {
+      throw new TypeError(
+        `parseJsonStringToWorkbook: sheet "${title}" value must be an array of row objects`,
+      );
+    }
+    if (hasSheet(wb, title)) {
+      if (!opts.replace) {
+        throw new OpenXmlSchemaError(
+          `parseJsonStringToWorkbook: sheet "${title}" already exists (pass {replace: true} to overwrite)`,
+        );
+      }
+      removeSheet(wb, title);
+    }
+    const ws = addWorksheet(wb, title);
+    const sheetKeys = opts.keys?.[title];
+    parseJsonToRange(ws, topLeft, rows, sheetKeys ? { keys: sheetKeys } : {});
+    created.push(title);
+  }
+  return created;
 }
 
 /**

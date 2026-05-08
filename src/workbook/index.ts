@@ -4,6 +4,7 @@
 
 export type {
   CellSummary,
+  ParseJsonStringToWorkbookOptions,
   SheetRef,
   SheetState,
   Workbook,
@@ -71,6 +72,7 @@ export {
   listCustomXmlParts,
   listWorksheets,
   moveSheet,
+  parseJsonStringToWorkbook,
   pickUniqueSheetTitle,
   removeSheet,
   renameSheet,

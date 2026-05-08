@@ -37,14 +37,21 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`parseJsonStringToWorkbook(wb, json, opts?)` を追加** — `getWorkbookAsJsonString` の inverse。`{ "<sheetTitle>": [...rows] }` shape の 1 本の JSON ドキュメントを読んで、各 sheet を `addWorksheet` + `parseJsonToRange` で復元する。
+- **次のタスク**: **`createWorkbookFromJsonString(json, opts?)` factory を追加** — `parseJsonStringToWorkbook` の workbook factory ラッパ。`createWorkbookFromCsv` / `createWorkbookFromObjects` の JSON 版。
+  1. `src/workbook/workbook.ts` に `createWorkbookFromJsonString(json, opts?)` を追加: `createWorkbook()` → `parseJsonStringToWorkbook(wb, json, opts)`、return wb。空 wb の場合は最低 1 sheet (`opts?.fallbackSheetTitle ?? 'Sheet1'`) を保証 (Excel は 1 sheet 必須)。
+  2. opts は `ParseJsonStringToWorkbookOptions` を継承 + `fallbackSheetTitle?: string`。
+  3. `src/workbook/index.ts` から re-export。
+  4. `tests/phase-3/create-workbook-from-json-string.test.ts` 4 件: 通常 (複数 sheet) / 空 `'{}'` で fallback 'Sheet1' / opts.fallbackSheetTitle / opts.topLeft 連携。
+
+- **次のタスク (前回)**: **`parseJsonStringToWorkbook(wb, json, opts?)` を追加** — `getWorkbookAsJsonString` の inverse。`{ "<sheetTitle>": [...rows] }` shape の 1 本の JSON ドキュメントを読んで、各 sheet を `addWorksheet` + `parseJsonToRange` で復元する。
   1. `src/workbook/workbook.ts` に `parseJsonStringToWorkbook(wb, json, opts?)` を追加: `JSON.parse` (string) → object key 順に `addWorksheet(wb, title)` → `parseJsonToRange(ws, opts?.topLeft ?? 'A1', rows)` で書き込み。既存 sheet と title 衝突した場合は throw (`opts?.replace = true` でリプレース mode)。
   2. opts: `{ topLeft?: string; replace?: boolean; keys?: Record<string, string[]> }`。`keys` は sheet 単位の column header 順 override (各 sheet の `parseJsonToRange` に渡す)。
-  3. `src/workbook/index.ts` から re-export。
-  4. `tests/phase-3/parse-json-string-to-workbook.test.ts` 5 件: 通常 (複数 sheet) / 空 `'{}'` no-op / opts.topLeft / opts.keys / 既存 title 衝突で throw + opts.replace で上書き。
-  5. round-trip 用 e2e: `tests/phase-3/workbook-json-roundtrip.test.ts` 1 件 (`getWorkbookAsJsonString` → `parseJsonStringToWorkbook` で各 sheet の cell 値が一致)。
+  3. `src/workbook/index.ts` から re-export (`parseJsonStringToWorkbook` + `ParseJsonStringToWorkbookOptions`)。
+  4. `tests/phase-3/parse-json-string-to-workbook.test.ts` 5 件 + `tests/phase-3/workbook-json-roundtrip.test.ts` 1 件 (round-trip)。
 
-- **次のタスク (前回)**: **`parseJsonToRange(ws, topLeft, json, opts?)` を追加** — JSON 配列 → worksheet range の inverse import。`worksheetToJson` の round-trip パートナー。
+  empirical: 2404 tests pass (was 2398, +6)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`parseJsonToRange(ws, topLeft, json, opts?)` を追加** — JSON 配列 → worksheet range の inverse import。`worksheetToJson` の round-trip パートナー。
   1. `src/worksheet/json.ts` に `parseJsonToRange(ws, topLeft, json, opts?)` を追加: `JSON.parse` (string 渡し時) → `opts.keys` or `Object.keys(rows[0])` で header 順を確定 → header row を `topLeft` から書き、続く各 row を `cellValueFromJson` で coerce してセット。空 array `undefined` 返す (no-op)。
   2. cell value 復元規則: number / boolean / null は as-is、ISO 8601 datetime は `Date` (`/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:?\d{2})$/`)、その他 string はそのまま、object/array は `String(v)` fallback。`cellValueFromJson` を named export。
   3. `src/worksheet/index.ts` から re-export (`parseJsonToRange` / `cellValueFromJson` / `ParseJsonToRangeOptions`)。
