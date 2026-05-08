@@ -16,7 +16,6 @@ import conditionalColorScale from './conditional-color-scale.ts?raw';
 import hyperlinks from './hyperlinks.ts?raw';
 import mergeAndFreeze from './merge-and-freeze.ts?raw';
 import multiSheet from './multi-sheet.ts?raw';
-import exportCsvHtmlMd from './export-csv-html-md.ts?raw';
 import browserFileInput from './browser-file-input.ts?raw';
 
 import basicReadWrite from '../basic-read-write.ts?raw';
@@ -179,7 +178,7 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
           'Pass `style` for one-arg style selection or `styleInfo` for full control over banded rows / columns.',
           'For just a filter without table styling, use `addAutoFilter(ws, "A1:C4")`.',
         ],
-        relatedApi: ['addExcelTable', 'addTableFromObjects', 'addAutoFilter'],
+        relatedApi: ['addExcelTable', 'addAutoFilter'],
       },
       {
         slug: 'dropdown-validation',
@@ -278,7 +277,7 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
     ],
   },
   {
-    title: 'Browser & exports',
+    title: 'Browser',
     recipes: [
       {
         slug: 'browser-fetch',
@@ -296,20 +295,6 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         path: 'site/src/lib/examples/recipes/browser-file-input.ts',
         source: browserFileInput,
         relatedApi: ['fromBlob', 'loadWorkbook'],
-      },
-      {
-        slug: 'export-csv-html-md',
-        title: 'Export a sheet as CSV / HTML / Markdown / text',
-        teaser:
-          'The `getWorksheetAs*` helpers auto-detect the data extent, so you don\'t pass a range.',
-        path: 'site/src/lib/examples/recipes/export-csv-html-md.ts',
-        source: exportCsvHtmlMd,
-        relatedApi: [
-          'getWorksheetAsCsv',
-          'getWorksheetAsHtml',
-          'getWorksheetAsMarkdownTable',
-          'getWorksheetAsTextTable',
-        ],
       },
     ],
   },

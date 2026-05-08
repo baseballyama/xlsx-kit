@@ -55,7 +55,7 @@ The library exposes a layered model split across subpaths:
 - **Packaging** (`openxml-js/packaging`) — content types, relationships, core/extended/custom properties (the OPC layer below the workbook).
 - **XML / schema** (`openxml-js/xml`, `openxml-js/schema`, `openxml-js/zip`) — low-level XML reader / writer + Excel namespace constants. You won't touch these directly unless you're extending the library.
 - **Workbook** (`openxml-js/workbook`) — `createWorkbook`, `addWorksheet`, `Workbook` shape, defined names, calc properties, file metadata.
-- **Worksheet** (`openxml-js/worksheet`) — cells, rows, columns, merged cells, freeze panes, autoFilter, Tables, hyperlinks, data validations, conditional formatting, legacy comments, csv/html/markdown/text exporters.
+- **Worksheet** (`openxml-js/worksheet`) — cells, rows, columns, merged cells, freeze panes, autoFilter, Tables, hyperlinks, data validations, conditional formatting, legacy comments.
 - **Styles** (`openxml-js/styles`) — `Font`, `Fill`, `Border`, `Alignment`, `Protection`, `NumberFormat`, full stylesheet pool with dedup, named styles + DXF.
 - **Drawings** (`openxml-js/drawing`) — anchors, images (PNG/JPEG/GIF/BMP/WebP/TIFF/SVG/EMF/WMF) with auto-detected format + dimensions.
 - **Charts** (`openxml-js/chart`) — 16 legacy `c:` chart kinds + 8 `cx:` chartex kinds (Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel, BoxWhisker, RegionMap).

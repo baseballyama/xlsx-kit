@@ -10,7 +10,7 @@
 import { columnLetterFromIndex, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { ERROR_CODES } from '../utils/inference';
-import type { RichText } from './rich-text';
+import { type RichText, richTextToString } from './rich-text';
 
 /** Excel error tokens. */
 export type ExcelErrorCode = '#NULL!' | '#DIV/0!' | '#VALUE!' | '#REF!' | '#NAME?' | '#NUM!' | '#N/A' | '#GETTING_DATA';
@@ -253,37 +253,17 @@ export function makeDurationValue(ms: number): { kind: 'duration'; ms: number } 
 
 /** True iff `c.value` is the formula variant. */
 export function isFormulaCell(c: Cell): boolean {
-  return typeof c.value === 'object' && c.value !== null && (c.value as { kind?: string }).kind === 'formula';
+  return isFormulaValue(c.value);
 }
 
 /** True iff `c.value` is the rich-text variant. */
 export function isRichTextCell(c: Cell): boolean {
-  return typeof c.value === 'object' && c.value !== null && (c.value as { kind?: string }).kind === 'rich-text';
+  return isRichTextValue(c.value);
 }
 
 /** Returns true iff the cell has no content. */
 export function isEmptyCell(c: Cell): boolean {
   return c.value === null;
-}
-
-/** Returns true iff the cell has a hyperlink registered (`hyperlinkId` set). */
-export function cellHasHyperlink(c: Cell): boolean {
-  return c.hyperlinkId !== undefined;
-}
-
-/** Returns true iff the cell has a comment registered (`commentId` set). */
-export function cellHasComment(c: Cell): boolean {
-  return c.commentId !== undefined;
-}
-
-/**
- * Returns true iff the cell has a non-default style applied
- * (`styleId !== 0`). Style id 0 is reserved as the default xf,
- * so any non-zero id means at least one explicit format/font/fill/border
- * has been applied.
- */
-export function isStyledCell(c: Cell): boolean {
-  return c.styleId !== 0;
 }
 
 /**
@@ -354,11 +334,7 @@ export function cellValueAsString(v: CellValue): string {
   if (typeof v === 'string') return v;
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   if (v instanceof Date) return v.toISOString();
-  if (isRichTextValue(v)) {
-    let s = '';
-    for (const r of v.runs) s += r.text;
-    return s;
-  }
+  if (isRichTextValue(v)) return richTextToString(v.runs);
   if (isFormulaValue(v)) {
     if (v.cachedValue === undefined) return '';
     return typeof v.cachedValue === 'string' ? v.cachedValue : String(v.cachedValue);
