@@ -1409,6 +1409,44 @@ export function parseJsonStringToWorkbook(
   return created;
 }
 
+export interface CreateWorkbookFromJsonStringOptions extends ParseJsonStringToWorkbookOptions {
+  /**
+   * Sheet title to create when the input document has no top-level
+   * keys. Excel requires every workbook to contain at least one
+   * worksheet, so the empty case still gets a single empty sheet.
+   * Default `'Sheet1'`.
+   */
+  fallbackSheetTitle?: string;
+  /** Forwarded to {@link createWorkbook}. */
+  date1904?: boolean;
+}
+
+/**
+ * One-shot factory: build a brand-new {@link Workbook} from a JSON
+ * document of the shape `{"<sheetTitle>":[…rows]}` (the format
+ * emitted by {@link getWorkbookAsJsonString}). JSON-side {@link parseJsonStringToWorkbook}
+ * does the actual sheet-by-sheet write.
+ *
+ * Empty input (`'{}'`) returns a workbook with a single empty
+ * worksheet titled `opts.fallbackSheetTitle ?? 'Sheet1'`, since
+ * Excel requires at least one worksheet.
+ *
+ * `opts` accepts everything {@link ParseJsonStringToWorkbookOptions}
+ * does (`topLeft`, `replace`, per-sheet `keys`) plus
+ * `fallbackSheetTitle` and `date1904`.
+ */
+export function createWorkbookFromJsonString(
+  json: string | Record<string, readonly unknown[]>,
+  opts: CreateWorkbookFromJsonStringOptions = {},
+): Workbook {
+  const wb = createWorkbook(opts.date1904 !== undefined ? { date1904: opts.date1904 } : undefined);
+  const created = parseJsonStringToWorkbook(wb, json, opts);
+  if (created.length === 0) {
+    addWorksheet(wb, opts.fallbackSheetTitle ?? 'Sheet1');
+  }
+  return wb;
+}
+
 /**
  * Iterate over every Worksheet in the workbook (skips chartsheets).
  * Yields each worksheet in tab-strip order.

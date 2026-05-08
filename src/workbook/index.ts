@@ -4,6 +4,7 @@
 
 export type {
   CellSummary,
+  CreateWorkbookFromJsonStringOptions,
   ParseJsonStringToWorkbookOptions,
   SheetRef,
   SheetState,
@@ -19,6 +20,7 @@ export {
   createWorkbook,
   createWorkbookFromCsv,
   createWorkbookFromCsvBundle,
+  createWorkbookFromJsonString,
   createWorkbookFromObjects,
   describeWorkbook,
   duplicateSheet,
