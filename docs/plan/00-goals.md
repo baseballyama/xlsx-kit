@@ -2,7 +2,7 @@
 
 ## 1. プロダクトのゴール
 
-- **`openpyxl` の主要機能を TypeScript で再実装し、Node 18+ と主要モダンブラウザの両方で動かす。**
+- **`openpyxl` の主要機能を TypeScript で再実装し、Node 22+ と主要モダンブラウザの両方で動かす。**
 - API 形状は openpyxl の Python API になるべく忠実に従う。ただし、Pythonic な慣習（snake_case、kwargs、descriptor、`Worksheet[A1]` のような糖衣）は **JS/TS 慣習に置き換える**：
   - 命名: `camelCase`（クラス名は `PascalCase`）
   - 引数: 末尾オプションオブジェクト

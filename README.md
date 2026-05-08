@@ -1,7 +1,7 @@
 # xlsx-kit
 
 A TypeScript library for reading and writing Excel `.xlsx` workbooks
-from Node 18+ and modern browsers, with no runtime dependencies on
+from Node 22+ and modern browsers, with no runtime dependencies on
 Python or Excel. Inspired by [openpyxl](https://openpyxl.readthedocs.io/).
 
 > **Status: pre-1.0 alpha.** The core read / write / streaming pipeline is
@@ -16,7 +16,7 @@ Python or Excel. Inspired by [openpyxl](https://openpyxl.readthedocs.io/).
 pnpm add xlsx-kit   # or npm / yarn / bun
 ```
 
-Requires Node `>=18.18` for the built-in `Web Streams`, `Blob`, and `fetch`
+Requires Node `>=22` for the built-in `Web Streams`, `Blob`, and `fetch`
 globals.
 
 ## Subpath entries

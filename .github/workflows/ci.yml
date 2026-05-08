@@ -37,15 +37,15 @@ jobs:
       # (docs/plan/06-streaming.md §3.4 acceptance).
       - run: pnpm size
 
-  # Multi-version test matrix. The plan (docs/plan/01-architecture.md §4)
-  # commits to Node 18+ so the floor stays exercised.
+  # Multi-version test matrix. Active LTS lines + Current. Node 18 / 20 are
+  # past EOL and intentionally dropped.
   test:
     needs: static
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['18', '20', '22']
+        node-version: ['22', '24', '26']
     steps:
       - uses: actions/checkout@v4
         with:

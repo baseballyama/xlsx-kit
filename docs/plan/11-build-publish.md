@@ -32,7 +32,7 @@ direnv allow         # .envrc に `use flake` を仕込んでおけば自動で 
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
-  "engines": { "node": ">=18.18" },
+  "engines": { "node": ">=22" },
   "files": ["dist/**", "README.md", "THIRD_PARTY_NOTICES.md", "LICENSE"],
   "exports": {
     ".":               { "types": "./dist/index.d.ts", "node": { "import": "./dist/index.node.mjs", "require": "./dist/index.node.cjs" }, "browser": "./dist/index.browser.mjs", "default": "./dist/index.browser.mjs" },

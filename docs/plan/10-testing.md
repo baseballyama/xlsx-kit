@@ -4,7 +4,7 @@
 
 | 環境 | コマンド | 目的 |
 |------|--------|------|
-| Node 18+（コア） | `pnpm test` | 全単体・結合テスト |
+| Node 22+（コア） | `pnpm test` | 全単体・結合テスト |
 | jsdom | `pnpm test:jsdom` | ブラウザ依存 API のスモーク |
 | Chromium / Firefox / WebKit | `pnpm test:browser` | 真のブラウザでのコアスモーク |
 | Bench | `pnpm bench` | 性能リグレッション（vitest bench） |
