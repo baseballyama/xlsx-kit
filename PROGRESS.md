@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`replaceRichText(rt, start, end, replacement)` 部分置換 helper を追加** — `sliceRichText` の cousin。`[start, end)` 範囲を `replacement: RichText | string` で置き換えた新しい RichText を返す。`String.prototype.slice` 同様の負 index semantics。`replacement` の各 run は font を保持。
+- **次のタスク**: **`insertRichText(rt, index, insertion)` 部分挿入 helper を追加** — `replaceRichText` の cousin。`index` 位置に `insertion: RichText | string` を挿入した新しい RichText を返す。実装は `replaceRichText(rt, index, index, insertion)` の thin alias。負 index は `String.prototype.slice` 同様の semantics。
+  1. `src/cell/rich-text.ts` に `insertRichText(rt: RichText, index: number, insertion: RichText | string): RichText` を export 追加: `replaceRichText(rt, index, index, insertion)` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `insertRichText` を re-export。
+  3. `tests/phase-2/rich-text-insert.test.ts` 4 件: 中間挿入 / 先頭挿入 (index=0) / 末尾挿入 (index=length) / 負 index で末尾オフセット挿入。
+
+- **次のタスク (前回)**: **`replaceRichText(rt, start, end, replacement)` 部分置換 helper を追加** — `sliceRichText` の cousin。`[start, end)` 範囲を `replacement: RichText | string` で置き換えた新しい RichText を返す。`String.prototype.slice` 同様の負 index semantics。`replacement` の各 run は font を保持。
   1. `src/cell/rich-text.ts` に `replaceRichText(rt: RichText, start: number, end: number, replacement: RichText | string): RichText` を export 追加。`sliceRichText(rt, 0, start)` と `sliceRichText(rt, end)` の前後を、string 形式 replacement は `richText(replacement)`、RichText 形式は as-is で `concatRichText` 結合。
   2. `src/cell/index.ts` (= subpath barrel) から `replaceRichText` を re-export。
   3. `tests/phase-2/rich-text-replace.test.ts` 5 件: string replacement で単純置換 / RichText replacement で font 保持 / 空 replacement で削除 / 負 index 処理 / 末尾まで置換 (`end >= length`)。
 
-- **次のタスク (前回)**: **`sliceRichText(rt, start, end?)` 部分切り出し helper を追加** — 全 run の text を 1 続きの string と見なし `[start, end)` の範囲を切り出した新しい RichText を返す ergonomic helper。各 run の font を維持しつつ run 境界を再構築する。`String.prototype.slice` semantics (負 index = `length` 加算、`end` 省略 = 末尾)。
+  empirical: 2447 tests pass (was 2442, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`sliceRichText(rt, start, end?)` 部分切り出し helper を追加** — 全 run の text を 1 続きの string と見なし `[start, end)` の範囲を切り出した新しい RichText を返す ergonomic helper。各 run の font を維持しつつ run 境界を再構築する。`String.prototype.slice` semantics (負 index = `length` 加算、`end` 省略 = 末尾)。
   1. `src/cell/rich-text.ts` に `sliceRichText(rt: RichText, start: number, end?: number): RichText` を export 追加。総長計算 → 範囲正規化 → 各 run を walk して overlap 部分のみ `makeTextRun(slice, run.font)` で生成 → `makeRichText`。空 result は空 RichText 返却。最後に `mergeAdjacentRichTextRuns` は呼ばない (caller の責務、API minimal 維持)。
   2. `src/cell/index.ts` (= subpath barrel) から `sliceRichText` を re-export。
   3. `tests/phase-2/rich-text-slice.test.ts` 5 件: 単一 run slice (font 維持) / 複数 run 跨ぎ / 負 index / `end` 省略で末尾まで / start>=end (or 範囲外) で空 RichText。

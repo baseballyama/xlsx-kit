@@ -133,6 +133,35 @@ export function sliceRichText(rt: RichText, start: number, end?: number): RichTe
 }
 
 /**
+ * Replace `[start, end)` of `rt` with `replacement` (a `RichText` or font-less
+ * `string`), returning a new RichText. Negative indices follow
+ * `String.prototype.slice`. The input is not mutated.
+ */
+export function replaceRichText(
+  rt: RichText,
+  start: number,
+  end: number,
+  replacement: RichText | string,
+): RichText {
+  const total = richTextLength(rt);
+  let s = Math.trunc(start);
+  let e = Math.trunc(end);
+  if (s < 0) s = Math.max(0, total + s);
+  if (e < 0) e = Math.max(0, total + e);
+  s = Math.min(s, total);
+  e = Math.min(e, total);
+  if (s > e) e = s;
+  const before = sliceRichText(rt, 0, s);
+  const after = sliceRichText(rt, e, total);
+  if (typeof replacement === 'string') {
+    return replacement === ''
+      ? concatRichText(before, after)
+      : concatRichText(before, richText(replacement), after);
+  }
+  return concatRichText(before, replacement, after);
+}
+
+/**
  * Merge adjacent runs whose `font` is structurally equal, concatenating their
  * `text`. Useful as a cleanup pass after `splitRichTextRuns`, per-char
  * styling, or `concatRichText` chains. The input is not mutated.

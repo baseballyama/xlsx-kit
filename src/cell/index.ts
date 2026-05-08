@@ -50,6 +50,7 @@ export {
   makeTextRun,
   mapRichTextRuns,
   mergeAdjacentRichTextRuns,
+  replaceRichText,
   richText,
   richTextLength,
   makeTextRun as richTextRun,
