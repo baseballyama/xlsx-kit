@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`mergeAdjacentRichTextRuns(rt)` 隣接 run 融合 helper を追加** — 隣接する 2 run の font が「同一」(deep-equal) なら text を結合して 1 run にした新しい RichText を返す ergonomic helper。`splitRichTextRuns` の対 (再構築) 用途、また「per-run font cycling 後の cleanup」「concat 後の compact 化」に使う。
+- **次のタスク**: **`sliceRichText(rt, start, end?)` 部分切り出し helper を追加** — 全 run の text を 1 続きの string と見なし `[start, end)` の範囲を切り出した新しい RichText を返す ergonomic helper。各 run の font を維持しつつ run 境界を再構築する。`String.prototype.slice` semantics (負 index = `length` 加算、`end` 省略 = 末尾)。
+  1. `src/cell/rich-text.ts` に `sliceRichText(rt: RichText, start: number, end?: number): RichText` を export 追加。総長計算 → 範囲正規化 → 各 run を walk して overlap 部分のみ `makeTextRun(slice, run.font)` で生成 → `makeRichText`。空 result は空 RichText 返却。最後に `mergeAdjacentRichTextRuns` は呼ばない (caller の責務、API minimal 維持)。
+  2. `src/cell/index.ts` (= subpath barrel) から `sliceRichText` を re-export。
+  3. `tests/phase-2/rich-text-slice.test.ts` 5 件: 単一 run slice (font 維持) / 複数 run 跨ぎ / 負 index / `end` 省略で末尾まで / start>=end (or 範囲外) で空 RichText。
+
+- **次のタスク (前回)**: **`mergeAdjacentRichTextRuns(rt)` 隣接 run 融合 helper を追加** — 隣接する 2 run の font が「同一」(deep-equal) なら text を結合して 1 run にした新しい RichText を返す ergonomic helper。`splitRichTextRuns` の対 (再構築) 用途、また「per-run font cycling 後の cleanup」「concat 後の compact 化」に使う。
   1. `src/cell/rich-text.ts` に `mergeAdjacentRichTextRuns(rt: RichText): RichText` を export 追加。font 比較は `JSON.stringify(font ?? null)` (key 順依存だが現状の InlineFont は writer 側の attribute 順で生成されるので実害なし) で簡易比較。空 RichText は空。
   2. `src/cell/index.ts` (= subpath barrel) から `mergeAdjacentRichTextRuns` を re-export。
   3. `tests/phase-2/rich-text-merge-runs.test.ts` 4 件: font なし同士の merge / 同 font の merge / 異 font は維持 / split → merge round-trip で同 font 連続 run が圧縮されること。
 
-- **次のタスク (前回)**: **`splitRichTextRuns(rt)` 単一文字 run 化 helper を追加** — RichText の各 run を 1 文字 1 run に分割した新しい RichText を返す ergonomic helper。文字単位の per-char styling/iteration の前処理 (e.g. typewriter アニメーション、character-by-character font cycling) を意図。
+  empirical: 2437 tests pass (was 2433, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`splitRichTextRuns(rt)` 単一文字 run 化 helper を追加** — RichText の各 run を 1 文字 1 run に分割した新しい RichText を返す ergonomic helper。文字単位の per-char styling/iteration の前処理 (e.g. typewriter アニメーション、character-by-character font cycling) を意図。
   1. `src/cell/rich-text.ts` に `splitRichTextRuns(rt: RichText): RichText` を export 追加: 各 run の `text` を `Array.from(run.text)` (code-point split) で iterate し、各 code-point ごとに `makeTextRun(ch, run.font)` を生成 → `makeRichText` で freeze。
   2. `src/cell/index.ts` (= subpath barrel) から `splitRichTextRuns` を re-export。
   3. `tests/phase-2/rich-text-split-runs.test.ts` 4 件: 単一 ASCII run を 1 文字単位に分割 (font 引き継ぎ) / 複数 run 跨ぎ / 空 run 込み (`text: ''` の run は drop) / 空 RichText で空 RichText 返却。

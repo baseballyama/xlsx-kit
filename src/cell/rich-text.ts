@@ -101,6 +101,28 @@ export function splitRichTextRuns(rt: RichText): RichText {
 }
 
 /**
+ * Merge adjacent runs whose `font` is structurally equal, concatenating their
+ * `text`. Useful as a cleanup pass after `splitRichTextRuns`, per-char
+ * styling, or `concatRichText` chains. The input is not mutated.
+ */
+export function mergeAdjacentRichTextRuns(rt: RichText): RichText {
+  if (rt.length === 0) return makeRichText([]);
+  const out: { text: string; font?: InlineFont }[] = [];
+  let prevKey: string | undefined;
+  for (const r of rt) {
+    const key = JSON.stringify(r.font ?? null);
+    const last = out[out.length - 1];
+    if (last && key === prevKey) {
+      last.text += r.text;
+    } else {
+      out.push(r.font !== undefined ? { text: r.text, font: r.font } : { text: r.text });
+      prevKey = key;
+    }
+  }
+  return makeRichText(out);
+}
+
+/**
  * Flatten any number of `RichText | string | TextRun` parts into a single
  * frozen RichText. `string` becomes a font-less 1-run; `TextRun` becomes a
  * single run; `RichText` (array) is spread in.
