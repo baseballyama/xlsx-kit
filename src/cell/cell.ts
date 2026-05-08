@@ -277,6 +277,16 @@ export function cellHasComment(c: Cell): boolean {
 }
 
 /**
+ * Returns true iff the cell has a non-default style applied
+ * (`styleId !== 0`). Style id 0 is reserved as the default xf,
+ * so any non-zero id means at least one explicit format/font/fill/border
+ * has been applied.
+ */
+export function isStyledCell(c: Cell): boolean {
+  return c.styleId !== 0;
+}
+
+/**
  * Get the formula text from a formula-bearing cell, or `undefined`
  * for non-formula cells. Equivalent to:
  *   isFormulaValue(c.value) ? c.value.formula : undefined

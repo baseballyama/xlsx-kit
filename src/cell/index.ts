@@ -28,6 +28,7 @@ export {
   isFormulaValue,
   isRichTextCell,
   isRichTextValue,
+  isStyledCell,
   makeCell,
   makeDurationValue,
   makeErrorValue,
