@@ -917,24 +917,20 @@ export function setCellArrayFormula(
 /** Resolve an "A1" coordinate to a numeric (col, row) pair on the sheet. */
 export function setCellByCoord(ws: Worksheet, coord: string, value?: CellValue, styleId?: number): Cell {
   const m = /^([A-Za-z]{1,3})([1-9][0-9]*)$/.exec(coord);
-  if (m === null) {
+  if (m === null || m[1] === undefined || m[2] === undefined) {
     throw new OpenXmlSchemaError(`setCellByCoord: invalid coordinate "${coord}"`);
   }
-  // biome-ignore lint/style/noNonNullAssertion: matched regex guarantees groups
-  const col = columnIndexFromLetter(m[1]!);
-  // biome-ignore lint/style/noNonNullAssertion: matched regex guarantees groups
-  const row = Number.parseInt(m[2]!, 10);
+  const col = columnIndexFromLetter(m[1]);
+  const row = Number.parseInt(m[2], 10);
   return setCell(ws, row, col, value, styleId);
 }
 
 /** Convenience getter accepting an "A1" coordinate. */
 export function getCellByCoord(ws: Worksheet, coord: string): Cell | undefined {
   const m = /^([A-Za-z]{1,3})([1-9][0-9]*)$/.exec(coord);
-  if (m === null) return undefined;
-  // biome-ignore lint/style/noNonNullAssertion: matched regex
-  const col = columnIndexFromLetter(m[1]!);
-  // biome-ignore lint/style/noNonNullAssertion: matched regex
-  const row = Number.parseInt(m[2]!, 10);
+  if (m === null || m[1] === undefined || m[2] === undefined) return undefined;
+  const col = columnIndexFromLetter(m[1]);
+  const row = Number.parseInt(m[2], 10);
   return getCell(ws, row, col);
 }
 

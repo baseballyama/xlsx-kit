@@ -103,11 +103,11 @@ const SHEET_RANGE_RE = /^(?:'((?:[^']|'')+)'|([^'!]+))!(.+)$/;
  */
 export function coordinateFromString(coord: string): CellCoordinate {
   const m = COORD_RE.exec(coord);
-  if (m === null) throw new OpenXmlSchemaError(`coordinateFromString: invalid coordinate "${coord}"`);
-  // biome-ignore lint/style/noNonNullAssertion: regex with two required groups
-  const column = m[1]!.toUpperCase();
-  // biome-ignore lint/style/noNonNullAssertion: regex with two required groups
-  const row = Number.parseInt(m[2]!, 10);
+  if (m === null || m[1] === undefined || m[2] === undefined) {
+    throw new OpenXmlSchemaError(`coordinateFromString: invalid coordinate "${coord}"`);
+  }
+  const column = m[1].toUpperCase();
+  const row = Number.parseInt(m[2], 10);
   if (row < 1 || row > MAX_ROW) {
     throw new OpenXmlSchemaError(`coordinateFromString: row ${row} out of range`);
   }
@@ -253,11 +253,9 @@ export function rangeBoundaries(range: string): CellRangeBoundaries {
   const right = trimmed.slice(colon + 1);
 
   const colsOnly = COL_RANGE_RE.exec(trimmed);
-  if (colsOnly !== null) {
-    // biome-ignore lint/style/noNonNullAssertion: matched regex
-    const minCol = columnIndexFromLetter(colsOnly[1]!);
-    // biome-ignore lint/style/noNonNullAssertion: matched regex
-    const maxCol = columnIndexFromLetter(colsOnly[2]!);
+  if (colsOnly !== null && colsOnly[1] !== undefined && colsOnly[2] !== undefined) {
+    const minCol = columnIndexFromLetter(colsOnly[1]);
+    const maxCol = columnIndexFromLetter(colsOnly[2]);
     return {
       minCol: Math.min(minCol, maxCol),
       minRow: 1,
@@ -267,11 +265,9 @@ export function rangeBoundaries(range: string): CellRangeBoundaries {
   }
 
   const rowsOnly = ROW_RANGE_RE.exec(trimmed);
-  if (rowsOnly !== null) {
-    // biome-ignore lint/style/noNonNullAssertion: matched regex
-    const minRow = Number.parseInt(rowsOnly[1]!, 10);
-    // biome-ignore lint/style/noNonNullAssertion: matched regex
-    const maxRow = Number.parseInt(rowsOnly[2]!, 10);
+  if (rowsOnly !== null && rowsOnly[1] !== undefined && rowsOnly[2] !== undefined) {
+    const minRow = Number.parseInt(rowsOnly[1], 10);
+    const maxRow = Number.parseInt(rowsOnly[2], 10);
     if (minRow < 1 || maxRow < 1 || minRow > MAX_ROW || maxRow > MAX_ROW) {
       throw new OpenXmlSchemaError(`rangeBoundaries: row out of range in "${trimmed}"`);
     }

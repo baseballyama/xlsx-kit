@@ -54,11 +54,11 @@ const A1_RE = /^([A-Za-z]{1,3})([1-9][0-9]*)$/;
  */
 export function anchorMarkerFromCellRef(ref: string): AnchorMarker {
   const m = A1_RE.exec(ref);
-  if (!m) throw new OpenXmlSchemaError(`anchorMarkerFromCellRef: invalid coordinate "${ref}"`);
-  // biome-ignore lint/style/noNonNullAssertion: regex guarantees groups
-  const col = columnIndexFromLetter(m[1]!) - 1; // 0-based
-  // biome-ignore lint/style/noNonNullAssertion: regex guarantees groups
-  const row = Number.parseInt(m[2]!, 10) - 1; // 0-based
+  if (!m || m[1] === undefined || m[2] === undefined) {
+    throw new OpenXmlSchemaError(`anchorMarkerFromCellRef: invalid coordinate "${ref}"`);
+  }
+  const col = columnIndexFromLetter(m[1]) - 1; // 0-based
+  const row = Number.parseInt(m[2], 10) - 1; // 0-based
   return { col, colOff: 0, row, rowOff: 0 };
 }
 
