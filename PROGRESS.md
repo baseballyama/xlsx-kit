@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richTextWords(rt)` 単語分割 helper を追加** — ASCII whitespace (`[ \t\r\n]+`) で区切られた連続非 whitespace 部分を `RichText[]` で返す ergonomic helper。各 word は元の font を維持 (= `sliceRichText` で抽出)。先頭・末尾・連続 whitespace は drop。空 / 全 whitespace で `[]`。
+- **次のタスク**: **`cellHasHyperlink(c)` predicate を追加** — Cell の hyperlink 紐付き判定。`c.hyperlinkId !== undefined` の thin wrapper。Cell 級の predicate を補強する pivot (rich-text 飽和回避)。
+  1. `src/cell/cell.ts` に `cellHasHyperlink(c: Cell): boolean` を export 追加: `c.hyperlinkId !== undefined` を return。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `cellHasHyperlink` を re-export (alphabetical 順、`bindValue` の隣など適切位置)。
+  3. `tests/phase-2/cell-has-hyperlink.test.ts` 3 件: hyperlinkId 未設定で false / hyperlinkId = 1 で true / hyperlinkId = 0 (有効 id) で true。
+
+- **次のタスク (前回)**: **`richTextWords(rt)` 単語分割 helper を追加** — ASCII whitespace (`[ \t\r\n]+`) で区切られた連続非 whitespace 部分を `RichText[]` で返す ergonomic helper。各 word は元の font を維持 (= `sliceRichText` で抽出)。先頭・末尾・連続 whitespace は drop。空 / 全 whitespace で `[]`。
   1. `src/cell/rich-text.ts` に `richTextWords(rt: RichText): RichText[]` を export 追加: `richTextToString(rt)` を `/[^ \t\r\n]+/g` で `exec` ループ、`sliceRichText(rt, m.index, m.index + m[0].length)` を push。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextWords` を re-export。
   3. `tests/phase-2/rich-text-words.test.ts` 4 件: 単一 run 内の単語分割 (font 維持) / 複数 run 跨ぎ word でも font 引き継ぎ / 全 whitespace で `[]` / 連続 whitespace を drop して word のみ抽出。
 
-- **次のタスク (前回)**: **`iterRichTextChars(rt)` 文字単位イテレータを追加** — `getRichTextCharAt` + `getRichTextFontAt` の generator 版。各文字 (UTF-16 code unit) を `{ char, font, index }` で yield。文字単位 styling/animation/inspection の primitive。
+  empirical: 2558 tests pass (was 2554, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`iterRichTextChars(rt)` 文字単位イテレータを追加** — `getRichTextCharAt` + `getRichTextFontAt` の generator 版。各文字 (UTF-16 code unit) を `{ char, font, index }` で yield。文字単位 styling/animation/inspection の primitive。
   1. `src/cell/rich-text.ts` に `iterRichTextChars(rt: RichText): IterableIterator<{ char: string; font: InlineFont | undefined; index: number }>` を export 追加: generator function (`function*`) で各 run の `text` を `for (let i = 0; i < r.text.length; i++)` walk、`yield { char: r.text.charAt(i), font: r.font, index }`、index ++。
   2. `src/cell/index.ts` (= subpath barrel) から `iterRichTextChars` を re-export。
   3. `tests/phase-2/rich-text-iter-chars.test.ts` 3 件: 単一 run の全文字 yield (font 付き) / 複数 run 跨ぎで run 切り替え時に font 切り替え / 空 RichText で 0 yield。

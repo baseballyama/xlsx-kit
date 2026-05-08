@@ -122,6 +122,24 @@ export function richTextEqual(a: RichText, b: RichText): boolean {
 }
 
 /**
+ * Split `rt` into words separated by ASCII whitespace (`[ \t\r\n]+`),
+ * returning a `RichText[]` of non-empty word segments. Each word preserves
+ * its original fonts via `sliceRichText`. Leading, trailing, and consecutive
+ * whitespace are dropped. An empty or all-whitespace input yields `[]`.
+ */
+export function richTextWords(rt: RichText): RichText[] {
+  const s = richTextToString(rt);
+  const out: RichText[] = [];
+  const re = /[^ \t\r\n]+/g;
+  let m: RegExpExecArray | null = re.exec(s);
+  while (m !== null) {
+    out.push(sliceRichText(rt, m.index, m.index + m[0].length));
+    m = re.exec(s);
+  }
+  return out;
+}
+
+/**
  * Split `rt` by `separator`, returning an array of RichText segments. Each
  * segment preserves the original runs' fonts via `sliceRichText`. Mirrors
  * `String.prototype.split` semantics: an empty `separator` yields one
