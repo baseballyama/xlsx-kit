@@ -340,6 +340,20 @@ export function padEndRichText(rt: RichText, targetLength: number, padString = '
 }
 
 /**
+ * Trim leading ASCII whitespace (space, tab, CR, LF) from the concatenated
+ * text of `rt`, returning a new RichText. Per-run fonts are preserved on the
+ * surviving slice; trailing whitespace is left intact. Returns an empty
+ * RichText if every character is whitespace.
+ */
+export function trimStartRichText(rt: RichText): RichText {
+  const s = richTextToString(rt);
+  if (s.length === 0) return makeRichText([]);
+  const firstNon = s.search(/[^ \t\r\n]/);
+  if (firstNon < 0) return makeRichText([]);
+  return sliceRichText(rt, firstNon);
+}
+
+/**
  * Trim leading and trailing ASCII whitespace (space, tab, CR, LF) from the
  * concatenated text of `rt`, returning a new RichText. Per-run fonts are
  * preserved on the surviving slice. Internal whitespace is left intact.

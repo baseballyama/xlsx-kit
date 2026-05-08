@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`trimStartRichText(rt)` 先頭空白トリム helper を追加** — `trimRichText` の partial 版。先頭の ASCII whitespace (space / tab / CR / LF) のみを削除した新しい RichText を返す。末尾は不変。実装は `richTextToString(rt).search(/[^ \t\r\n]/)` で leadingTrim → `sliceRichText(rt, leadingTrim)`。全 whitespace なら空 RichText。
+- **次のタスク**: **`trimEndRichText(rt)` 末尾空白トリム helper を追加** — `trimStartRichText` の対。末尾の ASCII whitespace (space / tab / CR / LF) のみを削除した新しい RichText を返す。先頭は不変。実装は `richTextToString(rt)` から末尾を charCodeAt walk で trailingTrim 量計算 → `sliceRichText(rt, 0, length - trailingTrim)`。全 whitespace なら空 RichText。
+  1. `src/cell/rich-text.ts` に `trimEndRichText(rt: RichText): RichText` を export 追加: `richTextToString` → 末尾から `charCodeAt` で 0x20 / 0x09 / 0x0d / 0x0a チェック → 全消去で空 RichText、それ以外で `sliceRichText(rt, 0, lastNon + 1)`。
+  2. `src/cell/index.ts` (= subpath barrel) から `trimEndRichText` を re-export。
+  3. `tests/phase-2/rich-text-trim-end.test.ts` 4 件: 単一 run の末尾 whitespace のみ削除 (font 維持) / 複数 run 跨ぎで末尾の whitespace を削除 / 先頭の whitespace は維持 / 全 whitespace で空 RichText。
+
+- **次のタスク (前回)**: **`trimStartRichText(rt)` 先頭空白トリム helper を追加** — `trimRichText` の partial 版。先頭の ASCII whitespace (space / tab / CR / LF) のみを削除した新しい RichText を返す。末尾は不変。実装は `richTextToString(rt).search(/[^ \t\r\n]/)` で leadingTrim → `sliceRichText(rt, leadingTrim)`。全 whitespace なら空 RichText。
   1. `src/cell/rich-text.ts` に `trimStartRichText(rt: RichText): RichText` を export 追加: `richTextToString` → `String.prototype.search(/[^ \t\r\n]/)` で leading 位置検出 → -1 (全 whitespace) で空 RichText、それ以外で `sliceRichText(rt, leading)`。
   2. `src/cell/index.ts` (= subpath barrel) から `trimStartRichText` を re-export。
   3. `tests/phase-2/rich-text-trim-start.test.ts` 4 件: 単一 run の先頭 whitespace のみ削除 (font 維持) / 複数 run 跨ぎで先頭の whitespace を削除 / 末尾の whitespace は維持 / 全 whitespace で空 RichText。
 
-- **次のタスク (前回)**: **`richTextToUpperCase(rt)` 全 run 大文字化 helper を追加** — `richTextToLowerCase` の対。各 run の text を `String.prototype.toUpperCase()` で大文字化し、font をそのまま引き継ぐ。Locale 非依存。`exactOptionalPropertyTypes` 対応で font undefined 時は `font` プロパティを省略する分岐実装。
+  empirical: 2504 tests pass (was 2500, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextToUpperCase(rt)` 全 run 大文字化 helper を追加** — `richTextToLowerCase` の対。各 run の text を `String.prototype.toUpperCase()` で大文字化し、font をそのまま引き継ぐ。Locale 非依存。`exactOptionalPropertyTypes` 対応で font undefined 時は `font` プロパティを省略する分岐実装。
   1. `src/cell/rich-text.ts` に `richTextToUpperCase(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => r.font !== undefined ? { text: r.text.toUpperCase(), font: r.font } : { text: r.text.toUpperCase() })`。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextToUpperCase` を re-export。
   3. `tests/phase-2/rich-text-to-upper-case.test.ts` 4 件: 単一 run 大文字化 (font 維持) / 複数 run 跨ぎ / non-ASCII (`äöü` → `ÄÖÜ`) / 空 RichText で空 RichText 返却。

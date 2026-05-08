@@ -70,4 +70,5 @@ export {
   sliceRichText,
   splitRichTextRuns,
   trimRichText,
+  trimStartRichText,
 } from './rich-text';
