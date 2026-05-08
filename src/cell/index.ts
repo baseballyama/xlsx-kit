@@ -53,4 +53,5 @@ export {
   richTextLength,
   makeTextRun as richTextRun,
   richTextToString,
+  splitRichTextRuns,
 } from './rich-text';

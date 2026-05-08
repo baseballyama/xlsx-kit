@@ -87,6 +87,20 @@ export function applyFontToRichText(rt: RichText, font: InlineFont): RichText {
 }
 
 /**
+ * Split each run into one run per Unicode code point, preserving the parent
+ * run's font on every produced run. Empty-text runs are dropped. Useful as a
+ * preprocessing step for per-character styling or animation.
+ */
+export function splitRichTextRuns(rt: RichText): RichText {
+  const out: TextRun[] = [];
+  for (const r of rt) {
+    if (r.text === '') continue;
+    for (const ch of Array.from(r.text)) out.push(makeTextRun(ch, r.font));
+  }
+  return makeRichText(out);
+}
+
+/**
  * Flatten any number of `RichText | string | TextRun` parts into a single
  * frozen RichText. `string` becomes a font-less 1-run; `TextRun` becomes a
  * single run; `RichText` (array) is spread in.

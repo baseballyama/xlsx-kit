@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`splitRichTextRuns(rt)` 単一文字 run 化 helper を追加** — RichText の各 run を 1 文字 1 run に分割した新しい RichText を返す ergonomic helper。文字単位の per-char styling/iteration の前処理 (e.g. typewriter アニメーション、character-by-character font cycling) を意図。
+- **次のタスク**: **`mergeAdjacentRichTextRuns(rt)` 隣接 run 融合 helper を追加** — 隣接する 2 run の font が「同一」(deep-equal) なら text を結合して 1 run にした新しい RichText を返す ergonomic helper。`splitRichTextRuns` の対 (再構築) 用途、また「per-run font cycling 後の cleanup」「concat 後の compact 化」に使う。
+  1. `src/cell/rich-text.ts` に `mergeAdjacentRichTextRuns(rt: RichText): RichText` を export 追加。font 比較は `JSON.stringify(font ?? null)` (key 順依存だが現状の InlineFont は writer 側の attribute 順で生成されるので実害なし) で簡易比較。空 RichText は空。
+  2. `src/cell/index.ts` (= subpath barrel) から `mergeAdjacentRichTextRuns` を re-export。
+  3. `tests/phase-2/rich-text-merge-runs.test.ts` 4 件: font なし同士の merge / 同 font の merge / 異 font は維持 / split → merge round-trip で同 font 連続 run が圧縮されること。
+
+- **次のタスク (前回)**: **`splitRichTextRuns(rt)` 単一文字 run 化 helper を追加** — RichText の各 run を 1 文字 1 run に分割した新しい RichText を返す ergonomic helper。文字単位の per-char styling/iteration の前処理 (e.g. typewriter アニメーション、character-by-character font cycling) を意図。
   1. `src/cell/rich-text.ts` に `splitRichTextRuns(rt: RichText): RichText` を export 追加: 各 run の `text` を `Array.from(run.text)` (code-point split) で iterate し、各 code-point ごとに `makeTextRun(ch, run.font)` を生成 → `makeRichText` で freeze。
   2. `src/cell/index.ts` (= subpath barrel) から `splitRichTextRuns` を re-export。
   3. `tests/phase-2/rich-text-split-runs.test.ts` 4 件: 単一 ASCII run を 1 文字単位に分割 (font 引き継ぎ) / 複数 run 跨ぎ / 空 run 込み (`text: ''` の run は drop) / 空 RichText で空 RichText 返却。
 
-- **次のタスク (前回)**: **`applyFontToRichText(rt, font)` bulk font helper を追加** — `mapRichTextRuns` 上で「全 run の font をマージ (per-run font 優先)」する shorthand。`makeTextRun(r.text, { ...font, ...r.font })` 相当を全 run に適用。
+  empirical: 2433 tests pass (was 2429, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`applyFontToRichText(rt, font)` bulk font helper を追加** — `mapRichTextRuns` 上で「全 run の font をマージ (per-run font 優先)」する shorthand。`makeTextRun(r.text, { ...font, ...r.font })` 相当を全 run に適用。
   1. `src/cell/rich-text.ts` に `applyFontToRichText(rt: RichText, font: InlineFont): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text, font: { ...font, ...(r.font ?? {}) } }))`。run 自身の font フィールドが優先される。
   2. `src/cell/index.ts` (= subpath barrel) から `applyFontToRichText` を re-export。
   3. `tests/phase-2/rich-text-apply-font.test.ts` 3 件: 全 run に共通 font 付与 (font なし run のみ) / per-run font が共通 font より優先される / 空 RichText で空 RichText 返却。
