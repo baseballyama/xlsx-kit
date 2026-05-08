@@ -87,6 +87,14 @@ export function applyFontToRichText(rt: RichText, font: InlineFont): RichText {
 }
 
 /**
+ * Strip every per-run `font`, leaving each run with text only. Useful as a
+ * normalization pass before re-applying a uniform style.
+ */
+export function clearFontsInRichText(rt: RichText): RichText {
+  return mapRichTextRuns(rt, (r) => ({ text: r.text }));
+}
+
+/**
  * Split `rt` by `separator`, returning an array of RichText segments. Each
  * segment preserves the original runs' fonts via `sliceRichText`. Mirrors
  * `String.prototype.split` semantics: an empty `separator` yields one

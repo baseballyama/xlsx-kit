@@ -45,6 +45,7 @@ export type {
 export {
   appendRichTextRun,
   applyFontToRichText,
+  clearFontsInRichText,
   concatRichText,
   countRichTextOccurrences,
   findLastRichTextIndex,
