@@ -574,6 +574,22 @@ export function getRichTextFontAt(rt: RichText, index: number): InlineFont | und
 }
 
 /**
+ * Return the UTF-16 code unit at `index` in the concatenated text of `rt`,
+ * mirroring `String.prototype.charAt`. Out-of-range indices return `''`.
+ * Pairs naturally with `getRichTextFontAt` for `(char, font)` access.
+ */
+export function getRichTextCharAt(rt: RichText, index: number): string {
+  if (index < 0) return '';
+  let cursor = 0;
+  for (const r of rt) {
+    const next = cursor + r.text.length;
+    if (index < next) return r.text.charAt(index - cursor);
+    cursor = next;
+  }
+  return '';
+}
+
+/**
  * Total character count (UTF-16 code units) across all runs.
  * Equivalent to `richTextToString(rt).length` but avoids the string copy.
  */

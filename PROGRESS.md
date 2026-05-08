@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getRichTextCharAt(rt, index)` 位置文字取得 helper を追加** — `String.prototype.charAt` 同等の semantics で結合テキストの `index` 番目の文字 (UTF-16 code unit) を返す。範囲外で空 string `''`。`getRichTextFontAt` と pair で使うことで「位置 i の char + その font」を取り出せる。
+- **次のタスク**: **`iterRichTextChars(rt)` 文字単位イテレータを追加** — `getRichTextCharAt` + `getRichTextFontAt` の generator 版。各文字 (UTF-16 code unit) を `{ char, font, index }` で yield。文字単位 styling/animation/inspection の primitive。
+  1. `src/cell/rich-text.ts` に `iterRichTextChars(rt: RichText): IterableIterator<{ char: string; font: InlineFont | undefined; index: number }>` を export 追加: generator function (`function*`) で各 run の `text` を `for (let i = 0; i < r.text.length; i++)` walk、`yield { char: r.text.charAt(i), font: r.font, index }`、index ++。
+  2. `src/cell/index.ts` (= subpath barrel) から `iterRichTextChars` を re-export。
+  3. `tests/phase-2/rich-text-iter-chars.test.ts` 3 件: 単一 run の全文字 yield (font 付き) / 複数 run 跨ぎで run 切り替え時に font 切り替え / 空 RichText で 0 yield。
+
+- **次のタスク (前回)**: **`getRichTextCharAt(rt, index)` 位置文字取得 helper を追加** — `String.prototype.charAt` 同等の semantics で結合テキストの `index` 番目の文字 (UTF-16 code unit) を返す。範囲外で空 string `''`。`getRichTextFontAt` と pair で使うことで「位置 i の char + その font」を取り出せる。
   1. `src/cell/rich-text.ts` に `getRichTextCharAt(rt: RichText, index: number): string` を export 追加: `index < 0` で `''` / `cursor` walk → `index < cursor + r.text.length` で `r.text.charAt(index - cursor)` を return / loop 終了で `''`。
   2. `src/cell/index.ts` (= subpath barrel) から `getRichTextCharAt` を re-export。
   3. `tests/phase-2/rich-text-char-at.test.ts` 3 件: 単一 run 内の任意 index で char / 複数 run 跨ぎ index で正しい char / 範囲外で `''`。
 
-- **次のタスク (前回)**: **`getRichTextFontAt(rt, index)` 位置参照 helper を追加** — 結合テキストのある character index `[0, length)` における run の `font` (= `InlineFont | undefined`) を返す。範囲外 (`index < 0` or `index >= length`) で `undefined`。文字単位検査 (e.g. cursor 位置の font 表示) 用。
+  empirical: 2551 tests pass (was 2548, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`getRichTextFontAt(rt, index)` 位置参照 helper を追加** — 結合テキストのある character index `[0, length)` における run の `font` (= `InlineFont | undefined`) を返す。範囲外 (`index < 0` or `index >= length`) で `undefined`。文字単位検査 (e.g. cursor 位置の font 表示) 用。
   1. `src/cell/rich-text.ts` に `getRichTextFontAt(rt: RichText, index: number): InlineFont | undefined` を export 追加: `index < 0` で undefined / 各 run を walk し `cursor` 累積、`index < cursor + r.text.length` で `r.font` を return / loop 終了で undefined。
   2. `src/cell/index.ts` (= subpath barrel) から `getRichTextFontAt` を re-export。
   3. `tests/phase-2/rich-text-font-at.test.ts` 4 件: 単一 run 内の任意 index で font 取得 / 複数 run 境界跨ぎで該当 run の font 取得 / font なし run で undefined / 範囲外 (負・>= length) で undefined。
