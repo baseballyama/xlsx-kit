@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richTextToLowerCase(rt)` 全 run 小文字化 helper を追加** — 各 run の text を `String.prototype.toLowerCase()` で小文字化し、font をそのまま引き継いだ新しい RichText を返す。Locale 非依存 (= ASCII / Unicode default case folding)。
-  1. `src/cell/rich-text.ts` に `richTextToLowerCase(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text.toLowerCase(), font: r.font }))`。
+- **次のタスク**: **`richTextToUpperCase(rt)` 全 run 大文字化 helper を追加** — `richTextToLowerCase` の対。各 run の text を `String.prototype.toUpperCase()` で大文字化し、font をそのまま引き継ぐ。Locale 非依存。`exactOptionalPropertyTypes` 対応で font undefined 時は `font` プロパティを省略する分岐実装。
+  1. `src/cell/rich-text.ts` に `richTextToUpperCase(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => r.font !== undefined ? { text: r.text.toUpperCase(), font: r.font } : { text: r.text.toUpperCase() })`。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextToUpperCase` を re-export。
+  3. `tests/phase-2/rich-text-to-upper-case.test.ts` 4 件: 単一 run 大文字化 (font 維持) / 複数 run 跨ぎ / non-ASCII (`äöü` → `ÄÖÜ`) / 空 RichText で空 RichText 返却。
+
+- **次のタスク (前回)**: **`richTextToLowerCase(rt)` 全 run 小文字化 helper を追加** — 各 run の text を `String.prototype.toLowerCase()` で小文字化し、font をそのまま引き継いだ新しい RichText を返す。Locale 非依存 (= ASCII / Unicode default case folding)。
+  1. `src/cell/rich-text.ts` に `richTextToLowerCase(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => r.font !== undefined ? { text: r.text.toLowerCase(), font: r.font } : { text: r.text.toLowerCase() })` (`exactOptionalPropertyTypes` 対応の分岐)。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextToLowerCase` を re-export。
   3. `tests/phase-2/rich-text-to-lower-case.test.ts` 4 件: 単一 run 小文字化 (font 維持) / 複数 run 跨ぎ / non-ASCII (`ÄÖÜ` → `äöü`) / 空 RichText で空 RichText 返却。
 
-- **次のタスク (前回)**: **`richTextEndsWith(rt, search, endIndex?)` 末尾一致 helper を追加** — `String.prototype.endsWith` 同等の boolean predicate。`richTextToString(rt).endsWith(search, endIndex)` の thin wrapper。空 `search` は `true`。`endIndex` 省略時は length (`String.prototype.endsWith` 仕様準拠)。
+  empirical: 2496 tests pass (was 2492, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextEndsWith(rt, search, endIndex?)` 末尾一致 helper を追加** — `String.prototype.endsWith` 同等の boolean predicate。`richTextToString(rt).endsWith(search, endIndex)` の thin wrapper。空 `search` は `true`。`endIndex` 省略時は length (`String.prototype.endsWith` 仕様準拠)。
   1. `src/cell/rich-text.ts` に `richTextEndsWith(rt: RichText, search: string, endIndex?: number): boolean` を export 追加: `richTextToString(rt).endsWith(search, endIndex)` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextEndsWith` を re-export。
   3. `tests/phase-2/rich-text-ends-with.test.ts` 4 件: 単一 run 内で末尾一致 / 複数 run 跨ぎ末尾一致 / 一致しない / `endIndex` 指定で短縮範囲の末尾照合。
