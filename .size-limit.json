@@ -1,14 +1,32 @@
 [
   {
-    "name": "openxml-js (full library)",
-    "path": "dist/index.mjs",
-    "import": "*",
-    "limit": "120 KB"
-  },
-  {
     "name": "openxml-js/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
     "path": "dist/streaming.mjs",
     "import": "*",
     "limit": "80 KB"
+  },
+  {
+    "name": "openxml-js/io (loadWorkbook + saveWorkbook)",
+    "path": "dist/io.mjs",
+    "import": "*",
+    "limit": "120 KB"
+  },
+  {
+    "name": "openxml-js/workbook",
+    "path": "dist/workbook.mjs",
+    "import": "*",
+    "limit": "100 KB"
+  },
+  {
+    "name": "openxml-js/worksheet",
+    "path": "dist/worksheet.mjs",
+    "import": "*",
+    "limit": "100 KB"
+  },
+  {
+    "name": "openxml-js/styles",
+    "path": "dist/styles.mjs",
+    "import": "*",
+    "limit": "60 KB"
   }
 ]

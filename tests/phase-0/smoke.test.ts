@@ -5,9 +5,10 @@ import { describe, expect, it } from 'vitest';
 // once src/io/ lands.
 
 describe('phase-0 smoke', () => {
-  it('vitest can import src/index.ts', async () => {
-    const mod = await import('../../src/index');
+  it('vitest can import a section subpath', async () => {
+    const mod = await import('../../src/workbook/index');
     expect(mod).toBeTypeOf('object');
+    expect(typeof mod.createWorkbook).toBe('function');
   });
 
   it('Node version supports the engines.node floor', () => {

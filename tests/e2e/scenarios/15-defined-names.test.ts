@@ -11,7 +11,8 @@
 //   titles).
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, setCell } from '../../../src/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { makeDefinedName } from '../../../src/workbook/defined-names';
 import { writeWorkbook } from '../_helpers';
 

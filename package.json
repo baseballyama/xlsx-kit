@@ -16,17 +16,65 @@
     "LICENSE"
   ],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
+    "./cell": {
+      "types": "./dist/cell/index.d.ts",
+      "import": "./dist/cell.mjs"
+    },
+    "./chart": {
+      "types": "./dist/chart/index.d.ts",
+      "import": "./dist/chart.mjs"
+    },
+    "./chartsheet": {
+      "types": "./dist/chartsheet/index.d.ts",
+      "import": "./dist/chartsheet.mjs"
+    },
+    "./drawing": {
+      "types": "./dist/drawing/index.d.ts",
+      "import": "./dist/drawing.mjs"
+    },
+    "./io": {
+      "types": "./dist/io/index.d.ts",
+      "import": "./dist/io.mjs"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.mjs"
+    },
+    "./packaging": {
+      "types": "./dist/packaging/index.d.ts",
+      "import": "./dist/packaging.mjs"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "import": "./dist/schema.mjs"
     },
     "./streaming": {
       "types": "./dist/streaming/index.d.ts",
       "import": "./dist/streaming.mjs"
     },
-    "./node": {
-      "types": "./dist/node.d.ts",
-      "import": "./dist/node.mjs"
+    "./styles": {
+      "types": "./dist/styles/index.d.ts",
+      "import": "./dist/styles.mjs"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils.mjs"
+    },
+    "./workbook": {
+      "types": "./dist/workbook/index.d.ts",
+      "import": "./dist/workbook.mjs"
+    },
+    "./worksheet": {
+      "types": "./dist/worksheet/index.d.ts",
+      "import": "./dist/worksheet.mjs"
+    },
+    "./xml": {
+      "types": "./dist/xml/index.d.ts",
+      "import": "./dist/xml.mjs"
+    },
+    "./zip": {
+      "types": "./dist/zip/index.d.ts",
+      "import": "./dist/zip.mjs"
     }
   },
   "scripts": {
@@ -53,6 +101,7 @@
     "oxlint": "^1.62.0",
     "size-limit": "^12.1.0",
     "tsdown": "^0.21.10",
+    "typedoc": "^0.28.0",
     "typescript": "^5.7.2",
     "vitest": "^4.1.5"
   },

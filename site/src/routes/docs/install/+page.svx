@@ -1,0 +1,57 @@
+<script lang="ts">
+  import { base } from '$app/paths';
+</script>
+
+# Install
+
+`openxml-js` ships as ESM-only. Pick the entry that matches your runtime.
+
+## Package install
+
+```sh
+pnpm add openxml-js
+# or
+npm install openxml-js
+# or
+bun add openxml-js
+```
+
+Requires **Node `>=18.18`** for the built-in `Web Streams`, `Blob`, and `fetch` globals. Modern browsers (Chromium, Firefox, Safari with Web Streams) work with the streaming entry. Bun and Deno work via Web Streams.
+
+## Subpath entries
+
+| Import | Use case |
+|--------|----------|
+| `openxml-js` | Full library: workbook model, charts, drawings. |
+| `openxml-js/streaming` | Read-only iter + write-only append. Browser-safe. |
+| `openxml-js/node` | Filesystem `fromFile` / `toFile` + Node `Readable` / `Writable` glue, plus the full lib. |
+
+Bundle budgets, min + brotli:
+
+- `openxml-js` ≤ 120 KB *(currently ~78 KB)*
+- `openxml-js/streaming` ≤ 80 KB *(currently ~47 KB)*
+
+All exports are side-effect-free (`"sideEffects": false`), so unused chart / drawing / pivot code drops out under any modern bundler.
+
+## TypeScript
+
+Types are bundled. `tsconfig.json` should have `"moduleResolution": "bundler"` (or `"node16"` / `"nodenext"`) so the subpath entries resolve.
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true
+  }
+}
+```
+
+## What's not in the box
+
+- **ZIP64 write** — fflate's writer doesn't emit ZIP64 EOCD, so we fail fast on workbooks with > 65 535 entries. Read works.
+- **Random-access streaming reader** — the SAX `iterRows` API is in place; per-cell random access against a streaming source is buffered.
+- **Encrypted xlsx decryption** — we detect CFB Compound Documents and throw a clear error pointing at [`msoffcrypto-tool`](https://github.com/nolze/msoffcrypto-tool); decrypt first, then load.
+
+Next: <a href="{base}/docs/getting-started">Getting started →</a>

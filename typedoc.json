@@ -1,0 +1,52 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "openxml-js",
+  "entryPoints": [
+    "src/cell/index.ts",
+    "src/chart/index.ts",
+    "src/chartsheet/index.ts",
+    "src/drawing/index.ts",
+    "src/io/index.ts",
+    "src/node.ts",
+    "src/packaging/index.ts",
+    "src/schema/index.ts",
+    "src/streaming/index.ts",
+    "src/styles/index.ts",
+    "src/utils/index.ts",
+    "src/workbook/index.ts",
+    "src/worksheet/index.ts",
+    "src/xml/index.ts",
+    "src/zip/index.ts"
+  ],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "tsconfig.json",
+  "readme": "none",
+  "includeVersion": false,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeProtected": false,
+  "excludeReferences": false,
+  "skipErrorChecking": true,
+  "json": "site/src/lib/server/api-data.json",
+  "emit": "docs",
+  "out": "site/.typedoc-html",
+  "categorizeByGroup": true,
+  "intentionallyNotExported": [
+    "EffectsRef",
+    "Fill",
+    "Geometry",
+    "LineProperties",
+    "TextBody",
+    "NumberFormat"
+  ],
+  "externalSymbolLinkMappings": {
+    "typescript": {
+      "Response": "https://developer.mozilla.org/docs/Web/API/Response",
+      "ReadableStream": "https://developer.mozilla.org/docs/Web/API/ReadableStream"
+    },
+    "@types/node": {
+      "Stream.Readable": "https://nodejs.org/api/stream.html#class-streamreadable",
+      "Stream.Writable": "https://nodejs.org/api/stream.html#class-streamwritable"
+    }
+  }
+}

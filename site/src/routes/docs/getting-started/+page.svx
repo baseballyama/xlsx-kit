@@ -1,0 +1,44 @@
+<script lang="ts">
+  import { base } from '$app/paths';
+  import CodeBlock from '$lib/components/CodeBlock.svelte';
+  import type { PageProps } from './$types';
+  const { data }: PageProps = $props();
+  const ex = data.examples;
+</script>
+
+# Getting started
+
+This page walks the canonical openxml-js workflow: load a workbook, mutate it, write it back. Every snippet below is a real `.ts` file in this repo — `svelte-check` compiles them against the live `openxml-js` types on every build, so when this page renders, it's already proven that the code typechecks.
+
+## Read, edit, write — full library
+
+The top-level `openxml-js` entry gives you the full workbook model: cells, styles, charts, drawings, the lot. Pair it with the platform-specific I/O helpers from `openxml-js/node` (or your own `XlsxSource`).
+
+<CodeBlock html={ex.basicReadWrite.html} title={ex.basicReadWrite.path} />
+
+`loadWorkbook` returns a `Workbook`. `wb.sheets` is an array of `{ sheet, name, ... }` records — the `sheet` property is the worksheet itself. Cell coordinates are 1-indexed (`row=1, col=1` is `A1`) to match the openpyxl API.
+
+`workbookToBytes` serializes back to a `Uint8Array` in one shot — fine for workbooks that fit in memory. For larger workbooks see <a href="{base}/docs/streaming">Streaming</a>.
+
+## Direct fs helpers (Node)
+
+`openxml-js/node` exposes `fromFile` / `toFile` so you can skip the `readFile` / `writeFile` glue:
+
+<CodeBlock html={ex.nodeFs.html} title={ex.nodeFs.path} />
+
+`fromFile` returns an `XlsxSource` backed by a Node `fs.ReadStream`; `toFile` returns an `XlsxSink` backed by a `fs.WriteStream`. Both are streamed under the hood.
+
+## Browser via fetch
+
+The streaming entry is browser-safe (no `node:fs`). Use `fromResponse` to consume a `fetch` Response straight into the loader without buffering the whole download:
+
+<CodeBlock html={ex.browserFetch.html} title={ex.browserFetch.path} />
+
+This works in any environment with `fetch` + Web Streams: modern browsers, Bun, Deno, Cloudflare Workers, edge runtimes.
+
+## What's next
+
+- <strong><a href="{base}/docs/recipes">Recipes</a></strong> — copy-pasteable code for the most common tasks (styling, charts, validation, streaming, export).
+- <strong><a href="{base}/docs/streaming">Streaming</a></strong> — millions of rows in fixed memory.
+- <strong><a href="{base}/api">API reference</a></strong> — every export, organized by section.
+- **GitHub:** [`baseballyama/openxml-js`](https://github.com/baseballyama/openxml-js)

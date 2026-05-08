@@ -11,7 +11,8 @@
 // - The image stays positioned at N2 even after Excel re-saves the file.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, setCell } from '../../../src/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { makeBarChart, makeBarSeries, makeChartSpace, makeLineChart } from '../../../src/chart/chart';
 import { makeOneCellAnchor } from '../../../src/drawing/anchor';
 import { makeChartDrawingItem, makeDrawing, makePictureDrawingItem } from '../../../src/drawing/drawing';

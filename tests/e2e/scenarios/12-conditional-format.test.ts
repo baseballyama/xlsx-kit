@@ -11,7 +11,9 @@
 // - Column C has the 5-arrows icon set (5 = ↑↑, 1 = ↓↓).
 
 import { describe, expect, it } from 'vitest';
-import { addCellXf, addDxf, addFill, addFont, addWorksheet, createWorkbook, defaultCellXf, makeColor, makeFont, makePatternFill, setCell } from '../../../src/index';
+import { addCellXf, addDxf, addFill, addFont, defaultCellXf, makeColor, makeFont, makePatternFill } from '../../../src/styles/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { parseMultiCellRange } from '../../../src/worksheet/cell-range';
 import { writeWorkbook } from '../_helpers';
 

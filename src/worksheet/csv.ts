@@ -55,9 +55,9 @@ function quoteCsvField(field: string, delimiter: string, lineTerminator: string)
 
 /**
  * Render a worksheet range as a CSV string. Empty cells become empty
- * fields. Values are coerced via {@link cellToCsvField} (strings as-is,
- * Dates as ISO-8601, rich-text concatenated, formulas use cached value
- * else formula text).
+ * fields. Values are coerced field-by-field (strings as-is, Dates as
+ * ISO-8601, rich-text concatenated, formulas use the cached value when
+ * present otherwise the formula text).
  *
  * Options:
  *   - `delimiter` (default `,`)

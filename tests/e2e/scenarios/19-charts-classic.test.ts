@@ -9,7 +9,8 @@
 //   correctly with axis labels / legend visible.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, setCell } from '../../../src/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import {
   makeAreaChart,
   makeBarSeries,

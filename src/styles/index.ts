@@ -103,3 +103,24 @@ export {
   listFonts,
   makeStylesheet,
 } from './stylesheet';
+export type { NumberFormat } from './numbers';
+export {
+  BUILTIN_FORMATS,
+  BUILTIN_FORMATS_MAX_SIZE,
+  builtinFormatCode,
+  builtinFormatId,
+  classifyDateFormat,
+  FORMAT_DATE_DATETIME,
+  FORMAT_DATE_TIMEDELTA,
+  FORMAT_DATE_YYYYMMDD2,
+  FORMAT_GENERAL,
+  FORMAT_NUMBER,
+  FORMAT_NUMBER_00,
+  FORMAT_PERCENTAGE,
+  FORMAT_PERCENTAGE_00,
+  FORMAT_TEXT,
+  isBuiltinFormat,
+  isDateFormat,
+  isTimedeltaFormat,
+  makeNumberFormat,
+} from './numbers';

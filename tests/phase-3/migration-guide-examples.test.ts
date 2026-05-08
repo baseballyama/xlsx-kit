@@ -14,50 +14,54 @@ describe('migrate-from-openpyxl — public API smoke', () => {
     expect(typeof node.toFile).toBe('function');
   });
 
-  it('Cells — setCell / setCellByCoord / iterWorksheetRows / setFormula / makeErrorValue / makeRichText / makeTextRun / makeDurationValue', async () => {
-    const main = await import('../../src/index');
-    expect(typeof main.setCell).toBe('function');
-    expect(typeof main.setCellByCoord).toBe('function');
-    expect(typeof main.iterWorksheetRows).toBe('function');
-    expect(typeof main.setFormula).toBe('function');
-    expect(typeof main.makeErrorValue).toBe('function');
-    expect(typeof main.makeRichText).toBe('function');
-    expect(typeof main.makeTextRun).toBe('function');
-    expect(typeof main.makeDurationValue).toBe('function');
+  it('Cells — setCell / setCellByCoord / iterRows / setFormula / makeErrorValue / makeRichText / makeTextRun / makeDurationValue', async () => {
+    const worksheet = await import('../../src/worksheet/index');
+    const cell = await import('../../src/cell/index');
+    expect(typeof worksheet.setCell).toBe('function');
+    expect(typeof worksheet.setCellByCoord).toBe('function');
+    expect(typeof worksheet.iterRows).toBe('function');
+    expect(typeof cell.setFormula).toBe('function');
+    expect(typeof cell.makeErrorValue).toBe('function');
+    expect(typeof cell.makeRichText).toBe('function');
+    expect(typeof cell.makeTextRun).toBe('function');
+    expect(typeof cell.makeDurationValue).toBe('function');
   });
 
   it('Styles — setCellFont / setCellFill / setCellNumberFormat with (wb, cell, …) signature', async () => {
-    const main = await import('../../src/index');
-    expect(typeof main.setCellFont).toBe('function');
-    expect(typeof main.setCellFill).toBe('function');
-    expect(typeof main.setCellNumberFormat).toBe('function');
+    const styles = await import('../../src/styles/index');
+    const workbook = await import('../../src/workbook/index');
+    const worksheet = await import('../../src/worksheet/index');
+    expect(typeof styles.setCellFont).toBe('function');
+    expect(typeof styles.setCellFill).toBe('function');
+    expect(typeof styles.setCellNumberFormat).toBe('function');
 
     // Exercise the canonical migration-guide flow.
-    const wb = main.createWorkbook();
-    const ws = main.addWorksheet(wb, 'Style');
-    main.setCell(ws, 1, 1, 'styled');
+    const wb = workbook.createWorkbook();
+    const ws = workbook.addWorksheet(wb, 'Style');
+    worksheet.setCell(ws, 1, 1, 'styled');
     const cell = ws.rows.get(1)?.get(1);
     if (!cell) throw new Error('cell missing');
-    main.setCellFont(wb, cell, main.makeFont({ name: 'Arial', size: 14, bold: true }));
-    main.setCellFill(
+    styles.setCellFont(wb, cell, styles.makeFont({ name: 'Arial', size: 14, bold: true }));
+    styles.setCellFill(
       wb,
       cell,
-      main.makePatternFill({ patternType: 'solid', fgColor: main.makeColor({ rgb: 'FFFFFF00' }) }),
+      styles.makePatternFill({ patternType: 'solid', fgColor: styles.makeColor({ rgb: 'FFFFFF00' }) }),
     );
-    main.setCellNumberFormat(wb, cell, '#,##0.00');
+    styles.setCellNumberFormat(wb, cell, '#,##0.00');
     expect(cell.styleId).toBeGreaterThan(0);
   });
 
   it('Worksheets — addWorksheet / sheetNames / getActiveSheet / getSheet / removeSheet / mergeCells / setFreezePanes / getMergedCells', async () => {
-    const main = await import('../../src/index');
-    expect(typeof main.addWorksheet).toBe('function');
-    expect(typeof main.sheetNames).toBe('function');
-    expect(typeof main.getActiveSheet).toBe('function');
-    expect(typeof main.getSheet).toBe('function');
-    expect(typeof main.removeSheet).toBe('function');
-    expect(typeof main.mergeCells).toBe('function');
-    expect(typeof main.setFreezePanes).toBe('function');
-    expect(typeof main.getMergedCells).toBe('function');
+    const workbook = await import('../../src/workbook/index');
+    const worksheet = await import('../../src/worksheet/index');
+    expect(typeof workbook.addWorksheet).toBe('function');
+    expect(typeof workbook.sheetNames).toBe('function');
+    expect(typeof workbook.getActiveSheet).toBe('function');
+    expect(typeof workbook.getSheet).toBe('function');
+    expect(typeof workbook.removeSheet).toBe('function');
+    expect(typeof worksheet.mergeCells).toBe('function');
+    expect(typeof worksheet.setFreezePanes).toBe('function');
+    expect(typeof worksheet.getMergedCells).toBe('function');
   });
 
   it('Streaming write / read — createWriteOnlyWorkbook / loadWorkbookStream', async () => {

@@ -9,7 +9,8 @@
 // - The chartsheet renders a full-screen pie chart of {A: 30, B: 50, C: 20}.
 
 import { describe, expect, it } from 'vitest';
-import { addChartsheet, addWorksheet, createWorkbook, setCell } from '../../../src/index';
+import { addChartsheet, addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { makeChartSpace, makePieChart, makeBarSeries } from '../../../src/chart/chart';
 import { writeWorkbook } from '../_helpers';
 
