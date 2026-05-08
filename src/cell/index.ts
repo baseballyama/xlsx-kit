@@ -59,6 +59,7 @@ export {
   replaceRichText,
   reverseRichText,
   richText,
+  richTextIncludes,
   richTextLength,
   makeTextRun as richTextRun,
   richTextToString,

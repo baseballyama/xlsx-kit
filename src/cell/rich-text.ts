@@ -181,6 +181,15 @@ export function findRichTextIndex(rt: RichText, search: string, fromIndex?: numb
 }
 
 /**
+ * Returns true iff the concatenated text of `rt` contains `search`. Mirrors
+ * `String.prototype.includes` semantics, including treating an empty
+ * `search` as `true`.
+ */
+export function richTextIncludes(rt: RichText, search: string, fromIndex?: number): boolean {
+  return findRichTextIndex(rt, search, fromIndex) >= 0;
+}
+
+/**
  * Reverse the rich-text by reversing each run's text (code-point-safe) and
  * also reversing the run order. The total concatenated text equals the
  * reverse of `richTextToString(rt)`; per-character font assignments are

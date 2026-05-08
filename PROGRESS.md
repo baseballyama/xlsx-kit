@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richTextIncludes(rt, search, fromIndex?)` 部分文字列判定 helper を追加** — `String.prototype.includes` 同等の boolean predicate。`findRichTextIndex(rt, search, fromIndex) >= 0` の thin wrapper。空 `search` は `true` (`String.prototype.includes` 仕様)。
+- **次のタスク**: **`richTextStartsWith(rt, search, fromIndex?)` 先頭一致 helper を追加** — `String.prototype.startsWith` 同等の boolean predicate。`richTextToString(rt).startsWith(search, fromIndex)` の thin wrapper。空 `search` は `true`。`fromIndex` 省略時は 0 (`String.prototype.startsWith` 仕様準拠)。
+  1. `src/cell/rich-text.ts` に `richTextStartsWith(rt: RichText, search: string, fromIndex?: number): boolean` を export 追加: `richTextToString(rt).startsWith(search, fromIndex)` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextStartsWith` を re-export。
+  3. `tests/phase-2/rich-text-starts-with.test.ts` 4 件: 単一 run 内で先頭一致 / 複数 run 跨ぎ先頭一致 / 一致しない / `fromIndex` 指定で内部位置から照合。
+
+- **次のタスク (前回)**: **`richTextIncludes(rt, search, fromIndex?)` 部分文字列判定 helper を追加** — `String.prototype.includes` 同等の boolean predicate。`findRichTextIndex(rt, search, fromIndex) >= 0` の thin wrapper。空 `search` は `true` (`String.prototype.includes` 仕様)。
   1. `src/cell/rich-text.ts` に `richTextIncludes(rt: RichText, search: string, fromIndex?: number): boolean` を export 追加: `findRichTextIndex(rt, search, fromIndex) >= 0` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextIncludes` を re-export。
   3. `tests/phase-2/rich-text-includes.test.ts` 4 件: 単一 run 内で含む / 複数 run 跨ぎ含む / 含まない / 空 search で true。
 
-- **次のタスク (前回)**: **`repeatRichText(rt, count)` 繰り返し helper を追加** — `String.prototype.repeat` 同等の semantics で `rt` を `count` 回連結した新しい RichText を返す。各 run の font は repeat 全体を通じて保持。`count = 0` または空 `rt` で空 RichText、`count = 1` で `rt` をそのまま返す (no-op fast path)。負・非有限・小数は `RangeError` (Math.floor で整数化、ただし負/NaN/Infinity は throw)。
+  empirical: 2484 tests pass (was 2480, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`repeatRichText(rt, count)` 繰り返し helper を追加** — `String.prototype.repeat` 同等の semantics で `rt` を `count` 回連結した新しい RichText を返す。各 run の font は repeat 全体を通じて保持。`count = 0` または空 `rt` で空 RichText、`count = 1` で `rt` をそのまま返す (no-op fast path)。負・非有限・小数は `RangeError` (Math.floor で整数化、ただし負/NaN/Infinity は throw)。
   1. `src/cell/rich-text.ts` に `repeatRichText(rt: RichText, count: number): RichText` を export 追加: `Number.isFinite(count) && count >= 0` ガード→ `Math.floor(count)` → 0 または 空 rt で `makeRichText([])` / 1 で `rt` / それ以外は `concatRichText(...Array(n).fill(rt))`。
   2. `src/cell/index.ts` (= subpath barrel) から `repeatRichText` を re-export。
   3. `tests/phase-2/rich-text-repeat.test.ts` 5 件: count=3 で複数 run repeat (font 維持) / count=0 で空 / count=1 で同 rt 返却 / 空 rt で count=5 でも空 / 負 count で RangeError。
