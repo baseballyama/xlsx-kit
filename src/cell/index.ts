@@ -70,6 +70,7 @@ export {
   richTextToString,
   richTextToUpperCase,
   sliceRichText,
+  splitRichText,
   splitRichTextRuns,
   trimEndRichText,
   trimRichText,

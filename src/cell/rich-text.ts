@@ -87,6 +87,38 @@ export function applyFontToRichText(rt: RichText, font: InlineFont): RichText {
 }
 
 /**
+ * Split `rt` by `separator`, returning an array of RichText segments. Each
+ * segment preserves the original runs' fonts via `sliceRichText`. Mirrors
+ * `String.prototype.split` semantics: an empty `separator` yields one
+ * RichText per UTF-16 code unit; `limit <= 0` returns an empty array;
+ * a missing separator returns `[rt]`.
+ */
+export function splitRichText(rt: RichText, separator: string, limit?: number): RichText[] {
+  if (limit !== undefined && limit <= 0) return [];
+  if (separator === '') {
+    const total = richTextLength(rt);
+    const max = limit === undefined ? total : Math.min(limit, total);
+    const out: RichText[] = [];
+    for (let i = 0; i < max; i++) out.push(sliceRichText(rt, i, i + 1));
+    return out;
+  }
+  const s = richTextToString(rt);
+  const out: RichText[] = [];
+  let from = 0;
+  for (;;) {
+    if (limit !== undefined && out.length >= limit) return out;
+    const idx = s.indexOf(separator, from);
+    if (idx < 0) break;
+    out.push(sliceRichText(rt, from, idx));
+    from = idx + separator.length;
+  }
+  if (limit === undefined || out.length < limit) {
+    out.push(sliceRichText(rt, from));
+  }
+  return out;
+}
+
+/**
  * Split each run into one run per Unicode code point, preserving the parent
  * run's font on every produced run. Empty-text runs are dropped. Useful as a
  * preprocessing step for per-character styling or animation.

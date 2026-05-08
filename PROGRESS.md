@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`splitRichText(rt, separator, limit?)` 分割 helper を追加** — `String.prototype.split` 同等の semantics で RichText を separator で分割し `RichText[]` を返す。各セグメントは元の font を維持 (= `sliceRichText` で再構築)。`limit` 省略時は全分割、`limit <= 0` は空配列、空 separator は code-unit 単位で 1 文字ずつ分割。
+- **次のタスク**: **`clearFontsInRichText(rt)` 全 font ストリッパー helper を追加** — 各 run の `font` を完全に削除した新しい RichText を返す ergonomic helper。テキストはそのまま、formatting だけクリアする normalization 用途。
+  1. `src/cell/rich-text.ts` に `clearFontsInRichText(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text }))`。
+  2. `src/cell/index.ts` (= subpath barrel) から `clearFontsInRichText` を re-export。
+  3. `tests/phase-2/rich-text-clear-fonts.test.ts` 3 件: font 付き 1 run の font 削除 / 混在 run 全部 font 削除 / 空 RichText で空 RichText 返却。
+
+- **次のタスク (前回)**: **`splitRichText(rt, separator, limit?)` 分割 helper を追加** — `String.prototype.split` 同等の semantics で RichText を separator で分割し `RichText[]` を返す。各セグメントは元の font を維持 (= `sliceRichText` で再構築)。`limit` 省略時は全分割、`limit <= 0` は空配列、空 separator は code-unit 単位で 1 文字ずつ分割。
   1. `src/cell/rich-text.ts` に `splitRichText(rt: RichText, separator: string, limit?: number): RichText[]` を export 追加: `limit <= 0` で `[]` / 空 separator で `[0..length)` を `sliceRichText(rt, i, i+1)` で 1 文字ずつ抽出 (limit 適用) / 通常時は `richTextToString(rt)` の `indexOf` ループで段階的 slice、limit に到達したら return、最後に残り尾部を push。separator が見つからない時は `[rt]`。
   2. `src/cell/index.ts` (= subpath barrel) から `splitRichText` を re-export (`splitRichTextRuns` の隣)。
   3. `tests/phase-2/rich-text-split.test.ts` 5 件: 単一 run 内で separator 分割 (font 維持) / 複数 run 跨ぎ separator 分割 / `limit` で末尾 truncate / separator が見つからず `[rt]` / 空 separator で 1 文字ずつ分割。
 
-- **次のタスク (前回)**: **`countRichTextOccurrences(rt, search)` 出現数 helper を追加** — `replaceAllRichText` の cousin で副作用なし版。`search` の非重複出現回数を返す。空 `search` は 0 を返す (`indexOf` 仕様の無限ループを避けるため、`String.prototype.split` 的な解釈ではなく明示 0 を返却)。
+  empirical: 2521 tests pass (was 2516, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`countRichTextOccurrences(rt, search)` 出現数 helper を追加** — `replaceAllRichText` の cousin で副作用なし版。`search` の非重複出現回数を返す。空 `search` は 0 を返す (`indexOf` 仕様の無限ループを避けるため、`String.prototype.split` 的な解釈ではなく明示 0 を返却)。
   1. `src/cell/rich-text.ts` に `countRichTextOccurrences(rt: RichText, search: string): number` を export 追加: 空 search で 0 / `richTextToString(rt)` を取り、`indexOf(search, from)` ループで count、`from = idx + search.length` で進める。
   2. `src/cell/index.ts` (= subpath barrel) から `countRichTextOccurrences` を re-export。
   3. `tests/phase-2/rich-text-count.test.ts` 4 件: 単一 run 内で複数出現 / 複数 run 跨ぎ出現 (`replaceAllRichText` と同様の non-overlap カウント) / 0 出現 / 空 search で 0。
