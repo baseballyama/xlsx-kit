@@ -42,4 +42,4 @@ export type {
   RichText,
   TextRun,
 } from './rich-text';
-export { makeRichText, makeTextRun, richTextToString } from './rich-text';
+export { makeRichText, makeTextRun, makeTextRun as richTextRun, richTextToString } from './rich-text';

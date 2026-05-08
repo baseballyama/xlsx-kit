@@ -25,7 +25,7 @@
 - **Excel 365 視覚 QA** — 人手のみ。コア機能は揃っている。
 - **ZIP64 write の正式対応** — fflate 上流の 4GiB 制限。openxml-js 側ではすでに fallback ロジックが入っているので blocker ではない。
 - **public API surface の整理** — `src/index.ts` が 700+ 行に肥大。alphabetical 順を維持しているが、サブモジュールごとに `*.ts` barrel 経由でグループ化する余地あり。（urgent ではない、整形のみ。）
-- **rich-text run builder ergo の追加** — `richTextRun(text, font?)` 単体 export はまだ。`makeTextRun` を re-export するだけで済む。
+- ~~**rich-text run builder ergo の追加**~~ → `makeTextRun` の `richTextRun` alias を `src/cell/index.ts` に追加 (2026-05-08)。
 - ~~**`replaceCellValues` の range-aware 版**~~ → `replaceInRange` で対応 (2026-05-07)。
 - ~~**autofit の font-aware 改良**~~ → `opts.workbook` で font.size 比例 scaling 対応 (2026-05-07)。
 
@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richTextRun(text, font?)` 単体 export を追加** — 残タスクリストにある rich-text run builder ergo。`makeTextRun` の alias を public surface に追加するだけ。
+- **次のタスク**: **`richText(text, font?)` 単体 RichText shortcut を追加** — 1-run RichText を作る ergonomic helper。`makeRichText([{ text, font }])` のラッパ。`richTextRun` の cousin として「最短で 1-run の RichText 値を組む」用途。
+  1. `src/cell/rich-text.ts` に `richText(text: string, font?: InlineFont): RichText` を export 追加: `makeRichText([font !== undefined ? { text, font } : { text }])` を return。`text` 非 string で TypeError。
+  2. `src/cell/index.ts` (= subpath barrel) から `richText` を re-export。
+  3. `tests/phase-2/rich-text-shortcut.test.ts` 3 件: `richText(text)` で 1-run RichText / `richText(text, font)` で font 付き / 非 string で throw。
+
+- **次のタスク (前回)**: **`richTextRun(text, font?)` 単体 export を追加** — 残タスクリストにある rich-text run builder ergo。`makeTextRun` の alias を public surface に追加するだけ。
   1. `src/cell/index.ts` (= subpath barrel) に `export { makeTextRun as richTextRun } from './rich-text';` を追加。`makeTextRun` も従来通り export 維持。
   2. `tests/phase-2/rich-text-run-alias.test.ts` 2 件: `richTextRun(text)` で TextRun 生成 / `richTextRun(text, font)` で font 付き run。
   3. PROGRESS.md 残タスク欄から `richTextRun` 行を削除 (済み判定)。
 
-- **次のタスク (前回)**: **`createWorkbookFromJsonString(json, opts?)` factory を追加** — `parseJsonStringToWorkbook` の workbook factory ラッパ。`createWorkbookFromCsv` / `createWorkbookFromObjects` の JSON 版。
+  empirical: 2410 tests pass (was 2408, +2)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`createWorkbookFromJsonString(json, opts?)` factory を追加** — `parseJsonStringToWorkbook` の workbook factory ラッパ。`createWorkbookFromCsv` / `createWorkbookFromObjects` の JSON 版。
   1. `src/workbook/workbook.ts` に `createWorkbookFromJsonString(json, opts?)` を追加: `createWorkbook()` → `parseJsonStringToWorkbook(wb, json, opts)`、return wb。空 wb の場合は最低 1 sheet (`opts?.fallbackSheetTitle ?? 'Sheet1'`) を保証 (Excel は 1 sheet 必須)。
   2. opts は `ParseJsonStringToWorkbookOptions` を継承 + `fallbackSheetTitle?: string` + `date1904?: boolean`。
   3. `src/workbook/index.ts` から re-export (factory + Options 型)。
