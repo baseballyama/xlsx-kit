@@ -1,16 +1,16 @@
 // Merge a header range across the top row and freeze the first row so
 // it stays visible while scrolling.
 
-import { saveWorkbook } from 'xlsxlite/io';
-import { toFile } from 'xlsxlite/node';
-import { centerCell, setBold } from 'xlsxlite/styles';
-import { addWorksheet, createWorkbook } from 'xlsxlite/workbook';
+import { saveWorkbook } from 'xlsx-kit/io';
+import { toFile } from 'xlsx-kit/node';
+import { centerCell, setBold } from 'xlsx-kit/styles';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
 import {
   makeFreezePane,
   makeSheetView,
   mergeCells,
   setCell,
-} from 'xlsxlite/worksheet';
+} from 'xlsx-kit/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Report');

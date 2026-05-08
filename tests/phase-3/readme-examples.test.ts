@@ -34,12 +34,12 @@ describe('README — full lib read+edit+write', () => {
     // Build a synthetic workbook, edit a cell, round-trip.
     const wb = workbook.createWorkbook();
     const ws = workbook.addWorksheet(wb, 'Sheet1');
-    worksheet.setCell(ws, 1, 1, 'Hello from xlsxlite');
+    worksheet.setCell(ws, 1, 1, 'Hello from xlsx-kit');
     const bytes = await io.workbookToBytes(wb);
     const wb2 = await io.loadWorkbook(node.fromBuffer(bytes));
     const ref0 = wb2.sheets[0];
     if (ref0?.kind !== 'worksheet') throw new Error('expected worksheet');
-    expect(ref0.sheet.rows.get(1)?.get(1)?.value).toBe('Hello from xlsxlite');
+    expect(ref0.sheet.rows.get(1)?.get(1)?.value).toBe('Hello from xlsx-kit');
   });
 });
 
@@ -63,7 +63,7 @@ describe('README — Node fromFile / toFile / saveWorkbook', () => {
 });
 
 describe('README — browser fromResponse', () => {
-  it('exposes the documented `import { fromResponse } from xlsxlite/io` shape', async () => {
+  it('exposes the documented `import { fromResponse } from xlsx-kit/io` shape', async () => {
     const ioBrowser = await import('../../src/io/index');
     expect(typeof ioBrowser.fromResponse).toBe('function');
 

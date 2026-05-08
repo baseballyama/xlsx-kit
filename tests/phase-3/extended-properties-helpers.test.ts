@@ -19,13 +19,13 @@ describe('extended-properties helpers', () => {
     expect(wb.appProperties).toBeUndefined();
     setWorkbookCompany(wb, 'Anthropic');
     setWorkbookManager(wb, 'Alice');
-    setWorkbookApplication(wb, 'xlsxlite');
+    setWorkbookApplication(wb, 'xlsx-kit');
     setWorkbookAppVersion(wb, '0.1.0');
     setWorkbookHyperlinkBase(wb, 'https://docs.example.com/');
     expect(wb.appProperties).toEqual({
       company: 'Anthropic',
       manager: 'Alice',
-      application: 'xlsxlite',
+      application: 'xlsx-kit',
       appVersion: '0.1.0',
       hyperlinkBase: 'https://docs.example.com/',
     });
@@ -43,13 +43,13 @@ describe('extended-properties helpers', () => {
     addWorksheet(wb, 'A');
     setWorkbookCompany(wb, 'Anthropic');
     setWorkbookManager(wb, 'Alice');
-    setWorkbookApplication(wb, 'xlsxlite');
+    setWorkbookApplication(wb, 'xlsx-kit');
     setWorkbookHyperlinkBase(wb, 'https://example.com/');
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
     expect(wb2.appProperties?.company).toBe('Anthropic');
     expect(wb2.appProperties?.manager).toBe('Alice');
-    expect(wb2.appProperties?.application).toBe('xlsxlite');
+    expect(wb2.appProperties?.application).toBe('xlsx-kit');
     expect(wb2.appProperties?.hyperlinkBase).toBe('https://example.com/');
   });
 

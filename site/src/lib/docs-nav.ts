@@ -22,7 +22,7 @@ export const docSections: DocSection[] = [
       {
         href: '/docs/install',
         title: 'Install',
-        description: 'Add xlsxlite to a Node, Bun, or browser project.',
+        description: 'Add xlsx-kit to a Node, Bun, or browser project.',
       },
       {
         href: '/docs/getting-started',

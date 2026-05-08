@@ -1,8 +1,8 @@
 // Stream millions of rows to disk in a fixed memory budget. Each row is
 // deflated as it arrives — no intermediate workbook in memory.
 
-import { toFile } from 'xlsxlite/node';
-import { createWriteOnlyWorkbook } from 'xlsxlite/streaming';
+import { toFile } from 'xlsx-kit/node';
+import { createWriteOnlyWorkbook } from 'xlsx-kit/streaming';
 
 const sink = toFile('big.xlsx');
 const wb = await createWriteOnlyWorkbook(sink);

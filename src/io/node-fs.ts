@@ -3,10 +3,10 @@
 //
 // Kept separate from `./node.ts` so the buffer-only entry stays free of
 // `node:fs` / `node:stream` imports — important for the
-// `xlsxlite/streaming` browser-targeted bundle, which can re-export
+// `xlsx-kit/streaming` browser-targeted bundle, which can re-export
 // `fromBuffer` / `toBuffer` without dragging Node-only modules into the
 // browser surface. Users who want filesystem I/O reach this module
-// directly (or through `xlsxlite/node` once that subpath lands).
+// directly (or through `xlsx-kit/node` once that subpath lands).
 
 import { createReadStream, createWriteStream, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';

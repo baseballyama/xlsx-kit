@@ -1,6 +1,6 @@
 // xlsx streaming entry point — read-only iter + write-only append.
-// Format-agnostic byte I/O lives at `xlsxlite/io` and `xlsxlite/node`;
-// error types at `xlsxlite/utils`.
+// Format-agnostic byte I/O lives at `xlsx-kit/io` and `xlsx-kit/node`;
+// error types at `xlsx-kit/utils`.
 
 export {
   loadWorkbookStream,

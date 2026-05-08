@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>xlsxlite — TypeScript port of openpyxl</title>
+  <title>xlsx-kit — TypeScript port of openpyxl</title>
 </svelte:head>
 
 <section class="hero">
@@ -23,9 +23,9 @@
       <a href="{base}/docs/getting-started" class="btn primary">Get started →</a>
       <a href="{base}/docs/recipes" class="btn">Recipes</a>
       <a href="{base}/api" class="btn">API reference</a>
-      <a href="https://github.com/baseballyama/xlsxlite" class="btn">GitHub</a>
+      <a href="https://github.com/baseballyama/xlsx-kit" class="btn">GitHub</a>
     </div>
-    <p class="install"><code>pnpm add xlsxlite</code></p>
+    <p class="install"><code>pnpm add xlsx-kit</code></p>
   </div>
 </section>
 
@@ -44,7 +44,7 @@
       <p>
         <code>createWriteOnlyWorkbook</code> deflates rows as they arrive.
         <code>loadWorkbookStream</code> walks a file once and yields each row. Browser-safe via
-        <code>xlsxlite/streaming</code>.
+        <code>xlsx-kit/streaming</code>.
       </p>
     </article>
     <article>
@@ -58,8 +58,8 @@
     <article>
       <h3>Tiny &amp; tree-shakeable</h3>
       <p>
-        <code>xlsxlite</code> ≤ 120&nbsp;KB brotli (currently ~78&nbsp;KB).
-        <code>xlsxlite/streaming</code> ≤ 80&nbsp;KB brotli (~47&nbsp;KB). All exports are
+        <code>xlsx-kit</code> ≤ 120&nbsp;KB brotli (currently ~78&nbsp;KB).
+        <code>xlsx-kit/streaming</code> ≤ 80&nbsp;KB brotli (~47&nbsp;KB). All exports are
         side-effect-free.
       </p>
     </article>

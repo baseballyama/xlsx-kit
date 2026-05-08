@@ -1,4 +1,4 @@
-# xlsxlite
+# xlsx-kit
 
 A TypeScript library for reading and writing Excel `.xlsx` workbooks
 from Node 18+ and modern browsers, with no runtime dependencies on
@@ -13,7 +13,7 @@ Python or Excel. Inspired by [openpyxl](https://openpyxl.readthedocs.io/).
 ## Install
 
 ```sh
-pnpm add xlsxlite   # or npm / yarn / bun
+pnpm add xlsx-kit   # or npm / yarn / bun
 ```
 
 Requires Node `>=18.18` for the built-in `Web Streams`, `Blob`, and `fetch`
@@ -28,40 +28,40 @@ convenience re-exports).
 
 | Import                 | Use case                                          |
 |------------------------|---------------------------------------------------|
-| `xlsxlite/io`           | `loadWorkbook` / `saveWorkbook` / `workbookToBytes` plus byte-level Source/Sink + browser helpers (Blob/Response/Stream) |
-| `xlsxlite/node`         | Node fs glue (`fromFile` / `toFile` / `fromBuffer` / `toBuffer` / `fromReadable` / `toWritable`) |
-| `xlsxlite/streaming`    | Read-only iter (`loadWorkbookStream`) + write-only append (`createWriteOnlyWorkbook`) |
-| `xlsxlite/workbook`     | `createWorkbook`, `addWorksheet`, defined names   |
-| `xlsxlite/worksheet`    | `setCell`, `getCell`, `mergeCells`, tables, …     |
-| `xlsxlite/cell`         | Cell value-model + inline rich text               |
-| `xlsxlite/styles`       | Fonts, fills, borders, alignment, number formats  |
-| `xlsxlite/chart`        | `c:` and `cx:` chart kinds                        |
-| `xlsxlite/chartsheet`   | Standalone chartsheets                            |
-| `xlsxlite/drawing`      | Anchors, images, chart placement                  |
+| `xlsx-kit/io`           | `loadWorkbook` / `saveWorkbook` / `workbookToBytes` plus byte-level Source/Sink + browser helpers (Blob/Response/Stream) |
+| `xlsx-kit/node`         | Node fs glue (`fromFile` / `toFile` / `fromBuffer` / `toBuffer` / `fromReadable` / `toWritable`) |
+| `xlsx-kit/streaming`    | Read-only iter (`loadWorkbookStream`) + write-only append (`createWriteOnlyWorkbook`) |
+| `xlsx-kit/workbook`     | `createWorkbook`, `addWorksheet`, defined names   |
+| `xlsx-kit/worksheet`    | `setCell`, `getCell`, `mergeCells`, tables, …     |
+| `xlsx-kit/cell`         | Cell value-model + inline rich text               |
+| `xlsx-kit/styles`       | Fonts, fills, borders, alignment, number formats  |
+| `xlsx-kit/chart`        | `c:` and `cx:` chart kinds                        |
+| `xlsx-kit/chartsheet`   | Standalone chartsheets                            |
+| `xlsx-kit/drawing`      | Anchors, images, chart placement                  |
 
-Other subpaths: `xlsxlite/packaging`, `xlsxlite/utils`, `xlsxlite/xml`,
-`xlsxlite/zip`, `xlsxlite/schema`. All exports are tree-shakable
+Other subpaths: `xlsx-kit/packaging`, `xlsx-kit/utils`, `xlsx-kit/xml`,
+`xlsx-kit/zip`, `xlsx-kit/schema`. All exports are tree-shakable
 (`"sideEffects": false`).
 
 Bundle budgets (min + brotli):
 
-- `xlsxlite/streaming` ≤ 80 KB    (currently ~49 KB)
-- `xlsxlite/io` ≤ 120 KB           (currently ~85 KB)
+- `xlsx-kit/streaming` ≤ 80 KB    (currently ~49 KB)
+- `xlsx-kit/io` ≤ 120 KB           (currently ~85 KB)
 
 ## Quick examples
 
 ### Read + edit + write
 
 ```ts
-import { loadWorkbook, workbookToBytes } from 'xlsxlite/io';
-import { setCell } from 'xlsxlite/worksheet';
-import { fromBuffer } from 'xlsxlite/node';
+import { loadWorkbook, workbookToBytes } from 'xlsx-kit/io';
+import { setCell } from 'xlsx-kit/worksheet';
+import { fromBuffer } from 'xlsx-kit/node';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const wb = await loadWorkbook(fromBuffer(await readFile('input.xlsx')));
 const sheet = wb.sheets[0];
 if (sheet?.kind === 'worksheet') {
-  setCell(sheet.sheet, /* row */ 1, /* col */ 1, 'Hello from xlsxlite');
+  setCell(sheet.sheet, /* row */ 1, /* col */ 1, 'Hello from xlsx-kit');
 }
 await writeFile('output.xlsx', await workbookToBytes(wb));
 ```
@@ -69,8 +69,8 @@ await writeFile('output.xlsx', await workbookToBytes(wb));
 ### Read directly from disk (Node)
 
 ```ts
-import { loadWorkbook, saveWorkbook } from 'xlsxlite/io';
-import { fromFile, toFile } from 'xlsxlite/node';
+import { loadWorkbook, saveWorkbook } from 'xlsx-kit/io';
+import { fromFile, toFile } from 'xlsx-kit/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 // …mutate wb…
@@ -80,7 +80,7 @@ await saveWorkbook(wb, toFile('output.xlsx'));
 ### Read directly from a `fetch` response (browser)
 
 ```ts
-import { fromResponse, loadWorkbook } from 'xlsxlite/io';
+import { fromResponse, loadWorkbook } from 'xlsx-kit/io';
 
 const response = await fetch('/sheet.xlsx');
 const wb = await loadWorkbook(fromResponse(response));
@@ -89,8 +89,8 @@ const wb = await loadWorkbook(fromResponse(response));
 ### Streaming write — millions of rows in a fixed memory budget
 
 ```ts
-import { createWriteOnlyWorkbook } from 'xlsxlite/streaming';
-import { toFile } from 'xlsxlite/node';
+import { createWriteOnlyWorkbook } from 'xlsx-kit/streaming';
+import { toFile } from 'xlsx-kit/node';
 
 const sink = toFile('big.xlsx');
 const wb = await createWriteOnlyWorkbook(sink);
@@ -110,8 +110,8 @@ to disk chunk-by-chunk.
 ### Streaming read — iterate huge sheets without loading them
 
 ```ts
-import { loadWorkbookStream } from 'xlsxlite/streaming';
-import { fromFile } from 'xlsxlite/node';
+import { loadWorkbookStream } from 'xlsx-kit/streaming';
+import { fromFile } from 'xlsx-kit/node';
 
 const wb = await loadWorkbookStream(fromFile('big.xlsx'));
 const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');

@@ -6,11 +6,11 @@ import type { RequestHandler } from './$types';
 
 export const prerender = true;
 
-const PREAMBLE = `# xlsxlite — full documentation
+const PREAMBLE = `# xlsx-kit — full documentation
 
-This file is the concatenation of every page on https://xlsxlite's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
+This file is the concatenation of every page on https://xlsx-kit's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
 
-Source repo: https://github.com/baseballyama/xlsxlite
+Source repo: https://github.com/baseballyama/xlsx-kit
 `;
 
 export const GET: RequestHandler = () => {

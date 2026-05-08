@@ -11,7 +11,7 @@ import { OpenXmlIoError } from '../../../src/utils/exceptions';
 
 let scratch: string;
 beforeAll(() => {
-  scratch = mkdtempSync(join(tmpdir(), 'xlsxlite-io-'));
+  scratch = mkdtempSync(join(tmpdir(), 'xlsx-kit-io-'));
 });
 afterAll(() => {
   rmSync(scratch, { recursive: true, force: true });

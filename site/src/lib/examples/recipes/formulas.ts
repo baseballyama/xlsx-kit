@@ -1,11 +1,11 @@
 // Set a formula. Optionally cache its evaluated value so Excel renders
 // the result before recalculating on open.
 
-import { setFormula } from 'xlsxlite/cell';
-import { saveWorkbook } from 'xlsxlite/io';
-import { toFile } from 'xlsxlite/node';
-import { addWorksheet, createWorkbook } from 'xlsxlite/workbook';
-import { setCell } from 'xlsxlite/worksheet';
+import { setFormula } from 'xlsx-kit/cell';
+import { saveWorkbook } from 'xlsx-kit/io';
+import { toFile } from 'xlsx-kit/node';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { setCell } from 'xlsx-kit/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Sheet1');

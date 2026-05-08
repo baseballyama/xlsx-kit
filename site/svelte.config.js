@@ -21,7 +21,7 @@ const mdsvexOptions = {
 };
 
 // BASE_PATH lets the same build run locally (=''), on a GitHub user page
-// or custom domain (=''), or on a project page (e.g. '/xlsxlite'). Set
+// or custom domain (=''), or on a project page (e.g. '/xlsx-kit'). Set
 // it in CI for GitHub Actions deploys.
 const basePath = process.env.BASE_PATH ?? '';
 
@@ -34,21 +34,21 @@ const config = {
     prerender: { entries: ['*'] },
     paths: { base: basePath, relative: true },
     alias: {
-      'xlsxlite/cell': '../src/cell/index.ts',
-      'xlsxlite/chart': '../src/chart/index.ts',
-      'xlsxlite/chartsheet': '../src/chartsheet/index.ts',
-      'xlsxlite/drawing': '../src/drawing/index.ts',
-      'xlsxlite/io': '../src/io/index.ts',
-      'xlsxlite/node': '../src/node.ts',
-      'xlsxlite/packaging': '../src/packaging/index.ts',
-      'xlsxlite/schema': '../src/schema/index.ts',
-      'xlsxlite/streaming': '../src/streaming/index.ts',
-      'xlsxlite/styles': '../src/styles/index.ts',
-      'xlsxlite/utils': '../src/utils/index.ts',
-      'xlsxlite/workbook': '../src/workbook/index.ts',
-      'xlsxlite/worksheet': '../src/worksheet/index.ts',
-      'xlsxlite/xml': '../src/xml/index.ts',
-      'xlsxlite/zip': '../src/zip/index.ts',
+      'xlsx-kit/cell': '../src/cell/index.ts',
+      'xlsx-kit/chart': '../src/chart/index.ts',
+      'xlsx-kit/chartsheet': '../src/chartsheet/index.ts',
+      'xlsx-kit/drawing': '../src/drawing/index.ts',
+      'xlsx-kit/io': '../src/io/index.ts',
+      'xlsx-kit/node': '../src/node.ts',
+      'xlsx-kit/packaging': '../src/packaging/index.ts',
+      'xlsx-kit/schema': '../src/schema/index.ts',
+      'xlsx-kit/streaming': '../src/streaming/index.ts',
+      'xlsx-kit/styles': '../src/styles/index.ts',
+      'xlsx-kit/utils': '../src/utils/index.ts',
+      'xlsx-kit/workbook': '../src/workbook/index.ts',
+      'xlsx-kit/worksheet': '../src/worksheet/index.ts',
+      'xlsx-kit/xml': '../src/xml/index.ts',
+      'xlsx-kit/zip': '../src/zip/index.ts',
     },
   },
 };

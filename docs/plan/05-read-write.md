@@ -307,7 +307,7 @@ function writeCellXml(out: XmlChunkBuffer, c: Cell, sharedStrings: SharedStrings
 
 - openpyxl の `tests/data/genuine/*.xlsx` を `tests/fixtures/genuine/` にハードリンク（または symlink）
 - 同 `reader/`, `writer/` も
-- 自前で生成するフィクスチャは `tests/fixtures/xlsxlite/` に置く（ファイルプレフィクス `oxjs-`）
+- 自前で生成するフィクスチャは `tests/fixtures/xlsx-kit/` に置く（ファイルプレフィクス `oxjs-`）
 
 ### 8.2 round-trip テスト構造
 

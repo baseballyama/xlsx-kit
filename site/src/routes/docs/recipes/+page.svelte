@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>Recipes — xlsxlite</title>
+  <title>Recipes — xlsx-kit</title>
 </svelte:head>
 
 <div class="content">
@@ -18,7 +18,7 @@
       Working code for the things people actually want to do — open a workbook, build one
       from scratch, style cells, add a chart, stream millions of rows. Every snippet on
       this page is a real <code>.ts</code> file in the repo, type-checked against the
-      live <code>xlsxlite</code> on every build, so what you see compiles.
+      live <code>xlsx-kit</code> on every build, so what you see compiles.
     </p>
     <p class="meta">
       {data.groups.flatMap((g) => g.recipes).length} recipes across {data.groups.length}

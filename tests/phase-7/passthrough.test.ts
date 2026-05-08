@@ -1,6 +1,6 @@
 // Phase 7 acceptance: VBA / pivot / activeX / customXml passthrough.
 // Per docs/plan/09-pivot-vba.md §1, the goal is "openpyxl が壊さない xlsx
-// は xlsxlite も壊さない" — these tests pin that contract.
+// は xlsx-kit も壊さない" — these tests pin that contract.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
