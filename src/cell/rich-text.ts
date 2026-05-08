@@ -95,6 +95,25 @@ export function clearFontsInRichText(rt: RichText): RichText {
 }
 
 /**
+ * Structural-equality predicate over two RichText values. Returns true iff
+ * they have the same number of runs and each run's `text` matches and each
+ * `font` (compared by `JSON.stringify(font ?? null)`) is structurally equal.
+ * Reference-identical inputs short-circuit to `true`.
+ */
+export function richTextEqual(a: RichText, b: RichText): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const ra = a[i];
+    const rb = b[i];
+    if (ra === undefined || rb === undefined) return false;
+    if (ra.text !== rb.text) return false;
+    if (JSON.stringify(ra.font ?? null) !== JSON.stringify(rb.font ?? null)) return false;
+  }
+  return true;
+}
+
+/**
  * Split `rt` by `separator`, returning an array of RichText segments. Each
  * segment preserves the original runs' fonts via `sliceRichText`. Mirrors
  * `String.prototype.split` semantics: an empty `separator` yields one

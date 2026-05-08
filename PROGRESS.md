@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richTextEqual(a, b)` 構造比較 predicate を追加** — 2 つの RichText が同じ run 列・同じ font かを判定する boolean。各 run の `text` を厳密一致、`font` は `JSON.stringify(font ?? null)` で比較 (`mergeAdjacentRichTextRuns` と同じ手法)。reference 同一は早期 return。長さ違いや個別 run 違いで false。
+- **次のタスク**: **`truncateRichText(rt, maxLength, ellipsis?)` 切り詰め helper を追加** — `richTextLength(rt) <= maxLength` なら無加工、それ以外は `[0, maxLength)` に slice (font 維持)、`ellipsis` 指定時は末尾を ellipsis で置換。`maxLength <= 0` で空 RichText (ellipsis 無視)、`ellipsis.length >= maxLength` で `richText(ellipsis.slice(0, maxLength))` (ellipsis 自身を hard truncate)。
+  1. `src/cell/rich-text.ts` に `truncateRichText(rt: RichText, maxLength: number, ellipsis?: string): RichText` を export 追加: `richTextLength` 計測 → 短ければ `rt` / `maxLength <= 0` で空 / 空 ellipsis で `sliceRichText(rt, 0, maxLength)` / `ellipsis.length >= maxLength` で `richText(ellipsis.slice(0, maxLength))` / それ以外は `concatRichText(sliceRichText(rt, 0, maxLength - ellipsis.length), ellipsis)`。
+  2. `src/cell/index.ts` (= subpath barrel) から `truncateRichText` を re-export。
+  3. `tests/phase-2/rich-text-truncate.test.ts` 5 件: 短い rt は無加工 / ellipsis なしで hard truncate / `'...'` ellipsis で末尾置換 / `maxLength = 0` で空 RichText / ellipsis が `maxLength` より長い場合 ellipsis を hard truncate。
+
+- **次のタスク (前回)**: **`richTextEqual(a, b)` 構造比較 predicate を追加** — 2 つの RichText が同じ run 列・同じ font かを判定する boolean。各 run の `text` を厳密一致、`font` は `JSON.stringify(font ?? null)` で比較 (`mergeAdjacentRichTextRuns` と同じ手法)。reference 同一は早期 return。長さ違いや個別 run 違いで false。
   1. `src/cell/rich-text.ts` に `richTextEqual(a: RichText, b: RichText): boolean` を export 追加: `a === b` で true / 長さ違いで false / 各 index `a[i]` `b[i]` を取り `noUncheckedIndexedAccess` 対策で undefined ガード → text 比較 → font JSON 比較。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextEqual` を re-export。
   3. `tests/phase-2/rich-text-equal.test.ts` 5 件: 同 reference で true / 同内容別 reference で true / text 違いで false / font 違いで false / 長さ違いで false。
 
-- **次のタスク (前回)**: **`clearFontsInRichText(rt)` 全 font ストリッパー helper を追加** — 各 run の `font` を完全に削除した新しい RichText を返す ergonomic helper。テキストはそのまま、formatting だけクリアする normalization 用途。
+  empirical: 2529 tests pass (was 2524, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`clearFontsInRichText(rt)` 全 font ストリッパー helper を追加** — 各 run の `font` を完全に削除した新しい RichText を返す ergonomic helper。テキストはそのまま、formatting だけクリアする normalization 用途。
   1. `src/cell/rich-text.ts` に `clearFontsInRichText(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text }))`。
   2. `src/cell/index.ts` (= subpath barrel) から `clearFontsInRichText` を re-export。
   3. `tests/phase-2/rich-text-clear-fonts.test.ts` 3 件: font 付き 1 run の font 削除 / 混在 run 全部 font 削除 / 空 RichText で空 RichText 返却。

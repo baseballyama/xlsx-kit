@@ -63,6 +63,7 @@ export {
   reverseRichText,
   richText,
   richTextEndsWith,
+  richTextEqual,
   richTextIncludes,
   richTextLength,
   makeTextRun as richTextRun,
