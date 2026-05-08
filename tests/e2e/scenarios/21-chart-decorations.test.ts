@@ -10,7 +10,8 @@
 //   point, with a separate exponential trendline.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, setCell } from '../../../src/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import {
   makeBarChart,
   makeBarSeries,

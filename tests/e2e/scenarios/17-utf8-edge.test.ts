@@ -11,7 +11,9 @@
 //   the literal "corner" — Excel will jump there if you press Ctrl+End.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, MAX_COL, MAX_ROW, setCell } from '../../../src/index';
+import { MAX_COL, MAX_ROW } from '../../../src/utils/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 17 — UTF-8 + edge coordinates', () => {

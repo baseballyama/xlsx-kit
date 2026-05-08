@@ -1,21 +1,26 @@
 import { defineConfig } from 'tsdown';
 
-// Two public subpath entries:
-// - `openxml-js`           — full library surface
-// - `openxml-js/streaming` — read-only iter + write-only append, gated
-//                            at ≤80KB min+gz by size-limit (docs/plan/
-//                            06-streaming.md acceptance §3.4).
-//
-// The eventual matrix (per docs/plan/11-build-publish.md §1.3) adds further
-// subpath entries (read / write / styles / chart / chart-extended / drawing /
-// pivot / schema / io-node / io-browser) with node and browser platform
-// variants. Those land alongside the size gates that justify them.
+// One bundle per public subpath. The root `openxml-js` barrel was retired in
+// favour of section-scoped subpaths so users only pull in what they actually
+// use.
 
 export default defineConfig({
   entry: {
-    index: 'src/index.ts',
-    streaming: 'src/streaming/index.ts',
+    cell: 'src/cell/index.ts',
+    chart: 'src/chart/index.ts',
+    chartsheet: 'src/chartsheet/index.ts',
+    drawing: 'src/drawing/index.ts',
+    io: 'src/io/index.ts',
     node: 'src/node.ts',
+    packaging: 'src/packaging/index.ts',
+    schema: 'src/schema/index.ts',
+    streaming: 'src/streaming/index.ts',
+    styles: 'src/styles/index.ts',
+    utils: 'src/utils/index.ts',
+    workbook: 'src/workbook/index.ts',
+    worksheet: 'src/worksheet/index.ts',
+    xml: 'src/xml/index.ts',
+    zip: 'src/zip/index.ts',
   },
   format: ['esm'],
   target: 'es2022',

@@ -12,15 +12,10 @@
 //   format `[h]:mm:ss` applied they should show e.g. 1:30:00 for 90 min.
 
 import { describe, expect, it } from 'vitest';
-import {
-  addCellXf,
-  addNumFmt,
-  addWorksheet,
-  createWorkbook,
-  defaultCellXf,
-  makeDurationValue,
-  setCell,
-} from '../../../src/index';
+import { makeDurationValue } from '../../../src/cell/index';
+import { addCellXf, addNumFmt, defaultCellXf } from '../../../src/styles/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 const buildDateBook = (date1904: boolean) => {

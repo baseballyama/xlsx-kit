@@ -14,7 +14,8 @@
 import { describe, expect, it } from 'vitest';
 import { makeBarChart, makeBarSeries, makeChartSpace, makeLineChart } from '../../../src/chart/chart';
 import type { ChartSpace } from '../../../src/chart/chart';
-import { addWorksheet, createWorkbook, setCell } from '../../../src/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { makeOneCellAnchor } from '../../../src/drawing/anchor';
 import { makeChartDrawingItem, makeDrawing } from '../../../src/drawing/drawing';
 import { writeWorkbook } from '../_helpers';

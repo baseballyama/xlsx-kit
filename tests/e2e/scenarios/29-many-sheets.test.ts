@@ -10,7 +10,8 @@
 //   tab; verify nothing about saving from this build prevents that.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook, setCell, setColumnWidth } from '../../../src/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell, setColumnWidth } from '../../../src/worksheet/index';
 import { setFormula } from '../../../src/cell/cell';
 import { writeWorkbook } from '../_helpers';
 

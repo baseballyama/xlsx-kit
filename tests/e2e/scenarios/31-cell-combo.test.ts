@@ -14,28 +14,9 @@
 // - Cells outside the merge are normal.
 
 import { describe, expect, it } from 'vitest';
-import {
-  addBorder,
-  addDataValidation,
-  addFill,
-  addFont,
-  addWorksheet,
-  addCellXf,
-  createWorkbook,
-  defaultCellXf,
-  makeAlignment,
-  makeBorder,
-  makeColor,
-  makeFont,
-  makePatternFill,
-  makeSide,
-  mergeCells,
-  setCell,
-  setColumnWidth,
-  setComment,
-  setHyperlink,
-  setRowHeight,
-} from '../../../src/index';
+import { addBorder, addCellXf, addFill, addFont, defaultCellXf, makeAlignment, makeBorder, makeColor, makeFont, makePatternFill, makeSide } from '../../../src/styles/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { addDataValidation, mergeCells, setCell, setColumnWidth, setComment, setHyperlink, setRowHeight } from '../../../src/worksheet/index';
 import { parseMultiCellRange } from '../../../src/worksheet/cell-range';
 import { writeWorkbook } from '../_helpers';
 

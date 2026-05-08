@@ -7,10 +7,13 @@
 // effect / text) so the slot grows by attribute as new primitive
 // modules land.
 
+import type { Point2D, PositiveSize2D } from '../anchor';
 import type { EffectsRef } from './effect';
 import type { Fill } from './fill';
 import type { Geometry } from './geometry';
 import type { LineProperties } from './line';
+
+export type { Point2D, PositiveSize2D };
 
 export type BlackWhiteMode =
   | 'clr'
@@ -24,16 +27,6 @@ export type BlackWhiteMode =
   | 'black'
   | 'white'
   | 'hidden';
-
-export interface Point2D {
-  x: number;
-  y: number;
-}
-
-export interface PositiveSize2D {
-  cx: number;
-  cy: number;
-}
 
 /** `<a:xfrm>`. Position / size / rotation transformation. */
 export interface Transform2D {

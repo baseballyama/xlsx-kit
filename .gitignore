@@ -1,6 +1,10 @@
 # Claude Code session state (never commit)
 .claude/
 
+# macOS
+.DS_Store
+**/.DS_Store
+
 # Logs
 logs
 *.log
