@@ -262,6 +262,22 @@ export function concatRichText(...parts: ReadonlyArray<RichText | string | TextR
 }
 
 /**
+ * Pad the end of `rt` with copies of `padString` (default `' '`) until the
+ * concatenated text length reaches `targetLength`, mirroring
+ * `String.prototype.padEnd`. The pad characters form a single font-less
+ * trailing run; existing runs (and their fonts) are preserved untouched.
+ * Returns `rt` unchanged when `targetLength <= richTextLength(rt)` or when
+ * `padString` is empty.
+ */
+export function padEndRichText(rt: RichText, targetLength: number, padString = ' '): RichText {
+  if (padString === '') return rt;
+  const cur = richTextLength(rt);
+  if (targetLength <= cur) return rt;
+  const padded = ''.padEnd(targetLength - cur, padString);
+  return concatRichText(rt, padded);
+}
+
+/**
  * Trim leading and trailing ASCII whitespace (space, tab, CR, LF) from the
  * concatenated text of `rt`, returning a new RichText. Per-run fonts are
  * preserved on the surviving slice. Internal whitespace is left intact.

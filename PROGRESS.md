@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`padEndRichText(rt, targetLength, padString?)` 末尾パディング helper を追加** — `String.prototype.padEnd` 同等の semantics で `rt` の末尾に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として末尾に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
+- **次のタスク**: **`padStartRichText(rt, targetLength, padString?)` 先頭パディング helper を追加** — `padEndRichText` の対。`String.prototype.padStart` 同等の semantics で `rt` の先頭に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として先頭に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
+  1. `src/cell/rich-text.ts` に `padStartRichText(rt: RichText, targetLength: number, padString?: string): RichText` を export 追加: `richTextLength(rt)` → 不足分 `n = targetLength - cur` を `''.padStart(n, padString ?? ' ')` で生成 → `concatRichText(padded, rt)`。`padString === ''` または `targetLength <= cur` で `rt` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `padStartRichText` を re-export。
+  3. `tests/phase-2/rich-text-pad-start.test.ts` 4 件: default ' ' で先頭パディング (font 既存 run 維持) / カスタム padString が割り切れない場合 / `targetLength <= length` で no-op / 空 padString で no-op。
+
+- **次のタスク (前回)**: **`padEndRichText(rt, targetLength, padString?)` 末尾パディング helper を追加** — `String.prototype.padEnd` 同等の semantics で `rt` の末尾に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として末尾に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
   1. `src/cell/rich-text.ts` に `padEndRichText(rt: RichText, targetLength: number, padString?: string): RichText` を export 追加: `richTextLength(rt)` → 不足分 `n = targetLength - cur` を `''.padEnd(n, padString ?? ' ')` で文字列生成 → `concatRichText(rt, padded)`。`padString === ''` または `targetLength <= cur` で `rt` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `padEndRichText` を re-export。
   3. `tests/phase-2/rich-text-pad-end.test.ts` 4 件: default ' ' で末尾パディング (font 既存 run 維持) / カスタム padString が割り切れない場合 (e.g. `'ab'` を 5 char target で `'ababa'` 部分) / `targetLength <= length` で no-op / 空 padString で no-op。
 
-- **次のタスク (前回)**: **`trimRichText(rt)` ASCII 空白トリム helper を追加** — RichText 全体の前後の空白 (ASCII space / tab / CR / LF) を削除した新しい RichText を返す。実装は `richTextToString(rt)` の前後 trim 量を計測 → `sliceRichText(rt, leadingTrim, length - trailingTrim)`。中間の空白は維持。
+  empirical: 2471 tests pass (was 2467, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`trimRichText(rt)` ASCII 空白トリム helper を追加** — RichText 全体の前後の空白 (ASCII space / tab / CR / LF) を削除した新しい RichText を返す。実装は `richTextToString(rt)` の前後 trim 量を計測 → `sliceRichText(rt, leadingTrim, length - trailingTrim)`。中間の空白は維持。
   1. `src/cell/rich-text.ts` に `trimRichText(rt: RichText): RichText` を export 追加: `richTextToString` → `String.prototype.search(/[^ \t\r\n]/)` で leadingTrim を、末尾は charCodeAt walk で trailingTrim を求める (全 whitespace なら空 RichText)。`sliceRichText` で再構築。
   2. `src/cell/index.ts` (= subpath barrel) から `trimRichText` を re-export。
   3. `tests/phase-2/rich-text-trim.test.ts` 4 件: 単一 run 前後トリム (font 維持) / 複数 run 跨ぎ前後トリム / 全 whitespace で空 RichText / 中間空白は維持。
