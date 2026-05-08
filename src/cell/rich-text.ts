@@ -199,6 +199,16 @@ export function richTextStartsWith(rt: RichText, search: string, fromIndex?: num
 }
 
 /**
+ * Returns true iff the concatenated text of `rt`, truncated at `endIndex`
+ * (default `richTextLength(rt)`), ends with `search`. Mirrors
+ * `String.prototype.endsWith` semantics, including treating an empty
+ * `search` as `true`.
+ */
+export function richTextEndsWith(rt: RichText, search: string, endIndex?: number): boolean {
+  return richTextToString(rt).endsWith(search, endIndex);
+}
+
+/**
  * Reverse the rich-text by reversing each run's text (code-point-safe) and
  * also reversing the run order. The total concatenated text equals the
  * reverse of `richTextToString(rt)`; per-character font assignments are
