@@ -181,6 +181,30 @@ export function findRichTextIndex(rt: RichText, search: string, fromIndex?: numb
 }
 
 /**
+ * Replace every non-overlapping occurrence of `search` with `replacement`,
+ * returning a new RichText. An empty `search` is a no-op (returns `rt`
+ * unchanged).
+ */
+export function replaceAllRichText(
+  rt: RichText,
+  search: string,
+  replacement: RichText | string,
+): RichText {
+  if (search === '') return rt;
+  const replacementLen =
+    typeof replacement === 'string' ? replacement.length : richTextLength(replacement);
+  let cur = rt;
+  let from = 0;
+  for (;;) {
+    const idx = findRichTextIndex(cur, search, from);
+    if (idx < 0) break;
+    cur = replaceRichText(cur, idx, idx + search.length, replacement);
+    from = idx + replacementLen;
+  }
+  return cur;
+}
+
+/**
  * Merge adjacent runs whose `font` is structurally equal, concatenating their
  * `text`. Useful as a cleanup pass after `splitRichTextRuns`, per-char
  * styling, or `concatRichText` chains. The input is not mutated.

@@ -52,6 +52,7 @@ export {
   makeTextRun,
   mapRichTextRuns,
   mergeAdjacentRichTextRuns,
+  replaceAllRichText,
   replaceRichText,
   richText,
   richTextLength,

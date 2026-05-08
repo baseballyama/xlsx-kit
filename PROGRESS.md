@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`replaceAllRichText(rt, search, replacement)` 全置換 helper を追加** — `findRichTextIndex` + `replaceRichText` の primitive を組み合わせた高レベル helper。`search: string` の全出現を `replacement: RichText | string` で置換した新しい RichText を返す。空 `search` は no-op (input そのまま)。
+- **次のタスク**: **`reverseRichText(rt)` 逆順 helper を追加** — RichText の各 run の text を反転 (Array.from + reverse + join, code-point safe) し、run 順序も反転した新しい RichText を返す。`richTextToString(rt).split('').reverse().join('')` の文字列等価動作だが run-level の font は (反転位置にあわせて) 移動する。
+  1. `src/cell/rich-text.ts` に `reverseRichText(rt: RichText): RichText` を export 追加: 各 run を `makeTextRun(Array.from(r.text).reverse().join(''), r.font)` として再生成 → 配列を `.reverse()` → `makeRichText`。
+  2. `src/cell/index.ts` (= subpath barrel) から `reverseRichText` を re-export。
+  3. `tests/phase-2/rich-text-reverse.test.ts` 4 件: 単一 run 反転 (font 維持) / 複数 run 反転 (順序+各 run text 両方反転) / 空 RichText で空 / `splitRichTextRuns` 経由でも結果一致。
+
+- **次のタスク (前回)**: **`replaceAllRichText(rt, search, replacement)` 全置換 helper を追加** — `findRichTextIndex` + `replaceRichText` の primitive を組み合わせた高レベル helper。`search: string` の全出現を `replacement: RichText | string` で置換した新しい RichText を返す。空 `search` は no-op (input そのまま)。
   1. `src/cell/rich-text.ts` に `replaceAllRichText(rt: RichText, search: string, replacement: RichText | string): RichText` を export 追加: ループで `findRichTextIndex` → `replaceRichText`、search.length 分 fromIndex 進める。replacement の length は新 fromIndex 計算に使用 (string なら length、RichText なら richTextLength)。空 search は input return。
   2. `src/cell/index.ts` (= subpath barrel) から `replaceAllRichText` を re-export。
   3. `tests/phase-2/rich-text-replace-all.test.ts` 4 件: 単一 run 内で全置換 / 複数 run 跨ぎ全置換 / RichText replacement で font 維持 / 空 search で no-op。
 
-- **次のタスク (前回)**: **`findRichTextIndex(rt, search, fromIndex?)` 検索 helper を追加** — `richTextToString(rt).indexOf(search, fromIndex)` の thin wrapper だが、内部で string concat を 1 回しか行わない (毎回ループ inline)。string 内の最初の出現位置 (見つからなければ -1) を返す ergonomic helper。`replaceRichText` / `sliceRichText` と組み合わせて find-and-replace の primitive となる。
+  empirical: 2459 tests pass (was 2455, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`findRichTextIndex(rt, search, fromIndex?)` 検索 helper を追加** — `richTextToString(rt).indexOf(search, fromIndex)` の thin wrapper だが、内部で string concat を 1 回しか行わない (毎回ループ inline)。string 内の最初の出現位置 (見つからなければ -1) を返す ergonomic helper。`replaceRichText` / `sliceRichText` と組み合わせて find-and-replace の primitive となる。
   1. `src/cell/rich-text.ts` に `findRichTextIndex(rt: RichText, search: string, fromIndex?: number): number` を export 追加: 内部で `richTextToString(rt)` を生成し `String.prototype.indexOf(search, fromIndex)` 結果を return (シンプルな実装、後で最適化可能)。空 string `''` は仕様上 `String.prototype.indexOf` と同じ semantics (常に `fromIndex` 返却)。
   2. `src/cell/index.ts` (= subpath barrel) から `findRichTextIndex` を re-export。
   3. `tests/phase-2/rich-text-find.test.ts` 4 件: 単一 run 内で検索 / 複数 run 跨ぎ検索 / `fromIndex` で 2nd 出現発見 / 見つからない場合 -1。
