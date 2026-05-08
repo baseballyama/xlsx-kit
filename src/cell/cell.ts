@@ -266,6 +266,11 @@ export function isEmptyCell(c: Cell): boolean {
   return c.value === null;
 }
 
+/** Returns true iff the cell has a hyperlink registered (`hyperlinkId` set). */
+export function cellHasHyperlink(c: Cell): boolean {
+  return c.hyperlinkId !== undefined;
+}
+
 /**
  * Get the formula text from a formula-bearing cell, or `undefined`
  * for non-formula cells. Equivalent to:
