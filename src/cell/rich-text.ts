@@ -171,6 +171,16 @@ export function insertRichText(rt: RichText, index: number, insertion: RichText 
 }
 
 /**
+ * Find the first occurrence of `search` in the concatenated text of `rt`.
+ * Mirrors `String.prototype.indexOf` semantics: returns -1 when not found,
+ * `fromIndex` defaults to 0, and an empty `search` always matches at
+ * `fromIndex` (clamped to `[0, length]`).
+ */
+export function findRichTextIndex(rt: RichText, search: string, fromIndex?: number): number {
+  return richTextToString(rt).indexOf(search, fromIndex);
+}
+
+/**
  * Merge adjacent runs whose `font` is structurally equal, concatenating their
  * `text`. Useful as a cleanup pass after `splitRichTextRuns`, per-char
  * styling, or `concatRichText` chains. The input is not mutated.

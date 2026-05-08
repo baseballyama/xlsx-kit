@@ -46,6 +46,7 @@ export {
   appendRichTextRun,
   applyFontToRichText,
   concatRichText,
+  findRichTextIndex,
   insertRichText,
   makeRichText,
   makeTextRun,
