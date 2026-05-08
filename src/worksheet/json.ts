@@ -20,7 +20,8 @@ import {
   isFormulaValue,
   isRichTextValue,
 } from '../cell/cell';
-import { readRangeAsObjects, type Worksheet } from './worksheet';
+import { boundariesToRangeString } from '../utils/coordinate';
+import { getDataExtent, readRangeAsObjects, type Worksheet } from './worksheet';
 
 type JsonValue = string | number | boolean | null;
 
@@ -78,4 +79,17 @@ export function worksheetToJson(
     return obj;
   });
   return JSON.stringify(mapped, null, opts.pretty ? 2 : undefined);
+}
+
+/**
+ * Whole-worksheet shortcut over {@link worksheetToJson}: serialises
+ * the sheet's data extent (`getDataExtent`) as JSON. Returns `'[]'`
+ * for an empty worksheet (mirrors the CSV / HTML / Markdown / Text
+ * shortcut conventions, with `'[]'` chosen so the output stays a
+ * valid JSON document).
+ */
+export function getWorksheetAsJson(ws: Worksheet, opts: WorksheetToJsonOptions = {}): string {
+  const ext = getDataExtent(ws);
+  if (!ext) return '[]';
+  return worksheetToJson(ws, boundariesToRangeString(ext), opts);
 }

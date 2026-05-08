@@ -269,7 +269,7 @@ export { addExcelTable, addTableFromObjects, makeTableColumn, makeTableDefinitio
 export { getRangeAsCsv, getWorksheetAsCsv, parseCsv, parseCsvToRange } from './csv';
 export { getWorksheetAsHtml, worksheetToHtml } from './html';
 export type { WorksheetToJsonOptions } from './json';
-export { worksheetToJson } from './json';
+export { getWorksheetAsJson, worksheetToJson } from './json';
 export { getWorksheetAsMarkdownTable, worksheetToMarkdownTable } from './markdown';
 export { getWorksheetAsTextTable, worksheetToTextTable } from './text';
 export type { CellWatch, IgnoredError } from './errors';

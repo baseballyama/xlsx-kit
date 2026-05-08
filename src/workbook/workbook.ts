@@ -32,6 +32,7 @@ import { coordinateToTuple, parseSheetRange } from '../utils/coordinate';
 import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToString } from '../worksheet/cell-range';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import { getWorksheetAsHtml } from '../worksheet/html';
+import { getWorksheetAsJson, type WorksheetToJsonOptions } from '../worksheet/json';
 import { getWorksheetAsMarkdownTable } from '../worksheet/markdown';
 import { getWorksheetAsTextTable } from '../worksheet/text';
 import type { LegacyComment } from '../worksheet/comments';
@@ -1283,6 +1284,26 @@ export function getWorkbookAsTextTableRecord(wb: Workbook): Record<string, strin
   const out: Record<string, string> = {};
   for (const ws of iterWorksheets(wb)) {
     out[ws.title] = getWorksheetAsTextTable(ws);
+  }
+  return out;
+}
+
+/**
+ * Workbook-wide JSON export. Walks every Worksheet in tab-strip
+ * order, serialises each via {@link getWorksheetAsJson}, and returns
+ * a `Record<string, string>` keyed by sheet title. Empty worksheets
+ * are included with `"[]"`. Chartsheets are skipped.
+ *
+ * `opts` is forwarded verbatim to {@link getWorksheetAsJson} (so
+ * `pretty` / `skipEmptyRows` apply uniformly across every sheet).
+ */
+export function getWorkbookAsJsonRecord(
+  wb: Workbook,
+  opts: WorksheetToJsonOptions = {},
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const ws of iterWorksheets(wb)) {
+    out[ws.title] = getWorksheetAsJson(ws, opts);
   }
   return out;
 }
