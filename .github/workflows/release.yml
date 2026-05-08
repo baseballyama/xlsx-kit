@@ -1,8 +1,14 @@
 name: Release
 
-# Tag-driven publish. Push a `v*.*.*` tag (e.g. `v0.2.0`) and the workflow
-# runs the prepublish gates, publishes to npm with provenance, and creates
-# a matching GitHub Release.
+# Changesets-driven publish.
+#
+# Flow:
+#   1. PRs land on main with a `.changeset/*.md` file describing the bump.
+#   2. This workflow opens (or updates) a "Version Packages" PR that bumps
+#      package.json + CHANGELOG.md and removes consumed changesets.
+#   3. Merging that PR re-runs this workflow, which now finds no pending
+#      changesets and instead publishes to npm with provenance and creates
+#      a GitHub Release for each version bump.
 #
 # Required repo secrets:
 #   - NPM_TOKEN: npm "Automation" token (https://www.npmjs.com/settings/{user}/tokens)
@@ -11,17 +17,18 @@ name: Release
 # Required repo settings:
 #   - Settings → Actions → General → Workflow permissions:
 #     "Read and write permissions" + "Allow GitHub Actions to create and
-#     approve pull requests" (so softprops/action-gh-release can create
-#     the GitHub Release).
+#     approve pull requests" (so changesets/action can open the release PR
+#     and create GitHub Releases).
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 permissions:
-  contents: write    # create the GitHub Release
-  id-token: write    # OIDC for npm provenance
+  contents: write       # create/merge release PR, push tags, GitHub Releases
+  pull-requests: write  # open the "Version Packages" PR
+  id-token: write       # OIDC for npm provenance
 
 concurrency:
   group: release-${{ github.ref }}
@@ -46,28 +53,22 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Verify tag matches package.json version
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "Tag version $TAG_VERSION does not match package.json $PKG_VERSION" >&2
-            exit 1
-          fi
-
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
       - run: pnpm size
 
-      - name: Publish to npm with provenance
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Create Release PR or publish to npm
+        id: changesets
+        uses: changesets/action@v1
         with:
-          generate_release_notes: true
-          name: ${{ github.ref_name }}
+          version: pnpm changeset version
+          publish: pnpm release
+          title: 'chore(release): version packages'
+          commit: 'chore(release): version packages'
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'

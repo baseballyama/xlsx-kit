@@ -112,9 +112,14 @@
     "build:dts": "tsc -p tsconfig.build.json",
     "size": "size-limit",
     "doc:api": "typedoc",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish",
     "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm size"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.31.0",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "^4.1.5",

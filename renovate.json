@@ -1,0 +1,61 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    ":maintainLockFilesWeekly",
+    "group:allNonMajor",
+    "schedule:weekends"
+  ],
+  "timezone": "Asia/Tokyo",
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Group all type definitions",
+      "matchPackageNames": ["/^@types//"],
+      "groupName": "type definitions"
+    },
+    {
+      "description": "Group changesets tooling",
+      "matchPackageNames": ["@changesets/cli", "@changesets/changelog-github"],
+      "groupName": "changesets"
+    },
+    {
+      "description": "Group vitest tooling",
+      "matchPackageNames": ["/^vitest/", "/^@vitest//"],
+      "groupName": "vitest"
+    },
+    {
+      "description": "Group SvelteKit / Vite tooling for the docs site",
+      "matchPackageNames": ["/^@sveltejs//", "/^svelte/", "/^vite/"],
+      "groupName": "sveltekit"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "pinDigests": true
+    },
+    {
+      "description": "Keep Node engine bumps separate so we can review CI matrix impact",
+      "matchDepNames": ["node"],
+      "groupName": "node engine"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"]
+  },
+  "postUpdateOptions": ["pnpmDedupe"],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "reference/**"
+  ]
+}
