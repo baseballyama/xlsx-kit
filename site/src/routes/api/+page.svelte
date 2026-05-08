@@ -6,14 +6,14 @@
 </script>
 
 <svelte:head>
-  <title>API reference — xlsx-craft</title>
+  <title>API reference — xlsxlite</title>
 </svelte:head>
 
 <div class="content">
   <h1>API reference</h1>
   <p class="lede">
-    Every public export of <code>xlsx-craft</code>, <code>xlsx-craft/streaming</code>, and
-    <code>xlsx-craft/node</code>, organized by section. Generated from the source via typedoc
+    Every public export of <code>xlsxlite</code>, <code>xlsxlite/streaming</code>, and
+    <code>xlsxlite/node</code>, organized by section. Generated from the source via typedoc
     and rendered inline so types stay in lockstep with the package.
   </p>
 

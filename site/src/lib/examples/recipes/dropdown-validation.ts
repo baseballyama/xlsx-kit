@@ -1,10 +1,10 @@
 // Add a list-type data validation — gives the user a dropdown of
 // allowed values when they click into the range.
 
-import { saveWorkbook } from 'xlsx-craft/io';
-import { toFile } from 'xlsx-craft/node';
-import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
-import { addDataValidation, makeDataValidation, setCell } from 'xlsx-craft/worksheet';
+import { saveWorkbook } from 'xlsxlite/io';
+import { toFile } from 'xlsxlite/node';
+import { addWorksheet, createWorkbook } from 'xlsxlite/workbook';
+import { addDataValidation, makeDataValidation, setCell } from 'xlsxlite/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Form');

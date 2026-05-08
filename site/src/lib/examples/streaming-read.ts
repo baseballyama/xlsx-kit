@@ -1,8 +1,8 @@
 // Iterate huge sheets without loading the full workbook. iterRows is a SAX
 // pass — it walks the file once and yields each row's cells.
 
-import { fromFile } from 'xlsx-craft/node';
-import { loadWorkbookStream } from 'xlsx-craft/streaming';
+import { fromFile } from 'xlsxlite/node';
+import { loadWorkbookStream } from 'xlsxlite/streaming';
 
 const wb = await loadWorkbookStream(fromFile('big.xlsx'));
 const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');

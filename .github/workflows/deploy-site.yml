@@ -47,7 +47,7 @@ jobs:
         # set to /<repo>. For a custom domain or user page, set BASE_PATH=''.
         env:
           BASE_PATH: /${{ github.event.repository.name }}
-        run: pnpm --filter xlsx-craft-site build
+        run: pnpm --filter xlsxlite-site build
 
       - uses: actions/upload-pages-artifact@v3
         with:

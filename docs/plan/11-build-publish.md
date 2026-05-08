@@ -21,13 +21,13 @@ direnv allow         # .envrc に `use flake` を仕込んでおけば自動で 
 
 ## 1. パッケージ構成
 
-`xlsx-craft` 単一パッケージ、サブパス export で機能分割（[01-architecture.md](./01-architecture.md) §6）。
+`xlsxlite` 単一パッケージ、サブパス export で機能分割（[01-architecture.md](./01-architecture.md) §6）。
 
 ### 1.1 package.json（最小骨子）
 
 ```jsonc
 {
-  "name": "xlsx-craft",
+  "name": "xlsxlite",
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",

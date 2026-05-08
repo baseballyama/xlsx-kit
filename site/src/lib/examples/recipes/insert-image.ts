@@ -1,10 +1,10 @@
 // Insert a PNG / JPEG image at a cell anchor. Format and dimensions
 // are auto-detected from the bytes, so loadImage is the only call.
 
-import { addImageAt, loadImage } from 'xlsx-craft/drawing';
-import { saveWorkbook } from 'xlsx-craft/io';
-import { toFile } from 'xlsx-craft/node';
-import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
+import { addImageAt, loadImage } from 'xlsxlite/drawing';
+import { saveWorkbook } from 'xlsxlite/io';
+import { toFile } from 'xlsxlite/node';
+import { addWorksheet, createWorkbook } from 'xlsxlite/workbook';
 import { readFile } from 'node:fs/promises';
 
 const wb = createWorkbook();

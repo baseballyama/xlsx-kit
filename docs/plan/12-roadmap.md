@@ -64,7 +64,7 @@
 
 - [ ] フェーズ1〜7 すべて完了
 - [ ] 公開 API のドキュメント整備（typedoc + ガイド）
-- [ ] 移行ガイド（openpyxl → xlsx-craft）の整備
+- [ ] 移行ガイド（openpyxl → xlsxlite）の整備
 - [ ] バンドルサイズ予算遵守（[01-architecture.md](./01-architecture.md) §13、[11-build-publish.md](./11-build-publish.md) §1.4）
 - [ ] CI 全通過（typecheck / lint / test / browser test / size / bench）
 - [ ] openpyxl の `genuine/`, `reader/`, `writer/`, `chart/`, `drawing/` 系フィクスチャ全件で round-trip pass

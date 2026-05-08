@@ -1,4 +1,4 @@
-// Error hierarchy for xlsx-craft. Per docs/plan/01-architecture.md §9
+// Error hierarchy for xlsxlite. Per docs/plan/01-architecture.md §9
 // public APIs throw subclasses of OpenXmlError; internals chain via the
 // `cause` option (Node 18+ / modern browsers all support Error.cause).
 //

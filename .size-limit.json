@@ -1,30 +1,30 @@
 [
   {
-    "name": "xlsx-craft/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
+    "name": "xlsxlite/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
     "path": "dist/streaming.mjs",
     "import": "*",
     "limit": "80 KB"
   },
   {
-    "name": "xlsx-craft/io (loadWorkbook + saveWorkbook)",
+    "name": "xlsxlite/io (loadWorkbook + saveWorkbook)",
     "path": "dist/io.mjs",
     "import": "*",
     "limit": "120 KB"
   },
   {
-    "name": "xlsx-craft/workbook",
+    "name": "xlsxlite/workbook",
     "path": "dist/workbook.mjs",
     "import": "*",
     "limit": "100 KB"
   },
   {
-    "name": "xlsx-craft/worksheet",
+    "name": "xlsxlite/worksheet",
     "path": "dist/worksheet.mjs",
     "import": "*",
     "limit": "100 KB"
   },
   {
-    "name": "xlsx-craft/styles",
+    "name": "xlsxlite/styles",
     "path": "dist/styles.mjs",
     "import": "*",
     "limit": "60 KB"

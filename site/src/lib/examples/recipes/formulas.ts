@@ -1,11 +1,11 @@
 // Set a formula. Optionally cache its evaluated value so Excel renders
 // the result before recalculating on open.
 
-import { setFormula } from 'xlsx-craft/cell';
-import { saveWorkbook } from 'xlsx-craft/io';
-import { toFile } from 'xlsx-craft/node';
-import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
-import { setCell } from 'xlsx-craft/worksheet';
+import { setFormula } from 'xlsxlite/cell';
+import { saveWorkbook } from 'xlsxlite/io';
+import { toFile } from 'xlsxlite/node';
+import { addWorksheet, createWorkbook } from 'xlsxlite/workbook';
+import { setCell } from 'xlsxlite/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Sheet1');

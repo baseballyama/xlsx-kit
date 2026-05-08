@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-  <title>{data.section.title} — API — xlsx-craft</title>
+  <title>{data.section.title} — API — xlsxlite</title>
 </svelte:head>
 
 <div class="content">
@@ -44,7 +44,7 @@
       <section class="subgroup" id={group.id}>
         <header class="subgroup-head">
           <h2>{group.label}</h2>
-          <a class="subfile" href="https://github.com/baseballyama/xlsx-craft/blob/main/{group.sourceFile}" target="_blank" rel="noopener">
+          <a class="subfile" href="https://github.com/baseballyama/xlsxlite/blob/main/{group.sourceFile}" target="_blank" rel="noopener">
             {group.sourceFile}
           </a>
         </header>

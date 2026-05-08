@@ -15,34 +15,34 @@ The package has no root barrel — every export lives behind a section subpath, 
 ```ts
 // Load and save xlsx — loadWorkbook / saveWorkbook / workbookToBytes,
 // plus byte-level Source/Sink types and browser helpers (Blob/Response/Stream).
-import { loadWorkbook, saveWorkbook, fromResponse } from 'xlsx-craft/io';
+import { loadWorkbook, saveWorkbook, fromResponse } from 'xlsxlite/io';
 
 // Node fs glue (filesystem / Readable / Writable bridges + Buffer source/sink).
-import { fromFile, toFile, fromBuffer, fromReadable } from 'xlsx-craft/node';
+import { fromFile, toFile, fromBuffer, fromReadable } from 'xlsxlite/node';
 
 // Streaming — read iter, write-only append.
-import { loadWorkbookStream, createWriteOnlyWorkbook } from 'xlsx-craft/streaming';
+import { loadWorkbookStream, createWriteOnlyWorkbook } from 'xlsxlite/streaming';
 
 // Workbook root model — createWorkbook, addWorksheet, defined names, etc.
-import { createWorkbook, addWorksheet } from 'xlsx-craft/workbook';
+import { createWorkbook, addWorksheet } from 'xlsxlite/workbook';
 
 // Worksheet — setCell, getCell, mergeCells, freeze panes, tables, hyperlinks…
-import { setCell, mergeCells } from 'xlsx-craft/worksheet';
+import { setCell, mergeCells } from 'xlsxlite/worksheet';
 
 // Cell value-model + inline rich text.
-import { makeCell, makeRichText } from 'xlsx-craft/cell';
+import { makeCell, makeRichText } from 'xlsxlite/cell';
 
 // Styles — fonts, fills, borders, alignment, number formats, named styles.
-import { makeFont, setBold } from 'xlsx-craft/styles';
+import { makeFont, setBold } from 'xlsxlite/styles';
 
 // Charts (legacy `c:` + chartex `cx:`).
-import { makeBarChart, makeChartSpace } from 'xlsx-craft/chart';
+import { makeBarChart, makeChartSpace } from 'xlsxlite/chart';
 
 // Drawings — anchors, images, chart placement.
-import { addImageAt, loadImage } from 'xlsx-craft/drawing';
+import { addImageAt, loadImage } from 'xlsxlite/drawing';
 ```
 
-Other available subpaths: `xlsx-craft/chartsheet`, `xlsx-craft/packaging`, `xlsx-craft/utils`, `xlsx-craft/xml`, `xlsx-craft/zip`, `xlsx-craft/schema`.
+Other available subpaths: `xlsxlite/chartsheet`, `xlsxlite/packaging`, `xlsxlite/utils`, `xlsxlite/xml`, `xlsxlite/zip`, `xlsxlite/schema`.
 
 Each entry has the bundle budgets enforced by `pnpm size` in CI. All exports are tree-shakable — `"sideEffects": false` is set in `package.json`.
 
@@ -50,27 +50,27 @@ Each entry has the bundle budgets enforced by `pnpm size` in CI. All exports are
 
 The library exposes a layered model split across subpaths:
 
-- **I/O** (`xlsx-craft/io`) — `loadWorkbook`, `saveWorkbook`, `workbookToBytes` plus byte-level `XlsxSource` / `XlsxSink` types and browser-safe helpers (`fromBlob`, `fromResponse`, `fromStream`, `fromArrayBuffer`, `toBlob`, `toArrayBuffer`).
-- **Node fs glue** (`xlsx-craft/node`) — `fromFile`, `toFile`, `fromBuffer`, `toBuffer`, `fromReadable`, `toWritable`.
-- **Streaming** (`xlsx-craft/streaming`) — `loadWorkbookStream`, `createWriteOnlyWorkbook`.
-- **Workbook** (`xlsx-craft/workbook`) — `createWorkbook`, `addWorksheet`, `Workbook` shape, defined names, calc properties, file metadata.
-- **Worksheet** (`xlsx-craft/worksheet`) — cells, rows, columns, merged cells, freeze panes, autoFilter, Tables, hyperlinks, data validations, conditional formatting, legacy comments.
-- **Cell** (`xlsx-craft/cell`) — Cell shape, formula helpers, inline rich-text composition.
-- **Styles** (`xlsx-craft/styles`) — `Font`, `Fill`, `Border`, `Alignment`, `Protection`, `NumberFormat`, full stylesheet pool with dedup, named styles + DXF.
-- **Drawings** (`xlsx-craft/drawing`) — anchors, images (PNG/JPEG/GIF/BMP/WebP/TIFF/SVG/EMF/WMF) with auto-detected format + dimensions.
-- **Charts** (`xlsx-craft/chart`) — 16 legacy `c:` chart kinds + 8 `cx:` chartex kinds (Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel, BoxWhisker, RegionMap).
-- **Packaging / XML / ZIP / schema** (`xlsx-craft/packaging`, `xlsx-craft/xml`, `xlsx-craft/zip`, `xlsx-craft/schema`) — the OPC layer below the workbook plus low-level XML reader / writer + Excel namespace constants. You won't touch these directly unless you're extending the library.
+- **I/O** (`xlsxlite/io`) — `loadWorkbook`, `saveWorkbook`, `workbookToBytes` plus byte-level `XlsxSource` / `XlsxSink` types and browser-safe helpers (`fromBlob`, `fromResponse`, `fromStream`, `fromArrayBuffer`, `toBlob`, `toArrayBuffer`).
+- **Node fs glue** (`xlsxlite/node`) — `fromFile`, `toFile`, `fromBuffer`, `toBuffer`, `fromReadable`, `toWritable`.
+- **Streaming** (`xlsxlite/streaming`) — `loadWorkbookStream`, `createWriteOnlyWorkbook`.
+- **Workbook** (`xlsxlite/workbook`) — `createWorkbook`, `addWorksheet`, `Workbook` shape, defined names, calc properties, file metadata.
+- **Worksheet** (`xlsxlite/worksheet`) — cells, rows, columns, merged cells, freeze panes, autoFilter, Tables, hyperlinks, data validations, conditional formatting, legacy comments.
+- **Cell** (`xlsxlite/cell`) — Cell shape, formula helpers, inline rich-text composition.
+- **Styles** (`xlsxlite/styles`) — `Font`, `Fill`, `Border`, `Alignment`, `Protection`, `NumberFormat`, full stylesheet pool with dedup, named styles + DXF.
+- **Drawings** (`xlsxlite/drawing`) — anchors, images (PNG/JPEG/GIF/BMP/WebP/TIFF/SVG/EMF/WMF) with auto-detected format + dimensions.
+- **Charts** (`xlsxlite/chart`) — 16 legacy `c:` chart kinds + 8 `cx:` chartex kinds (Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel, BoxWhisker, RegionMap).
+- **Packaging / XML / ZIP / schema** (`xlsxlite/packaging`, `xlsxlite/xml`, `xlsxlite/zip`, `xlsxlite/schema`) — the OPC layer below the workbook plus low-level XML reader / writer + Excel namespace constants. You won't touch these directly unless you're extending the library.
 
 ## Cell helpers
 
 | Function | Purpose |
 |----------|---------|
 | `setCell(sheet, row, col, value)` | Set a cell value; coercion handled (string / number / boolean). |
-| `setFormula(cell, formula)` | Apply a formula to a Cell returned by `setCell`. Use `setSharedFormula` / `setArrayFormula` from `xlsx-craft/cell` for the array / shared variants. |
+| `setFormula(cell, formula)` | Apply a formula to a Cell returned by `setCell`. Use `setSharedFormula` / `setArrayFormula` from `xlsxlite/cell` for the array / shared variants. |
 | `getCell(sheet, row, col)` | Read a cell. Returns `undefined` if empty. |
 | `setCellStyle(wb, cell, opts)` | Apply per-aspect style (font / fill / border / alignment / numberFormat) to a cell. |
 
-Coordinates are 1-indexed (`row=1, col=1` is `A1`). For A1 ↔ row/col conversion, reach for `xlsx-craft/utils`.
+Coordinates are 1-indexed (`row=1, col=1` is `A1`). For A1 ↔ row/col conversion, reach for `xlsxlite/utils`.
 
 ## Loading and saving
 
@@ -85,9 +85,9 @@ saveWorkbook(wb: Workbook, sink: XlsxSink): Promise<void>
 createWriteOnlyWorkbook(sink: XlsxSink): Promise<WriteOnlyWorkbook>
 ```
 
-`loadWorkbook` / `saveWorkbook` / `workbookToBytes` come from `xlsx-craft/io`; `loadWorkbookStream` / `createWriteOnlyWorkbook` from `xlsx-craft/streaming`.
+`loadWorkbook` / `saveWorkbook` / `workbookToBytes` come from `xlsxlite/io`; `loadWorkbookStream` / `createWriteOnlyWorkbook` from `xlsxlite/streaming`.
 
-`XlsxSource` accepts anything from a `Uint8Array` to a `ReadableStream<Uint8Array>` to a `Blob` to a Node `Readable`. The matching `from*` helpers are split between `xlsx-craft/node` (fs / buffer / readable) and `xlsx-craft/io` (blob / response / web stream / array buffer).
+`XlsxSource` accepts anything from a `Uint8Array` to a `ReadableStream<Uint8Array>` to a `Blob` to a Node `Readable`. The matching `from*` helpers are split between `xlsxlite/node` (fs / buffer / readable) and `xlsxlite/io` (blob / response / web stream / array buffer).
 
 ## Errors
 

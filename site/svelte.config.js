@@ -21,7 +21,7 @@ const mdsvexOptions = {
 };
 
 // BASE_PATH lets the same build run locally (=''), on a GitHub user page
-// or custom domain (=''), or on a project page (e.g. '/xlsx-craft'). Set
+// or custom domain (=''), or on a project page (e.g. '/xlsxlite'). Set
 // it in CI for GitHub Actions deploys.
 const basePath = process.env.BASE_PATH ?? '';
 
@@ -34,21 +34,21 @@ const config = {
     prerender: { entries: ['*'] },
     paths: { base: basePath, relative: true },
     alias: {
-      'xlsx-craft/cell': '../src/cell/index.ts',
-      'xlsx-craft/chart': '../src/chart/index.ts',
-      'xlsx-craft/chartsheet': '../src/chartsheet/index.ts',
-      'xlsx-craft/drawing': '../src/drawing/index.ts',
-      'xlsx-craft/io': '../src/io/index.ts',
-      'xlsx-craft/node': '../src/node.ts',
-      'xlsx-craft/packaging': '../src/packaging/index.ts',
-      'xlsx-craft/schema': '../src/schema/index.ts',
-      'xlsx-craft/streaming': '../src/streaming/index.ts',
-      'xlsx-craft/styles': '../src/styles/index.ts',
-      'xlsx-craft/utils': '../src/utils/index.ts',
-      'xlsx-craft/workbook': '../src/workbook/index.ts',
-      'xlsx-craft/worksheet': '../src/worksheet/index.ts',
-      'xlsx-craft/xml': '../src/xml/index.ts',
-      'xlsx-craft/zip': '../src/zip/index.ts',
+      'xlsxlite/cell': '../src/cell/index.ts',
+      'xlsxlite/chart': '../src/chart/index.ts',
+      'xlsxlite/chartsheet': '../src/chartsheet/index.ts',
+      'xlsxlite/drawing': '../src/drawing/index.ts',
+      'xlsxlite/io': '../src/io/index.ts',
+      'xlsxlite/node': '../src/node.ts',
+      'xlsxlite/packaging': '../src/packaging/index.ts',
+      'xlsxlite/schema': '../src/schema/index.ts',
+      'xlsxlite/streaming': '../src/streaming/index.ts',
+      'xlsxlite/styles': '../src/styles/index.ts',
+      'xlsxlite/utils': '../src/utils/index.ts',
+      'xlsxlite/workbook': '../src/workbook/index.ts',
+      'xlsxlite/worksheet': '../src/worksheet/index.ts',
+      'xlsxlite/xml': '../src/xml/index.ts',
+      'xlsxlite/zip': '../src/zip/index.ts',
     },
   },
 };

@@ -6,7 +6,7 @@
     { path: '/docs/getting-started', label: 'Docs' },
     { path: '/api', label: 'API' },
     { path: '/llms.txt', label: 'llms.txt' },
-    { path: 'https://github.com/baseballyama/xlsx-craft', label: 'GitHub', external: true },
+    { path: 'https://github.com/baseballyama/xlsxlite', label: 'GitHub', external: true },
   ];
 
   function resolve(link: (typeof links)[number]): string {
@@ -23,7 +23,7 @@
   <div class="inner">
     <a href="{base}/" class="brand">
       <span class="brand-mark">×</span>
-      <span class="brand-name">xlsx-craft</span>
+      <span class="brand-name">xlsxlite</span>
     </a>
     <nav>
       {#each links as link (link.path)}

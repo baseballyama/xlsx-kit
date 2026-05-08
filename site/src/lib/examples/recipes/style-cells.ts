@@ -1,16 +1,16 @@
 // Apply font, fill, alignment, and a thin border to a header row.
 
-import { saveWorkbook } from 'xlsx-craft/io';
-import { toFile } from 'xlsx-craft/node';
+import { saveWorkbook } from 'xlsxlite/io';
+import { toFile } from 'xlsxlite/node';
 import {
   centerCell,
   setBold,
   setCellBackgroundColor,
   setCellBorderAll,
   setFontSize,
-} from 'xlsx-craft/styles';
-import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
-import { setCell } from 'xlsx-craft/worksheet';
+} from 'xlsxlite/styles';
+import { addWorksheet, createWorkbook } from 'xlsxlite/workbook';
+import { setCell } from 'xlsxlite/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Report');

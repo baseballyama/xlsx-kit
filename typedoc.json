@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "xlsx-craft",
+  "name": "xlsxlite",
   "entryPoints": [
     "src/cell/index.ts",
     "src/chart/index.ts",
