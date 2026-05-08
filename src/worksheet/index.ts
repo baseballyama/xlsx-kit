@@ -268,11 +268,13 @@ export type { TableColumn, TableDefinition, TableStyleInfo } from './table';
 export { addExcelTable, addTableFromObjects, makeTableColumn, makeTableDefinition } from './table';
 export { getRangeAsCsv, getWorksheetAsCsv, parseCsv, parseCsvToRange } from './csv';
 export { getWorksheetAsHtml, worksheetToHtml } from './html';
-export type { JsonRow, JsonValue, WorksheetToJsonOptions } from './json';
+export type { JsonRow, JsonValue, ParseJsonToRangeOptions, WorksheetToJsonOptions } from './json';
 export {
   cellValueAsJson,
+  cellValueFromJson,
   getWorksheetAsJson,
   getWorksheetRowsAsJson,
+  parseJsonToRange,
   worksheetRowsAsJson,
   worksheetToJson,
 } from './json';

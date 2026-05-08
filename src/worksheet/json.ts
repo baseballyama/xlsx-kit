@@ -21,7 +21,7 @@ import {
   isRichTextValue,
 } from '../cell/cell';
 import { boundariesToRangeString } from '../utils/coordinate';
-import { getDataExtent, readRangeAsObjects, type Worksheet } from './worksheet';
+import { getDataExtent, readRangeAsObjects, type Worksheet, writeRange } from './worksheet';
 
 export type JsonValue = string | number | boolean | null;
 export type JsonRow = Record<string, JsonValue>;
@@ -121,4 +121,81 @@ export function getWorksheetRowsAsJson(
   const ext = getDataExtent(ws);
   if (!ext) return [];
   return worksheetRowsAsJson(ws, boundariesToRangeString(ext), opts);
+}
+
+const ISO_8601_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:?\d{2})$/;
+
+/**
+ * Coerce a single JSON-decoded value back into a {@link CellValue}.
+ * Inverse partner of {@link cellValueAsJson}: numbers / booleans / null
+ * pass through, strings matching ISO 8601 (`YYYY-MM-DDTHH:MM:SS[.sss][Z|±hh:mm]`)
+ * are restored to `Date`, other strings stay strings, and any other
+ * shape (object / array) falls back to `String(v)`.
+ */
+export const cellValueFromJson = (v: unknown): CellValue => {
+  if (v === null) return null;
+  if (typeof v === 'number' || typeof v === 'boolean') return v;
+  if (typeof v === 'string') {
+    if (ISO_8601_RE.test(v)) {
+      const d = new Date(v);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    return v;
+  }
+  return String(v);
+};
+
+export interface ParseJsonToRangeOptions {
+  /**
+   * Header order to use when writing. Each key becomes a column in the
+   * order given, regardless of where it appears in each row object.
+   * Defaults to `Object.keys(rows[0])` — the insertion order of the
+   * first row.
+   */
+  keys?: string[];
+}
+
+/**
+ * Inverse of {@link worksheetToJson}: parse a JSON array of row
+ * objects (`[{name: "Alice", age: 30}, …]` — the shape produced by
+ * `worksheetToJson`) and write it to the worksheet as a header row
+ * plus one data row per array entry, anchored at `topLeft`.
+ *
+ * `json` may be a JSON string (parsed via `JSON.parse`) or an
+ * already-decoded array. Returns the bounding box of the written
+ * range (like {@link writeRange}), or `undefined` for an empty
+ * array (no header is written when there are no rows).
+ *
+ * Cell values are coerced via {@link cellValueFromJson}: ISO 8601
+ * date strings become `Date`, primitives pass through, and other
+ * shapes fall back to `String(v)`. Missing keys in a given row are
+ * written as `null`.
+ *
+ * `opts.keys` overrides the header order; otherwise the first row's
+ * own key order is used.
+ */
+export function parseJsonToRange(
+  ws: Worksheet,
+  topLeft: string,
+  json: string | readonly unknown[],
+  opts: ParseJsonToRangeOptions = {},
+): { minRow: number; maxRow: number; minCol: number; maxCol: number } | undefined {
+  const decoded = typeof json === 'string' ? (JSON.parse(json) as unknown) : json;
+  if (!Array.isArray(decoded) || decoded.length === 0) return undefined;
+  const rows = decoded as readonly unknown[];
+  const firstRow = rows[0];
+  if (firstRow === null || typeof firstRow !== 'object' || Array.isArray(firstRow)) {
+    throw new TypeError('parseJsonToRange: rows must be JSON objects');
+  }
+  const keys = opts.keys ?? Object.keys(firstRow as Record<string, unknown>);
+  const grid: Array<Array<CellValue | undefined>> = [keys];
+  for (const row of rows) {
+    if (row === null || typeof row !== 'object' || Array.isArray(row)) {
+      throw new TypeError('parseJsonToRange: rows must be JSON objects');
+    }
+    const obj = row as Record<string, unknown>;
+    grid.push(keys.map((k) => (k in obj ? cellValueFromJson(obj[k]) : null)));
+  }
+  return writeRange(ws, topLeft, grid);
 }
