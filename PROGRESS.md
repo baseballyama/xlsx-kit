@@ -23,8 +23,8 @@
 ### 残タスク
 
 - **Excel 365 視覚 QA** — 人手のみ。コア機能は揃っている。
-- **ZIP64 write の正式対応** — fflate 上流の 4GiB 制限。openxml-js 側ではすでに fallback ロジックが入っているので blocker ではない。
-- **public API surface の整理** — `src/index.ts` が 700+ 行に肥大。alphabetical 順を維持しているが、サブモジュールごとに `*.ts` barrel 経由でグループ化する余地あり。（urgent ではない、整形のみ。）
+- ~~**ZIP64 write の正式対応**~~ → entry count > 65535 の場合に ZIP64 EOCD record + locator を `applyZip64EntryCountPatch` で fflate の最終 chunk に splice し、EOCD entry-count を 0xFFFF sentinel 化 (2026-05-08, commit 7d201b9)。70k entry round-trip テスト追加。単一 entry > 4GiB / total > 4GiB は対象外 (xlsx で発生しない)。
+- ~~**public API surface の整理**~~ → 既に commit d6fb28c (`refactor(api)!: split top-level barrel into per-section subpath imports`) で対応済。`src/index.ts` は廃止され、subpath imports (`openxml-js/cell` / `/workbook` / `/styles` / ...) のみが public surface。
 - ~~**rich-text run builder ergo の追加**~~ → `makeTextRun` の `richTextRun` alias を `src/cell/index.ts` に追加 (2026-05-08)。
 - ~~**`replaceCellValues` の range-aware 版**~~ → `replaceInRange` で対応 (2026-05-07)。
 - ~~**autofit の font-aware 改良**~~ → `opts.workbook` で font.size 比例 scaling 対応 (2026-05-07)。
