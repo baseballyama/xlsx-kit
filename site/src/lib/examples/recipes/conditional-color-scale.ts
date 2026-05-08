@@ -3,20 +3,35 @@
 
 import { saveWorkbook, toFile } from 'openxml-js/node';
 import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { addColorScaleRule, setCell } from 'openxml-js/worksheet';
+import {
+  addConditionalFormatting,
+  makeCfRule,
+  makeConditionalFormatting,
+  setCell,
+} from 'openxml-js/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Heat');
 
 for (let r = 1; r <= 10; r++) setCell(ws, r, 1, Math.round(Math.random() * 100));
 
-addColorScaleRule(ws, 'A1:A10', {
-  cfvos: [
-    { type: 'min' },
-    { type: 'percentile', val: '50' },
-    { type: 'max' },
-  ],
-  colors: ['FFF8696B', 'FFFFEB84', 'FF63BE7B'],
-});
+addConditionalFormatting(
+  ws,
+  makeConditionalFormatting({
+    sqref: 'A1:A10',
+    rules: [
+      makeCfRule({
+        type: 'colorScale',
+        priority: 1,
+        formulas: [],
+        innerXml:
+          '<colorScale>' +
+          '<cfvo type="min"/><cfvo type="percentile" val="50"/><cfvo type="max"/>' +
+          '<color rgb="FFF8696B"/><color rgb="FFFFEB84"/><color rgb="FF63BE7B"/>' +
+          '</colorScale>',
+      }),
+    ],
+  }),
+);
 
 await saveWorkbook(wb, toFile('heatmap.xlsx'));

@@ -3,13 +3,14 @@
 
 import { saveWorkbook, toFile } from 'openxml-js/node';
 import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { addUrlHyperlink, setCell } from 'openxml-js/worksheet';
+import { setCell, setHyperlink } from 'openxml-js/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Links');
 
 setCell(ws, 1, 1, 'Project home');
-addUrlHyperlink(ws, 'A1', 'https://github.com/baseballyama/openxml-js', {
+setHyperlink(ws, 'A1', {
+  target: 'https://github.com/baseballyama/openxml-js',
   tooltip: 'View on GitHub',
 });
 

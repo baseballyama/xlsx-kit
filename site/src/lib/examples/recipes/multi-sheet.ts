@@ -1,9 +1,10 @@
 // Build several worksheets in one workbook and use named ranges
 // to refer between them.
 
+import { setFormula } from 'openxml-js/cell';
 import { saveWorkbook, toFile } from 'openxml-js/node';
 import { addDefinedName, addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { setCell, setCellFormula } from 'openxml-js/worksheet';
+import { setCell } from 'openxml-js/worksheet';
 
 const wb = createWorkbook();
 const inputs = addWorksheet(wb, 'Inputs');
@@ -18,6 +19,6 @@ addDefinedName(wb, { name: 'Revenue', value: 'Inputs!$B$1' });
 addDefinedName(wb, { name: 'Cost', value: 'Inputs!$B$2' });
 
 setCell(summary, 1, 1, 'Margin');
-setCellFormula(summary, 1, 2, '(Revenue - Cost) / Revenue', { cachedValue: 0.35 });
+setFormula(setCell(summary, 1, 2), '(Revenue - Cost) / Revenue', { cachedValue: 0.35 });
 
 await saveWorkbook(wb, toFile('multi-sheet.xlsx'));

@@ -110,18 +110,6 @@ export const SECTIONS: SectionDef[] = [
       )(sourceFile),
   },
   {
-    id: 'export-formats',
-    title: 'Export formats (CSV / HTML / Markdown / Text)',
-    description: 'One-shot serializers from a worksheet range.',
-    match: ({ sourceFile }) =>
-      fileEquals(
-        'src/worksheet/csv.ts',
-        'src/worksheet/html.ts',
-        'src/worksheet/markdown.ts',
-        'src/worksheet/text.ts',
-      )(sourceFile),
-  },
-  {
     id: 'worksheet',
     title: 'Worksheet',
     description:

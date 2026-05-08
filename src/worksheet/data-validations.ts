@@ -6,7 +6,7 @@
 // imeMode + numeric/value clamps land later when phase 7's Asian-locale
 // support catches up.
 
-import type { MultiCellRange } from './cell-range';
+import { type MultiCellRange, parseMultiCellRange } from './cell-range';
 
 export type DataValidationType = 'whole' | 'decimal' | 'list' | 'date' | 'time' | 'textLength' | 'custom';
 export type DataValidationOperator =
@@ -47,11 +47,14 @@ export interface DataValidation {
 }
 
 export function makeDataValidation(
-  opts: Partial<DataValidation> & { type: DataValidationType; sqref: MultiCellRange },
+  opts: Omit<Partial<DataValidation>, 'sqref'> & {
+    type: DataValidationType;
+    sqref: MultiCellRange | string;
+  },
 ): DataValidation {
   return {
     type: opts.type,
-    sqref: opts.sqref,
+    sqref: typeof opts.sqref === 'string' ? parseMultiCellRange(opts.sqref) : opts.sqref,
     ...(opts.operator !== undefined ? { operator: opts.operator } : {}),
     ...(opts.formula1 !== undefined ? { formula1: opts.formula1 } : {}),
     ...(opts.formula2 !== undefined ? { formula2: opts.formula2 } : {}),
@@ -70,7 +73,6 @@ export function makeDataValidation(
 // ---- Worksheet ergonomic builders ---------------------------------------
 
 import type { Worksheet } from './worksheet';
-import { parseMultiCellRange } from './cell-range';
 
 const resolveSqref = (sqref: MultiCellRange | string): MultiCellRange =>
   typeof sqref === 'string' ? parseMultiCellRange(sqref) : sqref;

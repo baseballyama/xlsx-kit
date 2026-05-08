@@ -141,9 +141,9 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         source: formulas,
         notes: [
           'Cached values are optional — Excel will recalc anyway when the file opens, but cached values keep the file viewable in tools that don\'t recalc.',
-          'For shared and array formulas, see `setCellSharedFormula` / `setCellArrayFormula` in the API reference.',
+          'For shared and array formulas, use `setSharedFormula` / `setArrayFormula` from `openxml-js/cell` on the Cell returned by `setCell`.',
         ],
-        relatedApi: ['setCellFormula', 'setCellArrayFormula', 'setCellSharedFormula'],
+        relatedApi: ['setCell', 'setFormula', 'setArrayFormula', 'setSharedFormula'],
       },
       {
         slug: 'merge-and-freeze',
@@ -160,7 +160,7 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         teaser: 'Hyperlinks live separately from cell values — set the text, attach the URL.',
         path: 'site/src/lib/examples/recipes/hyperlinks.ts',
         source: hyperlinks,
-        relatedApi: ['addUrlHyperlink', 'addInternalHyperlink', 'addMailtoHyperlink'],
+        relatedApi: ['setHyperlink'],
       },
     ],
   },
@@ -190,26 +190,16 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         notes: [
           'Pass a sheet-relative formula (`=Sheet1!$A$1:$A$10`) instead of a literal array if the choices come from another range.',
         ],
-        relatedApi: [
-          'addListValidation',
-          'addNumberValidation',
-          'addDateValidation',
-          'addCustomValidation',
-        ],
+        relatedApi: ['makeDataValidation', 'addDataValidation'],
       },
       {
         slug: 'color-scale',
         title: 'Heat-map with a 3-color scale',
         teaser:
-          '`addColorScaleRule` paints each cell on a continuous gradient between min, midpoint, and max.',
+          'Build a `colorScale` rule with `makeCfRule` + inner XML and attach it via `addConditionalFormatting`.',
         path: 'site/src/lib/examples/recipes/conditional-color-scale.ts',
         source: conditionalColorScale,
-        relatedApi: [
-          'addColorScaleRule',
-          'addCellIsRule',
-          'addDataBarRule',
-          'addIconSetRule',
-        ],
+        relatedApi: ['makeCfRule', 'makeConditionalFormatting', 'addConditionalFormatting'],
       },
     ],
   },

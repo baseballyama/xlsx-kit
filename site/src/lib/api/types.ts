@@ -2,22 +2,48 @@
 // independent of typedoc's wire format so the route code never has to
 // touch raw reflections.
 
-export type ApiKind = 'function' | 'class' | 'interface' | 'type' | 'variable';
+export type ApiKind = 'function' | 'class' | 'variable';
 
-export type ApiModule = 'index' | 'streaming' | 'node';
+export type ApiModule =
+  | 'cell'
+  | 'chart'
+  | 'chartsheet'
+  | 'drawing'
+  | 'io'
+  | 'node'
+  | 'packaging'
+  | 'schema'
+  | 'streaming'
+  | 'styles'
+  | 'utils'
+  | 'workbook'
+  | 'worksheet'
+  | 'xml'
+  | 'zip';
+
+export const API_MODULES: readonly ApiModule[] = [
+  'cell',
+  'chart',
+  'chartsheet',
+  'drawing',
+  'io',
+  'node',
+  'packaging',
+  'schema',
+  'streaming',
+  'styles',
+  'utils',
+  'workbook',
+  'worksheet',
+  'xml',
+  'zip',
+] as const;
 
 export type ApiParameter = {
   name: string;
   type: string;
   optional: boolean;
   defaultValue?: string;
-  description?: string;
-};
-
-export type ApiMember = {
-  name: string;
-  type: string;
-  optional: boolean;
   description?: string;
 };
 
@@ -39,8 +65,6 @@ export type ApiItem = {
   parameters?: ApiParameter[];
   returnType?: string;
   returnDescription?: string;
-  /** For interface / type-literal kinds: enumerated property list. */
-  members?: ApiMember[];
 };
 
 export type ApiSubgroup = {

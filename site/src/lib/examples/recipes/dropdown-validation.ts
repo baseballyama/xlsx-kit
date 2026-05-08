@@ -3,16 +3,22 @@
 
 import { saveWorkbook, toFile } from 'openxml-js/node';
 import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { addListValidation, setCell } from 'openxml-js/worksheet';
+import { addDataValidation, makeDataValidation, setCell } from 'openxml-js/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Form');
 
 setCell(ws, 1, 1, 'Status');
-addListValidation(ws, 'B1:B100', ['Open', 'In progress', 'Closed'], {
-  prompt: 'Pick a status',
-  errorTitle: 'Invalid value',
-  error: 'Pick one of the listed values.',
-});
+addDataValidation(
+  ws,
+  makeDataValidation({
+    type: 'list',
+    sqref: 'B1:B100',
+    formula1: '"Open,In progress,Closed"',
+    prompt: 'Pick a status',
+    errorTitle: 'Invalid value',
+    error: 'Pick one of the listed values.',
+  }),
+);
 
 await saveWorkbook(wb, toFile('with-dropdown.xlsx'));
