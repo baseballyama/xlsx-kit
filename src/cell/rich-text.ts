@@ -462,6 +462,24 @@ export function trimEndRichText(rt: RichText): RichText {
 }
 
 /**
+ * Truncate `rt` to at most `maxLength` UTF-16 code units. When already short
+ * enough, the input is returned unchanged. Otherwise the front of `rt` is
+ * sliced (preserving fonts), and `ellipsis` (default `''`) is appended as a
+ * font-less run to indicate the truncation. `maxLength <= 0` yields an empty
+ * RichText. If `ellipsis.length >= maxLength`, the result is just the
+ * ellipsis hard-truncated to `maxLength` characters.
+ */
+export function truncateRichText(rt: RichText, maxLength: number, ellipsis = ''): RichText {
+  const cur = richTextLength(rt);
+  if (cur <= maxLength) return rt;
+  if (maxLength <= 0) return makeRichText([]);
+  if (ellipsis === '') return sliceRichText(rt, 0, maxLength);
+  if (ellipsis.length >= maxLength) return richText(ellipsis.slice(0, maxLength));
+  const head = sliceRichText(rt, 0, maxLength - ellipsis.length);
+  return concatRichText(head, ellipsis);
+}
+
+/**
  * Trim leading and trailing ASCII whitespace (space, tab, CR, LF) from the
  * concatenated text of `rt`, returning a new RichText. Per-run fonts are
  * preserved on the surviving slice. Internal whitespace is left intact.

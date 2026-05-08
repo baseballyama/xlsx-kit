@@ -77,4 +77,5 @@ export {
   trimEndRichText,
   trimRichText,
   trimStartRichText,
+  truncateRichText,
 } from './rich-text';
