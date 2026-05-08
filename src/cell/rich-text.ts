@@ -181,6 +181,17 @@ export function findRichTextIndex(rt: RichText, search: string, fromIndex?: numb
 }
 
 /**
+ * Find the last occurrence of `search` in the concatenated text of `rt`.
+ * Mirrors `String.prototype.lastIndexOf` semantics: returns -1 when not
+ * found; `fromIndex` (defaulting to `+Infinity`) limits the search to
+ * positions ≤ `fromIndex`; an empty `search` returns
+ * `min(fromIndex, length)`.
+ */
+export function findLastRichTextIndex(rt: RichText, search: string, fromIndex?: number): number {
+  return richTextToString(rt).lastIndexOf(search, fromIndex);
+}
+
+/**
  * Returns true iff the concatenated text of `rt` contains `search`. Mirrors
  * `String.prototype.includes` semantics, including treating an empty
  * `search` as `true`.
