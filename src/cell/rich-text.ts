@@ -95,3 +95,13 @@ export function richTextToString(rt: RichText): string {
   for (const r of rt) out += r.text;
   return out;
 }
+
+/**
+ * Total character count (UTF-16 code units) across all runs.
+ * Equivalent to `richTextToString(rt).length` but avoids the string copy.
+ */
+export function richTextLength(rt: RichText): number {
+  let n = 0;
+  for (const r of rt) n += r.text.length;
+  return n;
+}

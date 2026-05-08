@@ -48,6 +48,7 @@ export {
   makeRichText,
   makeTextRun,
   richText,
+  richTextLength,
   makeTextRun as richTextRun,
   richTextToString,
 } from './rich-text';

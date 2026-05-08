@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richTextLength(rt)` 文字数 helper を追加** — RichText 全体の合計文字数 (各 run.text.length の和) を返す ergonomic helper。`richTextToString(rt).length` と等価だが string 一時生成を回避できる軽量実装。
+- **次のタスク**: **`mapRichTextRuns(rt, fn)` 写像 helper を追加** — 各 TextRun に `fn(run, index) => TextRun | { text, font? }` を適用し新しい frozen RichText を返す ergonomic helper。run 単位の bulk 加工 (e.g. 全 run に `b: true` を足す) に使う。
+  1. `src/cell/rich-text.ts` に `mapRichTextRuns(rt: RichText, fn: (run: TextRun, index: number) => TextRun | { text: string; font?: InlineFont }): RichText` を export 追加。`Array.from(rt, fn)` → `makeRichText`。
+  2. `src/cell/index.ts` (= subpath barrel) から `mapRichTextRuns` を re-export。
+  3. `tests/phase-2/rich-text-map-runs.test.ts` 3 件: 全 run に bold を加える / index アクセス確認 / 空 RichText で空 RichText 返却。
+
+- **次のタスク (前回)**: **`richTextLength(rt)` 文字数 helper を追加** — RichText 全体の合計文字数 (各 run.text.length の和) を返す ergonomic helper。`richTextToString(rt).length` と等価だが string 一時生成を回避できる軽量実装。
   1. `src/cell/rich-text.ts` に `richTextLength(rt: RichText): number` を export 追加: `for of` で各 `r.text.length` 合算。surrogate pair 等 code-unit semantics で十分 (Excel character count も UTF-16 code units 基準)。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextLength` を re-export。
   3. `tests/phase-2/rich-text-length.test.ts` 3 件: 空 RichText で 0 / 単一 run / 複数 run の合算。
 
-- **次のタスク (前回)**: **`concatRichText(...parts)` 結合 helper を追加** — 任意個の `RichText | string | TextRun` を flat に連結し新しい frozen RichText を返す ergonomic helper。string は font なしの 1 run、TextRun は単独 run、RichText は run 配列を spread。
+  empirical: 2423 tests pass (was 2420, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`concatRichText(...parts)` 結合 helper を追加** — 任意個の `RichText | string | TextRun` を flat に連結し新しい frozen RichText を返す ergonomic helper。string は font なしの 1 run、TextRun は単独 run、RichText は run 配列を spread。
   1. `src/cell/rich-text.ts` に `concatRichText(...parts: ReadonlyArray<RichText | string | TextRun>): RichText` を export 追加。各 part を判別 (`typeof === 'string'` / `'text' in obj` で TextRun / それ以外は RichText 配列) して合算 → `makeRichText` に渡す。
   2. `src/cell/index.ts` (= subpath barrel) から `concatRichText` を re-export。
   3. `tests/phase-2/rich-text-concat.test.ts` 4 件: 全 string / 全 RichText / 混在 (string + TextRun + RichText) / 0 引数で空 RichText (length 0)。
