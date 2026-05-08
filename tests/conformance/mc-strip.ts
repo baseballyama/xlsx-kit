@@ -1,14 +1,23 @@
-// Markup Compatibility (ECMA-376 Part 3) preprocessor.
+// Markup Compatibility (ECMA-376 Part 3) preprocessor + schema-quirk shim.
 //
-// Real-world xlsx files contain extension elements/attributes (x14ac, x15,
-// x16r2, …) gated by `mc:Ignorable`. The base ECMA-376 schemas don't know
-// about these, so we honour the spec: drop everything in an ignorable
-// namespace before validating, since a reader that doesn't understand the
-// extension is required to ignore it.
+// Two independent jobs run in one pass so we only parse/serialise the XML
+// once:
 //
-// We also resolve `mc:AlternateContent` blocks: if a `<mc:Choice>` requires
-// only ignorable namespaces, prefer the `<mc:Fallback>`; otherwise drop the
-// whole block.
+// 1. MC handling. Real-world xlsx files contain extension elements/attributes
+//    (x14ac, x15, x16r2, …) gated by `mc:Ignorable`. The base ECMA-376
+//    schemas don't know about these, so we honour the spec: drop everything
+//    in an ignorable namespace, since a reader that doesn't understand the
+//    extension is required to ignore it. `mc:AlternateContent` resolves to
+//    its non-ignorable Choice, or its Fallback, or nothing.
+//
+// 2. xml:* attribute stripping. ECMA-376's simpleType-based string types
+//    (e.g. ST_Xstring, used by `<t>` in sharedStrings) don't declare
+//    xml:space, but every real producer (Excel, LibreOffice, openpyxl)
+//    emits `xml:space="preserve"` on `<t>` whenever leading/trailing
+//    whitespace matters. xmllint flags this as schema-invalid. Since the
+//    XML core spec reserves the xml: namespace and xml:space is allowed on
+//    any element, we drop xml:* attributes before validation so the schema
+//    bug doesn't fire false positives.
 //
 // Implementation note: the stripping happens on raw XML text via a small
 // state machine over fast-xml-parser's preserveOrder tree, so the stripped
@@ -17,6 +26,7 @@
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 const MC_NS = 'http://schemas.openxmlformats.org/markup-compatibility/2006';
+const XML_NS = 'http://www.w3.org/XML/1998/namespace';
 const ATTR_KEY = ':@';
 
 type FxpAttrs = Record<string, string>;
@@ -122,9 +132,11 @@ const filterAttrs = (attrs: FxpAttrs | undefined, scope: NSScope): FxpAttrs | un
   let any = false;
   for (const [k, v] of Object.entries(attrs)) {
     const ns = resolveAttrNamespace(k, scope);
-    // Drop ignored-namespace attributes and the MC bookkeeping itself; keep xmlns
-    // declarations as-is so the resulting XML still parses standalone.
+    // Drop ignored-namespace attributes, MC bookkeeping, and xml:* core attrs
+    // (see file header for the schema-quirk rationale on the latter). xmlns
+    // declarations are kept so the resulting XML still parses standalone.
     if (ns === MC_NS) continue;
+    if (ns === XML_NS) continue;
     if (scope.ignorable.has(ns)) continue;
     out[k] = v;
     any = true;

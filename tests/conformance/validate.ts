@@ -437,7 +437,10 @@ function checkWorksheet(
   // Streaming-ish regex pass; sufficient because xlsx-kit's writers emit a
   // canonical layout. If we ever validate hand-crafted XML, swap this for
   // a real parser.
-  const rowRe = /<row\b[^>]*\br="(\d+)"[^>]*>/g;
+  // Capturing group 2 is the trailing `/>` for self-closing rows, so we can
+  // tell `<row r="1"/>` (cell-less, no </row> to find) apart from a row
+  // with an open body.
+  const rowRe = /<row\b[^>]*\br="(\d+)"[^>]*?(\/?)>/g;
   const cellRe = /<c\b[^>]*\br="([A-Z]+\d+)"[^>]*(?:\/>|>)/g;
   const styleRe = /\bs="(\d+)"/;
   const typeRe = /\bt="([a-z]+)"/;
@@ -446,6 +449,7 @@ function checkWorksheet(
   let m: RegExpExecArray | null;
   while ((m = rowRe.exec(xml))) {
     parentRow = Number(m[1]);
+    if (m[2] === '/') continue; // self-closing row has no cell children
     cellRe.lastIndex = m.index + m[0].length;
     const rowEnd = xml.indexOf('</row>', cellRe.lastIndex);
     if (rowEnd === -1) break;
