@@ -79,6 +79,14 @@ export function mapRichTextRuns(
 }
 
 /**
+ * Apply a common `font` to every run, merging per-run font on top so existing
+ * per-run formatting takes precedence. The input is not mutated.
+ */
+export function applyFontToRichText(rt: RichText, font: InlineFont): RichText {
+  return mapRichTextRuns(rt, (r) => ({ text: r.text, font: { ...font, ...(r.font ?? {}) } }));
+}
+
+/**
  * Flatten any number of `RichText | string | TextRun` parts into a single
  * frozen RichText. `string` becomes a font-less 1-run; `TextRun` becomes a
  * single run; `RichText` (array) is spread in.

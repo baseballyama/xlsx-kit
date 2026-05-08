@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`applyFontToRichText(rt, font)` bulk font helper を追加** — `mapRichTextRuns` 上で「全 run の font をマージ (per-run font 優先)」する shorthand。`makeTextRun(r.text, { ...font, ...r.font })` 相当を全 run に適用。
+- **次のタスク**: **`splitRichTextRuns(rt)` 単一文字 run 化 helper を追加** — RichText の各 run を 1 文字 1 run に分割した新しい RichText を返す ergonomic helper。文字単位の per-char styling/iteration の前処理 (e.g. typewriter アニメーション、character-by-character font cycling) を意図。
+  1. `src/cell/rich-text.ts` に `splitRichTextRuns(rt: RichText): RichText` を export 追加: 各 run の `text` を `Array.from(run.text)` (code-point split) で iterate し、各 code-point ごとに `makeTextRun(ch, run.font)` を生成 → `makeRichText` で freeze。
+  2. `src/cell/index.ts` (= subpath barrel) から `splitRichTextRuns` を re-export。
+  3. `tests/phase-2/rich-text-split-runs.test.ts` 4 件: 単一 ASCII run を 1 文字単位に分割 (font 引き継ぎ) / 複数 run 跨ぎ / 空 run 込み (`text: ''` の run は drop) / 空 RichText で空 RichText 返却。
+
+- **次のタスク (前回)**: **`applyFontToRichText(rt, font)` bulk font helper を追加** — `mapRichTextRuns` 上で「全 run の font をマージ (per-run font 優先)」する shorthand。`makeTextRun(r.text, { ...font, ...r.font })` 相当を全 run に適用。
   1. `src/cell/rich-text.ts` に `applyFontToRichText(rt: RichText, font: InlineFont): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text, font: { ...font, ...(r.font ?? {}) } }))`。run 自身の font フィールドが優先される。
   2. `src/cell/index.ts` (= subpath barrel) から `applyFontToRichText` を re-export。
   3. `tests/phase-2/rich-text-apply-font.test.ts` 3 件: 全 run に共通 font 付与 (font なし run のみ) / per-run font が共通 font より優先される / 空 RichText で空 RichText 返却。
 
-- **次のタスク (前回)**: **`mapRichTextRuns(rt, fn)` 写像 helper を追加** — 各 TextRun に `fn(run, index) => TextRun | { text, font? }` を適用し新しい frozen RichText を返す ergonomic helper。run 単位の bulk 加工 (e.g. 全 run に `b: true` を足す) に使う。
+  empirical: 2429 tests pass (was 2426, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`mapRichTextRuns(rt, fn)` 写像 helper を追加** — 各 TextRun に `fn(run, index) => TextRun | { text, font? }` を適用し新しい frozen RichText を返す ergonomic helper。run 単位の bulk 加工 (e.g. 全 run に `b: true` を足す) に使う。
   1. `src/cell/rich-text.ts` に `mapRichTextRuns(rt: RichText, fn: (run: TextRun, index: number) => TextRun | { text: string; font?: InlineFont }): RichText` を export 追加。`Array.from(rt, fn)` → `makeRichText`。
   2. `src/cell/index.ts` (= subpath barrel) から `mapRichTextRuns` を re-export。
   3. `tests/phase-2/rich-text-map-runs.test.ts` 3 件: 全 run に bold を加える / index アクセス確認 / 空 RichText で空 RichText 返却。
