@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richText(text, font?)` 単体 RichText shortcut を追加** — 1-run RichText を作る ergonomic helper。`makeRichText([{ text, font }])` のラッパ。`richTextRun` の cousin として「最短で 1-run の RichText 値を組む」用途。
+- **次のタスク**: **`appendRichTextRun(rt, text, font?)` immutable append helper を追加** — 既存 RichText 末尾に新 run を追加した新しい frozen RichText を返す ergonomic helper。`makeRichText([...rt, makeTextRun(text, font)])` のラッパ。
+  1. `src/cell/rich-text.ts` に `appendRichTextRun(rt: RichText, text: string, font?: InlineFont): RichText` を export 追加: `makeRichText([...rt, makeTextRun(text, font)])` を return。`text` 非 string なら `makeTextRun` 側で TypeError。
+  2. `src/cell/index.ts` (= subpath barrel) から `appendRichTextRun` を re-export。
+  3. `tests/phase-2/rich-text-append-run.test.ts` 3 件: 通常 (1-run → 2-run) / font 付き append / 入力 RichText を mutate しない (frozen 保持)。
+
+- **次のタスク (前回)**: **`richText(text, font?)` 単体 RichText shortcut を追加** — 1-run RichText を作る ergonomic helper。`makeRichText([{ text, font }])` のラッパ。`richTextRun` の cousin として「最短で 1-run の RichText 値を組む」用途。
   1. `src/cell/rich-text.ts` に `richText(text: string, font?: InlineFont): RichText` を export 追加: `makeRichText([font !== undefined ? { text, font } : { text }])` を return。`text` 非 string で TypeError。
   2. `src/cell/index.ts` (= subpath barrel) から `richText` を re-export。
   3. `tests/phase-2/rich-text-shortcut.test.ts` 3 件: `richText(text)` で 1-run RichText / `richText(text, font)` で font 付き / 非 string で throw。
 
-- **次のタスク (前回)**: **`richTextRun(text, font?)` 単体 export を追加** — 残タスクリストにある rich-text run builder ergo。`makeTextRun` の alias を public surface に追加するだけ。
+  empirical: 2413 tests pass (was 2410, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextRun(text, font?)` 単体 export を追加** — 残タスクリストにある rich-text run builder ergo。`makeTextRun` の alias を public surface に追加するだけ。
   1. `src/cell/index.ts` (= subpath barrel) に `export { makeTextRun as richTextRun } from './rich-text';` を追加。`makeTextRun` も従来通り export 維持。
   2. `tests/phase-2/rich-text-run-alias.test.ts` 2 件: `richTextRun(text)` で TextRun 生成 / `richTextRun(text, font)` で font 付き run。
   3. PROGRESS.md 残タスク欄から `richTextRun` 行を削除 (済み判定)。

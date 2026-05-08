@@ -54,6 +54,14 @@ export function makeRichText(runs: ReadonlyArray<TextRun | { text: string; font?
   return Object.freeze(out);
 }
 
+/** 1-run RichText shortcut. `richText(text, font?)` ≡ `makeRichText([{ text, font }])`. */
+export function richText(text: string, font?: InlineFont): RichText {
+  if (typeof text !== 'string') {
+    throw new TypeError('richText: text must be a string');
+  }
+  return makeRichText([font !== undefined ? { text, font } : { text }]);
+}
+
 /**
  * Concatenate the plain-text content of a rich-text value (rich-text
  * read paths often want the raw text without formatting).
