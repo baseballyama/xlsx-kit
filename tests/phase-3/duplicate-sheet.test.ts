@@ -2,18 +2,18 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { setCellFont } from '../../src/xlsx/styles/cell-style';
-import { makeFont } from '../../src/xlsx/styles/fonts';
-import { addWorksheet, createWorkbook, duplicateSheet, getSheet } from '../../src/xlsx/workbook/workbook';
-import { addExcelTable } from '../../src/xlsx/worksheet/table';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { setCellFont } from '../../src/styles/cell-style';
+import { makeFont } from '../../src/styles/fonts';
+import { addWorksheet, createWorkbook, duplicateSheet, getSheet } from '../../src/workbook/workbook';
+import { addExcelTable } from '../../src/worksheet/table';
 import {
   setCell,
   setColumnWidth,
   setComment,
   type Worksheet,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('duplicateSheet', () => {
   it('clones cells, dimensions, comments verbatim', () => {

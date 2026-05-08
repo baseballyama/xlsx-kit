@@ -2,10 +2,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import type { Worksheet } from '../../src/xlsx/worksheet/worksheet';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import type { Worksheet } from '../../src/worksheet/worksheet';
 import {
   removeSheetTabColor,
   setRightToLeft,
@@ -16,7 +16,7 @@ import {
   setShowGridLines,
   setShowRowColHeaders,
   setShowZeros,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('setSheetTabColor', () => {
   it('hex string assigns rgb color via sheetProperties', () => {

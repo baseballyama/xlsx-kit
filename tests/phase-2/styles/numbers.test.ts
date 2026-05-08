@@ -15,8 +15,8 @@ import {
   isDateFormat,
   isTimedeltaFormat,
   makeNumberFormat,
-} from '../../../src/xlsx/styles/numbers';
-import { NumberFormatSchema } from '../../../src/xlsx/styles/numbers.schema';
+} from '../../../src/styles/numbers';
+import { NumberFormatSchema } from '../../../src/styles/numbers.schema';
 import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
 import { parseXml } from '../../../src/xml/parser';
 import { serializeXml } from '../../../src/xml/serializer';

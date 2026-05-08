@@ -5,8 +5,8 @@ import {
   cellValueAsDate,
   makeDurationValue,
   makeErrorValue,
-} from '../../src/xlsx/cell/cell';
-import { makeRichText } from '../../src/xlsx/cell/rich-text';
+} from '../../src/cell/cell';
+import { makeRichText } from '../../src/cell/rich-text';
 
 describe('cellValueAsDate', () => {
   it('Date passes through', () => {

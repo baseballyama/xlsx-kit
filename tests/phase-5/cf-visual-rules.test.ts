@@ -3,18 +3,18 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   addColorScaleRule,
   addDataBarRule,
   addIconSetRule,
-} from '../../src/xlsx/worksheet/conditional-formatting';
-import type { Worksheet } from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/conditional-formatting';
+import type { Worksheet } from '../../src/worksheet/worksheet';
 
 const expectWorksheet = (
-  s: Worksheet | import('../../src/xlsx/chartsheet/chartsheet').Chartsheet | undefined,
+  s: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined,
 ): Worksheet => {
   if (!s || !('rows' in s)) throw new Error('expected worksheet');
   return s as Worksheet;

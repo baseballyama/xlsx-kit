@@ -5,9 +5,9 @@ import {
   getCellBorder,
   setCellBorderAll,
   setRangeBorderBox,
-} from '../../../src/xlsx/styles/cell-style';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/workbook';
-import { setCell } from '../../../src/xlsx/worksheet/worksheet';
+} from '../../../src/styles/cell-style';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
+import { setCell } from '../../../src/worksheet/worksheet';
 
 describe('setCellBorderAll', () => {
   it('applies the same Side to all four edges', () => {

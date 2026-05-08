@@ -1,8 +1,8 @@
 // Tests for fontToCss — Font value-object → CSS-property record.
 
 import { describe, expect, it } from 'vitest';
-import { makeColor } from '../../../src/xlsx/styles/colors';
-import { fontToCss, makeFont } from '../../../src/xlsx/styles/fonts';
+import { makeColor } from '../../../src/styles/colors';
+import { fontToCss, makeFont } from '../../../src/styles/fonts';
 
 describe('fontToCss', () => {
   it('returns an empty record for empty / undefined Font (caller decides default)', () => {

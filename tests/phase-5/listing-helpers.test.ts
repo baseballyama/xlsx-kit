@@ -1,21 +1,21 @@
 // Tests for listHyperlinks / listTables / listDataValidations / listDefinedNames.
 
 import { describe, expect, it } from 'vitest';
-import { addDefinedName, listDefinedNames } from '../../src/xlsx/workbook/defined-names';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addDefinedName, listDefinedNames } from '../../src/workbook/defined-names';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   addUrlHyperlink,
-} from '../../src/xlsx/worksheet/hyperlinks';
+} from '../../src/worksheet/hyperlinks';
 import {
   addListValidation,
-} from '../../src/xlsx/worksheet/data-validations';
-import { addExcelTable } from '../../src/xlsx/worksheet/table';
+} from '../../src/worksheet/data-validations';
+import { addExcelTable } from '../../src/worksheet/table';
 import {
   listDataValidations,
   listHyperlinks,
   listTables,
   setCell,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('listHyperlinks', () => {
   it('returns the hyperlinks array', () => {

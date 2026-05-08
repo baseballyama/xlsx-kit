@@ -7,9 +7,9 @@ import {
   listChartsOnSheet,
   listImagesOnSheet,
   removeAllDrawingItems,
-} from '../../src/xlsx/drawing/drawing';
-import { loadImage } from '../../src/xlsx/drawing/image';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+} from '../../src/drawing/drawing';
+import { loadImage } from '../../src/drawing/image';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 // 1×1 transparent PNG as test bytes.
 const PNG_1X1 = new Uint8Array([

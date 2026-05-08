@@ -7,8 +7,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 
 const FIXTURE = resolve(__dirname, '../../reference/openpyxl/openpyxl/reader/tests/data/pivot.xlsx');
 

@@ -8,9 +8,9 @@ import {
   setCellAsDate,
   setCellAsNumber,
   setCellAsPercent,
-} from '../../../src/xlsx/styles/cell-style';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/workbook';
-import { setCell } from '../../../src/xlsx/worksheet/worksheet';
+} from '../../../src/styles/cell-style';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
+import { setCell } from '../../../src/worksheet/worksheet';
 
 describe('setCellAsCurrency', () => {
   it('default → "$#,##0.00"', () => {

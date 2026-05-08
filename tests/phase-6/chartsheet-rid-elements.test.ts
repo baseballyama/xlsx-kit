@@ -3,9 +3,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addChartsheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addChartsheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('chartsheet rId-link siblings round-trip', () => {
   it('preserves legacyDrawing / legacyDrawingHF / picture rIds', async () => {

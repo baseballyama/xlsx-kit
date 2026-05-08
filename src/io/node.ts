@@ -2,9 +2,9 @@
 //
 // `fromBuffer` / `toBuffer` rely only on the global `Buffer` symbol —
 // no `node:*` imports — so they're safe to ship through the
-// `ooxml-js/streaming` browser-targeted entry too. Filesystem +
+// `xlsxify/streaming` browser-targeted entry too. Filesystem +
 // Readable / Writable helpers live in `./node-fs.ts` (re-exported via
-// `ooxml-js/node`) where the `node:fs` / `node:stream` imports stay
+// `xlsxify/node`) where the `node:fs` / `node:stream` imports stay
 // out of the browser-safe surface.
 
 import { OpenXmlIoError } from '../utils/exceptions';

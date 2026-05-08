@@ -14,10 +14,10 @@
 // - Cells outside the merge are normal.
 
 import { describe, expect, it } from 'vitest';
-import { addBorder, addCellXf, addFill, addFont, defaultCellXf, makeAlignment, makeBorder, makeColor, makeFont, makePatternFill, makeSide } from '../../../src/xlsx/styles/index';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { addDataValidation, mergeCells, setCell, setColumnWidth, setComment, setHyperlink, setRowHeight } from '../../../src/xlsx/worksheet/index';
-import { parseMultiCellRange } from '../../../src/xlsx/worksheet/cell-range';
+import { addBorder, addCellXf, addFill, addFont, defaultCellXf, makeAlignment, makeBorder, makeColor, makeFont, makePatternFill, makeSide } from '../../../src/styles/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { addDataValidation, mergeCells, setCell, setColumnWidth, setComment, setHyperlink, setRowHeight } from '../../../src/worksheet/index';
+import { parseMultiCellRange } from '../../../src/worksheet/cell-range';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 31 — single cell, every decoration at once', () => {

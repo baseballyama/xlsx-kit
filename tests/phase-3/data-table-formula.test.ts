@@ -5,12 +5,12 @@
 // a normal formula.
 
 import { describe, expect, it } from 'vitest';
-import { type CellValue, type FormulaValue, setDataTableFormula } from '../../src/xlsx/cell/cell';
+import { type CellValue, type FormulaValue, setDataTableFormula } from '../../src/cell/cell';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { setCell } from '../../src/xlsx/worksheet/worksheet';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setCell } from '../../src/worksheet/worksheet';
 
 const asFormula = (v: CellValue | undefined): FormulaValue => {
   if (v === null || v === undefined || typeof v !== 'object' || !('kind' in v) || v.kind !== 'formula') {
@@ -81,7 +81,7 @@ describe('phase-3 §5.5 — dataTable formula round-trip', () => {
     <row r="1"><c r="A1"><f t="dataTable">TABLE(B1,)</f></c></row>
   </sheetData>
 </worksheet>`;
-    const { parseWorksheetXml } = await import('../../src/xlsx/worksheet/reader');
+    const { parseWorksheetXml } = await import('../../src/worksheet/reader');
     expect(() =>
       parseWorksheetXml(new TextEncoder().encode(malformed), 'Sheet1', { sharedStrings: [] }),
     ).toThrowError(/missing @ref/);

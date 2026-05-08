@@ -18,9 +18,9 @@
 //   yyyy-mm-dd / [h]:mm:ss applied to a sample value.
 
 import { describe, expect, it } from 'vitest';
-import { addBorder, addCellXf, addFill, addFont, addNumFmt, defaultCellXf, makeAlignment, makeBorder, makeColor, makeFont, makePatternFill, makeProtection, makeSide } from '../../../src/xlsx/styles/index';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell } from '../../../src/xlsx/worksheet/index';
+import { addBorder, addCellXf, addFill, addFont, addNumFmt, defaultCellXf, makeAlignment, makeBorder, makeColor, makeFont, makePatternFill, makeProtection, makeSide } from '../../../src/styles/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 05 — styles', () => {

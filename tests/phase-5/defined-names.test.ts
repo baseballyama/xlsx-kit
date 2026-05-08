@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { makeDefinedName } from '../../src/xlsx/workbook/defined-names';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { makeDefinedName } from '../../src/workbook/defined-names';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('makeDefinedName', () => {
   it('honours name + value, drops absent optionals', () => {

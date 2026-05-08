@@ -9,9 +9,9 @@
 
 import fc from 'fast-check';
 import { describe, it } from 'vitest';
-import { makeBorder, makeSide, type SideStyle } from '../../src/xlsx/styles/borders';
-import { makePatternFill, type PatternType } from '../../src/xlsx/styles/fills';
-import { makeFont } from '../../src/xlsx/styles/fonts';
+import { makeBorder, makeSide, type SideStyle } from '../../src/styles/borders';
+import { makePatternFill, type PatternType } from '../../src/styles/fills';
+import { makeFont } from '../../src/styles/fonts';
 import {
   addBorder,
   addCellXf,
@@ -22,7 +22,7 @@ import {
   defaultCellXf,
   makeStylesheet,
   type Stylesheet,
-} from '../../src/xlsx/styles/stylesheet';
+} from '../../src/styles/stylesheet';
 
 const fontArb = fc.record(
   {

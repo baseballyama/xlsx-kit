@@ -10,9 +10,9 @@
 //   tab; verify nothing about saving from this build prevents that.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell, setColumnWidth } from '../../../src/xlsx/worksheet/index';
-import { setFormula } from '../../../src/xlsx/cell/cell';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell, setColumnWidth } from '../../../src/worksheet/index';
+import { setFormula } from '../../../src/cell/cell';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 29 — many sheets + cross-sheet references', () => {

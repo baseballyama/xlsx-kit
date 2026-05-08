@@ -11,12 +11,12 @@
 // - The image stays positioned at N2 even after Excel re-saves the file.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell } from '../../../src/xlsx/worksheet/index';
-import { makeBarChart, makeBarSeries, makeChartSpace, makeLineChart } from '../../../src/xlsx/chart/chart';
-import { makeOneCellAnchor } from '../../../src/xlsx/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing, makePictureDrawingItem } from '../../../src/xlsx/drawing/drawing';
-import { loadImage } from '../../../src/xlsx/drawing/image';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
+import { makeBarChart, makeBarSeries, makeChartSpace, makeLineChart } from '../../../src/chart/chart';
+import { makeOneCellAnchor } from '../../../src/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing, makePictureDrawingItem } from '../../../src/drawing/drawing';
+import { loadImage } from '../../../src/drawing/image';
 import { writeWorkbook } from '../_helpers';
 
 const TINY_BLUE_PNG_B64 =

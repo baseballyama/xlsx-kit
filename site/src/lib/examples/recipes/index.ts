@@ -1,6 +1,6 @@
 // Recipe registry. Each entry pairs a piece of human-readable framing
 // with the literal source of a real .ts file in this directory; the
-// file is type-checked against `ooxml-js` on every build, so the
+// file is type-checked against `xlsxify` on every build, so the
 // snippet shown to readers can never drift from the live API.
 
 import openAndIterate from './open-and-iterate.ts?raw';
@@ -141,7 +141,7 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         source: formulas,
         notes: [
           'Cached values are optional — Excel will recalc anyway when the file opens, but cached values keep the file viewable in tools that don\'t recalc.',
-          'For shared and array formulas, use `setSharedFormula` / `setArrayFormula` from `ooxml-js/cell` on the Cell returned by `setCell`.',
+          'For shared and array formulas, use `setSharedFormula` / `setArrayFormula` from `xlsxify/cell` on the Cell returned by `setCell`.',
         ],
         relatedApi: ['setCell', 'setFormula', 'setArrayFormula', 'setSharedFormula'],
       },

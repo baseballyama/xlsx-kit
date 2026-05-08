@@ -1,24 +1,24 @@
 {
-  "name": "ooxml-js",
+  "name": "xlsxify",
   "version": "0.1.0",
-  "description": "TypeScript implementation of Office Open XML (OOXML). Read and write Excel xlsx in Node and the browser.",
+  "description": "TypeScript library for reading and writing Excel xlsx files in Node and the browser.",
   "type": "module",
   "license": "MIT",
   "author": "Yuichiro Yamashita",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/baseballyama/ooxml-js.git"
+    "url": "git+https://github.com/baseballyama/openxml-js.git"
   },
-  "homepage": "https://github.com/baseballyama/ooxml-js#readme",
+  "homepage": "https://github.com/baseballyama/openxml-js#readme",
   "bugs": {
-    "url": "https://github.com/baseballyama/ooxml-js/issues"
+    "url": "https://github.com/baseballyama/openxml-js/issues"
   },
   "keywords": [
-    "ooxml",
-    "openxml",
     "xlsx",
     "excel",
     "spreadsheet",
+    "openxml",
+    "ooxml",
     "openpyxl",
     "typescript"
   ],
@@ -33,41 +33,21 @@
     "LICENSE"
   ],
   "exports": {
-    "./xlsx/cell": {
-      "types": "./dist/xlsx/cell/index.d.ts",
-      "import": "./dist/xlsx/cell.mjs"
+    "./cell": {
+      "types": "./dist/cell/index.d.ts",
+      "import": "./dist/cell.mjs"
     },
-    "./xlsx/chart": {
-      "types": "./dist/xlsx/chart/index.d.ts",
-      "import": "./dist/xlsx/chart.mjs"
+    "./chart": {
+      "types": "./dist/chart/index.d.ts",
+      "import": "./dist/chart.mjs"
     },
-    "./xlsx/chartsheet": {
-      "types": "./dist/xlsx/chartsheet/index.d.ts",
-      "import": "./dist/xlsx/chartsheet.mjs"
+    "./chartsheet": {
+      "types": "./dist/chartsheet/index.d.ts",
+      "import": "./dist/chartsheet.mjs"
     },
-    "./xlsx/drawing": {
-      "types": "./dist/xlsx/drawing/index.d.ts",
-      "import": "./dist/xlsx/drawing.mjs"
-    },
-    "./xlsx/io": {
-      "types": "./dist/xlsx/io/index.d.ts",
-      "import": "./dist/xlsx/io.mjs"
-    },
-    "./xlsx/streaming": {
-      "types": "./dist/xlsx/streaming/index.d.ts",
-      "import": "./dist/xlsx/streaming.mjs"
-    },
-    "./xlsx/styles": {
-      "types": "./dist/xlsx/styles/index.d.ts",
-      "import": "./dist/xlsx/styles.mjs"
-    },
-    "./xlsx/workbook": {
-      "types": "./dist/xlsx/workbook/index.d.ts",
-      "import": "./dist/xlsx/workbook.mjs"
-    },
-    "./xlsx/worksheet": {
-      "types": "./dist/xlsx/worksheet/index.d.ts",
-      "import": "./dist/xlsx/worksheet.mjs"
+    "./drawing": {
+      "types": "./dist/drawing/index.d.ts",
+      "import": "./dist/drawing.mjs"
     },
     "./io": {
       "types": "./dist/io/index.d.ts",
@@ -85,9 +65,25 @@
       "types": "./dist/schema/index.d.ts",
       "import": "./dist/schema.mjs"
     },
+    "./streaming": {
+      "types": "./dist/streaming/index.d.ts",
+      "import": "./dist/streaming.mjs"
+    },
+    "./styles": {
+      "types": "./dist/styles/index.d.ts",
+      "import": "./dist/styles.mjs"
+    },
     "./utils": {
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils.mjs"
+    },
+    "./workbook": {
+      "types": "./dist/workbook/index.d.ts",
+      "import": "./dist/workbook.mjs"
+    },
+    "./worksheet": {
+      "types": "./dist/worksheet/index.d.ts",
+      "import": "./dist/worksheet.mjs"
     },
     "./xml": {
       "types": "./dist/xml/index.d.ts",

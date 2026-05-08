@@ -1,7 +1,7 @@
 // Tests for isRangeInRange — A1-string range containment predicate.
 
 import { describe, expect, it } from 'vitest';
-import { isRangeInRange } from '../../src/xlsx/worksheet/cell-range';
+import { isRangeInRange } from '../../src/worksheet/cell-range';
 
 describe('isRangeInRange', () => {
   it('returns true for a fully contained inner range', () => {

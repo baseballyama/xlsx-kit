@@ -11,10 +11,10 @@ import {
   setItalic,
   setStrikethrough,
   setUnderline,
-} from '../../../src/xlsx/styles/cell-style';
-import { makeFont } from '../../../src/xlsx/styles/fonts';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/workbook';
-import { setCell } from '../../../src/xlsx/worksheet/worksheet';
+} from '../../../src/styles/cell-style';
+import { makeFont } from '../../../src/styles/fonts';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
+import { setCell } from '../../../src/worksheet/worksheet';
 
 describe('setBold / setItalic / setStrikethrough', () => {
   it('toggle the corresponding boolean flag', () => {

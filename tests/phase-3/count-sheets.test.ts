@@ -7,7 +7,7 @@ import {
   countSheets,
   createWorkbook,
   hideSheet,
-} from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/workbook';
 
 describe('countSheets', () => {
   it('returns the total sheet count by default', () => {

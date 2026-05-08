@@ -1,12 +1,12 @@
 // Tests for moveRange.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   getRangeValues,
   moveRange,
   setCell,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('moveRange', () => {
   it('moves cells to a non-overlapping target and clears the source', () => {

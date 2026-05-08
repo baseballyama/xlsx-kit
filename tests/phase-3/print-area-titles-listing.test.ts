@@ -7,8 +7,8 @@ import {
   listPrintTitles,
   setPrintArea,
   setPrintTitles,
-} from '../../src/xlsx/workbook/defined-names';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/defined-names';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('listPrintAreas', () => {
   it('returns only _xlnm.Print_Area entries', () => {

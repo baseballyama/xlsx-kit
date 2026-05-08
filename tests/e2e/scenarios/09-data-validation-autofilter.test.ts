@@ -11,9 +11,9 @@
 //   filters the data below.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell } from '../../../src/xlsx/worksheet/index';
-import { parseMultiCellRange, parseRange } from '../../../src/xlsx/worksheet/cell-range';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
+import { parseMultiCellRange, parseRange } from '../../../src/worksheet/cell-range';
 import { writeWorkbook } from '../_helpers';
 void parseRange;
 

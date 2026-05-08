@@ -1,7 +1,7 @@
 // Tests for hexToHsl / hslToHex.
 
 import { describe, expect, it } from 'vitest';
-import { hexToHsl, hslToHex } from '../../../src/xlsx/styles/colors';
+import { hexToHsl, hslToHex } from '../../../src/styles/colors';
 
 describe('hexToHsl', () => {
   it('white → l=1, s=0', () => {

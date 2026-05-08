@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { makeAlignment } from '../../../src/xlsx/styles/alignment';
-import { makeColor } from '../../../src/xlsx/styles/colors';
-import { addDxf, getDxfs, makeDifferentialStyle } from '../../../src/xlsx/styles/differential';
-import { makePatternFill } from '../../../src/xlsx/styles/fills';
-import { makeFont } from '../../../src/xlsx/styles/fonts';
-import { makeNumberFormat } from '../../../src/xlsx/styles/numbers';
-import { makeProtection } from '../../../src/xlsx/styles/protection';
-import { makeStylesheet } from '../../../src/xlsx/styles/stylesheet';
+import { makeAlignment } from '../../../src/styles/alignment';
+import { makeColor } from '../../../src/styles/colors';
+import { addDxf, getDxfs, makeDifferentialStyle } from '../../../src/styles/differential';
+import { makePatternFill } from '../../../src/styles/fills';
+import { makeFont } from '../../../src/styles/fonts';
+import { makeNumberFormat } from '../../../src/styles/numbers';
+import { makeProtection } from '../../../src/styles/protection';
+import { makeStylesheet } from '../../../src/styles/stylesheet';
 
 describe('DifferentialStyle', () => {
   it('makeDifferentialStyle freezes the result and omits unset fields', () => {

@@ -7,9 +7,9 @@ import {
   createWorkbook,
   getAllComments,
   getAllHyperlinks,
-} from '../../src/xlsx/workbook/workbook';
-import { addUrlHyperlink } from '../../src/xlsx/worksheet/hyperlinks';
-import { setComment } from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/workbook/workbook';
+import { addUrlHyperlink } from '../../src/worksheet/hyperlinks';
+import { setComment } from '../../src/worksheet/worksheet';
 
 describe('getAllHyperlinks', () => {
   it('aggregates across every worksheet in tab-strip order', () => {

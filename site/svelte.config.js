@@ -21,7 +21,7 @@ const mdsvexOptions = {
 };
 
 // BASE_PATH lets the same build run locally (=''), on a GitHub user page
-// or custom domain (=''), or on a project page (e.g. '/ooxml-js'). Set
+// or custom domain (=''), or on a project page (e.g. '/xlsxify'). Set
 // it in CI for GitHub Actions deploys.
 const basePath = process.env.BASE_PATH ?? '';
 
@@ -34,22 +34,21 @@ const config = {
     prerender: { entries: ['*'] },
     paths: { base: basePath, relative: true },
     alias: {
-      'ooxml-js/xlsx/cell': '../src/xlsx/cell/index.ts',
-      'ooxml-js/xlsx/chart': '../src/xlsx/chart/index.ts',
-      'ooxml-js/xlsx/chartsheet': '../src/xlsx/chartsheet/index.ts',
-      'ooxml-js/xlsx/drawing': '../src/xlsx/drawing/index.ts',
-      'ooxml-js/xlsx/io': '../src/xlsx/io/index.ts',
-      'ooxml-js/xlsx/streaming': '../src/xlsx/streaming/index.ts',
-      'ooxml-js/xlsx/styles': '../src/xlsx/styles/index.ts',
-      'ooxml-js/xlsx/workbook': '../src/xlsx/workbook/index.ts',
-      'ooxml-js/xlsx/worksheet': '../src/xlsx/worksheet/index.ts',
-      'ooxml-js/io': '../src/io/index.ts',
-      'ooxml-js/node': '../src/node.ts',
-      'ooxml-js/packaging': '../src/packaging/index.ts',
-      'ooxml-js/schema': '../src/schema/index.ts',
-      'ooxml-js/utils': '../src/utils/index.ts',
-      'ooxml-js/xml': '../src/xml/index.ts',
-      'ooxml-js/zip': '../src/zip/index.ts',
+      'xlsxify/cell': '../src/cell/index.ts',
+      'xlsxify/chart': '../src/chart/index.ts',
+      'xlsxify/chartsheet': '../src/chartsheet/index.ts',
+      'xlsxify/drawing': '../src/drawing/index.ts',
+      'xlsxify/io': '../src/io/index.ts',
+      'xlsxify/node': '../src/node.ts',
+      'xlsxify/packaging': '../src/packaging/index.ts',
+      'xlsxify/schema': '../src/schema/index.ts',
+      'xlsxify/streaming': '../src/streaming/index.ts',
+      'xlsxify/styles': '../src/styles/index.ts',
+      'xlsxify/utils': '../src/utils/index.ts',
+      'xlsxify/workbook': '../src/workbook/index.ts',
+      'xlsxify/worksheet': '../src/worksheet/index.ts',
+      'xlsxify/xml': '../src/xml/index.ts',
+      'xlsxify/zip': '../src/zip/index.ts',
     },
   },
 };

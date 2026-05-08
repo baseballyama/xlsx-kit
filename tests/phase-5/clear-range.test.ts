@@ -1,7 +1,7 @@
 // Tests for clearRange / clearAllCells.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   clearAllCells,
   clearRange,
@@ -9,7 +9,7 @@ import {
   mergeCells,
   setCell,
   setColumnWidth,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('clearRange', () => {
   it('removes only cells inside the range and returns the count', () => {

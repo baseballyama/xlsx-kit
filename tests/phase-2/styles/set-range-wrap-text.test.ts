@@ -5,9 +5,9 @@ import {
   alignCellHorizontal,
   getCellAlignment,
   setRangeWrapText,
-} from '../../../src/xlsx/styles/cell-style';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/workbook';
-import { setCell } from '../../../src/xlsx/worksheet/worksheet';
+} from '../../../src/styles/cell-style';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
+import { setCell } from '../../../src/worksheet/worksheet';
 
 const cellAt = (ws: ReturnType<typeof addWorksheet>, row: number, col: number) => {
   const c = ws.rows.get(row)?.get(col);

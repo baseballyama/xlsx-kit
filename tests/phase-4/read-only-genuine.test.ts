@@ -7,8 +7,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { loadWorkbookStream } from '../../src/xlsx/streaming/read-only';
+import { loadWorkbook } from '../../src/io/load';
+import { loadWorkbookStream } from '../../src/streaming/read-only';
 
 const FIXTURE = (rel: string): Uint8Array =>
   readFileSync(resolve(__dirname, '../../reference/openpyxl/openpyxl/tests/data', rel));

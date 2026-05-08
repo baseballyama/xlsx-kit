@@ -1,16 +1,16 @@
 // Phase 7 acceptance: VBA / pivot / activeX / customXml passthrough.
 // Per docs/plan/09-pivot-vba.md §1, the goal is "openpyxl が壊さない xlsx
-// は ooxml-js も壊さない" — these tests pin that contract.
+// は xlsxify も壊さない" — these tests pin that contract.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import {
   addWorksheet,
   createWorkbook,
   listCustomXmlParts,
-} from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/workbook';
 import { OpenXmlNotImplementedError } from '../../src/utils/exceptions';
 import { openZip } from '../../src/zip/reader';
 

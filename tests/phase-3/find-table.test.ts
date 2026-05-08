@@ -5,9 +5,9 @@ import {
   addWorksheet,
   createWorkbook,
   findTable,
-} from '../../src/xlsx/workbook/workbook';
-import { addExcelTable } from '../../src/xlsx/worksheet/table';
-import { setCell } from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/workbook/workbook';
+import { addExcelTable } from '../../src/worksheet/table';
+import { setCell } from '../../src/worksheet/worksheet';
 
 describe('findTable', () => {
   it('locates a table by displayName across multiple sheets', () => {

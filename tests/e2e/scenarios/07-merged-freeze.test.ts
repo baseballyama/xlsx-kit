@@ -12,8 +12,8 @@
 //     verifiable by scrolling right or down.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { mergeCells, setCell, setCellByCoord, setFreezePanes } from '../../../src/xlsx/worksheet/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { mergeCells, setCell, setCellByCoord, setFreezePanes } from '../../../src/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 07 — merged cells + freeze panes', () => {

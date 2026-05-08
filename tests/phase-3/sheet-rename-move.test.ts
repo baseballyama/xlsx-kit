@@ -8,7 +8,7 @@ import {
   renameSheet,
   setActiveSheet,
   sheetNames,
-} from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/workbook';
 
 describe('renameSheet', () => {
   it('renames an existing sheet', () => {

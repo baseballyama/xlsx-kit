@@ -9,8 +9,8 @@ import {
   resolveIndexedColor,
   rgbColor,
   WHITE,
-} from '../../../src/xlsx/styles/colors';
-import { ColorSchema } from '../../../src/xlsx/styles/colors.schema';
+} from '../../../src/styles/colors';
+import { ColorSchema } from '../../../src/styles/colors.schema';
 import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
 import { parseXml } from '../../../src/xml/parser';
 import { serializeXml } from '../../../src/xml/serializer';

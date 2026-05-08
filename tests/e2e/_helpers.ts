@@ -11,8 +11,8 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Workbook } from '../../src/xlsx/workbook/index';
-import { loadWorkbook, workbookToBytes } from '../../src/xlsx/io/index';
+import type { Workbook } from '../../src/workbook/index';
+import { loadWorkbook, workbookToBytes } from '../../src/io/index';
 import { fromBuffer } from '../../src/io/node';
 
 export const OUT_DIR = resolve(__dirname, 'output');

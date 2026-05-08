@@ -2,10 +2,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addChartsheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { makeHeaderFooter, makePageMargins, makePageSetup } from '../../src/xlsx/worksheet/page-setup';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addChartsheet, createWorkbook } from '../../src/workbook/workbook';
+import { makeHeaderFooter, makePageMargins, makePageSetup } from '../../src/worksheet/page-setup';
 
 describe('chartsheet page setup round-trip', () => {
   it('preserves pageMargins + pageSetup + headerFooter on a chartsheet', async () => {

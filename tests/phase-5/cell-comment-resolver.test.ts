@@ -1,12 +1,12 @@
 // Tests for getCellComment resolver.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   getCellComment,
   setCell,
   setComment,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('getCellComment', () => {
   it('resolves a single-cell ref', () => {

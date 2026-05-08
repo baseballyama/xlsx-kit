@@ -1,12 +1,12 @@
-# Migrating from openpyxl to ooxml-js
+# Migrating from openpyxl to xlsxify
 
-`ooxml-js` is a TypeScript port of openpyxl. The data model, naming, and
+`xlsxify` is a TypeScript port of openpyxl. The data model, naming, and
 semantics line up closely; the API shape is different by necessity (TypeScript
 prefers free functions over methods, and the project banned classes outside
 of `Error` subclasses).
 
 This guide walks through the most common openpyxl idioms and their
-ooxml-js equivalents.
+xlsxify equivalents.
 
 ## Loading and saving
 
@@ -18,8 +18,8 @@ wb.save('output.xlsx')
 ```
 
 ```ts
-// ooxml-js
-import { fromFile, loadWorkbook, saveWorkbook, toFile } from 'ooxml-js/node';
+// xlsxify
+import { fromFile, loadWorkbook, saveWorkbook, toFile } from 'xlsxify/node';
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 await saveWorkbook(wb, toFile('output.xlsx'));
 ```
@@ -30,7 +30,7 @@ so the same `loadWorkbook` works against `fromBuffer`, `fromFile`,
 
 ## Cells
 
-| openpyxl | ooxml-js |
+| openpyxl | xlsxify |
 | --- | --- |
 | `ws['A1'] = 42` | `setCellByCoord(ws, 'A1', 42)` |
 | `ws.cell(row=1, column=1, value=42)` | `setCell(ws, 1, 1, 42)` |
@@ -52,7 +52,7 @@ Cell values cover the same shapes openpyxl does:
 ## Styles
 
 openpyxl exposes `cell.font`, `cell.fill`, etc. as direct mutable properties
-that the cell points at via a styleId. ooxml-js keeps the same model — the
+that the cell points at via a styleId. xlsxify keeps the same model — the
 `Stylesheet` is a pool — but exposes it through the `cell-style` bridge:
 
 ```ts
@@ -63,7 +63,7 @@ import {
   setCellFill,
   setCellFont,
   setCellNumberFormat,
-} from 'ooxml-js';
+} from 'xlsxify';
 
 setCellFont(wb, cell, makeFont({ name: 'Arial', size: 14, bold: true }));
 setCellFill(wb, cell, makePatternFill({ patternType: 'solid', fgColor: makeColor({ rgb: 'FFFFFF00' }) }));
@@ -74,7 +74,7 @@ The pool dedups; assigning the same Font twice yields the same fontId.
 
 ## Worksheets
 
-| openpyxl | ooxml-js |
+| openpyxl | xlsxify |
 | --- | --- |
 | `wb.create_sheet('Data')` | `addWorksheet(wb, 'Data')` |
 | `wb.active` | `getActiveSheet(wb)` |
@@ -97,9 +97,9 @@ wb.save('big.xlsx')
 ```
 
 ```ts
-// ooxml-js
-import { createWriteOnlyWorkbook } from 'ooxml-js/streaming';
-import { toFile } from 'ooxml-js/node';
+// xlsxify
+import { createWriteOnlyWorkbook } from 'xlsxify/streaming';
+import { toFile } from 'xlsxify/node';
 
 const wb = await createWriteOnlyWorkbook(toFile('big.xlsx'));
 const ws = await wb.addWorksheet('Data');
@@ -127,9 +127,9 @@ wb.close()
 ```
 
 ```ts
-// ooxml-js
-import { fromFile } from 'ooxml-js/node';
-import { loadWorkbookStream } from 'ooxml-js/streaming';
+// xlsxify
+import { fromFile } from 'xlsxify/node';
+import { loadWorkbookStream } from 'xlsxify/streaming';
 
 const wb = await loadWorkbookStream(fromFile('big.xlsx'));
 const ws = wb.openWorksheet('Data');
@@ -144,7 +144,7 @@ iteration; the SAX path stops walking the bytes once it crosses `maxRow`.
 
 ## What's preserved verbatim (no model)
 
-ooxml-js doesn't re-implement every OOXML schema; instead, parts that
+xlsxify doesn't re-implement every OOXML schema; instead, parts that
 aren't worth modelling round-trip byte-for-byte through the workbook's
 `passthrough` map. The following live there:
 
@@ -158,7 +158,7 @@ aren't worth modelling round-trip byte-for-byte through the workbook's
 - `customUI/`, `customXml/`
 - Control VML drawings (`xl/drawings/*.vml` excluding comment VML)
 
-If openpyxl preserves it, `ooxml-js` does too — but typically without a
+If openpyxl preserves it, `xlsxify` does too — but typically without a
 typed editing surface.
 
 ## What's not yet supported

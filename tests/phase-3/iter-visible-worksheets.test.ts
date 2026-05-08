@@ -10,7 +10,7 @@ import {
   iterWorksheetsByState,
   setSheetState,
   veryHideSheet,
-} from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/workbook';
 
 describe('iterVisibleWorksheets', () => {
   it('skips hidden / veryHidden worksheets', () => {

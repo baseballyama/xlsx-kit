@@ -1,28 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { makeBarChart, makeBarSeries, makeChartSpace } from '../../src/xlsx/chart/chart';
+import { makeBarChart, makeBarSeries, makeChartSpace } from '../../src/chart/chart';
 import {
   parseUserShapesXml,
   serializeUserShapes,
   userShapesToBytes,
-} from '../../src/xlsx/chart/user-shapes-xml';
+} from '../../src/chart/user-shapes-xml';
 import {
   type ChartDrawing,
   makeAbsSizeAnchor,
   makeChartDrawing,
   makeChartShape,
   makeRelSizeAnchor,
-} from '../../src/xlsx/chart/user-shapes';
-import { makeTwoCellAnchor } from '../../src/xlsx/drawing/anchor';
-import { makeColor, makeSrgbColor } from '../../src/xlsx/drawing/dml/colors';
-import { makeSolidFill } from '../../src/xlsx/drawing/dml/fill';
-import { makePresetGeometry } from '../../src/xlsx/drawing/dml/geometry';
-import { makeShapeProperties } from '../../src/xlsx/drawing/dml/shape-properties';
-import { makeSimpleTextBody } from '../../src/xlsx/drawing/dml/text';
-import { makeChartDrawingItem, makeDrawing } from '../../src/xlsx/drawing/drawing';
+} from '../../src/chart/user-shapes';
+import { makeTwoCellAnchor } from '../../src/drawing/anchor';
+import { makeColor, makeSrgbColor } from '../../src/drawing/dml/colors';
+import { makeSolidFill } from '../../src/drawing/dml/fill';
+import { makePresetGeometry } from '../../src/drawing/dml/geometry';
+import { makeShapeProperties } from '../../src/drawing/dml/shape-properties';
+import { makeSimpleTextBody } from '../../src/drawing/dml/text';
+import { makeChartDrawingItem, makeDrawing } from '../../src/drawing/drawing';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 const roundTrip = (d: ChartDrawing): ChartDrawing => parseUserShapesXml(userShapesToBytes(d));
 

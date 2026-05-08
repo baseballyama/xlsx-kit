@@ -6,7 +6,7 @@ import {
   addWorksheet,
   createWorkbook,
   hasSheet,
-} from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/workbook';
 
 describe('hasSheet', () => {
   it('returns true when a worksheet with the title exists', () => {

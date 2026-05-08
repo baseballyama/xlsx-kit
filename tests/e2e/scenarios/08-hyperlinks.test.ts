@@ -2,14 +2,14 @@
 // Output: 08-hyperlinks.xlsx
 //
 // What to verify in Excel:
-// - A1 is clickable, opens https://github.com/baseballyama/ooxml-js
+// - A1 is clickable, opens https://github.com/baseballyama/xlsxify
 // - A2 is an in-workbook hyperlink jumping to "Target!A1"
 // - A3 has a tooltip ("Hover me") visible on mouse-over
 // - The "Target" sheet has the destination cell at A1.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell } from '../../../src/xlsx/worksheet/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 08 — hyperlinks', () => {
@@ -19,13 +19,13 @@ describe('e2e 08 — hyperlinks', () => {
     const target = addWorksheet(wb, 'Target');
     setCell(target, 1, 1, '↑ jumped here from Main!A2');
 
-    setCell(main, 1, 1, 'ooxml-js on GitHub');
+    setCell(main, 1, 1, 'xlsxify on GitHub');
     setCell(main, 2, 1, 'jump to Target sheet');
     setCell(main, 3, 1, 'with tooltip');
 
     main.hyperlinks.push({
       ref: 'A1',
-      target: 'https://github.com/baseballyama/ooxml-js',
+      target: 'https://github.com/baseballyama/xlsxify',
       tooltip: 'Click to open the project page',
     });
     main.hyperlinks.push({

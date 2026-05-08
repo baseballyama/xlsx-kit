@@ -10,11 +10,11 @@
 //   bars with category labels Q1/Q2/Q3.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell } from '../../../src/xlsx/worksheet/index';
-import { makeBarChart, makeBarSeries, makeChartSpace } from '../../../src/xlsx/chart/chart';
-import { makeAbsoluteAnchor, makeOneCellAnchor } from '../../../src/xlsx/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing } from '../../../src/xlsx/drawing/drawing';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
+import { makeBarChart, makeBarSeries, makeChartSpace } from '../../../src/chart/chart';
+import { makeAbsoluteAnchor, makeOneCellAnchor } from '../../../src/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing } from '../../../src/drawing/drawing';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 13 — bar chart', () => {

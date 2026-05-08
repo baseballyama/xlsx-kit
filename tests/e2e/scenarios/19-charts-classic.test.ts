@@ -9,8 +9,8 @@
 //   correctly with axis labels / legend visible.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell } from '../../../src/xlsx/worksheet/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell } from '../../../src/worksheet/index';
 import {
   makeAreaChart,
   makeBarSeries,
@@ -21,11 +21,11 @@ import {
   makeRadarChart,
   makeScatterChart,
   makeScatterSeries,
-} from '../../../src/xlsx/chart/chart';
-import { makeOneCellAnchor } from '../../../src/xlsx/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing } from '../../../src/xlsx/drawing/drawing';
-import type { ChartReference } from '../../../src/xlsx/drawing/drawing';
-import type { ChartSpace } from '../../../src/xlsx/chart/chart';
+} from '../../../src/chart/chart';
+import { makeOneCellAnchor } from '../../../src/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing } from '../../../src/drawing/drawing';
+import type { ChartReference } from '../../../src/drawing/drawing';
+import type { ChartSpace } from '../../../src/chart/chart';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 19 — classic chart kinds', () => {

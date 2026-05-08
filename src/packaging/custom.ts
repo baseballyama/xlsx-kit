@@ -185,7 +185,7 @@ export function customPropsFromBytes(bytes: Uint8Array | string): CustomProperti
 
 // ---- Workbook ergonomic helpers ----------------------------------------
 
-import type { Workbook } from '../xlsx/workbook/workbook';
+import type { Workbook } from '../workbook/workbook';
 
 const ensureCustomProperties = (wb: Workbook): CustomProperties => {
   if (!wb.customProperties) wb.customProperties = makeCustomProperties();

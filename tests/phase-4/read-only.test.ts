@@ -2,10 +2,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { loadWorkbookStream } from '../../src/xlsx/streaming/read-only';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { setCell } from '../../src/xlsx/worksheet/worksheet';
+import { workbookToBytes } from '../../src/io/save';
+import { loadWorkbookStream } from '../../src/streaming/read-only';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setCell } from '../../src/worksheet/worksheet';
 
 const buildSampleWorkbook = async (rowCount: number): Promise<Uint8Array> => {
   const wb = createWorkbook();

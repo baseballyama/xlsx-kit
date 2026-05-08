@@ -4,7 +4,7 @@ import {
   parseShapeProperties,
   serializeGeometry,
   serializeShapeProperties,
-} from '../../src/xlsx/drawing/dml/dml-xml';
+} from '../../src/drawing/dml/dml-xml';
 import {
   type CustomGeometry,
   type Geometry,
@@ -12,8 +12,8 @@ import {
   makeCustomGeometry,
   makePresetGeometry,
   PRESET_SHAPE_NAMES,
-} from '../../src/xlsx/drawing/dml/geometry';
-import { makeShapeProperties, type ShapeProperties } from '../../src/xlsx/drawing/dml/shape-properties';
+} from '../../src/drawing/dml/geometry';
+import { makeShapeProperties, type ShapeProperties } from '../../src/drawing/dml/shape-properties';
 import { parseXml } from '../../src/xml/parser';
 import { findChild } from '../../src/xml/tree';
 

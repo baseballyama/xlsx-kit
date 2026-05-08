@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { makeFont } from '../../src/xlsx/styles/fonts';
-import { addCellXf, addFont } from '../../src/xlsx/styles/stylesheet';
-import { parseStylesheetXml } from '../../src/xlsx/styles/stylesheet-reader';
+import { makeFont } from '../../src/styles/fonts';
+import { addCellXf, addFont } from '../../src/styles/stylesheet';
+import { parseStylesheetXml } from '../../src/styles/stylesheet-reader';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');

@@ -15,9 +15,9 @@
 //     "# ?/?" / "# ??/??" (fractions).
 
 import { describe, expect, it } from 'vitest';
-import { setCellAlignment, setCellNumberFormat } from '../../../src/xlsx/styles/index';
-import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
-import { setCell, setColumnWidth, setRowHeight } from '../../../src/xlsx/worksheet/index';
+import { setCellAlignment, setCellNumberFormat } from '../../../src/styles/index';
+import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
+import { setCell, setColumnWidth, setRowHeight } from '../../../src/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 25 — alignment / advanced number formats', () => {

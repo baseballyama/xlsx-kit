@@ -2,16 +2,16 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   addDefinedName,
   getDefinedName,
   removeDefinedName,
   setPrintArea,
   setPrintTitles,
-} from '../../src/xlsx/workbook/defined-names';
+} from '../../src/workbook/defined-names';
 
 describe('addDefinedName / getDefinedName / removeDefinedName', () => {
   it('addDefinedName replaces an existing entry with the same name + scope', () => {

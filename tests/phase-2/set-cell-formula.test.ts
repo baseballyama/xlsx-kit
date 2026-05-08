@@ -1,9 +1,9 @@
 // Tests for setCellFormula.
 
 import { describe, expect, it } from 'vitest';
-import { getCachedFormulaValue, getFormulaText, isFormulaValue } from '../../src/xlsx/cell/cell';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { setCellFormula } from '../../src/xlsx/worksheet/worksheet';
+import { getCachedFormulaValue, getFormulaText, isFormulaValue } from '../../src/cell/cell';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setCellFormula } from '../../src/worksheet/worksheet';
 
 describe('setCellFormula', () => {
   it('writes a normal formula and strips the leading =', () => {

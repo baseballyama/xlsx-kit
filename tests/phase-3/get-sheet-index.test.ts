@@ -6,7 +6,7 @@ import {
   addWorksheet,
   createWorkbook,
   getSheetIndex,
-} from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/workbook';
 
 describe('getSheetIndex', () => {
   it('returns the 0-based tab-strip index', () => {

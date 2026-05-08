@@ -1,12 +1,12 @@
 // Tests for getPopulatedRowIndices / getPopulatedColumnIndices.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   getPopulatedColumnIndices,
   getPopulatedRowIndices,
   setCell,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('getPopulatedRowIndices', () => {
   it('returns sorted indices of rows with at least one populated cell', () => {

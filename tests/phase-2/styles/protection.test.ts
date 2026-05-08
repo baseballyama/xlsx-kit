@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fromTree, toTree } from '../../../src/schema/serialize';
-import { DEFAULT_PROTECTION, makeProtection } from '../../../src/xlsx/styles/protection';
-import { ProtectionSchema } from '../../../src/xlsx/styles/protection.schema';
+import { DEFAULT_PROTECTION, makeProtection } from '../../../src/styles/protection';
+import { ProtectionSchema } from '../../../src/styles/protection.schema';
 import { parseXml } from '../../../src/xml/parser';
 import { serializeXml } from '../../../src/xml/serializer';
 

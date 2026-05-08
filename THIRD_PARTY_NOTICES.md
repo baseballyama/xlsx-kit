@@ -1,6 +1,6 @@
 # Third Party Notices
 
-`ooxml-js` is a TypeScript port of, and incorporates work derived from, the
+`xlsxify` is a TypeScript port of, and incorporates work derived from, the
 following projects.
 
 ## openpyxl (MIT)
@@ -33,7 +33,7 @@ THE SOFTWARE.
 
 ## Runtime dependencies
 
-The following npm packages ship as part of `ooxml-js` at runtime. Each is
+The following npm packages ship as part of `xlsxify` at runtime. Each is
 licensed under its own terms — links go to the upstream repository where the
 license text lives.
 

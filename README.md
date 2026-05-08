@@ -1,10 +1,8 @@
-# ooxml-js
+# xlsxify
 
-A TypeScript port of [openpyxl](https://openpyxl.readthedocs.io/) — read and
-write Excel `.xlsx` workbooks from Node 18+ and modern browsers, with no
-runtime dependencies on Python or Excel. Architected for future docx / pptx
-support: xlsx-specific exports live under `ooxml-js/xlsx/*`, while format-
-agnostic byte I/O / fs glue / OPC packaging stay at the top level.
+A TypeScript library for reading and writing Excel `.xlsx` workbooks
+from Node 18+ and modern browsers, with no runtime dependencies on
+Python or Excel. Inspired by [openpyxl](https://openpyxl.readthedocs.io/).
 
 > **Status: pre-1.0 alpha.** The core read / write / streaming pipeline is
 > in place and round-trips real-world fixtures (including pivot tables and
@@ -15,7 +13,7 @@ agnostic byte I/O / fs glue / OPC packaging stay at the top level.
 ## Install
 
 ```sh
-pnpm add ooxml-js   # or npm / yarn / bun
+pnpm add xlsxify   # or npm / yarn / bun
 ```
 
 Requires Node `>=18.18` for the built-in `Web Streams`, `Blob`, and `fetch`
@@ -28,43 +26,42 @@ subpath, so your editor's autocomplete only surfaces what's relevant to
 the area you're working in. Each export has exactly one home (no
 convenience re-exports).
 
-| Import                    | Use case                                          |
-|---------------------------|---------------------------------------------------|
-| `ooxml-js/xlsx/io`        | `loadWorkbook` / `saveWorkbook` / `workbookToBytes` |
-| `ooxml-js/xlsx/workbook`  | `createWorkbook`, `addWorksheet`, defined names   |
-| `ooxml-js/xlsx/worksheet` | `setCell`, `getCell`, `mergeCells`, tables, …     |
-| `ooxml-js/xlsx/cell`      | Cell value-model + inline rich text               |
-| `ooxml-js/xlsx/styles`    | Fonts, fills, borders, alignment, number formats  |
-| `ooxml-js/xlsx/chart`     | `c:` and `cx:` chart kinds                        |
-| `ooxml-js/xlsx/chartsheet`| Standalone chartsheets                            |
-| `ooxml-js/xlsx/drawing`   | Anchors, images, chart placement                  |
-| `ooxml-js/xlsx/streaming` | Read-only iter + write-only append                |
-| `ooxml-js/io`             | Byte Source/Sink types + browser-safe helpers (Blob/Response/Stream) |
-| `ooxml-js/node`           | Node fs glue (fromFile/toFile/fromBuffer/toBuffer/fromReadable/toWritable) |
+| Import                 | Use case                                          |
+|------------------------|---------------------------------------------------|
+| `xlsxify/io`           | `loadWorkbook` / `saveWorkbook` / `workbookToBytes` plus byte-level Source/Sink + browser helpers (Blob/Response/Stream) |
+| `xlsxify/node`         | Node fs glue (`fromFile` / `toFile` / `fromBuffer` / `toBuffer` / `fromReadable` / `toWritable`) |
+| `xlsxify/streaming`    | Read-only iter (`loadWorkbookStream`) + write-only append (`createWriteOnlyWorkbook`) |
+| `xlsxify/workbook`     | `createWorkbook`, `addWorksheet`, defined names   |
+| `xlsxify/worksheet`    | `setCell`, `getCell`, `mergeCells`, tables, …     |
+| `xlsxify/cell`         | Cell value-model + inline rich text               |
+| `xlsxify/styles`       | Fonts, fills, borders, alignment, number formats  |
+| `xlsxify/chart`        | `c:` and `cx:` chart kinds                        |
+| `xlsxify/chartsheet`   | Standalone chartsheets                            |
+| `xlsxify/drawing`      | Anchors, images, chart placement                  |
 
-Other subpaths: `ooxml-js/packaging`, `ooxml-js/utils`, `ooxml-js/xml`,
-`ooxml-js/zip`, `ooxml-js/schema`. All exports are tree-shakable
+Other subpaths: `xlsxify/packaging`, `xlsxify/utils`, `xlsxify/xml`,
+`xlsxify/zip`, `xlsxify/schema`. All exports are tree-shakable
 (`"sideEffects": false`).
 
 Bundle budgets (min + brotli):
 
-- `ooxml-js/xlsx/streaming` ≤ 80 KB    (currently ~49 KB)
-- `ooxml-js/xlsx/io` ≤ 120 KB           (currently ~84 KB)
+- `xlsxify/streaming` ≤ 80 KB    (currently ~49 KB)
+- `xlsxify/io` ≤ 120 KB           (currently ~85 KB)
 
 ## Quick examples
 
 ### Read + edit + write
 
 ```ts
-import { loadWorkbook, workbookToBytes } from 'ooxml-js/xlsx/io';
-import { setCell } from 'ooxml-js/xlsx/worksheet';
-import { fromBuffer } from 'ooxml-js/node';
+import { loadWorkbook, workbookToBytes } from 'xlsxify/io';
+import { setCell } from 'xlsxify/worksheet';
+import { fromBuffer } from 'xlsxify/node';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const wb = await loadWorkbook(fromBuffer(await readFile('input.xlsx')));
 const sheet = wb.sheets[0];
 if (sheet?.kind === 'worksheet') {
-  setCell(sheet.sheet, /* row */ 1, /* col */ 1, 'Hello from ooxml-js');
+  setCell(sheet.sheet, /* row */ 1, /* col */ 1, 'Hello from xlsxify');
 }
 await writeFile('output.xlsx', await workbookToBytes(wb));
 ```
@@ -72,8 +69,8 @@ await writeFile('output.xlsx', await workbookToBytes(wb));
 ### Read directly from disk (Node)
 
 ```ts
-import { loadWorkbook, saveWorkbook } from 'ooxml-js/xlsx/io';
-import { fromFile, toFile } from 'ooxml-js/node';
+import { loadWorkbook, saveWorkbook } from 'xlsxify/io';
+import { fromFile, toFile } from 'xlsxify/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 // …mutate wb…
@@ -83,8 +80,7 @@ await saveWorkbook(wb, toFile('output.xlsx'));
 ### Read directly from a `fetch` response (browser)
 
 ```ts
-import { loadWorkbook } from 'ooxml-js/xlsx/io';
-import { fromResponse } from 'ooxml-js/io';
+import { fromResponse, loadWorkbook } from 'xlsxify/io';
 
 const response = await fetch('/sheet.xlsx');
 const wb = await loadWorkbook(fromResponse(response));
@@ -93,8 +89,8 @@ const wb = await loadWorkbook(fromResponse(response));
 ### Streaming write — millions of rows in a fixed memory budget
 
 ```ts
-import { createWriteOnlyWorkbook } from 'ooxml-js/xlsx/streaming';
-import { toFile } from 'ooxml-js/node';
+import { createWriteOnlyWorkbook } from 'xlsxify/streaming';
+import { toFile } from 'xlsxify/node';
 
 const sink = toFile('big.xlsx');
 const wb = await createWriteOnlyWorkbook(sink);
@@ -114,8 +110,8 @@ to disk chunk-by-chunk.
 ### Streaming read — iterate huge sheets without loading them
 
 ```ts
-import { loadWorkbookStream } from 'ooxml-js/xlsx/streaming';
-import { fromFile } from 'ooxml-js/node';
+import { loadWorkbookStream } from 'xlsxify/streaming';
+import { fromFile } from 'xlsxify/node';
 
 const wb = await loadWorkbookStream(fromFile('big.xlsx'));
 const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');
@@ -155,7 +151,7 @@ clone with submodules (or run `pnpm install`, which auto-inits via the
 `prepare` script):
 
 ```sh
-git clone --recursive https://github.com/baseballyama/ooxml-js.git
+git clone --recursive https://github.com/baseballyama/openxml-js.git
 # or, if you already cloned without --recursive:
 git submodule update --init --recursive
 

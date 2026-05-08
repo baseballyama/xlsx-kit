@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { parseMultiCellRange } from '../../src/xlsx/worksheet/cell-range';
-import { makeCfRule, makeConditionalFormatting } from '../../src/xlsx/worksheet/conditional-formatting';
-import { addConditionalFormatting, getConditionalFormatting, type Worksheet } from '../../src/xlsx/worksheet/worksheet';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { parseMultiCellRange } from '../../src/worksheet/cell-range';
+import { makeCfRule, makeConditionalFormatting } from '../../src/worksheet/conditional-formatting';
+import { addConditionalFormatting, getConditionalFormatting, type Worksheet } from '../../src/worksheet/worksheet';
 
-const expectSheet = (ws: Worksheet | import('../../src/xlsx/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected sheet');
   if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;

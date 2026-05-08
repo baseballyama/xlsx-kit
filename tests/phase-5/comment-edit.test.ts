@@ -1,13 +1,13 @@
 // Tests for editCommentText / editCommentAuthor in-place edit helpers.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   editCommentAuthor,
   editCommentText,
   getComment,
   setComment,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('editCommentText', () => {
   it('rewrites the text and leaves author + ref alone', () => {

@@ -1,11 +1,11 @@
 // Add a clustered column chart driven by a data range on the same sheet.
 
-import { makeBarChart, makeBarSeries, makeChartSpace } from 'ooxml-js/xlsx/chart';
-import { addChartAt } from 'ooxml-js/xlsx/drawing';
-import { saveWorkbook } from 'ooxml-js/xlsx/io';
-import { toFile } from 'ooxml-js/node';
-import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
-import { setCell } from 'ooxml-js/xlsx/worksheet';
+import { makeBarChart, makeBarSeries, makeChartSpace } from 'xlsxify/chart';
+import { addChartAt } from 'xlsxify/drawing';
+import { saveWorkbook } from 'xlsxify/io';
+import { toFile } from 'xlsxify/node';
+import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
+import { setCell } from 'xlsxify/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Sales');

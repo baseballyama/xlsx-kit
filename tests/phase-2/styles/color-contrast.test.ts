@@ -1,7 +1,7 @@
 // Tests for luminance / contrastRatio / pickReadableTextColor.
 
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, luminance, pickReadableTextColor } from '../../../src/xlsx/styles/colors';
+import { contrastRatio, luminance, pickReadableTextColor } from '../../../src/styles/colors';
 
 describe('luminance', () => {
   it('white = 1, black = 0', () => {

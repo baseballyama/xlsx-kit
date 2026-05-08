@@ -3,8 +3,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');
@@ -64,7 +64,7 @@ describe('docProps + theme passthrough through save', () => {
   });
 
   it('omits docProps + theme when the workbook has none', async () => {
-    const { createWorkbook, addWorksheet } = await import('../../src/xlsx/workbook/workbook');
+    const { createWorkbook, addWorksheet } = await import('../../src/workbook/workbook');
     const wb = createWorkbook();
     addWorksheet(wb, 'Plain');
     const reSaved = await workbookToBytes(wb);

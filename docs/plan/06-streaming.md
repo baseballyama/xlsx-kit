@@ -15,8 +15,8 @@ TS では **Web Streams API** が両環境で使えることを利用し、temp 
 
 サブパスで分離（[01-architecture.md](./01-architecture.md) §6）：
 ```
-import { loadWorkbookStream } from 'ooxml-js/streaming';
-import { createWriteOnlyWorkbook } from 'ooxml-js/streaming';
+import { loadWorkbookStream } from 'xlsxify/streaming';
+import { createWriteOnlyWorkbook } from 'xlsxify/streaming';
 ```
 
 ## 2. read-only
@@ -177,7 +177,7 @@ export interface SheetDataWriter {
 
 - [ ] 通常モードと streaming モードで read 結果が論理的に同一（cell 値・styleId）
 - [ ] `vitest bench` で性能リグレッション 25% 以内
-- [ ] バンドルサイズ予算: `ooxml-js/streaming` ≤ 80KB min+gz
+- [ ] バンドルサイズ予算: `xlsxify/streaming` ≤ 80KB min+gz
 
 ## 5. 実装上の注意
 

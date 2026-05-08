@@ -1,8 +1,8 @@
 // Tests for replaceInRange.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { replaceInRange, setCell } from '../../src/xlsx/worksheet/worksheet';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { replaceInRange, setCell } from '../../src/worksheet/worksheet';
 
 describe('replaceInRange', () => {
   it('only replaces cells inside the range, returning the count', () => {

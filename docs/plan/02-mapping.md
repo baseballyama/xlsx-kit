@@ -1,4 +1,4 @@
-# 02. openpyxl ↔ ooxml-js モジュール対応表
+# 02. openpyxl ↔ xlsxify モジュール対応表
 
 実装中に「この機能は openpyxl のどこにある？」「これは TS のどのモジュールに置く？」を即引きするための表。
 
@@ -6,7 +6,7 @@
 
 ## 1. 主要ディレクトリの対応
 
-| openpyxl (Python) | ooxml-js (TS) | 主な責務 | 詳細 |
+| openpyxl (Python) | xlsxify (TS) | 主な責務 | 詳細 |
 |------------------|------------------|----------|------|
 | `openpyxl/__init__.py` | `src/index.ts` | 公開エントリ。`loadWorkbook`, `createWorkbook`, `save` を再 export | [01-architecture.md](./01-architecture.md) §6 |
 | `openpyxl/_constants.py` | `src/constants.ts` | バージョン、URL、メタ | – |
@@ -206,7 +206,7 @@
 
 ## 3. 同名でないものの注意リスト
 
-| openpyxl 用語 | ooxml-js 用語 | 理由 |
+| openpyxl 用語 | xlsxify 用語 | 理由 |
 |------------|------------------|------|
 | `Workbook(write_only=True)` | `createWriteOnlyWorkbook(sink)` | 引数で振る舞いが大きく変わるためエントリ分割 |
 | `load_workbook(...)` | `loadWorkbook(source, opts)` | camelCase |

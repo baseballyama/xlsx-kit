@@ -14,8 +14,8 @@ import {
   makeSunburstChart,
   makeTreemapChart,
   makeWaterfallChart,
-} from '../../src/xlsx/chart/cx/chartex';
-import { chartExToBytes, isChartExBytes, parseChartExXml, serializeChartExSpace } from '../../src/xlsx/chart/cx/chartex-xml';
+} from '../../src/chart/cx/chartex';
+import { chartExToBytes, isChartExBytes, parseChartExXml, serializeChartExSpace } from '../../src/chart/cx/chartex-xml';
 
 const roundTrip = (space: CxChartSpace): CxChartSpace => parseChartExXml(chartExToBytes(space));
 

@@ -1,31 +1,31 @@
 [
   {
-    "name": "ooxml-js/xlsx/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
-    "path": "dist/xlsx/streaming.mjs",
+    "name": "xlsxify/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
+    "path": "dist/streaming.mjs",
     "import": "*",
     "limit": "80 KB"
   },
   {
-    "name": "ooxml-js/xlsx/io (loadWorkbook + saveWorkbook)",
-    "path": "dist/xlsx/io.mjs",
+    "name": "xlsxify/io (loadWorkbook + saveWorkbook)",
+    "path": "dist/io.mjs",
     "import": "*",
     "limit": "120 KB"
   },
   {
-    "name": "ooxml-js/xlsx/workbook",
-    "path": "dist/xlsx/workbook.mjs",
+    "name": "xlsxify/workbook",
+    "path": "dist/workbook.mjs",
     "import": "*",
     "limit": "100 KB"
   },
   {
-    "name": "ooxml-js/xlsx/worksheet",
-    "path": "dist/xlsx/worksheet.mjs",
+    "name": "xlsxify/worksheet",
+    "path": "dist/worksheet.mjs",
     "import": "*",
     "limit": "100 KB"
   },
   {
-    "name": "ooxml-js/xlsx/styles",
-    "path": "dist/xlsx/styles.mjs",
+    "name": "xlsxify/styles",
+    "path": "dist/styles.mjs",
     "import": "*",
     "limit": "60 KB"
   }

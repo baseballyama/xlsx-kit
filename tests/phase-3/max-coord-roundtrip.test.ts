@@ -5,11 +5,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { MAX_COL, MAX_ROW } from '../../src/utils/coordinate';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { setCell } from '../../src/xlsx/worksheet/worksheet';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setCell } from '../../src/worksheet/worksheet';
 
 describe('phase-3 — max-coordinate (XFD1048576) round-trip', () => {
   it('writes and reads back a cell at row=MAX_ROW / col=MAX_COL', async () => {

@@ -1,7 +1,7 @@
 // Tests for rangesOverlapStr — A1-string range-overlap predicate.
 
 import { describe, expect, it } from 'vitest';
-import { rangesOverlapStr } from '../../src/xlsx/worksheet/cell-range';
+import { rangesOverlapStr } from '../../src/worksheet/cell-range';
 
 describe('rangesOverlapStr', () => {
   it('returns true for ranges that share at least one cell', () => {

@@ -6,11 +6,11 @@ import type { RequestHandler } from './$types';
 
 export const prerender = true;
 
-const PREAMBLE = `# ooxml-js — full documentation
+const PREAMBLE = `# xlsxify — full documentation
 
-This file is the concatenation of every page on https://ooxml-js's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
+This file is the concatenation of every page on https://xlsxify's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
 
-Source repo: https://github.com/baseballyama/ooxml-js
+Source repo: https://github.com/baseballyama/xlsxify
 `;
 
 export const GET: RequestHandler = () => {

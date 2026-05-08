@@ -11,9 +11,9 @@ import {
   setCustomNumberProperty,
   setCustomStringProperty,
 } from '../../src/packaging/custom';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('setCustomXxxProperty', () => {
   it('lazily allocates customProperties and appends each kind', () => {

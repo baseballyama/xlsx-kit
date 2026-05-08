@@ -1,6 +1,6 @@
 // Phase 6 §10 acceptance: every chart kind we model — 16 legacy `c:` +
 // 8 chartex `cx:` = 24 distinct kinds (the docs/plan calls this "25" but
-// counts Pie + Pie3D + OfPie as three slots; ooxml-js implements the
+// counts Pie + Pie3D + OfPie as three slots; xlsxify implements the
 // same set). Each chart goes through workbookToBytes → loadWorkbook and
 // the loaded chart's kind / key attributes must match what we wrote.
 
@@ -28,7 +28,7 @@ import {
   makeStockChart,
   makeSurface3DChart,
   makeSurfaceChart,
-} from '../../src/xlsx/chart/chart';
+} from '../../src/chart/chart';
 import {
   type CxChartSpace,
   makeBoxWhiskerChart,
@@ -39,13 +39,13 @@ import {
   makeSunburstChart,
   makeTreemapChart,
   makeWaterfallChart,
-} from '../../src/xlsx/chart/cx/chartex';
-import { makeTwoCellAnchor } from '../../src/xlsx/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing } from '../../src/xlsx/drawing/drawing';
+} from '../../src/chart/cx/chartex';
+import { makeTwoCellAnchor } from '../../src/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing } from '../../src/drawing/drawing';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 const VAL: { ref: string } = { ref: 'A1:A4' };
 const VAL2: { ref: string } = { ref: 'B1:B4' };

@@ -20,9 +20,9 @@ afterAll(() => {
 
 describe('README — full lib read+edit+write', () => {
   it('matches the documented public API surface for the round-trip example', async () => {
-    const io = await import('../../src/xlsx/io/index');
-    const workbook = await import('../../src/xlsx/workbook/index');
-    const worksheet = await import('../../src/xlsx/worksheet/index');
+    const io = await import('../../src/io/index');
+    const workbook = await import('../../src/workbook/index');
+    const worksheet = await import('../../src/worksheet/index');
     const node = await import('../../src/node');
     expect(typeof node.fromBuffer).toBe('function');
     expect(typeof io.loadWorkbook).toBe('function');
@@ -34,20 +34,20 @@ describe('README — full lib read+edit+write', () => {
     // Build a synthetic workbook, edit a cell, round-trip.
     const wb = workbook.createWorkbook();
     const ws = workbook.addWorksheet(wb, 'Sheet1');
-    worksheet.setCell(ws, 1, 1, 'Hello from ooxml-js');
+    worksheet.setCell(ws, 1, 1, 'Hello from xlsxify');
     const bytes = await io.workbookToBytes(wb);
     const wb2 = await io.loadWorkbook(node.fromBuffer(bytes));
     const ref0 = wb2.sheets[0];
     if (ref0?.kind !== 'worksheet') throw new Error('expected worksheet');
-    expect(ref0.sheet.rows.get(1)?.get(1)?.value).toBe('Hello from ooxml-js');
+    expect(ref0.sheet.rows.get(1)?.get(1)?.value).toBe('Hello from xlsxify');
   });
 });
 
 describe('README — Node fromFile / toFile / saveWorkbook', () => {
   it('exposes the documented Node-only public surface', async () => {
-    const io = await import('../../src/xlsx/io/index');
+    const io = await import('../../src/io/index');
     const node = await import('../../src/node');
-    const workbook = await import('../../src/xlsx/workbook/index');
+    const workbook = await import('../../src/workbook/index');
     expect(typeof node.fromFile).toBe('function');
     expect(typeof io.loadWorkbook).toBe('function');
     expect(typeof io.saveWorkbook).toBe('function');
@@ -63,14 +63,14 @@ describe('README — Node fromFile / toFile / saveWorkbook', () => {
 });
 
 describe('README — browser fromResponse', () => {
-  it('exposes the documented `import { fromResponse } from ooxml-js/io` shape', async () => {
+  it('exposes the documented `import { fromResponse } from xlsxify/io` shape', async () => {
     const ioBrowser = await import('../../src/io/index');
     expect(typeof ioBrowser.fromResponse).toBe('function');
 
     // Build a Response-shaped object backed by a real Uint8Array of
     // a synthetic xlsx and feed it through loadWorkbook.
-    const io = await import('../../src/xlsx/io/index');
-    const workbook = await import('../../src/xlsx/workbook/index');
+    const io = await import('../../src/io/index');
+    const workbook = await import('../../src/workbook/index');
     const wb = workbook.createWorkbook();
     workbook.addWorksheet(wb, 'FromFetch');
     const bytes = await io.workbookToBytes(wb);
@@ -88,8 +88,8 @@ describe('README — browser fromResponse', () => {
 
 describe('README — streaming write (createWriteOnlyWorkbook)', () => {
   it('matches the documented appendRow + finalize flow', async () => {
-    const streaming = await import('../../src/xlsx/streaming/index');
-    const io = await import('../../src/xlsx/io/index');
+    const streaming = await import('../../src/streaming/index');
+    const io = await import('../../src/io/index');
     const node = await import('../../src/node');
     expect(typeof streaming.createWriteOnlyWorkbook).toBe('function');
 
@@ -113,11 +113,11 @@ describe('README — streaming write (createWriteOnlyWorkbook)', () => {
 
 describe('README — streaming read (loadWorkbookStream + iterRows)', () => {
   it('matches the documented openWorksheet + iterRows + close flow', async () => {
-    const streaming = await import('../../src/xlsx/streaming/index');
-    const io = await import('../../src/xlsx/io/index');
+    const streaming = await import('../../src/streaming/index');
+    const io = await import('../../src/io/index');
     const node = await import('../../src/node');
-    const workbook = await import('../../src/xlsx/workbook/index');
-    const worksheet = await import('../../src/xlsx/worksheet/index');
+    const workbook = await import('../../src/workbook/index');
+    const worksheet = await import('../../src/worksheet/index');
 
     expect(typeof streaming.loadWorkbookStream).toBe('function');
 

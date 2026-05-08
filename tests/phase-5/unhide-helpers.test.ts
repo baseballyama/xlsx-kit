@@ -1,7 +1,7 @@
 // Tests for unhideRow / unhideColumn.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import {
   getColumnDimension,
   getRowDimension,
@@ -11,7 +11,7 @@ import {
   setRowHeight,
   unhideColumn,
   unhideRow,
-} from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/worksheet/worksheet';
 
 describe('unhideRow', () => {
   it('drops the hidden flag', () => {

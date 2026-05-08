@@ -1,15 +1,15 @@
 // Apply number formats: currency, percentage, and a date-time.
 
-import { saveWorkbook } from 'ooxml-js/xlsx/io';
-import { toFile } from 'ooxml-js/node';
+import { saveWorkbook } from 'xlsxify/io';
+import { toFile } from 'xlsxify/node';
 import {
   FORMAT_DATE_DATETIME,
   setCellAsCurrency,
   setCellAsPercent,
   setCellNumberFormat,
-} from 'ooxml-js/xlsx/styles';
-import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
-import { setCell } from 'ooxml-js/xlsx/worksheet';
+} from 'xlsxify/styles';
+import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
+import { setCell } from 'xlsxify/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Numbers');

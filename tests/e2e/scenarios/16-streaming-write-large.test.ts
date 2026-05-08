@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdirSync } from 'node:fs';
 import { OUT_DIR } from '../_helpers';
 import { toFile } from '../../../src/node';
-import { createWriteOnlyWorkbook } from '../../../src/xlsx/streaming/index';
+import { createWriteOnlyWorkbook } from '../../../src/streaming/index';
 
 describe('e2e 16 — streaming write (50k rows)', () => {
   it('writes 16-streaming-large.xlsx via createWriteOnlyWorkbook', async () => {

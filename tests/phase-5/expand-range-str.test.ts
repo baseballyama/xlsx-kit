@@ -1,7 +1,7 @@
 // Tests for expandRangeStr — A1 range bottom/right resize.
 
 import { describe, expect, it } from 'vitest';
-import { expandRangeStr } from '../../src/xlsx/worksheet/cell-range';
+import { expandRangeStr } from '../../src/worksheet/cell-range';
 
 describe('expandRangeStr', () => {
   it('extends the bottom-right corner by the deltas', () => {

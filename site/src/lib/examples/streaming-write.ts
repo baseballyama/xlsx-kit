@@ -1,8 +1,8 @@
 // Stream millions of rows to disk in a fixed memory budget. Each row is
 // deflated as it arrives — no intermediate workbook in memory.
 
-import { toFile } from 'ooxml-js/node';
-import { createWriteOnlyWorkbook } from 'ooxml-js/xlsx/streaming';
+import { toFile } from 'xlsxify/node';
+import { createWriteOnlyWorkbook } from 'xlsxify/streaming';
 
 const sink = toFile('big.xlsx');
 const wb = await createWriteOnlyWorkbook(sink);

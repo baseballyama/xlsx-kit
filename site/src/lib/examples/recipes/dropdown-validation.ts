@@ -1,10 +1,10 @@
 // Add a list-type data validation — gives the user a dropdown of
 // allowed values when they click into the range.
 
-import { saveWorkbook } from 'ooxml-js/xlsx/io';
-import { toFile } from 'ooxml-js/node';
-import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
-import { addDataValidation, makeDataValidation, setCell } from 'ooxml-js/xlsx/worksheet';
+import { saveWorkbook } from 'xlsxify/io';
+import { toFile } from 'xlsxify/node';
+import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
+import { addDataValidation, makeDataValidation, setCell } from 'xlsxify/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Form');

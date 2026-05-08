@@ -4,9 +4,9 @@ import {
   makeAbsoluteAnchor,
   makeOneCellAnchor,
   makeTwoCellAnchor,
-} from '../../src/xlsx/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing } from '../../src/xlsx/drawing/drawing';
-import { drawingToBytes, parseDrawingXml } from '../../src/xlsx/drawing/drawing-xml';
+} from '../../src/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing } from '../../src/drawing/drawing';
+import { drawingToBytes, parseDrawingXml } from '../../src/drawing/drawing-xml';
 import { EMU_PER_PIXEL } from '../../src/utils/units';
 
 describe('anchor markers + factory functions', () => {

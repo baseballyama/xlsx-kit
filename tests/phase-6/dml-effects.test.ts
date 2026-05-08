@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/xlsx/drawing/dml/colors';
+import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/drawing/dml/colors';
 import {
   parseEffects,
   parseShapeProperties,
   serializeEffects,
   serializeShapeProperties,
-} from '../../src/xlsx/drawing/dml/dml-xml';
+} from '../../src/drawing/dml/dml-xml';
 import {
   type Effect,
   type EffectContainer,
@@ -13,9 +13,9 @@ import {
   makeEffectContainer,
   makeEffectList,
   PRESET_SHADOW_NAMES,
-} from '../../src/xlsx/drawing/dml/effect';
-import { makeNoFill, makeSolidFill } from '../../src/xlsx/drawing/dml/fill';
-import { makeShapeProperties, type ShapeProperties } from '../../src/xlsx/drawing/dml/shape-properties';
+} from '../../src/drawing/dml/effect';
+import { makeNoFill, makeSolidFill } from '../../src/drawing/dml/fill';
+import { makeShapeProperties, type ShapeProperties } from '../../src/drawing/dml/shape-properties';
 import { parseXml } from '../../src/xml/parser';
 import { findChild } from '../../src/xml/tree';
 

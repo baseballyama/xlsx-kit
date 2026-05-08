@@ -5,10 +5,10 @@
 // scale + a styling mix.
 
 import { describe, expect, it } from 'vitest';
-import { setCellFont } from '../../src/xlsx/styles/cell-style';
-import { makeFont } from '../../src/xlsx/styles/fonts';
-import { addWorksheet, createWorkbook, jsonReplacer, jsonReviver, type Workbook } from '../../src/xlsx/workbook/workbook';
-import { getCell, setCell, type Worksheet } from '../../src/xlsx/worksheet/worksheet';
+import { setCellFont } from '../../src/styles/cell-style';
+import { makeFont } from '../../src/styles/fonts';
+import { addWorksheet, createWorkbook, jsonReplacer, jsonReviver, type Workbook } from '../../src/workbook/workbook';
+import { getCell, setCell, type Worksheet } from '../../src/worksheet/worksheet';
 
 describe('phase 2 §8 — 100 cell write / JSON round-trip / identity check', () => {
   it('round-trips losslessly with mixed values + styles', () => {

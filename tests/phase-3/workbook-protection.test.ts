@@ -3,11 +3,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { makeWorkbookProtection } from '../../src/xlsx/workbook/protection';
-import { setCell } from '../../src/xlsx/worksheet/worksheet';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { makeWorkbookProtection } from '../../src/workbook/protection';
+import { setCell } from '../../src/worksheet/worksheet';
 
 describe('workbookProtection round-trip', () => {
   it('preserves the 3 lock flags', async () => {

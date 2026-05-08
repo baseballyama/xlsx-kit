@@ -2,11 +2,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { makeFileSharing } from '../../src/xlsx/workbook/file-sharing';
-import { setCell } from '../../src/xlsx/worksheet/worksheet';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { makeFileSharing } from '../../src/workbook/file-sharing';
+import { setCell } from '../../src/worksheet/worksheet';
 
 describe('fileSharing round-trip', () => {
   it('preserves readOnlyRecommended + userName + modern hash quad', async () => {

@@ -1,16 +1,16 @@
 // Apply font, fill, alignment, and a thin border to a header row.
 
-import { saveWorkbook } from 'ooxml-js/xlsx/io';
-import { toFile } from 'ooxml-js/node';
+import { saveWorkbook } from 'xlsxify/io';
+import { toFile } from 'xlsxify/node';
 import {
   centerCell,
   setBold,
   setCellBackgroundColor,
   setCellBorderAll,
   setFontSize,
-} from 'ooxml-js/xlsx/styles';
-import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
-import { setCell } from 'ooxml-js/xlsx/worksheet';
+} from 'xlsxify/styles';
+import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
+import { setCell } from 'xlsxify/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Report');

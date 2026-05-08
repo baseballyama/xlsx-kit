@@ -6,8 +6,8 @@ import {
   addWorksheet,
   createWorkbook,
   isWorkbookEmpty,
-} from '../../src/xlsx/workbook/workbook';
-import { setCell } from '../../src/xlsx/worksheet/worksheet';
+} from '../../src/workbook/workbook';
+import { setCell } from '../../src/worksheet/worksheet';
 
 describe('isWorkbookEmpty', () => {
   it('returns true for a brand-new workbook (no sheets)', () => {

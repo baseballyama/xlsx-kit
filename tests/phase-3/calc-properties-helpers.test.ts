@@ -2,16 +2,16 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import {
   setCalcMode,
   setCalcOnSave,
   setFullCalcOnLoad,
   setFullPrecision,
   setIterativeCalc,
-} from '../../src/xlsx/workbook/calc-properties';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/calc-properties';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('calcProperties helpers', () => {
   it('setCalcMode lazily creates calcProperties and sets calcMode', () => {

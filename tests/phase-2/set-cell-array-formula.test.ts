@@ -1,9 +1,9 @@
 // Tests for setCellArrayFormula.
 
 import { describe, expect, it } from 'vitest';
-import { isFormulaValue } from '../../src/xlsx/cell/cell';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { setCellArrayFormula } from '../../src/xlsx/worksheet/worksheet';
+import { isFormulaValue } from '../../src/cell/cell';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setCellArrayFormula } from '../../src/worksheet/worksheet';
 
 describe('setCellArrayFormula', () => {
   it('writes an array formula spanning the supplied ref', () => {

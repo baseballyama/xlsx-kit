@@ -1,9 +1,9 @@
 // Build a one-sheet workbook from scratch and write it to disk.
 
-import { saveWorkbook } from 'ooxml-js/xlsx/io';
-import { toFile } from 'ooxml-js/node';
-import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
-import { setCell } from 'ooxml-js/xlsx/worksheet';
+import { saveWorkbook } from 'xlsxify/io';
+import { toFile } from 'xlsxify/node';
+import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
+import { setCell } from 'xlsxify/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Quarterly');

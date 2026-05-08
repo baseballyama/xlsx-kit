@@ -3,11 +3,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/xlsx/io/load';
-import { workbookToBytes } from '../../src/xlsx/io/save';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
-import { makeFunctionGroups } from '../../src/xlsx/workbook/function-groups';
-import { makeSmartTagProperties, makeSmartTagType } from '../../src/xlsx/workbook/smart-tags';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { makeFunctionGroups } from '../../src/workbook/function-groups';
+import { makeSmartTagProperties, makeSmartTagType } from '../../src/workbook/smart-tags';
 
 describe('smartTagPr round-trip', () => {
   it('preserves embed + show', async () => {

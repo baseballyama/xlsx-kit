@@ -9,8 +9,8 @@ import {
   makeSurfaceChart,
   type StockChart,
   type SurfaceChart,
-} from '../../src/xlsx/chart/chart';
-import { chartToBytes, parseChartXml } from '../../src/xlsx/chart/chart-xml';
+} from '../../src/chart/chart';
+import { chartToBytes, parseChartXml } from '../../src/chart/chart-xml';
 
 const wrap = <T>(chart: { kind: string }, withAxes = true) =>
   makeChartSpace({

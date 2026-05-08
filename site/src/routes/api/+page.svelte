@@ -6,14 +6,14 @@
 </script>
 
 <svelte:head>
-  <title>API reference — ooxml-js</title>
+  <title>API reference — xlsxify</title>
 </svelte:head>
 
 <div class="content">
   <h1>API reference</h1>
   <p class="lede">
-    Every public export of <code>ooxml-js</code>, <code>ooxml-js/streaming</code>, and
-    <code>ooxml-js/node</code>, organized by section. Generated from the source via typedoc
+    Every public export of <code>xlsxify</code>, <code>xlsxify/streaming</code>, and
+    <code>xlsxify/node</code>, organized by section. Generated from the source via typedoc
     and rendered inline so types stay in lockstep with the package.
   </p>
 

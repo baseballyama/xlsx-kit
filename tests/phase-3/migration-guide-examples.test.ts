@@ -6,9 +6,9 @@
 import { describe, expect, it } from 'vitest';
 
 describe('migrate-from-openpyxl — public API smoke', () => {
-  it('Loading and saving — fromFile / toFile from ooxml-js/node, load/save from ooxml-js/xlsx/io', async () => {
+  it('Loading and saving — fromFile / toFile from xlsxify/node, load/save from xlsxify/io', async () => {
     const node = await import('../../src/node');
-    const io = await import('../../src/xlsx/io/index');
+    const io = await import('../../src/io/index');
     expect(typeof node.fromFile).toBe('function');
     expect(typeof node.toFile).toBe('function');
     expect(typeof io.loadWorkbook).toBe('function');
@@ -16,8 +16,8 @@ describe('migrate-from-openpyxl — public API smoke', () => {
   });
 
   it('Cells — setCell / setCellByCoord / iterRows / setFormula / makeErrorValue / makeRichText / makeTextRun / makeDurationValue', async () => {
-    const worksheet = await import('../../src/xlsx/worksheet/index');
-    const cell = await import('../../src/xlsx/cell/index');
+    const worksheet = await import('../../src/worksheet/index');
+    const cell = await import('../../src/cell/index');
     expect(typeof worksheet.setCell).toBe('function');
     expect(typeof worksheet.setCellByCoord).toBe('function');
     expect(typeof worksheet.iterRows).toBe('function');
@@ -29,9 +29,9 @@ describe('migrate-from-openpyxl — public API smoke', () => {
   });
 
   it('Styles — setCellFont / setCellFill / setCellNumberFormat with (wb, cell, …) signature', async () => {
-    const styles = await import('../../src/xlsx/styles/index');
-    const workbook = await import('../../src/xlsx/workbook/index');
-    const worksheet = await import('../../src/xlsx/worksheet/index');
+    const styles = await import('../../src/styles/index');
+    const workbook = await import('../../src/workbook/index');
+    const worksheet = await import('../../src/worksheet/index');
     expect(typeof styles.setCellFont).toBe('function');
     expect(typeof styles.setCellFill).toBe('function');
     expect(typeof styles.setCellNumberFormat).toBe('function');
@@ -53,8 +53,8 @@ describe('migrate-from-openpyxl — public API smoke', () => {
   });
 
   it('Worksheets — addWorksheet / sheetNames / getActiveSheet / getSheet / removeSheet / mergeCells / setFreezePanes / getMergedCells', async () => {
-    const workbook = await import('../../src/xlsx/workbook/index');
-    const worksheet = await import('../../src/xlsx/worksheet/index');
+    const workbook = await import('../../src/workbook/index');
+    const worksheet = await import('../../src/worksheet/index');
     expect(typeof workbook.addWorksheet).toBe('function');
     expect(typeof workbook.sheetNames).toBe('function');
     expect(typeof workbook.getActiveSheet).toBe('function');
@@ -66,7 +66,7 @@ describe('migrate-from-openpyxl — public API smoke', () => {
   });
 
   it('Streaming write / read — createWriteOnlyWorkbook / loadWorkbookStream', async () => {
-    const streaming = await import('../../src/xlsx/streaming/index');
+    const streaming = await import('../../src/streaming/index');
     expect(typeof streaming.createWriteOnlyWorkbook).toBe('function');
     expect(typeof streaming.loadWorkbookStream).toBe('function');
   });

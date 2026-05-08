@@ -7,7 +7,7 @@ import {
   createWorkbook,
   getActiveSheetTitle,
   setActiveSheet,
-} from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/workbook';
 
 describe('getActiveSheetTitle', () => {
   it('returns the first sheet title for a default workbook', () => {

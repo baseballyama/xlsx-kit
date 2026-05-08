@@ -1,8 +1,7 @@
 // Browser: pipe a fetch Response straight into the loader. fromResponse is
 // streaming, so the workbook starts parsing before the download is done.
 
-import { loadWorkbook } from 'ooxml-js/xlsx/io';
-import { fromResponse } from 'ooxml-js/io';
+import { fromResponse, loadWorkbook } from 'xlsxify/io';
 
 const response = await fetch('/sheet.xlsx');
 const wb = await loadWorkbook(fromResponse(response));

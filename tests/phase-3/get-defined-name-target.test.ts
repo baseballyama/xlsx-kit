@@ -5,8 +5,8 @@ import {
   addDefinedName,
   addDefinedNameForRange,
   getDefinedNameTarget,
-} from '../../src/xlsx/workbook/defined-names';
-import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+} from '../../src/workbook/defined-names';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('getDefinedNameTarget', () => {
   it('parses a single Sheet!A1:B5 leg', () => {

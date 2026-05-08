@@ -1,7 +1,7 @@
 // Tests for isCellInRange — A1-string convenience predicate.
 
 import { describe, expect, it } from 'vitest';
-import { isCellInRange } from '../../src/xlsx/worksheet/cell-range';
+import { isCellInRange } from '../../src/worksheet/cell-range';
 
 describe('isCellInRange', () => {
   it('returns true for cells inside the range', () => {

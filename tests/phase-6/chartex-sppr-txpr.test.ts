@@ -7,13 +7,13 @@ import {
   makeCxSeries,
   makeCxStrDim,
   makeWaterfallChart,
-} from '../../src/xlsx/chart/cx/chartex';
-import { chartExToBytes, parseChartExXml, serializeChartExSpace } from '../../src/xlsx/chart/cx/chartex-xml';
-import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/xlsx/drawing/dml/colors';
-import { makeSolidFill } from '../../src/xlsx/drawing/dml/fill';
-import { makeLine } from '../../src/xlsx/drawing/dml/line';
-import { makeShapeProperties } from '../../src/xlsx/drawing/dml/shape-properties';
-import { makeParagraph, makeRun, makeTextBody } from '../../src/xlsx/drawing/dml/text';
+} from '../../src/chart/cx/chartex';
+import { chartExToBytes, parseChartExXml, serializeChartExSpace } from '../../src/chart/cx/chartex-xml';
+import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/drawing/dml/colors';
+import { makeSolidFill } from '../../src/drawing/dml/fill';
+import { makeLine } from '../../src/drawing/dml/line';
+import { makeShapeProperties } from '../../src/drawing/dml/shape-properties';
+import { makeParagraph, makeRun, makeTextBody } from '../../src/drawing/dml/text';
 
 const roundTrip = (s: CxChartSpace): CxChartSpace => parseChartExXml(chartExToBytes(s));
 

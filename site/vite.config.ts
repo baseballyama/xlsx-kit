@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     fs: {
       // Allow serving files from the parent project (for example .ts files
-      // imported via ?raw and the ooxml-js source via path alias).
+      // imported via ?raw and the xlsxify source via path alias).
       allow: ['..'],
     },
   },

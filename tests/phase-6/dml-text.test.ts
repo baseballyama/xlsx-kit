@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/xlsx/drawing/dml/colors';
+import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/drawing/dml/colors';
 import {
   parseTextBody,
   parseTextBodyProperties,
   serializeTextBody,
   serializeTextBodyProperties,
-} from '../../src/xlsx/drawing/dml/dml-xml';
-import { makeEffectList } from '../../src/xlsx/drawing/dml/effect';
-import { makeNoFill, makeSolidFill } from '../../src/xlsx/drawing/dml/fill';
-import { makeLine } from '../../src/xlsx/drawing/dml/line';
+} from '../../src/drawing/dml/dml-xml';
+import { makeEffectList } from '../../src/drawing/dml/effect';
+import { makeNoFill, makeSolidFill } from '../../src/drawing/dml/fill';
+import { makeLine } from '../../src/drawing/dml/line';
 import {
   makeBreak,
   makeParagraph,
@@ -20,7 +20,7 @@ import {
   type RunProperties,
   type TextBody,
   type TextBodyProperties,
-} from '../../src/xlsx/drawing/dml/text';
+} from '../../src/drawing/dml/text';
 import { parseXml } from '../../src/xml/parser';
 import { findChild } from '../../src/xml/tree';
 

@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { makeAlignment } from '../../../src/xlsx/styles/alignment';
-import { DEFAULT_BORDER, makeBorder, makeSide } from '../../../src/xlsx/styles/borders';
-import { makeColor } from '../../../src/xlsx/styles/colors';
-import { DEFAULT_EMPTY_FILL, makePatternFill } from '../../../src/xlsx/styles/fills';
-import { DEFAULT_FONT, makeFont } from '../../../src/xlsx/styles/fonts';
+import { makeAlignment } from '../../../src/styles/alignment';
+import { DEFAULT_BORDER, makeBorder, makeSide } from '../../../src/styles/borders';
+import { makeColor } from '../../../src/styles/colors';
+import { DEFAULT_EMPTY_FILL, makePatternFill } from '../../../src/styles/fills';
+import { DEFAULT_FONT, makeFont } from '../../../src/styles/fonts';
 import {
   addNamedStyle,
   BUILTIN_NAMED_STYLES,
   ensureBuiltinStyle,
   type NamedStyle,
-} from '../../../src/xlsx/styles/named-styles';
-import { makeProtection } from '../../../src/xlsx/styles/protection';
-import { makeStylesheet } from '../../../src/xlsx/styles/stylesheet';
+} from '../../../src/styles/named-styles';
+import { makeProtection } from '../../../src/styles/protection';
+import { makeStylesheet } from '../../../src/styles/stylesheet';
 import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
 
 describe('addNamedStyle', () => {
