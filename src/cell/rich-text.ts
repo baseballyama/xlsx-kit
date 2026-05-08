@@ -68,6 +68,25 @@ export function appendRichTextRun(rt: RichText, text: string, font?: InlineFont)
 }
 
 /**
+ * Flatten any number of `RichText | string | TextRun` parts into a single
+ * frozen RichText. `string` becomes a font-less 1-run; `TextRun` becomes a
+ * single run; `RichText` (array) is spread in.
+ */
+export function concatRichText(...parts: ReadonlyArray<RichText | string | TextRun>): RichText {
+  const collected: TextRun[] = [];
+  for (const p of parts) {
+    if (typeof p === 'string') {
+      collected.push(makeTextRun(p));
+    } else if (Array.isArray(p)) {
+      for (const r of p as ReadonlyArray<TextRun>) collected.push(r);
+    } else {
+      collected.push(p as TextRun);
+    }
+  }
+  return makeRichText(collected);
+}
+
+/**
  * Concatenate the plain-text content of a rich-text value (rich-text
  * read paths often want the raw text without formatting).
  */

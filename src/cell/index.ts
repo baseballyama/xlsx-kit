@@ -44,6 +44,7 @@ export type {
 } from './rich-text';
 export {
   appendRichTextRun,
+  concatRichText,
   makeRichText,
   makeTextRun,
   richText,
