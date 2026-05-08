@@ -21,8 +21,7 @@ import {
 import type { Stylesheet } from '../styles/stylesheet';
 import { makeStylesheet } from '../styles/stylesheet';
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import { unzipSync, zipSync } from 'fflate';
-import type { CellValue } from '../cell/cell';
+import { type CellValue, isFormulaValue } from '../cell/cell';
 import type { Alignment } from '../styles/alignment';
 import type { Border } from '../styles/borders';
 import type { Fill } from '../styles/fills';
@@ -30,13 +29,8 @@ import type { Font } from '../styles/fonts';
 import type { Protection } from '../styles/protection';
 import { coordinateToTuple, parseSheetRange } from '../utils/coordinate';
 import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToString } from '../worksheet/cell-range';
-import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
-import { getWorksheetAsHtml } from '../worksheet/html';
-import { getWorksheetAsMarkdownTable } from '../worksheet/markdown';
-import { getWorksheetAsTextTable } from '../worksheet/text';
 import type { LegacyComment } from '../worksheet/comments';
 import type { Hyperlink } from '../worksheet/hyperlinks';
-import { addTableFromObjects } from '../worksheet/table';
 import type { CellsByKindCounts, Worksheet } from '../worksheet/worksheet';
 import {
   countCellsByKind,
@@ -44,12 +38,9 @@ import {
   getCellComment,
   getCellHyperlink,
   getMergedRangeAt,
-  getRangeValues,
   isWorksheetEmpty,
   makeWorksheet,
   setCellByCoord,
-  setRangeValues,
-  writeRangeFromObjects,
 } from '../worksheet/worksheet';
 
 export type SheetState = 'visible' | 'hidden' | 'veryHidden';
@@ -716,9 +707,7 @@ export function getWorkbookStats(wb: Workbook): WorkbookStats {
       for (const rowMap of ws.rows.values()) {
         for (const cell of rowMap.values()) {
           cellCount++;
-          if (typeof cell.value === 'object' && cell.value !== null && (cell.value as { kind?: string }).kind === 'formula') {
-            formulaCount++;
-          }
+          if (isFormulaValue(cell.value)) formulaCount++;
         }
       }
       commentCount += ws.legacyComments.length;
@@ -777,71 +766,28 @@ export function getWorkbookCellsByKind(wb: Workbook): CellsByKindCounts {
 }
 
 /**
- * One-shot constructor: build a brand-new {@link Workbook} containing
- * a single worksheet populated from a CSV string. Common usage for
- * "import this CSV as an .xlsx" flows.
- *
- * Options:
- *   - `sheetTitle` (default `'Sheet1'`) — name of the new worksheet
- *   - `delimiter` (default `,`) — passed to {@link parseCsvToRange}
- *   - `coerceTypes` (default `false`) — passed to {@link parseCsvToRange};
- *     `true` parses booleans + numeric strings to native types
- *
- * Empty CSV input returns a workbook with the empty sheet present.
+ * Resolve a sheet-qualified A1 address (`'Sheet1!A1'`) to its Cell, or
+ * `undefined` when the cell isn't materialised. Throws on malformed
+ * addresses, missing sheets, or range inputs.
  */
-export function createWorkbookFromCsv(
-  csv: string,
-  opts: {
-    sheetTitle?: string;
-    delimiter?: string;
-    coerceTypes?: boolean;
-    date1904?: boolean;
-  } = {},
-): Workbook {
-  const wb = createWorkbook(opts.date1904 !== undefined ? { date1904: opts.date1904 } : undefined);
-  const ws = addWorksheet(wb, opts.sheetTitle ?? 'Sheet1');
-  parseCsvToRange(ws, 'A1', csv, {
-    ...(opts.delimiter !== undefined ? { delimiter: opts.delimiter } : {}),
-    ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
-  });
-  return wb;
-}
-
-/**
- * Resolve a sheet-qualified A1 range (`'Sheet1!A1:B5'` / `'\'Q1\'!A1'`)
- * to a 2D values array. Empty cells become `null`. Single-cell
- * addresses still return a 2D array (`[[value]]`).
- *
- * Throws when the address is malformed or the sheet doesn't exist.
- */
-export function getRangeValuesAtAddress(
-  wb: Workbook,
-  address: string,
-): (CellValue | null)[][] {
+export function getCellAtAddress(wb: Workbook, address: string): import('../cell/cell').Cell | undefined {
   const { sheet: sheetTitle, range } = parseSheetRange(address);
+  if (range.includes(':')) {
+    throw new OpenXmlSchemaError(
+      `getCellAtAddress: address "${address}" refers to a range, not a single cell`,
+    );
+  }
   const ws = getSheet(wb, sheetTitle);
   if (!ws) {
-    throw new OpenXmlSchemaError(`getRangeValuesAtAddress: sheet "${sheetTitle}" not found`);
+    throw new OpenXmlSchemaError(`getCellAtAddress: sheet "${sheetTitle}" not found`);
   }
-  return getRangeValues(ws, range);
+  const { col, row } = coordinateToTuple(range);
+  return getCell(ws, row, col);
 }
 
 /**
- * Read the value at a sheet-qualified A1 address. Thin wrapper over
- * {@link getCellAtAddress} that returns `cell.value` directly, with
- * `null` for unmaterialised cells (consistent with cell.value's null
- * convention). Throws on malformed addresses, missing sheets, or
- * range inputs.
- */
-export function getValueAtAddress(wb: Workbook, address: string): CellValue | null {
-  const cell = getCellAtAddress(wb, address);
-  return cell ? cell.value : null;
-}
-
-/**
- * Set a single cell by sheet-qualified A1 address. Resolves the
- * sheet, then delegates to {@link setCellByCoord}. Throws on
- * malformed addresses, missing sheets, or range inputs.
+ * Set a single cell by sheet-qualified A1 address. Throws on malformed
+ * addresses, missing sheets, or range inputs.
  */
 export function setCellAtAddress(
   wb: Workbook,
@@ -859,55 +805,6 @@ export function setCellAtAddress(
     throw new OpenXmlSchemaError(`setCellAtAddress: sheet "${sheetTitle}" not found`);
   }
   return setCellByCoord(ws, range, value);
-}
-
-/**
- * Inverse of {@link getRangeValuesAtAddress}: write a 2D values array
- * to a sheet-qualified A1 range. `rows[0]` is laid down at the top-
- * left of the range; subsequent rows follow. `null` / `undefined`
- * entries skip the cell (preserving its existing value), matching
- * {@link setRangeValues} semantics.
- *
- * Throws when the address is malformed or the sheet doesn't exist.
- */
-export function setRangeValuesAtAddress(
-  wb: Workbook,
-  address: string,
-  values: ReadonlyArray<ReadonlyArray<CellValue | null | undefined>>,
-): void {
-  const { sheet: sheetTitle, range } = parseSheetRange(address);
-  const ws = getSheet(wb, sheetTitle);
-  if (!ws) {
-    throw new OpenXmlSchemaError(`setRangeValuesAtAddress: sheet "${sheetTitle}" not found`);
-  }
-  setRangeValues(ws, range, values);
-}
-
-/**
- * Resolve a sheet-qualified A1 address (`'Sheet1!A1'` / `'\'Q1 2024\'!B5'`)
- * to its Cell, or `undefined` when the cell isn't materialised.
- *
- * Throws when:
- *  - the address is malformed (parseSheetRange rejects)
- *  - the sheet doesn't exist on the workbook
- *  - the range part isn't a single cell (`'A1:B5'` is a range, not an
- *    address — use a different helper for ranges)
- *
- * Round-trips with {@link getCellAddress}.
- */
-export function getCellAtAddress(wb: Workbook, address: string): import('../cell/cell').Cell | undefined {
-  const { sheet: sheetTitle, range } = parseSheetRange(address);
-  if (range.includes(':')) {
-    throw new OpenXmlSchemaError(
-      `getCellAtAddress: address "${address}" refers to a range, not a single cell`,
-    );
-  }
-  const ws = getSheet(wb, sheetTitle);
-  if (!ws) {
-    throw new OpenXmlSchemaError(`getCellAtAddress: sheet "${sheetTitle}" not found`);
-  }
-  const { col, row } = coordinateToTuple(range);
-  return getCell(ws, row, col);
 }
 
 /**
@@ -977,13 +874,7 @@ export function describeWorkbook(wb: Workbook): WorkbookOverview {
       for (const rowMap of ws.rows.values()) {
         for (const cell of rowMap.values()) {
           cellCount++;
-          if (
-            typeof cell.value === 'object' &&
-            cell.value !== null &&
-            (cell.value as { kind?: string }).kind === 'formula'
-          ) {
-            formulaCount++;
-          }
+          if (isFormulaValue(cell.value)) formulaCount++;
         }
       }
       return {
@@ -1083,208 +974,6 @@ export function getCellSummary(wb: Workbook, sheetTitle: string, ref: string): C
     inDataValidations: inDv,
     inConditionalFormatting: inCf,
   };
-}
-
-/**
- * Bundle every worksheet's CSV into a single ZIP archive (one
- * `<title>.csv` entry per Worksheet). Returns the raw `Uint8Array`
- * — caller is responsible for I/O. Forwards delimiter / lineTerminator
- * / trailingNewline to the underlying {@link getWorksheetAsCsv}.
- *
- * Sheet titles are sanitised for filesystem-friendliness: characters
- * not in `[A-Za-z0-9 _-]` are replaced with `_`. Collisions get a
- * `_2`, `_3`, ... suffix.
- *
- * Empty workbook returns an empty zip (with no entries) — still a
- * valid Uint8Array.
- */
-export function getWorkbookAsCsvBundle(
-  wb: Workbook,
-  opts: { delimiter?: string; lineTerminator?: string; trailingNewline?: boolean } = {},
-): Uint8Array {
-  const sanitise = (s: string): string => s.replace(/[^A-Za-z0-9 _-]/g, '_');
-  const used = new Set<string>();
-  const entries: Record<string, Uint8Array> = {};
-  const encoder = new TextEncoder();
-  for (const ws of iterWorksheets(wb)) {
-    let base = `${sanitise(ws.title)}.csv`;
-    let name = base;
-    let suffix = 2;
-    while (used.has(name)) {
-      base = `${sanitise(ws.title)}_${suffix}.csv`;
-      name = base;
-      suffix++;
-    }
-    used.add(name);
-    entries[name] = encoder.encode(getWorksheetAsCsv(ws, opts));
-  }
-  return zipSync(entries);
-}
-
-/**
- * Inverse of {@link getWorkbookAsCsvBundle}: read a ZIP archive of
- * `<title>.csv` entries into a brand-new Workbook, one sheet per
- * entry. Entry names lose their `.csv` suffix (case-insensitive) to
- * become the sheet title; non-CSV entries are skipped.
- *
- * Sheet titles are deduplicated via {@link pickUniqueSheetTitle} so
- * collisions / Excel-disallowed characters in the source filenames
- * don't cause `addWorksheet` to throw.
- *
- * Empty bundle → workbook with no sheets (matches the empty-output
- * behaviour of `getWorkbookAsCsvBundle`).
- */
-export function createWorkbookFromCsvBundle(
-  bundle: Uint8Array,
-  opts: {
-    delimiter?: string;
-    coerceTypes?: boolean;
-    date1904?: boolean;
-  } = {},
-): Workbook {
-  const wb = createWorkbook(opts.date1904 !== undefined ? { date1904: opts.date1904 } : undefined);
-  const entries = unzipSync(bundle);
-  const decoder = new TextDecoder();
-  // Sort entries for deterministic sheet ordering across runs.
-  for (const name of Object.keys(entries).sort()) {
-    if (!/\.csv$/i.test(name)) continue;
-    const bytes = entries[name];
-    if (!bytes) continue;
-    const rawTitle = name.replace(/\.csv$/i, '');
-    // Strip Excel-disallowed chars (: \ / ? * [ ]) and clamp to 31 chars
-    // so pickUniqueSheetTitle never throws on the source filename.
-    let baseTitle = rawTitle.replace(/[:\\/?*[\]]/g, '_').slice(0, 31).trim();
-    if (baseTitle.length === 0) baseTitle = 'Sheet';
-    const safeTitle = pickUniqueSheetTitle(wb, baseTitle);
-    const ws = addWorksheet(wb, safeTitle);
-    parseCsvToRange(ws, 'A1', decoder.decode(bytes), {
-      ...(opts.delimiter !== undefined ? { delimiter: opts.delimiter } : {}),
-      ...(opts.coerceTypes !== undefined ? { coerceTypes: opts.coerceTypes } : {}),
-    });
-  }
-  return wb;
-}
-
-/**
- * One-shot constructor: build a brand-new {@link Workbook} containing
- * a single worksheet populated from a `Record[]` array (header row
- * derived from the union of object keys, or pinned via `opts.headers`).
- *
- * Options:
- *   - `sheetTitle` (default `'Sheet1'`)
- *   - `headers` — pin column order
- *   - `asTable` (default `false`) — when `true`, register the data as
- *     an Excel Table named `opts.tableName ?? 'Table1'` via
- *     {@link addTableFromObjects} (which provides AutoFilter +
- *     structured references for free)
- *   - `tableName` — only used with `asTable: true`
- *   - `style` — built-in TableStyle name (only with `asTable: true`)
- *
- * Empty `objects` returns a workbook with an empty sheet (no throw).
- */
-export function createWorkbookFromObjects<T extends Record<string, unknown>>(
-  objects: ReadonlyArray<T>,
-  opts: {
-    sheetTitle?: string;
-    headers?: ReadonlyArray<string>;
-    asTable?: boolean;
-    tableName?: string;
-    style?: string;
-    date1904?: boolean;
-  } = {},
-): Workbook {
-  const wb = createWorkbook(opts.date1904 !== undefined ? { date1904: opts.date1904 } : undefined);
-  const ws = addWorksheet(wb, opts.sheetTitle ?? 'Sheet1');
-  if (objects.length === 0) return wb;
-  if (opts.asTable) {
-    addTableFromObjects(wb, ws, {
-      name: opts.tableName ?? 'Table1',
-      startRef: 'A1',
-      objects: objects as ReadonlyArray<Record<string, CellValue | null | undefined>>,
-      ...(opts.headers ? { headers: opts.headers } : {}),
-      ...(opts.style !== undefined ? { style: opts.style } : {}),
-    });
-  } else {
-    writeRangeFromObjects(
-      ws,
-      'A1',
-      objects as ReadonlyArray<Record<string, CellValue | null | undefined>>,
-      opts.headers ? { headers: opts.headers } : {},
-    );
-  }
-  return wb;
-}
-
-/**
- * Workbook-wide CSV export. Walks every Worksheet in tab-strip order
- * and serialises each via {@link getWorksheetAsCsv}; returns a
- * `Record<string, string>` keyed by sheet title. Empty worksheets
- * are included with `""`. Chartsheets are skipped.
- *
- * Sheet titles with duplicate normalisation collapse per JS object
- * semantics — Excel disallows duplicate titles in the first place,
- * so this is a non-concern in practice.
- */
-export function getWorkbookAsCsvRecord(
-  wb: Workbook,
-  opts: { delimiter?: string; lineTerminator?: string; trailingNewline?: boolean } = {},
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const ws of iterWorksheets(wb)) {
-    out[ws.title] = getWorksheetAsCsv(ws, opts);
-  }
-  return out;
-}
-
-/**
- * Workbook-wide HTML export. Walks every Worksheet in tab-strip
- * order and serialises each via {@link getWorksheetAsHtml}; returns
- * `Record<string, string>` keyed by sheet title. Empty worksheets
- * are included with `""`. Chartsheets are skipped (no cells).
- *
- * Mirror of {@link getWorkbookAsCsvRecord} for the HTML side.
- */
-export function getWorkbookAsHtmlRecord(wb: Workbook): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const ws of iterWorksheets(wb)) {
-    out[ws.title] = getWorksheetAsHtml(wb, ws);
-  }
-  return out;
-}
-
-/**
- * Workbook-wide GitHub-Flavored Markdown export. Walks every
- * Worksheet in tab-strip order, serialises each via
- * {@link getWorksheetAsMarkdownTable}, and returns a
- * `Record<string, string>` keyed by sheet title. Empty worksheets
- * are included with `""`. Chartsheets are skipped.
- *
- * Mirror of {@link getWorkbookAsCsvRecord} / {@link getWorkbookAsHtmlRecord}
- * for the markdown side.
- */
-export function getWorkbookAsMarkdownRecord(wb: Workbook): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const ws of iterWorksheets(wb)) {
-    out[ws.title] = getWorksheetAsMarkdownTable(ws);
-  }
-  return out;
-}
-
-/**
- * Workbook-wide ASCII-art text table export. Walks every Worksheet
- * in tab-strip order, serialises each via
- * {@link getWorksheetAsTextTable}, and returns a `Record<string,
- * string>` keyed by sheet title. Empty worksheets are included with
- * `""`. Chartsheets are skipped.
- *
- * Closes the export-format matrix (CSV / HTML / Markdown / Text).
- */
-export function getWorkbookAsTextTableRecord(wb: Workbook): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const ws of iterWorksheets(wb)) {
-    out[ws.title] = getWorksheetAsTextTable(ws);
-  }
-  return out;
 }
 
 /**

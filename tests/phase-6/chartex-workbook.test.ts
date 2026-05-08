@@ -4,8 +4,8 @@ import { makeWaterfallChart } from '../../src/chart/cx/chartex';
 import { makeTwoCellAnchor } from '../../src/drawing/anchor';
 import { makeChartDrawingItem, makeDrawing } from '../../src/drawing/drawing';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import type { Worksheet } from '../../src/worksheet/worksheet';
 

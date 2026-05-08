@@ -1,10 +1,27 @@
 {
-  "name": "openxml-js",
-  "version": "0.0.0",
-  "description": "TypeScript port of openpyxl: read/write Excel xlsx in Node and the browser.",
+  "name": "xlsx-kit",
+  "version": "0.1.0",
+  "description": "TypeScript library for reading and writing Excel xlsx files in Node and the browser.",
   "type": "module",
   "license": "MIT",
   "author": "Yuichiro Yamashita",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baseballyama/xlsx-kit.git"
+  },
+  "homepage": "https://github.com/baseballyama/xlsx-kit#readme",
+  "bugs": {
+    "url": "https://github.com/baseballyama/xlsx-kit/issues"
+  },
+  "keywords": [
+    "xlsx",
+    "excel",
+    "spreadsheet",
+    "openxml",
+    "ooxml",
+    "openpyxl",
+    "typescript"
+  ],
   "sideEffects": false,
   "engines": {
     "node": ">=18.18"
@@ -77,6 +94,9 @@
       "import": "./dist/zip.mjs"
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prepare": "git submodule update --init --recursive || true",
     "typecheck": "tsc --noEmit",
@@ -91,7 +111,8 @@
     "build:js": "tsdown",
     "build:dts": "tsc -p tsconfig.build.json",
     "size": "size-limit",
-    "doc:api": "typedoc"
+    "doc:api": "typedoc",
+    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm size"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^12.1.0",

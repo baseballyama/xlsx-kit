@@ -30,9 +30,7 @@ export const SECTIONS: SectionDef[] = [
     id: 'loading',
     title: 'Loading & saving',
     description: 'Open a workbook from any source, write it back to any sink.',
-    match: ({ sourceFile }) =>
-      startsWith('src/public/', 'src/io/')(sourceFile) ||
-      fileEquals('src/node.ts', 'src/streaming/index.ts')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/io/')(sourceFile),
   },
   {
     id: 'streaming-io',
@@ -44,7 +42,7 @@ export const SECTIONS: SectionDef[] = [
   {
     id: 'node-helpers',
     title: 'Node fs helpers',
-    description: 'fromFile / toFile and Readable / Writable bridges.',
+    description: 'fromFile / toFile / fromBuffer / fromReadable / toWritable.',
     match: ({ module }) => module === 'node',
   },
   {
@@ -86,7 +84,10 @@ export const SECTIONS: SectionDef[] = [
     title: 'Tables & autoFilter',
     description: 'Excel Tables, table styles, and column-level autoFilter.',
     match: ({ sourceFile }) =>
-      fileEquals('src/worksheet/table.ts', 'src/worksheet/auto-filter.ts')(sourceFile),
+      fileEquals(
+        'src/worksheet/table.ts',
+        'src/worksheet/auto-filter.ts',
+      )(sourceFile),
   },
   {
     id: 'validation',
@@ -107,18 +108,6 @@ export const SECTIONS: SectionDef[] = [
         'src/worksheet/comments.ts',
         'src/worksheet/threaded-comments.ts',
         'src/worksheet/hyperlinks.ts',
-      )(sourceFile),
-  },
-  {
-    id: 'export-formats',
-    title: 'Export formats (CSV / HTML / Markdown / Text)',
-    description: 'One-shot serializers from a worksheet range.',
-    match: ({ sourceFile }) =>
-      fileEquals(
-        'src/worksheet/csv.ts',
-        'src/worksheet/html.ts',
-        'src/worksheet/markdown.ts',
-        'src/worksheet/text.ts',
       )(sourceFile),
   },
   {

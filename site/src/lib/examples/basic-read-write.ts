@@ -4,14 +4,14 @@
 // readers is exactly what svelte-check / tsc compiled — if an API rename
 // breaks this import, the docs build fails before deploy.
 
-import { loadWorkbook, workbookToBytes } from 'openxml-js/io';
-import { fromBuffer } from 'openxml-js/node';
-import { setCell } from 'openxml-js/worksheet';
+import { loadWorkbook, workbookToBytes } from 'xlsx-kit/io';
+import { fromBuffer } from 'xlsx-kit/node';
+import { setCell } from 'xlsx-kit/worksheet';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const wb = await loadWorkbook(fromBuffer(await readFile('input.xlsx')));
 const ref = wb.sheets[0];
 if (ref?.kind === 'worksheet') {
-  setCell(ref.sheet, 1, 1, 'Hello from openxml-js');
+  setCell(ref.sheet, 1, 1, 'Hello from xlsx-kit');
 }
 await writeFile('output.xlsx', await workbookToBytes(wb));

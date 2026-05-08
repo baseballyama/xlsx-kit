@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { workbookToBytes } from '../../src/public/save';
+import { workbookToBytes } from '../../src/io/save';
 import { loadWorkbookStream } from '../../src/streaming/read-only';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 import { setCell } from '../../src/worksheet/worksheet';

@@ -1,0 +1,75 @@
+name: Release
+
+# Tag-driven publish. Push a `v*.*.*` tag (e.g. `v0.2.0`) and the workflow
+# runs the prepublish gates, publishes to npm with provenance, and creates
+# a matching GitHub Release.
+#
+# Required repo secrets:
+#   - NPM_TOKEN: npm "Automation" token (https://www.npmjs.com/settings/{user}/tokens)
+#                Automation tokens bypass 2FA and are required for CI publish.
+#
+# Required repo settings:
+#   - Settings → Actions → General → Workflow permissions:
+#     "Read and write permissions" + "Allow GitHub Actions to create and
+#     approve pull requests" (so softprops/action-gh-release can create
+#     the GitHub Release).
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write    # create the GitHub Release
+  id-token: write    # OIDC for npm provenance
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag version $TAG_VERSION does not match package.json $PKG_VERSION" >&2
+            exit 1
+          fi
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm size
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          name: ${{ github.ref_name }}

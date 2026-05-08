@@ -8,7 +8,7 @@
 // our needing to model cfvo / colors / iconSets fully.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
-import type { MultiCellRange } from './cell-range';
+import { type MultiCellRange, parseMultiCellRange } from './cell-range';
 
 export type ConditionalFormattingRuleType =
   | 'expression'
@@ -98,12 +98,12 @@ export interface ConditionalFormatting {
 }
 
 export function makeConditionalFormatting(opts: {
-  sqref: MultiCellRange;
+  sqref: MultiCellRange | string;
   rules?: ConditionalFormattingRule[];
   pivot?: boolean;
 }): ConditionalFormatting {
   return {
-    sqref: opts.sqref,
+    sqref: typeof opts.sqref === 'string' ? parseMultiCellRange(opts.sqref) : opts.sqref,
     rules: opts.rules ?? [],
     ...(opts.pivot !== undefined ? { pivot: opts.pivot } : {}),
   };
@@ -137,7 +137,6 @@ export function makeCfRule(
 // ---- Worksheet ergonomic builders ---------------------------------------
 
 import type { Worksheet } from './worksheet';
-import { parseMultiCellRange } from './cell-range';
 
 const resolveCfSqref = (sqref: MultiCellRange | string): MultiCellRange =>
   typeof sqref === 'string' ? parseMultiCellRange(sqref) : sqref;

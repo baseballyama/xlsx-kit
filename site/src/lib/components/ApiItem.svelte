@@ -73,29 +73,6 @@
     </div>
   {/if}
 
-  {#if item.members?.length && item.kind !== 'interface'}
-    <div class="members">
-      <h4>Members</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each item.members as m (m.name)}
-            <tr>
-              <td><code>{m.name}{m.optional ? '?' : ''}</code></td>
-              <td><code>{m.type}</code></td>
-              <td>{m.description ?? ''}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  {/if}
 </section>
 
 <style>

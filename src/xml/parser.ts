@@ -98,8 +98,10 @@ export function parseXml(input: Uint8Array | string): XmlNode {
   }
 
   const initial: NamespaceStack = { default: '', byPrefix: {} };
-  // biome-ignore lint/style/noNonNullAssertion: roots[0] has just been length-checked
-  const root = roots[0]!;
+  const [root] = roots;
+  if (root === undefined) {
+    throw new OpenXmlSchemaError('parseXml: no root element');
+  }
   return convertElement(root, initial);
 }
 

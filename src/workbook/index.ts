@@ -14,100 +14,37 @@ export type {
 export {
   addChartsheet,
   addWorksheet,
-  countSheets,
   createWorkbook,
-  createWorkbookFromCsv,
-  createWorkbookFromCsvBundle,
-  createWorkbookFromObjects,
   describeWorkbook,
-  duplicateSheet,
-  findCellInWorkbook,
-  findCellsInWorkbook,
-  findTable,
   getActiveSheet,
-  getActiveSheetTitle,
-  getAllCharts,
-  getAllComments,
-  getAllConditionalFormatting,
-  getAllDataValidations,
-  getAllHyperlinks,
-  getAllImages,
-  getAllMergedRanges,
-  getAllTables,
   getCellAtAddress,
   getCellSummary,
   getChartsheet,
-  getRangeValuesAtAddress,
   getSheet,
-  getSheetByIndex,
-  getSheetIndex,
   getSheetState,
-  getSheetTitles,
-  getValueAtAddress,
-  getWorkbookAsCsvBundle,
-  getWorkbookAsCsvRecord,
-  getWorkbookAsHtmlRecord,
-  getWorkbookAsMarkdownRecord,
-  getWorkbookAsTextTableRecord,
   getWorkbookCellsByKind,
   getWorkbookStats,
-  hasChartsheet,
-  hasSheet,
-  hasWorksheet,
-  hideSheet,
-  isActiveSheet,
-  isValidSheetTitle,
-  isWorkbookEmpty,
-  iterAllCells,
-  iterChartsheets,
-  iterVisibleWorksheets,
   iterWorksheets,
-  iterWorksheetsByState,
-  jsonReplacer,
-  jsonReviver,
-  listChartsheets,
   listCustomXmlParts,
-  listWorksheets,
   moveSheet,
-  pickUniqueSheetTitle,
   removeSheet,
   renameSheet,
-  replaceCellValuesInWorkbook,
   setActiveSheet,
   setCellAtAddress,
-  setRangeValuesAtAddress,
   setSheetState,
-  setSheetStates,
   sheetNames,
-  showAllSheets,
-  showSheet,
-  swapSheets,
-  validateSheetTitle,
-  veryHideSheet,
 } from './workbook';
 export type { DefinedName, DefinedNameTarget } from './defined-names';
 export {
   addDefinedName,
-  addDefinedNameForRange,
   getDefinedName,
   getDefinedNameTarget,
   listDefinedNames,
-  listPrintAreas,
-  listPrintTitles,
   makeDefinedName,
   removeDefinedName,
-  removeDefinedNames,
-  renameDefinedName,
-  setPrintArea,
-  setPrintTitles,
 } from './defined-names';
 export type { WorkbookProtection } from './protection';
-export {
-  isWorkbookProtected,
-  makeWorkbookProtection,
-  protectWorkbook,
-  unprotectWorkbook,
-} from './protection';
+export { makeWorkbookProtection } from './protection';
 export type { SharedStringEntry, SharedStringsTable } from './shared-strings';
 export {
   addSharedString,
@@ -123,42 +60,15 @@ export type {
   WorkbookView,
   WorkbookViewVisibility,
 } from './views';
-export {
-  getActiveTab,
-  getFirstSheet,
-  makeCustomWorkbookView,
-  makeWorkbookView,
-  setActiveTab,
-  setFirstSheet,
-  setShowHorizontalScroll,
-  setShowSheetTabs,
-  setShowVerticalScroll,
-  setTabRatio,
-  setWorkbookMinimized,
-  setWorkbookVisibility,
-  setWorkbookWindow,
-} from './views';
+export { makeCustomWorkbookView, makeWorkbookView } from './views';
 export type { CalcMode, CalcProperties, RefMode } from './calc-properties';
-export {
-  makeCalcProperties,
-  setCalcMode,
-  setCalcOnSave,
-  setFullCalcOnLoad,
-  setFullPrecision,
-  setIterativeCalc,
-} from './calc-properties';
+export { makeCalcProperties } from './calc-properties';
 export type {
   ShowObjectsMode,
   UpdateLinksMode,
   WorkbookProperties,
 } from './workbook-properties';
-export {
-  makeWorkbookProperties,
-  setDate1904,
-  setFilterPrivacy,
-  setUpdateLinksMode,
-  setWorkbookCodeName,
-} from './workbook-properties';
+export { makeWorkbookProperties } from './workbook-properties';
 export type { FileVersion } from './file-version';
 export { makeFileVersion } from './file-version';
 export type { FileSharing } from './file-sharing';

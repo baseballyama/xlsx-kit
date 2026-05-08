@@ -6,12 +6,13 @@
 import { describe, expect, it } from 'vitest';
 
 describe('migrate-from-openpyxl — public API smoke', () => {
-  it('Loading and saving — all four named symbols are exported from openxml-js/node', async () => {
+  it('Loading and saving — fromFile / toFile from xlsx-kit/node, load/save from xlsx-kit/io', async () => {
     const node = await import('../../src/node');
+    const io = await import('../../src/io/index');
     expect(typeof node.fromFile).toBe('function');
-    expect(typeof node.loadWorkbook).toBe('function');
-    expect(typeof node.saveWorkbook).toBe('function');
     expect(typeof node.toFile).toBe('function');
+    expect(typeof io.loadWorkbook).toBe('function');
+    expect(typeof io.saveWorkbook).toBe('function');
   });
 
   it('Cells — setCell / setCellByCoord / iterRows / setFormula / makeErrorValue / makeRichText / makeTextRun / makeDurationValue', async () => {

@@ -1,9 +1,10 @@
 // Promote a range to an Excel Table (named range with banded styling and
 // a built-in filter dropdown on every header).
 
-import { saveWorkbook, toFile } from 'openxml-js/node';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { addExcelTable, setCell } from 'openxml-js/worksheet';
+import { saveWorkbook } from 'xlsx-kit/io';
+import { toFile } from 'xlsx-kit/node';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { addExcelTable, setCell } from 'xlsx-kit/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Inventory');

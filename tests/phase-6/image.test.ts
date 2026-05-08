@@ -4,8 +4,8 @@ import { makeDrawing, makePictureDrawingItem } from '../../src/drawing/drawing';
 import { drawingToBytes, parseDrawingXml } from '../../src/drawing/drawing-xml';
 import { detectImageDimensions, detectImageFormat, loadImage, type XlsxImage } from '../../src/drawing/image';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 // ---- Test fixtures (synthesised in-memory rather than reading binary files) ----

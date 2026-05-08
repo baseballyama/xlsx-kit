@@ -1,6 +1,6 @@
 // Recipe registry. Each entry pairs a piece of human-readable framing
 // with the literal source of a real .ts file in this directory; the
-// file is type-checked against `openxml-js` on every build, so the
+// file is type-checked against `xlsx-kit` on every build, so the
 // snippet shown to readers can never drift from the live API.
 
 import openAndIterate from './open-and-iterate.ts?raw';
@@ -16,7 +16,6 @@ import conditionalColorScale from './conditional-color-scale.ts?raw';
 import hyperlinks from './hyperlinks.ts?raw';
 import mergeAndFreeze from './merge-and-freeze.ts?raw';
 import multiSheet from './multi-sheet.ts?raw';
-import exportCsvHtmlMd from './export-csv-html-md.ts?raw';
 import browserFileInput from './browser-file-input.ts?raw';
 
 import basicReadWrite from '../basic-read-write.ts?raw';
@@ -142,9 +141,9 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         source: formulas,
         notes: [
           'Cached values are optional — Excel will recalc anyway when the file opens, but cached values keep the file viewable in tools that don\'t recalc.',
-          'For shared and array formulas, see `setCellSharedFormula` / `setCellArrayFormula` in the API reference.',
+          'For shared and array formulas, use `setSharedFormula` / `setArrayFormula` from `xlsx-kit/cell` on the Cell returned by `setCell`.',
         ],
-        relatedApi: ['setCellFormula', 'setCellArrayFormula', 'setCellSharedFormula'],
+        relatedApi: ['setCell', 'setFormula', 'setArrayFormula', 'setSharedFormula'],
       },
       {
         slug: 'merge-and-freeze',
@@ -161,7 +160,7 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         teaser: 'Hyperlinks live separately from cell values — set the text, attach the URL.',
         path: 'site/src/lib/examples/recipes/hyperlinks.ts',
         source: hyperlinks,
-        relatedApi: ['addUrlHyperlink', 'addInternalHyperlink', 'addMailtoHyperlink'],
+        relatedApi: ['setHyperlink'],
       },
     ],
   },
@@ -179,7 +178,7 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
           'Pass `style` for one-arg style selection or `styleInfo` for full control over banded rows / columns.',
           'For just a filter without table styling, use `addAutoFilter(ws, "A1:C4")`.',
         ],
-        relatedApi: ['addExcelTable', 'addTableFromObjects', 'addAutoFilter'],
+        relatedApi: ['addExcelTable', 'addAutoFilter'],
       },
       {
         slug: 'dropdown-validation',
@@ -191,26 +190,16 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         notes: [
           'Pass a sheet-relative formula (`=Sheet1!$A$1:$A$10`) instead of a literal array if the choices come from another range.',
         ],
-        relatedApi: [
-          'addListValidation',
-          'addNumberValidation',
-          'addDateValidation',
-          'addCustomValidation',
-        ],
+        relatedApi: ['makeDataValidation', 'addDataValidation'],
       },
       {
         slug: 'color-scale',
         title: 'Heat-map with a 3-color scale',
         teaser:
-          '`addColorScaleRule` paints each cell on a continuous gradient between min, midpoint, and max.',
+          'Build a `colorScale` rule with `makeCfRule` + inner XML and attach it via `addConditionalFormatting`.',
         path: 'site/src/lib/examples/recipes/conditional-color-scale.ts',
         source: conditionalColorScale,
-        relatedApi: [
-          'addColorScaleRule',
-          'addCellIsRule',
-          'addDataBarRule',
-          'addIconSetRule',
-        ],
+        relatedApi: ['makeCfRule', 'makeConditionalFormatting', 'addConditionalFormatting'],
       },
     ],
   },
@@ -278,7 +267,7 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
     ],
   },
   {
-    title: 'Browser & exports',
+    title: 'Browser',
     recipes: [
       {
         slug: 'browser-fetch',
@@ -296,20 +285,6 @@ export const recipeGroups: Array<{ title: string; recipes: Recipe[] }> = [
         path: 'site/src/lib/examples/recipes/browser-file-input.ts',
         source: browserFileInput,
         relatedApi: ['fromBlob', 'loadWorkbook'],
-      },
-      {
-        slug: 'export-csv-html-md',
-        title: 'Export a sheet as CSV / HTML / Markdown / text',
-        teaser:
-          'The `getWorksheetAs*` helpers auto-detect the data extent, so you don\'t pass a range.',
-        path: 'site/src/lib/examples/recipes/export-csv-html-md.ts',
-        source: exportCsvHtmlMd,
-        relatedApi: [
-          'getWorksheetAsCsv',
-          'getWorksheetAsHtml',
-          'getWorksheetAsMarkdownTable',
-          'getWorksheetAsTextTable',
-        ],
       },
     ],
   },

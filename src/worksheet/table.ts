@@ -8,7 +8,9 @@
 // columns + styleInfo + autoFilter; sortState / totals row formulas /
 // calculated column formulas / xml extlst are reserved for later.
 
+import type { Workbook } from '../workbook/workbook';
 import type { AutoFilter } from './auto-filter';
+import type { Worksheet } from './worksheet';
 
 export interface TableColumn {
   /** 1-based column id (per-table). */
@@ -86,15 +88,6 @@ export function makeTableDefinition(opts: {
   };
 }
 
-// ---- Worksheet ergonomic builders ---------------------------------------
-
-import type { CellValue } from '../cell/cell';
-import { boundariesToRangeString } from '../utils/coordinate';
-import { OpenXmlSchemaError } from '../utils/exceptions';
-import type { Workbook } from '../workbook/workbook';
-import type { Worksheet } from './worksheet';
-import { writeRangeFromObjects } from './worksheet';
-
 const nextTableId = (wb: Workbook): number => {
   let max = 0;
   for (const ref of wb.sheets) {
@@ -111,10 +104,6 @@ const nextTableId = (wb: Workbook): number => {
  * `ws.tables` in one call. Auto-assigns the workbook-unique `id`,
  * derives `displayName` from the supplied `name`, and constructs
  * `TableColumn` records (1-based ids) from a string-array shorthand.
- *
- * Pass `style` for one-arg style selection; for finer-grained control
- * (showFirstColumn / showLastColumn / row-stripes / column-stripes)
- * pass the full `styleInfo` instead.
  */
 export const addExcelTable = (
   wb: Workbook,
@@ -123,14 +112,12 @@ export const addExcelTable = (
     name: string;
     ref: string;
     columns: ReadonlyArray<string | TableColumn>;
-    /** Built-in style name shortcut (e.g. 'TableStyleMedium2'). Ignored if `styleInfo` is supplied. */
     style?: string;
     styleInfo?: TableStyleInfo;
     headerRowCount?: number;
     totalsRowCount?: number;
     totalsRowShown?: boolean;
     autoFilter?: AutoFilter;
-    /** Override displayName (defaults to `name`). */
     displayName?: string;
   },
 ): TableDefinition => {
@@ -154,64 +141,4 @@ export const addExcelTable = (
   });
   ws.tables.push(def);
   return def;
-};
-
-/**
- * Convenience: write a `Record[]` block to the sheet via
- * {@link writeRangeFromObjects}, then register an Excel table over
- * the bounding-box. Combines the two-step "write the values, then
- * declare the table" pattern into a single call.
- *
- * Throws on empty input — there's no meaningful zero-row table.
- *
- * Returns the registered {@link TableDefinition} (the same object
- * pushed onto `ws.tables`). Use `opts.headers` to pin column order;
- * the columns array on the resulting table mirrors that order.
- */
-export const addTableFromObjects = (
-  wb: Workbook,
-  ws: Worksheet,
-  opts: {
-    name: string;
-    startRef: string;
-    objects: ReadonlyArray<Record<string, CellValue | null | undefined>>;
-    headers?: ReadonlyArray<string>;
-    style?: string;
-    styleInfo?: TableStyleInfo;
-    displayName?: string;
-  },
-): TableDefinition => {
-  if (opts.objects.length === 0) {
-    throw new OpenXmlSchemaError('addTableFromObjects: objects array must be non-empty');
-  }
-  const writeOpts: { headers?: ReadonlyArray<string> } = opts.headers ? { headers: opts.headers } : {};
-  const bounds = writeRangeFromObjects(ws, opts.startRef, opts.objects, writeOpts);
-  if (!bounds) {
-    throw new OpenXmlSchemaError('addTableFromObjects: writeRangeFromObjects returned no bounds');
-  }
-  // Recompute the canonical header order from the same logic
-  // writeRangeFromObjects used (so the table's columns line up).
-  let headers: string[];
-  if (opts.headers) headers = [...opts.headers];
-  else {
-    const seen = new Set<string>();
-    headers = [];
-    for (const o of opts.objects) {
-      for (const k of Object.keys(o)) {
-        if (!seen.has(k)) {
-          seen.add(k);
-          headers.push(k);
-        }
-      }
-    }
-  }
-  const ref = boundariesToRangeString(bounds);
-  return addExcelTable(wb, ws, {
-    name: opts.name,
-    ref,
-    columns: headers,
-    ...(opts.style !== undefined ? { style: opts.style } : {}),
-    ...(opts.styleInfo ? { styleInfo: opts.styleInfo } : {}),
-    ...(opts.displayName !== undefined ? { displayName: opts.displayName } : {}),
-  });
 };

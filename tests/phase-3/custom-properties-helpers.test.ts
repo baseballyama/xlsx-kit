@@ -11,8 +11,8 @@ import {
   setCustomNumberProperty,
   setCustomStringProperty,
 } from '../../src/packaging/custom';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('setCustomXxxProperty', () => {

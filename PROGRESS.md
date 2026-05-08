@@ -23,9 +23,9 @@
 ### 残タスク
 
 - **Excel 365 視覚 QA** — 人手のみ。コア機能は揃っている。
-- **ZIP64 write の正式対応** — fflate 上流の 4GiB 制限。openxml-js 側ではすでに fallback ロジックが入っているので blocker ではない。
-- **public API surface の整理** — `src/index.ts` が 700+ 行に肥大。alphabetical 順を維持しているが、サブモジュールごとに `*.ts` barrel 経由でグループ化する余地あり。（urgent ではない、整形のみ。）
-- **rich-text run builder ergo の追加** — `richTextRun(text, font?)` 単体 export はまだ。`makeTextRun` を re-export するだけで済む。
+- ~~**ZIP64 write の正式対応**~~ → entry count > 65535 の場合に ZIP64 EOCD record + locator を `applyZip64EntryCountPatch` で fflate の最終 chunk に splice し、EOCD entry-count を 0xFFFF sentinel 化 (2026-05-08, commit 7d201b9)。70k entry round-trip テスト追加。単一 entry > 4GiB / total > 4GiB は対象外 (xlsx で発生しない)。
+- ~~**public API surface の整理**~~ → 既に commit d6fb28c (`refactor(api)!: split top-level barrel into per-section subpath imports`) で対応済。`src/index.ts` は廃止され、subpath imports (`xlsx-kit/cell` / `/workbook` / `/styles` / ...) のみが public surface。
+- ~~**rich-text run builder ergo の追加**~~ → `makeTextRun` の `richTextRun` alias を `src/cell/index.ts` に追加 (2026-05-08)。
 - ~~**`replaceCellValues` の range-aware 版**~~ → `replaceInRange` で対応 (2026-05-07)。
 - ~~**autofit の font-aware 改良**~~ → `opts.workbook` で font.size 比例 scaling 対応 (2026-05-07)。
 
@@ -37,12 +37,367 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`worksheetToJson(ws, range, opts?)` を追加** — readRangeAsObjects → JSON.stringify (export matrix に JSON を追加)。
+- **次のタスク**: **`isNumberCell(c)` predicate を追加** — Cell の value が JS number かどうかの判定。`typeof c.value === 'number'` の thin wrapper。Cell 級 value-type predicate (`isErrorCell` / `isFormulaCell` / `isRichTextCell` の line に並ぶ)。
+  1. `src/cell/cell.ts` に `isNumberCell(c: Cell): boolean` を export 追加: `typeof c.value === 'number'` を return (`isErrorCell` の隣に配置)。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isNumberCell` を re-export (alphabetical 順)。
+  3. `tests/phase-2/is-number-cell.test.ts` 4 件: number cell で true / string cell で false / boolean cell (true は number ではない) で false / formula cell (kind=formula) で false。
+
+- **次のタスク (前回)**: **`isErrorCell(c)` predicate を追加** — Cell の value が Excel error (`isErrorValue(c.value)`) かどうかを判定する Cell 級 predicate。`FormulaValue.cachedValue` は `number | string | boolean` のみなので formula 経由の error は型的に存在せず、単純に `isErrorValue(c.value)` だけで十分。
+  1. `src/cell/cell.ts` に `isErrorCell(c: Cell): boolean` を export 追加: `isErrorValue(c.value)` を return (`isMergedCell` の隣に配置)。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isErrorCell` を re-export (alphabetical 順)。
+  3. `tests/phase-2/is-error-cell.test.ts` 4 件: error value cell で true / string cell で false / number cell で false / formula cell で false。
+
+  empirical: 2574 tests pass (was 2570, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`isMergedCell(c)` type guard を追加** — `MergedCell extends Cell { merged: true }` の判別。`c.merged === true` で narrow する predicate。MergedCell は merge 範囲内の non-top-left placeholder で、これを除外したい場面（実値 walk 時など）は多い。`isStyledCell` 系の Cell 級 predicate に typing を含む版として連なる。
+  1. `src/cell/cell.ts` に `isMergedCell(c: Cell): c is MergedCell` を export 追加: `(c as MergedCell).merged === true` を return (`isStyledCell` の隣に配置)。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isMergedCell` を re-export (alphabetical 順)。
+  3. `tests/phase-2/is-merged-cell.test.ts` 3 件: 通常 cell (`makeCell`) で false / `merged: true` を持つ cell で true / 型ガードとして narrow 後に `merged: true` がアクセス可能 (typecheck — `expectTypeOf` 等あれば、なければ単純な runtime 検証で代替)。
+
+  empirical: 2570 tests pass (was 2567, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`isStyledCell(c)` predicate を追加** — Cell に default 以外の style が当たっているかの判定。`c.styleId !== 0` の thin wrapper。`cellHasHyperlink` / `cellHasComment` と並ぶ Cell 級 attribute predicate。0 = default xf という invariant に依存。
+  1. `src/cell/cell.ts` に `isStyledCell(c: Cell): boolean` を export 追加: `c.styleId !== 0` を return (`cellHasComment` の隣に配置)。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isStyledCell` を re-export (alphabetical 順)。
+  3. `tests/phase-2/is-styled-cell.test.ts` 3 件: styleId = 0 で false (default) / styleId = 1 で true / `makeCell` 直後 (default styleId) で false。
+
+  empirical: 2567 tests pass (was 2564, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`cellHasComment(c)` predicate を追加** — `cellHasHyperlink` の sister。Cell の comment 紐付き判定。`c.commentId !== undefined` の thin wrapper。
+  1. `src/cell/cell.ts` に `cellHasComment(c: Cell): boolean` を export 追加: `c.commentId !== undefined` を return (`cellHasHyperlink` の隣に配置)。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `cellHasComment` を re-export (alphabetical 順)。
+  3. `tests/phase-2/cell-has-comment.test.ts` 3 件: commentId 未設定で false / commentId = 1 で true / commentId = 0 で true。
+
+  empirical: 2564 tests pass (was 2561, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`cellHasHyperlink(c)` predicate を追加** — Cell の hyperlink 紐付き判定。`c.hyperlinkId !== undefined` の thin wrapper。Cell 級の predicate を補強する pivot (rich-text 飽和回避)。
+  1. `src/cell/cell.ts` に `cellHasHyperlink(c: Cell): boolean` を export 追加: `c.hyperlinkId !== undefined` を return。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `cellHasHyperlink` を re-export (alphabetical 順、`bindValue` の隣など適切位置)。
+  3. `tests/phase-2/cell-has-hyperlink.test.ts` 3 件: hyperlinkId 未設定で false / hyperlinkId = 1 で true / hyperlinkId = 0 (有効 id) で true。
+
+  empirical: 2561 tests pass (was 2558, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextWords(rt)` 単語分割 helper を追加** — ASCII whitespace (`[ \t\r\n]+`) で区切られた連続非 whitespace 部分を `RichText[]` で返す ergonomic helper。各 word は元の font を維持 (= `sliceRichText` で抽出)。先頭・末尾・連続 whitespace は drop。空 / 全 whitespace で `[]`。
+  1. `src/cell/rich-text.ts` に `richTextWords(rt: RichText): RichText[]` を export 追加: `richTextToString(rt)` を `/[^ \t\r\n]+/g` で `exec` ループ、`sliceRichText(rt, m.index, m.index + m[0].length)` を push。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextWords` を re-export。
+  3. `tests/phase-2/rich-text-words.test.ts` 4 件: 単一 run 内の単語分割 (font 維持) / 複数 run 跨ぎ word でも font 引き継ぎ / 全 whitespace で `[]` / 連続 whitespace を drop して word のみ抽出。
+
+  empirical: 2558 tests pass (was 2554, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`iterRichTextChars(rt)` 文字単位イテレータを追加** — `getRichTextCharAt` + `getRichTextFontAt` の generator 版。各文字 (UTF-16 code unit) を `{ char, font, index }` で yield。文字単位 styling/animation/inspection の primitive。
+  1. `src/cell/rich-text.ts` に `iterRichTextChars(rt: RichText): IterableIterator<{ char: string; font: InlineFont | undefined; index: number }>` を export 追加: generator function (`function*`) で各 run の `text` を `for (let i = 0; i < r.text.length; i++)` walk、`yield { char: r.text.charAt(i), font: r.font, index }`、index ++。
+  2. `src/cell/index.ts` (= subpath barrel) から `iterRichTextChars` を re-export。
+  3. `tests/phase-2/rich-text-iter-chars.test.ts` 3 件: 単一 run の全文字 yield (font 付き) / 複数 run 跨ぎで run 切り替え時に font 切り替え / 空 RichText で 0 yield。
+
+  empirical: 2554 tests pass (was 2551, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`getRichTextCharAt(rt, index)` 位置文字取得 helper を追加** — `String.prototype.charAt` 同等の semantics で結合テキストの `index` 番目の文字 (UTF-16 code unit) を返す。範囲外で空 string `''`。`getRichTextFontAt` と pair で使うことで「位置 i の char + その font」を取り出せる。
+  1. `src/cell/rich-text.ts` に `getRichTextCharAt(rt: RichText, index: number): string` を export 追加: `index < 0` で `''` / `cursor` walk → `index < cursor + r.text.length` で `r.text.charAt(index - cursor)` を return / loop 終了で `''`。
+  2. `src/cell/index.ts` (= subpath barrel) から `getRichTextCharAt` を re-export。
+  3. `tests/phase-2/rich-text-char-at.test.ts` 3 件: 単一 run 内の任意 index で char / 複数 run 跨ぎ index で正しい char / 範囲外で `''`。
+
+  empirical: 2551 tests pass (was 2548, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`getRichTextFontAt(rt, index)` 位置参照 helper を追加** — 結合テキストのある character index `[0, length)` における run の `font` (= `InlineFont | undefined`) を返す。範囲外 (`index < 0` or `index >= length`) で `undefined`。文字単位検査 (e.g. cursor 位置の font 表示) 用。
+  1. `src/cell/rich-text.ts` に `getRichTextFontAt(rt: RichText, index: number): InlineFont | undefined` を export 追加: `index < 0` で undefined / 各 run を walk し `cursor` 累積、`index < cursor + r.text.length` で `r.font` を return / loop 終了で undefined。
+  2. `src/cell/index.ts` (= subpath barrel) から `getRichTextFontAt` を re-export。
+  3. `tests/phase-2/rich-text-font-at.test.ts` 4 件: 単一 run 内の任意 index で font 取得 / 複数 run 境界跨ぎで該当 run の font 取得 / font なし run で undefined / 範囲外 (負・>= length) で undefined。
+
+  empirical: 2548 tests pass (was 2544, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`findAllRichTextIndex(rt, search)` 全出現位置 helper を追加** — `findRichTextIndex` の plural 版。`search` の非重複出現位置を全て `number[]` で返す。`countRichTextOccurrences` の位置返却版で、複数 replace の準備や highlight 用。空 `search` は `[]`。
+  1. `src/cell/rich-text.ts` に `findAllRichTextIndex(rt: RichText, search: string): number[]` を export 追加: 空 search で `[]` / `richTextToString(rt)` の `indexOf(search, from)` ループで `out.push(idx)` → `from = idx + search.length`。
+  2. `src/cell/index.ts` (= subpath barrel) から `findAllRichTextIndex` を re-export (`findLastRichTextIndex` の隣)。
+  3. `tests/phase-2/rich-text-find-all.test.ts` 4 件: 単一 run 内で複数出現の index 配列 / 複数 run 跨ぎ出現 / 0 出現で `[]` / 空 search で `[]`。
+
+  empirical: 2544 tests pass (was 2540, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`setFontOnRichText(rt, font)` font 上書き helper を追加** — `applyFontToRichText` の cousin で、per-run の font を**上書き** (= 既存 font は捨てる) する版。全 run に統一 font を強制適用する normalization 用途。
+  1. `src/cell/rich-text.ts` に `setFontOnRichText(rt: RichText, font: InlineFont): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text, font }))`。
+  2. `src/cell/index.ts` (= subpath barrel) から `setFontOnRichText` を re-export。
+  3. `tests/phase-2/rich-text-set-font.test.ts` 3 件: per-run font が上書きされる / font なし run にも font 適用 / 空 RichText で空 RichText 返却。
+
+  empirical: 2540 tests pass (was 2537, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`isEmptyRichText(rt)` 空判定 predicate を追加** — RichText が空 (run 数 0) または全 run が空文字列のときに `true` を返す。`isEmptyCell` の rich-text counterpart。
+  1. `src/cell/rich-text.ts` に `isEmptyRichText(rt: RichText): boolean` を export 追加: `rt.length === 0` で true / 各 run の `text !== ''` を見つけたら false / 全 run 空文字列で true。
+  2. `src/cell/index.ts` (= subpath barrel) から `isEmptyRichText` を re-export。
+  3. `tests/phase-2/rich-text-is-empty.test.ts` 3 件: 空 RichText で true / 全 run が `text: ''` で true / 1 つでも非空 run があれば false。
+
+  empirical: 2537 tests pass (was 2534, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`truncateRichText(rt, maxLength, ellipsis?)` 切り詰め helper を追加** — `richTextLength(rt) <= maxLength` なら無加工、それ以外は `[0, maxLength)` に slice (font 維持)、`ellipsis` 指定時は末尾を ellipsis で置換。`maxLength <= 0` で空 RichText (ellipsis 無視)、`ellipsis.length >= maxLength` で `richText(ellipsis.slice(0, maxLength))` (ellipsis 自身を hard truncate)。
+  1. `src/cell/rich-text.ts` に `truncateRichText(rt: RichText, maxLength: number, ellipsis?: string): RichText` を export 追加: `richTextLength` 計測 → 短ければ `rt` / `maxLength <= 0` で空 / 空 ellipsis で `sliceRichText(rt, 0, maxLength)` / `ellipsis.length >= maxLength` で `richText(ellipsis.slice(0, maxLength))` / それ以外は `concatRichText(sliceRichText(rt, 0, maxLength - ellipsis.length), ellipsis)`。
+  2. `src/cell/index.ts` (= subpath barrel) から `truncateRichText` を re-export。
+  3. `tests/phase-2/rich-text-truncate.test.ts` 5 件: 短い rt は無加工 / ellipsis なしで hard truncate / `'...'` ellipsis で末尾置換 / `maxLength = 0` で空 RichText / ellipsis が `maxLength` より長い場合 ellipsis を hard truncate。
+
+  empirical: 2534 tests pass (was 2529, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextEqual(a, b)` 構造比較 predicate を追加** — 2 つの RichText が同じ run 列・同じ font かを判定する boolean。各 run の `text` を厳密一致、`font` は `JSON.stringify(font ?? null)` で比較 (`mergeAdjacentRichTextRuns` と同じ手法)。reference 同一は早期 return。長さ違いや個別 run 違いで false。
+  1. `src/cell/rich-text.ts` に `richTextEqual(a: RichText, b: RichText): boolean` を export 追加: `a === b` で true / 長さ違いで false / 各 index `a[i]` `b[i]` を取り `noUncheckedIndexedAccess` 対策で undefined ガード → text 比較 → font JSON 比較。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextEqual` を re-export。
+  3. `tests/phase-2/rich-text-equal.test.ts` 5 件: 同 reference で true / 同内容別 reference で true / text 違いで false / font 違いで false / 長さ違いで false。
+
+  empirical: 2529 tests pass (was 2524, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`clearFontsInRichText(rt)` 全 font ストリッパー helper を追加** — 各 run の `font` を完全に削除した新しい RichText を返す ergonomic helper。テキストはそのまま、formatting だけクリアする normalization 用途。
+  1. `src/cell/rich-text.ts` に `clearFontsInRichText(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text }))`。
+  2. `src/cell/index.ts` (= subpath barrel) から `clearFontsInRichText` を re-export。
+  3. `tests/phase-2/rich-text-clear-fonts.test.ts` 3 件: font 付き 1 run の font 削除 / 混在 run 全部 font 削除 / 空 RichText で空 RichText 返却。
+
+  empirical: 2524 tests pass (was 2521, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`splitRichText(rt, separator, limit?)` 分割 helper を追加** — `String.prototype.split` 同等の semantics で RichText を separator で分割し `RichText[]` を返す。各セグメントは元の font を維持 (= `sliceRichText` で再構築)。`limit` 省略時は全分割、`limit <= 0` は空配列、空 separator は code-unit 単位で 1 文字ずつ分割。
+  1. `src/cell/rich-text.ts` に `splitRichText(rt: RichText, separator: string, limit?: number): RichText[]` を export 追加: `limit <= 0` で `[]` / 空 separator で `[0..length)` を `sliceRichText(rt, i, i+1)` で 1 文字ずつ抽出 (limit 適用) / 通常時は `richTextToString(rt)` の `indexOf` ループで段階的 slice、limit に到達したら return、最後に残り尾部を push。separator が見つからない時は `[rt]`。
+  2. `src/cell/index.ts` (= subpath barrel) から `splitRichText` を re-export (`splitRichTextRuns` の隣)。
+  3. `tests/phase-2/rich-text-split.test.ts` 5 件: 単一 run 内で separator 分割 (font 維持) / 複数 run 跨ぎ separator 分割 / `limit` で末尾 truncate / separator が見つからず `[rt]` / 空 separator で 1 文字ずつ分割。
+
+  empirical: 2521 tests pass (was 2516, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`countRichTextOccurrences(rt, search)` 出現数 helper を追加** — `replaceAllRichText` の cousin で副作用なし版。`search` の非重複出現回数を返す。空 `search` は 0 を返す (`indexOf` 仕様の無限ループを避けるため、`String.prototype.split` 的な解釈ではなく明示 0 を返却)。
+  1. `src/cell/rich-text.ts` に `countRichTextOccurrences(rt: RichText, search: string): number` を export 追加: 空 search で 0 / `richTextToString(rt)` を取り、`indexOf(search, from)` ループで count、`from = idx + search.length` で進める。
+  2. `src/cell/index.ts` (= subpath barrel) から `countRichTextOccurrences` を re-export。
+  3. `tests/phase-2/rich-text-count.test.ts` 4 件: 単一 run 内で複数出現 / 複数 run 跨ぎ出現 (`replaceAllRichText` と同様の non-overlap カウント) / 0 出現 / 空 search で 0。
+
+  empirical: 2516 tests pass (was 2512, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`findLastRichTextIndex(rt, search, fromIndex?)` 末尾検索 helper を追加** — `findRichTextIndex` の対 (`String.prototype.lastIndexOf` 同等)。`richTextToString(rt).lastIndexOf(search, fromIndex)` の thin wrapper。見つからない場合 -1、空 search は仕様上 `min(fromIndex, length)` 返却。
+  1. `src/cell/rich-text.ts` に `findLastRichTextIndex(rt: RichText, search: string, fromIndex?: number): number` を export 追加: `richTextToString(rt).lastIndexOf(search, fromIndex)` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `findLastRichTextIndex` を re-export (`findRichTextIndex` の隣)。
+  3. `tests/phase-2/rich-text-find-last.test.ts` 4 件: 単一 run 内で最後の出現検索 / 複数 run 跨ぎ最後の出現 / `fromIndex` で前半の出現に絞り込み / 見つからない場合 -1。
+
+  empirical: 2512 tests pass (was 2508, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`trimEndRichText(rt)` 末尾空白トリム helper を追加** — `trimStartRichText` の対。末尾の ASCII whitespace (space / tab / CR / LF) のみを削除した新しい RichText を返す。先頭は不変。実装は `richTextToString(rt)` から末尾を charCodeAt walk で trailingTrim 量計算 → `sliceRichText(rt, 0, length - trailingTrim)`。全 whitespace なら空 RichText。
+  1. `src/cell/rich-text.ts` に `trimEndRichText(rt: RichText): RichText` を export 追加: `richTextToString` → 末尾から `charCodeAt` で 0x20 / 0x09 / 0x0d / 0x0a チェック → 全消去で空 RichText、それ以外で `sliceRichText(rt, 0, lastNon + 1)`。
+  2. `src/cell/index.ts` (= subpath barrel) から `trimEndRichText` を re-export。
+  3. `tests/phase-2/rich-text-trim-end.test.ts` 4 件: 単一 run の末尾 whitespace のみ削除 (font 維持) / 複数 run 跨ぎで末尾の whitespace を削除 / 先頭の whitespace は維持 / 全 whitespace で空 RichText。
+
+  empirical: 2508 tests pass (was 2504, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`trimStartRichText(rt)` 先頭空白トリム helper を追加** — `trimRichText` の partial 版。先頭の ASCII whitespace (space / tab / CR / LF) のみを削除した新しい RichText を返す。末尾は不変。実装は `richTextToString(rt).search(/[^ \t\r\n]/)` で leadingTrim → `sliceRichText(rt, leadingTrim)`。全 whitespace なら空 RichText。
+  1. `src/cell/rich-text.ts` に `trimStartRichText(rt: RichText): RichText` を export 追加: `richTextToString` → `String.prototype.search(/[^ \t\r\n]/)` で leading 位置検出 → -1 (全 whitespace) で空 RichText、それ以外で `sliceRichText(rt, leading)`。
+  2. `src/cell/index.ts` (= subpath barrel) から `trimStartRichText` を re-export。
+  3. `tests/phase-2/rich-text-trim-start.test.ts` 4 件: 単一 run の先頭 whitespace のみ削除 (font 維持) / 複数 run 跨ぎで先頭の whitespace を削除 / 末尾の whitespace は維持 / 全 whitespace で空 RichText。
+
+  empirical: 2504 tests pass (was 2500, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextToUpperCase(rt)` 全 run 大文字化 helper を追加** — `richTextToLowerCase` の対。各 run の text を `String.prototype.toUpperCase()` で大文字化し、font をそのまま引き継ぐ。Locale 非依存。`exactOptionalPropertyTypes` 対応で font undefined 時は `font` プロパティを省略する分岐実装。
+  1. `src/cell/rich-text.ts` に `richTextToUpperCase(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => r.font !== undefined ? { text: r.text.toUpperCase(), font: r.font } : { text: r.text.toUpperCase() })`。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextToUpperCase` を re-export。
+  3. `tests/phase-2/rich-text-to-upper-case.test.ts` 4 件: 単一 run 大文字化 (font 維持) / 複数 run 跨ぎ / non-ASCII (`äöü` → `ÄÖÜ`) / 空 RichText で空 RichText 返却。
+
+  empirical: 2500 tests pass (was 2496, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextToLowerCase(rt)` 全 run 小文字化 helper を追加** — 各 run の text を `String.prototype.toLowerCase()` で小文字化し、font をそのまま引き継いだ新しい RichText を返す。Locale 非依存 (= ASCII / Unicode default case folding)。
+  1. `src/cell/rich-text.ts` に `richTextToLowerCase(rt: RichText): RichText` を export 追加: `mapRichTextRuns(rt, (r) => r.font !== undefined ? { text: r.text.toLowerCase(), font: r.font } : { text: r.text.toLowerCase() })` (`exactOptionalPropertyTypes` 対応の分岐)。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextToLowerCase` を re-export。
+  3. `tests/phase-2/rich-text-to-lower-case.test.ts` 4 件: 単一 run 小文字化 (font 維持) / 複数 run 跨ぎ / non-ASCII (`ÄÖÜ` → `äöü`) / 空 RichText で空 RichText 返却。
+
+  empirical: 2496 tests pass (was 2492, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextEndsWith(rt, search, endIndex?)` 末尾一致 helper を追加** — `String.prototype.endsWith` 同等の boolean predicate。`richTextToString(rt).endsWith(search, endIndex)` の thin wrapper。空 `search` は `true`。`endIndex` 省略時は length (`String.prototype.endsWith` 仕様準拠)。
+  1. `src/cell/rich-text.ts` に `richTextEndsWith(rt: RichText, search: string, endIndex?: number): boolean` を export 追加: `richTextToString(rt).endsWith(search, endIndex)` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextEndsWith` を re-export。
+  3. `tests/phase-2/rich-text-ends-with.test.ts` 4 件: 単一 run 内で末尾一致 / 複数 run 跨ぎ末尾一致 / 一致しない / `endIndex` 指定で短縮範囲の末尾照合。
+
+  empirical: 2492 tests pass (was 2488, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextStartsWith(rt, search, fromIndex?)` 先頭一致 helper を追加** — `String.prototype.startsWith` 同等の boolean predicate。`richTextToString(rt).startsWith(search, fromIndex)` の thin wrapper。空 `search` は `true`。`fromIndex` 省略時は 0 (`String.prototype.startsWith` 仕様準拠)。
+  1. `src/cell/rich-text.ts` に `richTextStartsWith(rt: RichText, search: string, fromIndex?: number): boolean` を export 追加: `richTextToString(rt).startsWith(search, fromIndex)` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextStartsWith` を re-export。
+  3. `tests/phase-2/rich-text-starts-with.test.ts` 4 件: 単一 run 内で先頭一致 / 複数 run 跨ぎ先頭一致 / 一致しない / `fromIndex` 指定で内部位置から照合。
+
+  empirical: 2488 tests pass (was 2484, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextIncludes(rt, search, fromIndex?)` 部分文字列判定 helper を追加** — `String.prototype.includes` 同等の boolean predicate。`findRichTextIndex(rt, search, fromIndex) >= 0` の thin wrapper。空 `search` は `true` (`String.prototype.includes` 仕様)。
+  1. `src/cell/rich-text.ts` に `richTextIncludes(rt: RichText, search: string, fromIndex?: number): boolean` を export 追加: `findRichTextIndex(rt, search, fromIndex) >= 0` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextIncludes` を re-export。
+  3. `tests/phase-2/rich-text-includes.test.ts` 4 件: 単一 run 内で含む / 複数 run 跨ぎ含む / 含まない / 空 search で true。
+
+  empirical: 2484 tests pass (was 2480, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`repeatRichText(rt, count)` 繰り返し helper を追加** — `String.prototype.repeat` 同等の semantics で `rt` を `count` 回連結した新しい RichText を返す。各 run の font は repeat 全体を通じて保持。`count = 0` または空 `rt` で空 RichText、`count = 1` で `rt` をそのまま返す (no-op fast path)。負・非有限・小数は `RangeError` (Math.floor で整数化、ただし負/NaN/Infinity は throw)。
+  1. `src/cell/rich-text.ts` に `repeatRichText(rt: RichText, count: number): RichText` を export 追加: `Number.isFinite(count) && count >= 0` ガード→ `Math.floor(count)` → 0 または 空 rt で `makeRichText([])` / 1 で `rt` / それ以外は `concatRichText(...Array(n).fill(rt))`。
+  2. `src/cell/index.ts` (= subpath barrel) から `repeatRichText` を re-export。
+  3. `tests/phase-2/rich-text-repeat.test.ts` 5 件: count=3 で複数 run repeat (font 維持) / count=0 で空 / count=1 で同 rt 返却 / 空 rt で count=5 でも空 / 負 count で RangeError。
+
+  empirical: 2480 tests pass (was 2475, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`padStartRichText(rt, targetLength, padString?)` 先頭パディング helper を追加** — `padEndRichText` の対。`String.prototype.padStart` 同等の semantics で `rt` の先頭に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として先頭に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
+  1. `src/cell/rich-text.ts` に `padStartRichText(rt: RichText, targetLength: number, padString?: string): RichText` を export 追加: `richTextLength(rt)` → 不足分 `n = targetLength - cur` を `''.padStart(n, padString ?? ' ')` で生成 → `concatRichText(padded, rt)`。`padString === ''` または `targetLength <= cur` で `rt` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `padStartRichText` を re-export。
+  3. `tests/phase-2/rich-text-pad-start.test.ts` 4 件: default ' ' で先頭パディング (font 既存 run 維持) / カスタム padString が割り切れない場合 / `targetLength <= length` で no-op / 空 padString で no-op。
+
+  empirical: 2475 tests pass (was 2471, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`padEndRichText(rt, targetLength, padString?)` 末尾パディング helper を追加** — `String.prototype.padEnd` 同等の semantics で `rt` の末尾に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として末尾に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
+  1. `src/cell/rich-text.ts` に `padEndRichText(rt: RichText, targetLength: number, padString?: string): RichText` を export 追加: `richTextLength(rt)` → 不足分 `n = targetLength - cur` を `''.padEnd(n, padString ?? ' ')` で文字列生成 → `concatRichText(rt, padded)`。`padString === ''` または `targetLength <= cur` で `rt` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `padEndRichText` を re-export。
+  3. `tests/phase-2/rich-text-pad-end.test.ts` 4 件: default ' ' で末尾パディング (font 既存 run 維持) / カスタム padString が割り切れない場合 (e.g. `'ab'` を 5 char target で `'ababa'` 部分) / `targetLength <= length` で no-op / 空 padString で no-op。
+
+  empirical: 2471 tests pass (was 2467, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`trimRichText(rt)` ASCII 空白トリム helper を追加** — RichText 全体の前後の空白 (ASCII space / tab / CR / LF) を削除した新しい RichText を返す。実装は `richTextToString(rt)` の前後 trim 量を計測 → `sliceRichText(rt, leadingTrim, length - trailingTrim)`。中間の空白は維持。
+  1. `src/cell/rich-text.ts` に `trimRichText(rt: RichText): RichText` を export 追加: `richTextToString` → `String.prototype.search(/[^ \t\r\n]/)` で leadingTrim を、末尾は charCodeAt walk で trailingTrim を求める (全 whitespace なら空 RichText)。`sliceRichText` で再構築。
+  2. `src/cell/index.ts` (= subpath barrel) から `trimRichText` を re-export。
+  3. `tests/phase-2/rich-text-trim.test.ts` 4 件: 単一 run 前後トリム (font 維持) / 複数 run 跨ぎ前後トリム / 全 whitespace で空 RichText / 中間空白は維持。
+
+  empirical: 2467 tests pass (was 2463, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`reverseRichText(rt)` 逆順 helper を追加** — RichText の各 run の text を反転 (Array.from + reverse + join, code-point safe) し、run 順序も反転した新しい RichText を返す。`richTextToString(rt).split('').reverse().join('')` の文字列等価動作だが run-level の font は (反転位置にあわせて) 移動する。
+  1. `src/cell/rich-text.ts` に `reverseRichText(rt: RichText): RichText` を export 追加: 各 run を `makeTextRun(Array.from(r.text).reverse().join(''), r.font)` として再生成 → 配列を `.reverse()` → `makeRichText`。
+  2. `src/cell/index.ts` (= subpath barrel) から `reverseRichText` を re-export。
+  3. `tests/phase-2/rich-text-reverse.test.ts` 4 件: 単一 run 反転 (font 維持) / 複数 run 反転 (順序+各 run text 両方反転) / 空 RichText で空 / `splitRichTextRuns` 経由でも結果一致。
+
+  empirical: 2463 tests pass (was 2459, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`replaceAllRichText(rt, search, replacement)` 全置換 helper を追加** — `findRichTextIndex` + `replaceRichText` の primitive を組み合わせた高レベル helper。`search: string` の全出現を `replacement: RichText | string` で置換した新しい RichText を返す。空 `search` は no-op (input そのまま)。
+  1. `src/cell/rich-text.ts` に `replaceAllRichText(rt: RichText, search: string, replacement: RichText | string): RichText` を export 追加: ループで `findRichTextIndex` → `replaceRichText`、search.length 分 fromIndex 進める。replacement の length は新 fromIndex 計算に使用 (string なら length、RichText なら richTextLength)。空 search は input return。
+  2. `src/cell/index.ts` (= subpath barrel) から `replaceAllRichText` を re-export。
+  3. `tests/phase-2/rich-text-replace-all.test.ts` 4 件: 単一 run 内で全置換 / 複数 run 跨ぎ全置換 / RichText replacement で font 維持 / 空 search で no-op。
+
+  empirical: 2459 tests pass (was 2455, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`findRichTextIndex(rt, search, fromIndex?)` 検索 helper を追加** — `richTextToString(rt).indexOf(search, fromIndex)` の thin wrapper だが、内部で string concat を 1 回しか行わない (毎回ループ inline)。string 内の最初の出現位置 (見つからなければ -1) を返す ergonomic helper。`replaceRichText` / `sliceRichText` と組み合わせて find-and-replace の primitive となる。
+  1. `src/cell/rich-text.ts` に `findRichTextIndex(rt: RichText, search: string, fromIndex?: number): number` を export 追加: 内部で `richTextToString(rt)` を生成し `String.prototype.indexOf(search, fromIndex)` 結果を return (シンプルな実装、後で最適化可能)。空 string `''` は仕様上 `String.prototype.indexOf` と同じ semantics (常に `fromIndex` 返却)。
+  2. `src/cell/index.ts` (= subpath barrel) から `findRichTextIndex` を re-export。
+  3. `tests/phase-2/rich-text-find.test.ts` 4 件: 単一 run 内で検索 / 複数 run 跨ぎ検索 / `fromIndex` で 2nd 出現発見 / 見つからない場合 -1。
+
+  empirical: 2455 tests pass (was 2451, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`insertRichText(rt, index, insertion)` 部分挿入 helper を追加** — `replaceRichText` の cousin。`index` 位置に `insertion: RichText | string` を挿入した新しい RichText を返す。実装は `replaceRichText(rt, index, index, insertion)` の thin alias。負 index は `String.prototype.slice` 同様の semantics。
+  1. `src/cell/rich-text.ts` に `insertRichText(rt: RichText, index: number, insertion: RichText | string): RichText` を export 追加: `replaceRichText(rt, index, index, insertion)` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `insertRichText` を re-export。
+  3. `tests/phase-2/rich-text-insert.test.ts` 4 件: 中間挿入 / 先頭挿入 (index=0) / 末尾挿入 (index=length) / 負 index で末尾オフセット挿入。
+
+  empirical: 2451 tests pass (was 2447, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`replaceRichText(rt, start, end, replacement)` 部分置換 helper を追加** — `sliceRichText` の cousin。`[start, end)` 範囲を `replacement: RichText | string` で置き換えた新しい RichText を返す。`String.prototype.slice` 同様の負 index semantics。`replacement` の各 run は font を保持。
+  1. `src/cell/rich-text.ts` に `replaceRichText(rt: RichText, start: number, end: number, replacement: RichText | string): RichText` を export 追加。`sliceRichText(rt, 0, start)` と `sliceRichText(rt, end)` の前後を、string 形式 replacement は `richText(replacement)`、RichText 形式は as-is で `concatRichText` 結合。
+  2. `src/cell/index.ts` (= subpath barrel) から `replaceRichText` を re-export。
+  3. `tests/phase-2/rich-text-replace.test.ts` 5 件: string replacement で単純置換 / RichText replacement で font 保持 / 空 replacement で削除 / 負 index 処理 / 末尾まで置換 (`end >= length`)。
+
+  empirical: 2447 tests pass (was 2442, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`sliceRichText(rt, start, end?)` 部分切り出し helper を追加** — 全 run の text を 1 続きの string と見なし `[start, end)` の範囲を切り出した新しい RichText を返す ergonomic helper。各 run の font を維持しつつ run 境界を再構築する。`String.prototype.slice` semantics (負 index = `length` 加算、`end` 省略 = 末尾)。
+  1. `src/cell/rich-text.ts` に `sliceRichText(rt: RichText, start: number, end?: number): RichText` を export 追加。総長計算 → 範囲正規化 → 各 run を walk して overlap 部分のみ `makeTextRun(slice, run.font)` で生成 → `makeRichText`。空 result は空 RichText 返却。最後に `mergeAdjacentRichTextRuns` は呼ばない (caller の責務、API minimal 維持)。
+  2. `src/cell/index.ts` (= subpath barrel) から `sliceRichText` を re-export。
+  3. `tests/phase-2/rich-text-slice.test.ts` 5 件: 単一 run slice (font 維持) / 複数 run 跨ぎ / 負 index / `end` 省略で末尾まで / start>=end (or 範囲外) で空 RichText。
+
+  empirical: 2442 tests pass (was 2437, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`mergeAdjacentRichTextRuns(rt)` 隣接 run 融合 helper を追加** — 隣接する 2 run の font が「同一」(deep-equal) なら text を結合して 1 run にした新しい RichText を返す ergonomic helper。`splitRichTextRuns` の対 (再構築) 用途、また「per-run font cycling 後の cleanup」「concat 後の compact 化」に使う。
+  1. `src/cell/rich-text.ts` に `mergeAdjacentRichTextRuns(rt: RichText): RichText` を export 追加。font 比較は `JSON.stringify(font ?? null)` (key 順依存だが現状の InlineFont は writer 側の attribute 順で生成されるので実害なし) で簡易比較。空 RichText は空。
+  2. `src/cell/index.ts` (= subpath barrel) から `mergeAdjacentRichTextRuns` を re-export。
+  3. `tests/phase-2/rich-text-merge-runs.test.ts` 4 件: font なし同士の merge / 同 font の merge / 異 font は維持 / split → merge round-trip で同 font 連続 run が圧縮されること。
+
+  empirical: 2437 tests pass (was 2433, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`splitRichTextRuns(rt)` 単一文字 run 化 helper を追加** — RichText の各 run を 1 文字 1 run に分割した新しい RichText を返す ergonomic helper。文字単位の per-char styling/iteration の前処理 (e.g. typewriter アニメーション、character-by-character font cycling) を意図。
+  1. `src/cell/rich-text.ts` に `splitRichTextRuns(rt: RichText): RichText` を export 追加: 各 run の `text` を `Array.from(run.text)` (code-point split) で iterate し、各 code-point ごとに `makeTextRun(ch, run.font)` を生成 → `makeRichText` で freeze。
+  2. `src/cell/index.ts` (= subpath barrel) から `splitRichTextRuns` を re-export。
+  3. `tests/phase-2/rich-text-split-runs.test.ts` 4 件: 単一 ASCII run を 1 文字単位に分割 (font 引き継ぎ) / 複数 run 跨ぎ / 空 run 込み (`text: ''` の run は drop) / 空 RichText で空 RichText 返却。
+
+  empirical: 2433 tests pass (was 2429, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`applyFontToRichText(rt, font)` bulk font helper を追加** — `mapRichTextRuns` 上で「全 run の font をマージ (per-run font 優先)」する shorthand。`makeTextRun(r.text, { ...font, ...r.font })` 相当を全 run に適用。
+  1. `src/cell/rich-text.ts` に `applyFontToRichText(rt: RichText, font: InlineFont): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text, font: { ...font, ...(r.font ?? {}) } }))`。run 自身の font フィールドが優先される。
+  2. `src/cell/index.ts` (= subpath barrel) から `applyFontToRichText` を re-export。
+  3. `tests/phase-2/rich-text-apply-font.test.ts` 3 件: 全 run に共通 font 付与 (font なし run のみ) / per-run font が共通 font より優先される / 空 RichText で空 RichText 返却。
+
+  empirical: 2429 tests pass (was 2426, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`mapRichTextRuns(rt, fn)` 写像 helper を追加** — 各 TextRun に `fn(run, index) => TextRun | { text, font? }` を適用し新しい frozen RichText を返す ergonomic helper。run 単位の bulk 加工 (e.g. 全 run に `b: true` を足す) に使う。
+  1. `src/cell/rich-text.ts` に `mapRichTextRuns(rt: RichText, fn: (run: TextRun, index: number) => TextRun | { text: string; font?: InlineFont }): RichText` を export 追加。`Array.from(rt, fn)` → `makeRichText`。
+  2. `src/cell/index.ts` (= subpath barrel) から `mapRichTextRuns` を re-export。
+  3. `tests/phase-2/rich-text-map-runs.test.ts` 3 件: 全 run に bold を加える / index アクセス確認 / 空 RichText で空 RichText 返却。
+
+  empirical: 2426 tests pass (was 2423, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextLength(rt)` 文字数 helper を追加** — RichText 全体の合計文字数 (各 run.text.length の和) を返す ergonomic helper。`richTextToString(rt).length` と等価だが string 一時生成を回避できる軽量実装。
+  1. `src/cell/rich-text.ts` に `richTextLength(rt: RichText): number` を export 追加: `for of` で各 `r.text.length` 合算。surrogate pair 等 code-unit semantics で十分 (Excel character count も UTF-16 code units 基準)。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextLength` を re-export。
+  3. `tests/phase-2/rich-text-length.test.ts` 3 件: 空 RichText で 0 / 単一 run / 複数 run の合算。
+
+  empirical: 2423 tests pass (was 2420, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`concatRichText(...parts)` 結合 helper を追加** — 任意個の `RichText | string | TextRun` を flat に連結し新しい frozen RichText を返す ergonomic helper。string は font なしの 1 run、TextRun は単独 run、RichText は run 配列を spread。
+  1. `src/cell/rich-text.ts` に `concatRichText(...parts: ReadonlyArray<RichText | string | TextRun>): RichText` を export 追加。各 part を判別 (`typeof === 'string'` / `'text' in obj` で TextRun / それ以外は RichText 配列) して合算 → `makeRichText` に渡す。
+  2. `src/cell/index.ts` (= subpath barrel) から `concatRichText` を re-export。
+  3. `tests/phase-2/rich-text-concat.test.ts` 4 件: 全 string / 全 RichText / 混在 (string + TextRun + RichText) / 0 引数で空 RichText (length 0)。
+
+  empirical: 2420 tests pass (was 2416, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`appendRichTextRun(rt, text, font?)` immutable append helper を追加** — 既存 RichText 末尾に新 run を追加した新しい frozen RichText を返す ergonomic helper。`makeRichText([...rt, makeTextRun(text, font)])` のラッパ。
+  1. `src/cell/rich-text.ts` に `appendRichTextRun(rt: RichText, text: string, font?: InlineFont): RichText` を export 追加: `makeRichText([...rt, makeTextRun(text, font)])` を return。`text` 非 string なら `makeTextRun` 側で TypeError。
+  2. `src/cell/index.ts` (= subpath barrel) から `appendRichTextRun` を re-export。
+  3. `tests/phase-2/rich-text-append-run.test.ts` 3 件: 通常 (1-run → 2-run) / font 付き append / 入力 RichText を mutate しない (frozen 保持)。
+
+  empirical: 2416 tests pass (was 2413, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richText(text, font?)` 単体 RichText shortcut を追加** — 1-run RichText を作る ergonomic helper。`makeRichText([{ text, font }])` のラッパ。`richTextRun` の cousin として「最短で 1-run の RichText 値を組む」用途。
+  1. `src/cell/rich-text.ts` に `richText(text: string, font?: InlineFont): RichText` を export 追加: `makeRichText([font !== undefined ? { text, font } : { text }])` を return。`text` 非 string で TypeError。
+  2. `src/cell/index.ts` (= subpath barrel) から `richText` を re-export。
+  3. `tests/phase-2/rich-text-shortcut.test.ts` 3 件: `richText(text)` で 1-run RichText / `richText(text, font)` で font 付き / 非 string で throw。
+
+  empirical: 2413 tests pass (was 2410, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextRun(text, font?)` 単体 export を追加** — 残タスクリストにある rich-text run builder ergo。`makeTextRun` の alias を public surface に追加するだけ。
+  1. `src/cell/index.ts` (= subpath barrel) に `export { makeTextRun as richTextRun } from './rich-text';` を追加。`makeTextRun` も従来通り export 維持。
+  2. `tests/phase-2/rich-text-run-alias.test.ts` 2 件: `richTextRun(text)` で TextRun 生成 / `richTextRun(text, font)` で font 付き run。
+  3. PROGRESS.md 残タスク欄から `richTextRun` 行を削除 (済み判定)。
+
+  empirical: 2410 tests pass (was 2408, +2)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`createWorkbookFromJsonString(json, opts?)` factory を追加** — `parseJsonStringToWorkbook` の workbook factory ラッパ。`createWorkbookFromCsv` / `createWorkbookFromObjects` の JSON 版。
+  1. `src/workbook/workbook.ts` に `createWorkbookFromJsonString(json, opts?)` を追加: `createWorkbook()` → `parseJsonStringToWorkbook(wb, json, opts)`、return wb。空 wb の場合は最低 1 sheet (`opts?.fallbackSheetTitle ?? 'Sheet1'`) を保証 (Excel は 1 sheet 必須)。
+  2. opts は `ParseJsonStringToWorkbookOptions` を継承 + `fallbackSheetTitle?: string` + `date1904?: boolean`。
+  3. `src/workbook/index.ts` から re-export (factory + Options 型)。
+  4. `tests/phase-3/create-workbook-from-json-string.test.ts` 4 件: 通常 (複数 sheet) / 空 `'{}'` で fallback 'Sheet1' / opts.fallbackSheetTitle / opts.topLeft 連携。
+
+  empirical: 2408 tests pass (was 2404, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`parseJsonStringToWorkbook(wb, json, opts?)` を追加** — `getWorkbookAsJsonString` の inverse。`{ "<sheetTitle>": [...rows] }` shape の 1 本の JSON ドキュメントを読んで、各 sheet を `addWorksheet` + `parseJsonToRange` で復元する。
+  1. `src/workbook/workbook.ts` に `parseJsonStringToWorkbook(wb, json, opts?)` を追加: `JSON.parse` (string) → object key 順に `addWorksheet(wb, title)` → `parseJsonToRange(ws, opts?.topLeft ?? 'A1', rows)` で書き込み。既存 sheet と title 衝突した場合は throw (`opts?.replace = true` でリプレース mode)。
+  2. opts: `{ topLeft?: string; replace?: boolean; keys?: Record<string, string[]> }`。`keys` は sheet 単位の column header 順 override (各 sheet の `parseJsonToRange` に渡す)。
+  3. `src/workbook/index.ts` から re-export (`parseJsonStringToWorkbook` + `ParseJsonStringToWorkbookOptions`)。
+  4. `tests/phase-3/parse-json-string-to-workbook.test.ts` 5 件 + `tests/phase-3/workbook-json-roundtrip.test.ts` 1 件 (round-trip)。
+
+  empirical: 2404 tests pass (was 2398, +6)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`parseJsonToRange(ws, topLeft, json, opts?)` を追加** — JSON 配列 → worksheet range の inverse import。`worksheetToJson` の round-trip パートナー。
+  1. `src/worksheet/json.ts` に `parseJsonToRange(ws, topLeft, json, opts?)` を追加: `JSON.parse` (string 渡し時) → `opts.keys` or `Object.keys(rows[0])` で header 順を確定 → header row を `topLeft` から書き、続く各 row を `cellValueFromJson` で coerce してセット。空 array `undefined` 返す (no-op)。
+  2. cell value 復元規則: number / boolean / null は as-is、ISO 8601 datetime は `Date` (`/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:?\d{2})$/`)、その他 string はそのまま、object/array は `String(v)` fallback。`cellValueFromJson` を named export。
+  3. `src/worksheet/index.ts` から re-export (`parseJsonToRange` / `cellValueFromJson` / `ParseJsonToRangeOptions`)。
+  4. `tests/phase-5/parse-json-to-range.test.ts` 6 件 + `tests/phase-5/worksheet-json-roundtrip.test.ts` 2 件 (basic + Date round-trip)。
+
+  empirical: 2398 tests pass (was 2390, +8)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`getWorkbookAsJsonString(wb, opts?)` を追加** — JSON export matrix の最後の 1 ピース。Record を 1 本の JSON ドキュメントに結合 (`{ "<sheetTitle>": [...rows] }`)。
+  1. `src/workbook/workbook.ts` に `getWorkbookAsJsonString(wb, opts?)` を追加: iterWorksheets walk で `Record<string, JsonRow[]>` を組み立て (chartsheet skip / 空 sheet は `[]`)、`JSON.stringify(..., null, opts.pretty ? 2 : undefined)`。row 値は `worksheetToJson` と同じ coercion (Date→ISO / formula→cached or text / duration→ms / error→code / rich-text→concat text)。
+  2. `getWorksheetAsJson` の cell-coercion ロジックを再利用しやすくするため、`src/worksheet/json.ts` から `cellValueAsJson` を named export して共有 (or 新 helper `worksheetRowsAsJson(ws, opts?)` を追加して内部利用)。 → 後者を採用 + `getWorksheetRowsAsJson` も追加 (ext → JsonRow[])。`JsonValue` / `JsonRow` も export。
+  3. `src/workbook/index.ts` から re-export。
+  4. `tests/phase-3/workbook-as-json-string.test.ts` 5 件: 通常 (複数 sheet) / 空 wb は `'{}'` / 空 sheet は `[]` 値 / opts.pretty / chartsheet skip。
+
+  empirical: 2390 tests pass (was 2385, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`getWorksheetAsJson(ws, opts?)` + `getWorkbookAsJsonRecord(wb, opts?)` を追加** — JSON export matrix の per-sheet shortcut + workbook Record。
+  1. `src/worksheet/json.ts` に `getWorksheetAsJson(ws, opts?)` を追加: getDataExtent → boundariesToRangeString → worksheetToJson。空 ws は `'[]'`。
+  2. `src/workbook/workbook.ts` に `getWorkbookAsJsonRecord(wb, opts?)` を追加: iterWorksheets + getWorksheetAsJson → Record (chartsheet skip)。
+  3. `src/worksheet/index.ts` + `src/workbook/index.ts` から re-export。
+  4. `tests/phase-5/worksheet-as-json.test.ts` 4 件 (通常 / 空 sheet '[]' / sparse / opts.pretty) + `tests/phase-3/workbook-as-json-record.test.ts` 4 件 (通常 / 空 sheet / 空 wb / chartsheet skip)。
+
+  empirical: 2385 tests pass (was 2377, +8)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`worksheetToJson(ws, range, opts?)` を追加** — readRangeAsObjects → JSON.stringify (export matrix に JSON を追加)。
   1. `src/worksheet/json.ts` 新規: readRangeAsObjects → JSON.stringify。`opts.pretty` で 2-space indent。Date は ISO、cell の独自オブジェクト (formula / rich-text / duration / error) は値型 mapping (formula→cachedValue or formula text、duration→ms、error→code、rich-text→concat text)。
-  2. `src/index.ts` から re-export。
+  2. `src/worksheet/index.ts` (= subpath barrel) から re-export。
   3. `tests/phase-5/worksheet-to-json.test.ts` 5 件: 通常 / pretty 改行 / Date / formula cached / rich-text concat。
 
-- **次のタスク (前回)**: **export-format smoke test (CSV/HTML/MD/Text 全部 record exercise)**。
+  empirical: 2377 tests pass (was 2371, +6)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **export-format smoke test (CSV/HTML/MD/Text 全部 record exercise)**。
   1. `tests/phase-3/workbook-export-formats-smoke.test.ts` 新規: 自前 wb 生成 + 4 record export + bundle + describeWorkbook を一気に走らせる integration check。
   2. 新 helper 不要。
 
@@ -715,7 +1070,7 @@
   1. phase-4 streaming reader real-fixture acceptance (`genuine/sample.xlsx` SAX iter ↔ eager loadWorkbook 座標一致 + `empty-with-styles.xlsx` minRow/maxRow band フィルタ) — `tests/phase-4/read-only-genuine.test.ts` 2件
   2. iterRows 早期終了 + cell-skip 最適化 (currentRow > maxRow で generator return、band 外 row の `<c>` attrs パース skip)
   3. public API 露出整備: `src/index.ts` に Cell / Worksheet / Workbook helpers + Style 値オブジェクト群 (`setCell` / `addWorksheet` / `createWorkbook` / formula helpers / `makeRichText` / `setCellFont` / `makeFont` / `makePatternFill` etc.) を re-export、`src/zip/index.ts` に `StreamingEntryWriter` 追加、`src/styles/index.ts` を新設
-  4. `README.md` 修正 (full-lib 例の `fromBuffer` を `openxml-js/node` から import するよう split)、`tests/phase-3/readme-examples.test.ts` 5件で 5 つの README 例を public API に対して smoke-test
+  4. `README.md` 修正 (full-lib 例の `fromBuffer` を `xlsx-kit/node` から import するよう split)、`tests/phase-3/readme-examples.test.ts` 5件で 5 つの README 例を public API に対して smoke-test
   5. edge-fixture deep-assert 4件追加: comments.xlsx (per-sheet legacyComments 数 6/0/1) / hyperlink.xlsx (外部 URL ref) / test_datetime.xlsx (numeric serial round-trip) / legacy_drawing.xlsm (control VML + ctrlProps セット)
   6. UTF-8 round-trip テスト 2件 (`workbook_russian_code_name.xml` の `codeName="ЭтаКнига"` / synthetic 多言語 + emoji)
   7. max-coord (XFD1048576) round-trip 2件 (単一最大セル + 4 隅の sparse spread)
@@ -1565,7 +1920,7 @@
   1. **`22-grouping-outline.xlsx`**: row outline (Q1 detail rows 3..6 / Q2 detail rows 8..11 を level=1 にして collapsible に)、column outline (C..D を level=1)、column hidden (F)、custom width (A=22 / B=14 / C=12 / D=12 / E=12) + custom row height (subtotal rows 22pt / total row 26pt)。Excel の outline buttons (列ヘッダ上 / 行番号左の "1/2" toggle) と Format→Unhide が両方使える。
   2. **`23-page-setup.xlsx`**: `bodyExtras.afterSheetData` 経路で `<printOptions horizontalCentered=1 gridLines=1>` / `<pageMargins left=.5 right=.5 top=1 bottom=1>` / `<pageSetup paperSize=9 orientation=landscape fitToWidth=1 fitToHeight=0>` / `<headerFooter>` (oddHeader = `&LQuarterly&CQuarterly Report — &P / &N&R&D` / oddFooter = `&L&F&CPage &P of &N&RConfidential`) を XmlNode として注入。80 行データなので印刷プレビューが 2 ページにまたがる。
   3. **`24-multi-drawing.xlsx`**: 1 sheet に 3 drawing items 同居 — bar chart (E2)、line chart (E20)、PNG image (N2、scenario 18 と同じ tiny blue PNG) を `xl/drawings/drawing1.xml` 1 つに並べる。`makeDrawing([chartItem, chartItem, picItem])` で混在する経路を実証。
-  4. **public API 拡張**: `src/index.ts` に `setColumnWidth` / `setColumnDimension` / `hideColumn` / `setRowHeight` / `setRowDimension` / `hideRow` / `getColumnDimension` / `getRowDimension` / `addConditionalFormatting` / `addDataValidation` / `addTable` / `setHyperlink` / `setComment` / `setAutoFilter` 等を追加 (前は internal モジュールから直接 import 必要、これで `from 'openxml-js'` だけで E2E が書ける)。`ColumnDimension` / `RowDimension` 型 + `makeColumnDimension` / `makeRowDimension` も併せて exports。
+  4. **public API 拡張**: `src/index.ts` に `setColumnWidth` / `setColumnDimension` / `hideColumn` / `setRowHeight` / `setRowDimension` / `hideRow` / `getColumnDimension` / `getRowDimension` / `addConditionalFormatting` / `addDataValidation` / `addTable` / `setHyperlink` / `setComment` / `setAutoFilter` 等を追加 (前は internal モジュールから直接 import 必要、これで `from 'xlsx-kit'` だけで E2E が書ける)。`ColumnDimension` / `RowDimension` 型 + `makeColumnDimension` / `makeRowDimension` も併せて exports。
 
   empirical: `pnpm test:e2e` 24 シナリオ 25 テスト全 pass、22 (2,972 bytes) / 23 (4,823 bytes) / 24 (5,416 bytes) 生成、typecheck / lint clean。`tests/e2e/README.md` に検証チェックリスト 4 行追加 (前ターン 19/20/21 + 今回 22/23/24)。
 
@@ -1602,7 +1957,7 @@
 
 ### フェーズ1: 基盤層（[03-foundations.md](docs/plan/03-foundations.md)）
 
-- [~] §1 I/O 抽象 (Node + browser 主要経路完了)。memory: `fromBuffer` / `toBuffer` (Node) / `fromBlob` / `fromFile` (browser blob alias) / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`。Node filesystem + Readable/Writable: `src/io/node-fs.ts` の `fromFile(path)` / `fromFileSync(path)` / `toFile(path)` / `fromReadable(Readable)` / `toWritable(Writable)`。browser fetch + Web Stream: `src/io/browser.ts` の `fromResponse(Response)` (lazy `arrayBuffer()` for `toBytes`、`response.body` for `toStream`、bodyless 対応) と `fromStream(ReadableStream<Uint8Array>)` (once-only 消費 guard 付き)。Node-only path は `node:*` import を `node-fs.ts` に局所化、streaming/index.ts (browser 安全) と node.ts (`openxml-js/node` subpath) で適切に分離。50 io tests pass (memory 30 + node-fs 13 + fetch/stream 9 - 2 fromFile alias 重複)。残：ZIP64 read/write。
+- [~] §1 I/O 抽象 (Node + browser 主要経路完了)。memory: `fromBuffer` / `toBuffer` (Node) / `fromBlob` / `fromFile` (browser blob alias) / `fromArrayBuffer` / `toBlob` / `toArrayBuffer`。Node filesystem + Readable/Writable: `src/io/node-fs.ts` の `fromFile(path)` / `fromFileSync(path)` / `toFile(path)` / `fromReadable(Readable)` / `toWritable(Writable)`。browser fetch + Web Stream: `src/io/browser.ts` の `fromResponse(Response)` (lazy `arrayBuffer()` for `toBytes`、`response.body` for `toStream`、bodyless 対応) と `fromStream(ReadableStream<Uint8Array>)` (once-only 消費 guard 付き)。Node-only path は `node:*` import を `node-fs.ts` に局所化、streaming/index.ts (browser 安全) と node.ts (`xlsx-kit/node` subpath) で適切に分離。50 io tests pass (memory 30 + node-fs 13 + fetch/stream 9 - 2 fromFile alias 重複)。残：ZIP64 read/write。
 - [~] §2 ZIP 層（reader / writer 完了：reader は random-access (`src/zip/random-access-reader.ts`、CD parse + lazy `read(path)` で `inflateSync` 起動、`inflateCache` で重複展開抑制、STORE+DEFLATE 対応、ZIP64 sentinel 検知時は `unzipSync` fallback)。writer は fflate `Zip` + `ZipDeflate` / `ZipPassThrough` を使った streaming-deflate。`empty.xlsx` の 11 エントリを writer に流して再 zip → 再 read で全 path・全 bytes が一致。STORE 圧縮の compress: false パス、duplicate / post-finalize / ReadableStream 入力は OpenXmlIoError。streaming-behaviour テスト: addEntry 中に sink.write 発火 + finalize 中の central directory chunk 着信を確認。65535 entry を超える addEntry は `OpenXmlNotImplementedError` で fail-fast (fflate が ZIP64 EOCD record を出さず silently truncate するため)。reader 側は random-access tests 6 件 (out-of-order / repeat / unknown / lexical / closed / no-EOCD)。18 zip tests pass (writer 12 + reader random-access 6)。残：ZIP64 write の正式対応 (fflate 上流の制約解消後)）
 - [x] §3 XML 層（namespaces / tree / parser DOM / serializer DOM / iterParse SAX 完了：saxes 6 ベース `iterParse(SaxInput): AsyncIterableIterator<SaxEvent>`、入力は `Uint8Array | string | ReadableStream<Uint8Array>`、SaxEvent は start/end/text の discriminated union（Clark 表記名）、xmlns 宣言は attrs から落とす、DOCTYPE は事前バイト走査 + saxes の doctype event でも reject、ストリームは TextDecoder で stream:true デコード、prologue 256 文字バッファで DOCTYPE 検査、openpyxl `genuine/sample.xlsx` の `xl/worksheets/sheet1.xml` で row/cell 数 + start/end ネスト整合確認。117 tests pass。残：canonical compare helper / 大規模 round-trip は §10 testing helper の領分）
 - [x] §4 Schema 層（クラス不使用：`Schema<T>` は plain object、`AttrDef` は string/int/float/bool/enum + min/max + xmlName/xmlNs、`ElementDef` は text/object/sequence/empty の discriminated union（lazy schema getter で循環解決）、`defineSchema<T>(s)` は inference pin、`toTree<T>(value, schema): XmlNode` / `fromTree<T>(node, schema): T` は switch on kind の純粋関数。Border + Side で round-trip、bool は OOXML の `1`/`0`、loose に `true/false/t/f/0/1` を受理、`preSerialize`/`postParse` フック動作、required attribute / 範囲外 enum で OpenXmlSchemaError、container 付き sequence の `count` 属性も round-trip。127 tests pass）
@@ -1665,7 +2020,7 @@
 
 ### フェーズ7: pivot / VBA / passthrough ([09-pivot-vba.md](docs/plan/09-pivot-vba.md))
 
-- [x] §1 全体方針 (passthrough vs construction): construction API は提供せず、openpyxl が壊さない xlsx を openxml-js も壊さない range で実装。
+- [x] §1 全体方針 (passthrough vs construction): construction API は提供せず、openpyxl が壊さない xlsx を xlsx-kit も壊さない range で実装。
 - [x] §2 pivot table passthrough: `xl/pivotCache/pivotCacheDefinitionN.xml` / `pivotCacheRecordsN.xml` / `xl/pivotTables/pivotTableN.xml` を全部 bytes 保存して書き戻し (Workbook.passthrough Map)。schema 経由の編集 API は将来へ deferred。
 - [x] §3 VBA / ActiveX / OLE passthrough: `xl/vbaProject.bin` (`Workbook.vbaProject`) / `xl/vbaProjectSignature.bin` (`Workbook.vbaSignature`) は専用 slot、`xl/activeX/*` / `xl/embeddings/*` / `xl/ctrlProps/*` / `customUI/*` / `xl/drawings/*.vml` (control VML、`vmlDrawingN.vml` は除く) は passthrough Map。VBA 含む保存時は Override を `application/vnd.ms-excel.sheet.macroEnabled.main+xml` に昇格 + `bin` Default + workbook-rels に `${REL_NS}/vbaProject` 追加。
 - [x] §4 暗号化検出: openZip 入口で OLE Compound File Binary magic (`D0 CF 11 E0 A1 B1 1A E1`) を検出 → `OpenXmlNotImplementedError('Encrypted xlsx is not supported. Decrypt with msoffcrypto-tool first.')`。

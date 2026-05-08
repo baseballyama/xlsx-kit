@@ -1,15 +1,16 @@
 // Apply font, fill, alignment, and a thin border to a header row.
 
-import { saveWorkbook, toFile } from 'openxml-js/node';
+import { saveWorkbook } from 'xlsx-kit/io';
+import { toFile } from 'xlsx-kit/node';
 import {
   centerCell,
   setBold,
   setCellBackgroundColor,
   setCellBorderAll,
   setFontSize,
-} from 'openxml-js/styles';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { setCell } from 'openxml-js/worksheet';
+} from 'xlsx-kit/styles';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { setCell } from 'xlsx-kit/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Report');

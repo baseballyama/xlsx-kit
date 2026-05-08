@@ -1,8 +1,7 @@
 import { defineConfig } from 'tsdown';
 
-// One bundle per public subpath. The root `openxml-js` barrel was retired in
-// favour of section-scoped subpaths so users only pull in what they actually
-// use.
+// One bundle per public subpath. Each subpath maps 1:1 to a directory
+// under `src/`; no all-in-one barrel and no convenience re-exports.
 
 export default defineConfig({
   entry: {
@@ -25,6 +24,10 @@ export default defineConfig({
   format: ['esm'],
   target: 'es2022',
   platform: 'neutral',
+  // `node:*` builtins (used in src/io/node-fs.ts) are runtime-resolved
+  // by Node — leave them as external imports so the bundle works in
+  // both Node and browser targets without baking the implementation in.
+  external: [/^node:/],
   sourcemap: true,
   clean: true,
   treeshake: true,

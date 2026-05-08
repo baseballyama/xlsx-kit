@@ -21,7 +21,7 @@ import type { XlsxSource } from '../io/source';
 import { coordinateToTuple } from '../utils/coordinate';
 import { type Stylesheet, makeStylesheet } from '../styles/stylesheet';
 import { parseStylesheetXml } from '../styles/stylesheet-reader';
-import { resolveRelTarget } from '../public/load';
+import { resolveRelTarget } from '../io/load';
 
 const SHEET_TAG = `{${SHEET_MAIN_NS}}sheet`;
 const SHEETS_TAG = `{${SHEET_MAIN_NS}}sheets`;

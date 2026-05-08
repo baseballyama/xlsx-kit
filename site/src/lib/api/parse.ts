@@ -5,14 +5,14 @@
 import apiData from '../server/api-data.json';
 import { renderSignature, renderType, summaryToText } from './format';
 import { classify, SECTIONS } from './sections';
-import type {
-  ApiItem,
-  ApiKind,
-  ApiMember,
-  ApiModule,
-  ApiParameter,
-  ApiSection,
-  ApiSubgroup,
+import {
+  API_MODULES,
+  type ApiItem,
+  type ApiKind,
+  type ApiModule,
+  type ApiParameter,
+  type ApiSection,
+  type ApiSubgroup,
 } from './types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -34,18 +34,18 @@ function kindOf(reflection: Reflection): ApiKind | null {
       return 'function';
     case TYPEDOC_KIND.Class:
       return 'class';
-    case TYPEDOC_KIND.Interface:
-      return 'interface';
-    case TYPEDOC_KIND.TypeAlias:
-      return 'type';
+    // interface / type aliases are intentionally skipped — the API doc
+    // surfaces only callable / value-producing exports. TS users get the
+    // full type surface from their editor's autocomplete.
     default:
       return null;
   }
 }
 
+const KNOWN_MODULES: ReadonlySet<ApiModule> = new Set(API_MODULES);
+
 function moduleNameOf(name: string): ApiModule | null {
-  if (name === 'index' || name === 'streaming' || name === 'node') return name;
-  return null;
+  return KNOWN_MODULES.has(name as ApiModule) ? (name as ApiModule) : null;
 }
 
 function buildParameters(sig: Reflection | undefined): ApiParameter[] | undefined {
@@ -63,25 +63,6 @@ function buildParameters(sig: Reflection | undefined): ApiParameter[] | undefine
   });
 }
 
-function buildMembers(reflection: Reflection): ApiMember[] | undefined {
-  // Interfaces / type literals expose their fields via `children`.
-  const children: Reflection[] = reflection.children ?? [];
-  const props = children.filter(
-    (c) => c.kind === 1024 || c.kind === 2048 || c.kind === 65_536,
-  );
-  if (!props.length) return undefined;
-  return props.map((p): ApiMember => {
-    const m: ApiMember = {
-      name: p.name,
-      type: renderType(p.type),
-      optional: Boolean(p.flags?.isOptional),
-    };
-    const desc = summaryToText(p.comment?.summary);
-    if (desc) m.description = desc;
-    return m;
-  });
-}
-
 function renderItemSignature(reflection: Reflection): string {
   const kind = kindOf(reflection);
   switch (kind) {
@@ -92,19 +73,6 @@ function renderItemSignature(reflection: Reflection): string {
     }
     case 'class':
       return `class ${reflection.name}`;
-    case 'interface': {
-      const members = reflection.children ?? [];
-      if (!members.length) return `interface ${reflection.name} {}`;
-      const lines = members.map((m: Reflection) => {
-        const opt = m.flags?.isOptional ? '?' : '';
-        const ro = m.flags?.isReadonly ? 'readonly ' : '';
-        return `  ${ro}${m.name}${opt}: ${renderType(m.type)};`;
-      });
-      return `interface ${reflection.name} {\n${lines.join('\n')}\n}`;
-    }
-    case 'type': {
-      return `type ${reflection.name} = ${renderType(reflection.type)}`;
-    }
     case 'variable': {
       const t = renderType(reflection.type);
       return `const ${reflection.name}: ${t}`;
@@ -156,19 +124,6 @@ function buildItem(reflection: Reflection, module: ApiModule): ApiItem | null {
     }
   }
 
-  if (kind === 'interface') {
-    const members = buildMembers(reflection);
-    if (members) item.members = members;
-  }
-
-  if (kind === 'type') {
-    // Type literal aliases get their members rendered as a table too.
-    if (reflection.type?.type === 'reflection') {
-      const members = buildMembers(reflection.type.declaration);
-      if (members) item.members = members;
-    }
-  }
-
   return item;
 }
 
@@ -206,14 +161,12 @@ export function loadApiSections(): ApiSection[] {
     }
   }
 
-  // Sort items inside each section: classes / interfaces / types first
-  // (most browsable), then functions, then variables. Alphabetical ties.
+  // Sort items inside each section: functions first (the typical entry
+  // point), then classes, then variables. Alphabetical ties.
   const KIND_ORDER: Record<ApiKind, number> = {
-    class: 0,
-    interface: 1,
-    type: 2,
-    function: 3,
-    variable: 4,
+    function: 0,
+    class: 1,
+    variable: 2,
   };
   for (const items of buckets.values()) {
     items.sort((a, b) => {

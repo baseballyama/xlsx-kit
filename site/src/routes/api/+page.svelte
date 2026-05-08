@@ -6,14 +6,14 @@
 </script>
 
 <svelte:head>
-  <title>API reference — openxml-js</title>
+  <title>API reference — xlsx-kit</title>
 </svelte:head>
 
 <div class="content">
   <h1>API reference</h1>
   <p class="lede">
-    Every public export of <code>openxml-js</code>, <code>openxml-js/streaming</code>, and
-    <code>openxml-js/node</code>, organized by section. Generated from the source via typedoc
+    Every public export of <code>xlsx-kit</code>, <code>xlsx-kit/streaming</code>, and
+    <code>xlsx-kit/node</code>, organized by section. Generated from the source via typedoc
     and rendered inline so types stay in lockstep with the package.
   </p>
 

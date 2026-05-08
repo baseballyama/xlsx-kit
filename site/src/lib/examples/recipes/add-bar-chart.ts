@@ -1,10 +1,11 @@
 // Add a clustered column chart driven by a data range on the same sheet.
 
-import { makeBarChart, makeBarSeries, makeChartSpace } from 'openxml-js/chart';
-import { addChartAt } from 'openxml-js/drawing';
-import { saveWorkbook, toFile } from 'openxml-js/node';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { setCell } from 'openxml-js/worksheet';
+import { makeBarChart, makeBarSeries, makeChartSpace } from 'xlsx-kit/chart';
+import { addChartAt } from 'xlsx-kit/drawing';
+import { saveWorkbook } from 'xlsx-kit/io';
+import { toFile } from 'xlsx-kit/node';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { setCell } from 'xlsx-kit/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Sales');

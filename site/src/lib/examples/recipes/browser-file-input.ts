@@ -2,8 +2,7 @@
 // fromBlob is streaming, so the workbook starts parsing while the file
 // is still being read.
 
-import { loadWorkbook } from 'openxml-js/io';
-import { fromBlob } from 'openxml-js/streaming';
+import { fromBlob, loadWorkbook } from 'xlsx-kit/io';
 
 export async function loadFromInput(input: HTMLInputElement) {
   const file = input.files?.[0];

@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "openxml-js",
+  "name": "xlsx-kit",
   "entryPoints": [
     "src/cell/index.ts",
     "src/chart/index.ts",

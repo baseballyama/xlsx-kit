@@ -1,6 +1,6 @@
 // Phase 6 §10 acceptance: every chart kind we model — 16 legacy `c:` +
 // 8 chartex `cx:` = 24 distinct kinds (the docs/plan calls this "25" but
-// counts Pie + Pie3D + OfPie as three slots; openxml-js implements the
+// counts Pie + Pie3D + OfPie as three slots; xlsx-kit implements the
 // same set). Each chart goes through workbookToBytes → loadWorkbook and
 // the loaded chart's kind / key attributes must match what we wrote.
 
@@ -43,8 +43,8 @@ import {
 import { makeTwoCellAnchor } from '../../src/drawing/anchor';
 import { makeChartDrawingItem, makeDrawing } from '../../src/drawing/drawing';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 const VAL: { ref: string } = { ref: 'A1:A4' };

@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
+import { loadWorkbook } from '../../src/io/load';
 import { loadWorkbookStream } from '../../src/streaming/read-only';
 
 const FIXTURE = (rel: string): Uint8Array =>

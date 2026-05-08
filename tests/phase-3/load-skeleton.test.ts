@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook, parseSheetEntries, resolveRelTarget } from '../../src/public/load';
+import { loadWorkbook, parseSheetEntries, resolveRelTarget } from '../../src/io/load';
 import { parseXml } from '../../src/xml/parser';
 
 const here = dirname(fileURLToPath(import.meta.url));

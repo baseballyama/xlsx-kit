@@ -13,8 +13,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { FormulaValue } from '../../src/cell/cell';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { getCell, iterRows, type Worksheet } from '../../src/worksheet/worksheet';
 
 const here = dirname(fileURLToPath(import.meta.url));

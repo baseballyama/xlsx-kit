@@ -1,8 +1,8 @@
-# openxml-js
+# xlsx-kit
 
-A TypeScript port of [openpyxl](https://openpyxl.readthedocs.io/) — read and
-write Excel `.xlsx` workbooks from Node 18+ and modern browsers, with no
-runtime dependencies on Python or Excel.
+A TypeScript library for reading and writing Excel `.xlsx` workbooks
+from Node 18+ and modern browsers, with no runtime dependencies on
+Python or Excel. Inspired by [openpyxl](https://openpyxl.readthedocs.io/).
 
 > **Status: pre-1.0 alpha.** The core read / write / streaming pipeline is
 > in place and round-trips real-world fixtures (including pivot tables and
@@ -13,7 +13,7 @@ runtime dependencies on Python or Excel.
 ## Install
 
 ```sh
-pnpm add openxml-js   # or npm / yarn / bun
+pnpm add xlsx-kit   # or npm / yarn / bun
 ```
 
 Requires Node `>=18.18` for the built-in `Web Streams`, `Blob`, and `fetch`
@@ -21,30 +21,47 @@ globals.
 
 ## Subpath entries
 
-| Import                | Use case                                          |
-|-----------------------|---------------------------------------------------|
-| `openxml-js`          | Full library (workbook model, charts, drawings).  |
-| `openxml-js/streaming`| Read-only iter + write-only append. Browser-safe. |
-| `openxml-js/node`     | Filesystem / Readable / Writable + the full lib.  |
+The package has no root barrel — every export lives behind a section
+subpath, so your editor's autocomplete only surfaces what's relevant to
+the area you're working in. Each export has exactly one home (no
+convenience re-exports).
+
+| Import                 | Use case                                          |
+|------------------------|---------------------------------------------------|
+| `xlsx-kit/io`           | `loadWorkbook` / `saveWorkbook` / `workbookToBytes` plus byte-level Source/Sink + browser helpers (Blob/Response/Stream) |
+| `xlsx-kit/node`         | Node fs glue (`fromFile` / `toFile` / `fromBuffer` / `toBuffer` / `fromReadable` / `toWritable`) |
+| `xlsx-kit/streaming`    | Read-only iter (`loadWorkbookStream`) + write-only append (`createWriteOnlyWorkbook`) |
+| `xlsx-kit/workbook`     | `createWorkbook`, `addWorksheet`, defined names   |
+| `xlsx-kit/worksheet`    | `setCell`, `getCell`, `mergeCells`, tables, …     |
+| `xlsx-kit/cell`         | Cell value-model + inline rich text               |
+| `xlsx-kit/styles`       | Fonts, fills, borders, alignment, number formats  |
+| `xlsx-kit/chart`        | `c:` and `cx:` chart kinds                        |
+| `xlsx-kit/chartsheet`   | Standalone chartsheets                            |
+| `xlsx-kit/drawing`      | Anchors, images, chart placement                  |
+
+Other subpaths: `xlsx-kit/packaging`, `xlsx-kit/utils`, `xlsx-kit/xml`,
+`xlsx-kit/zip`, `xlsx-kit/schema`. All exports are tree-shakable
+(`"sideEffects": false`).
 
 Bundle budgets (min + brotli):
 
-- `openxml-js`           ≤ 120 KB   (currently ~78 KB)
-- `openxml-js/streaming` ≤ 80 KB    (currently ~47 KB)
+- `xlsx-kit/streaming` ≤ 80 KB    (currently ~49 KB)
+- `xlsx-kit/io` ≤ 120 KB           (currently ~85 KB)
 
 ## Quick examples
 
-### Read + edit + write (full library)
+### Read + edit + write
 
 ```ts
-import { loadWorkbook, workbookToBytes, setCell } from 'openxml-js';
-import { fromBuffer } from 'openxml-js/node';
+import { loadWorkbook, workbookToBytes } from 'xlsx-kit/io';
+import { setCell } from 'xlsx-kit/worksheet';
+import { fromBuffer } from 'xlsx-kit/node';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const wb = await loadWorkbook(fromBuffer(await readFile('input.xlsx')));
-const sheet = wb.sheets[0]?.sheet;
-if (sheet?.title) {
-  setCell(sheet, /* row */ 1, /* col */ 1, 'Hello from openxml-js');
+const sheet = wb.sheets[0];
+if (sheet?.kind === 'worksheet') {
+  setCell(sheet.sheet, /* row */ 1, /* col */ 1, 'Hello from xlsx-kit');
 }
 await writeFile('output.xlsx', await workbookToBytes(wb));
 ```
@@ -52,7 +69,8 @@ await writeFile('output.xlsx', await workbookToBytes(wb));
 ### Read directly from disk (Node)
 
 ```ts
-import { fromFile, loadWorkbook, saveWorkbook, toFile } from 'openxml-js/node';
+import { loadWorkbook, saveWorkbook } from 'xlsx-kit/io';
+import { fromFile, toFile } from 'xlsx-kit/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 // …mutate wb…
@@ -62,8 +80,7 @@ await saveWorkbook(wb, toFile('output.xlsx'));
 ### Read directly from a `fetch` response (browser)
 
 ```ts
-import { fromResponse } from 'openxml-js/streaming';
-import { loadWorkbook } from 'openxml-js';
+import { fromResponse, loadWorkbook } from 'xlsx-kit/io';
 
 const response = await fetch('/sheet.xlsx');
 const wb = await loadWorkbook(fromResponse(response));
@@ -72,8 +89,8 @@ const wb = await loadWorkbook(fromResponse(response));
 ### Streaming write — millions of rows in a fixed memory budget
 
 ```ts
-import { createWriteOnlyWorkbook } from 'openxml-js/streaming';
-import { toFile } from 'openxml-js/node';
+import { createWriteOnlyWorkbook } from 'xlsx-kit/streaming';
+import { toFile } from 'xlsx-kit/node';
 
 const sink = toFile('big.xlsx');
 const wb = await createWriteOnlyWorkbook(sink);
@@ -93,8 +110,8 @@ to disk chunk-by-chunk.
 ### Streaming read — iterate huge sheets without loading them
 
 ```ts
-import { fromFile } from 'openxml-js/node';
-import { loadWorkbookStream } from 'openxml-js/streaming';
+import { loadWorkbookStream } from 'xlsx-kit/streaming';
+import { fromFile } from 'xlsx-kit/node';
 
 const wb = await loadWorkbookStream(fromFile('big.xlsx'));
 const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');
@@ -124,14 +141,8 @@ await wb.close();
   extras and per-sheet rels chain are preserved end-to-end.
 - ✅ Encrypted xlsx detection (CFB Compound Document magic): clear error
   pointing at `msoffcrypto-tool` for decryption.
-
-## What's not (yet)
-
-- Random-access streaming reader for sub-sheet cell ranges (the SAX iter
-  API is in place; per-cell random access is buffered).
-- ZIP64 write — fflate's writer doesn't emit the ZIP64 EOCD record, so we
-  fail-fast on > 65 535 entries. Read works.
-- Excel for Mac / LibreOffice / Google Sheets visual QA at scale.
+- ✅ ZIP64 write: workbooks with > 65 535 entries get a ZIP64 EOCD record +
+  locator spliced into the final chunk. Read works too.
 
 ## Development
 
@@ -140,14 +151,14 @@ clone with submodules (or run `pnpm install`, which auto-inits via the
 `prepare` script):
 
 ```sh
-git clone --recursive https://github.com/baseballyama/openxml-js.git
+git clone --recursive https://github.com/baseballyama/xlsx-kit.git
 # or, if you already cloned without --recursive:
 git submodule update --init --recursive
 
 pnpm install
 pnpm typecheck
 pnpm lint
-pnpm test          # vitest, ~1100 tests
+pnpm test          # vitest, ~2100 tests
 pnpm test:perf     # write-only throughput + heap-budget bench
 pnpm build         # tsdown + tsc → dist/
 pnpm size          # size-limit guards on each bundle

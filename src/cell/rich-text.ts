@@ -1,10 +1,8 @@
-// Inline rich-text runs. Mirrors openpyxl/openpyxl/cell/rich_text.py +
-// cell/text.py.
+// Inline rich-text runs.
 //
 // A rich-text cell value is `{ kind: 'rich-text', runs }`. Each run is
 // a string segment with an optional InlineFont describing the in-line
 // formatting (font name, size, bold / italic / underline, colour, …).
-//
 // Run-level fields use OOXML's short attribute names (`sz`, `b`, `i`,
 // `u`) so the writer can splice them into `<rPr>` directly without
 // renaming.

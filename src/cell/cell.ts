@@ -10,7 +10,7 @@
 import { columnLetterFromIndex, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { ERROR_CODES } from '../utils/inference';
-import type { RichText } from './rich-text';
+import { type RichText, richTextToString } from './rich-text';
 
 /** Excel error tokens. */
 export type ExcelErrorCode = '#NULL!' | '#DIV/0!' | '#VALUE!' | '#REF!' | '#NAME?' | '#NUM!' | '#N/A' | '#GETTING_DATA';
@@ -253,17 +253,32 @@ export function makeDurationValue(ms: number): { kind: 'duration'; ms: number } 
 
 /** True iff `c.value` is the formula variant. */
 export function isFormulaCell(c: Cell): boolean {
-  return typeof c.value === 'object' && c.value !== null && (c.value as { kind?: string }).kind === 'formula';
+  return isFormulaValue(c.value);
 }
 
 /** True iff `c.value` is the rich-text variant. */
 export function isRichTextCell(c: Cell): boolean {
-  return typeof c.value === 'object' && c.value !== null && (c.value as { kind?: string }).kind === 'rich-text';
+  return isRichTextValue(c.value);
 }
 
 /** Returns true iff the cell has no content. */
 export function isEmptyCell(c: Cell): boolean {
   return c.value === null;
+}
+
+/**
+ * Type guard for `MergedCell` — true iff the cell is a placeholder for
+ * a merged-range covered cell (the top-left of a merged range holds
+ * the value; the rest are `MergedCell`). Use this to filter merge-
+ * placeholders out of value-walking loops.
+ */
+export function isMergedCell(c: Cell): c is MergedCell {
+  return (c as MergedCell).merged === true;
+}
+
+/** Returns true iff the cell holds an Excel error value (`#REF!`, `#NAME?`, …). */
+export function isErrorCell(c: Cell): boolean {
+  return isErrorValue(c.value);
 }
 
 /**
@@ -319,11 +334,7 @@ export function cellValueAsString(v: CellValue): string {
   if (typeof v === 'string') return v;
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   if (v instanceof Date) return v.toISOString();
-  if (isRichTextValue(v)) {
-    let s = '';
-    for (const r of v.runs) s += r.text;
-    return s;
-  }
+  if (isRichTextValue(v)) return richTextToString(v.runs);
   if (isFormulaValue(v)) {
     if (v.cachedValue === undefined) return '';
     return typeof v.cachedValue === 'string' ? v.cachedValue : String(v.cachedValue);

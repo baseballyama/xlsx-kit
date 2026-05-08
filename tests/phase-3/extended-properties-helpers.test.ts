@@ -9,8 +9,8 @@ import {
   setWorkbookHyperlinkBase,
   setWorkbookManager,
 } from '../../src/packaging/extended';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('extended-properties helpers', () => {
@@ -19,13 +19,13 @@ describe('extended-properties helpers', () => {
     expect(wb.appProperties).toBeUndefined();
     setWorkbookCompany(wb, 'Anthropic');
     setWorkbookManager(wb, 'Alice');
-    setWorkbookApplication(wb, 'openxml-js');
+    setWorkbookApplication(wb, 'xlsx-kit');
     setWorkbookAppVersion(wb, '0.1.0');
     setWorkbookHyperlinkBase(wb, 'https://docs.example.com/');
     expect(wb.appProperties).toEqual({
       company: 'Anthropic',
       manager: 'Alice',
-      application: 'openxml-js',
+      application: 'xlsx-kit',
       appVersion: '0.1.0',
       hyperlinkBase: 'https://docs.example.com/',
     });
@@ -43,13 +43,13 @@ describe('extended-properties helpers', () => {
     addWorksheet(wb, 'A');
     setWorkbookCompany(wb, 'Anthropic');
     setWorkbookManager(wb, 'Alice');
-    setWorkbookApplication(wb, 'openxml-js');
+    setWorkbookApplication(wb, 'xlsx-kit');
     setWorkbookHyperlinkBase(wb, 'https://example.com/');
     const bytes = await workbookToBytes(wb);
     const wb2 = await loadWorkbook(fromBuffer(bytes));
     expect(wb2.appProperties?.company).toBe('Anthropic');
     expect(wb2.appProperties?.manager).toBe('Alice');
-    expect(wb2.appProperties?.application).toBe('openxml-js');
+    expect(wb2.appProperties?.application).toBe('xlsx-kit');
     expect(wb2.appProperties?.hyperlinkBase).toBe('https://example.com/');
   });
 

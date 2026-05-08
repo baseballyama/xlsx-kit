@@ -105,9 +105,10 @@ export async function* iterParse(input: SaxInput): AsyncIterableIterator<SaxEven
   });
 
   const drain = function* (): IterableIterator<SaxEvent> {
-    while (queue.length > 0) {
-      // biome-ignore lint/style/noNonNullAssertion: length checked
-      yield queue.shift()!;
+    for (;;) {
+      const ev = queue.shift();
+      if (ev === undefined) return;
+      yield ev;
     }
   };
 

@@ -11,8 +11,8 @@ import {
   setWorkbookSubject,
   setWorkbookTitle,
 } from '../../src/packaging/core';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
 
 describe('coreProperties ergonomic helpers', () => {

@@ -2,8 +2,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../../src/io/node';
-import { loadWorkbook } from '../../../src/public/load';
-import { workbookToBytes } from '../../../src/public/save';
+import { loadWorkbook } from '../../../src/io/load';
+import { workbookToBytes } from '../../../src/io/save';
 import {
   getCellAlignment,
   getCellBorder,

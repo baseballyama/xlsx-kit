@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer, toBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
+import { loadWorkbook } from '../../src/io/load';
 import { createWriteOnlyWorkbook } from '../../src/streaming/write-only';
 import { iterRows } from '../../src/worksheet/worksheet';
 

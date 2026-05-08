@@ -1,15 +1,17 @@
 // Make a cell clickable. The text is whatever you set on the cell;
 // hyperlink wires up the URL underneath.
 
-import { saveWorkbook, toFile } from 'openxml-js/node';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { addUrlHyperlink, setCell } from 'openxml-js/worksheet';
+import { saveWorkbook } from 'xlsx-kit/io';
+import { toFile } from 'xlsx-kit/node';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { setCell, setHyperlink } from 'xlsx-kit/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Links');
 
 setCell(ws, 1, 1, 'Project home');
-addUrlHyperlink(ws, 'A1', 'https://github.com/baseballyama/openxml-js', {
+setHyperlink(ws, 'A1', {
+  target: 'https://github.com/baseballyama/xlsx-kit',
   tooltip: 'View on GitHub',
 });
 
