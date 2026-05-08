@@ -61,4 +61,5 @@ export {
   richTextToString,
   sliceRichText,
   splitRichTextRuns,
+  trimRichText,
 } from './rich-text';
