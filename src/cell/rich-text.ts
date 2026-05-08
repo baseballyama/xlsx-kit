@@ -557,6 +557,23 @@ export function richTextToString(rt: RichText): string {
 }
 
 /**
+ * Return the `font` of the run that covers character `index` in the
+ * concatenated text of `rt`. The result is `undefined` when `index` is
+ * out of range (`< 0` or `>= length`) or when the covering run has no font.
+ * Useful for character-level inspection (e.g. cursor-position font display).
+ */
+export function getRichTextFontAt(rt: RichText, index: number): InlineFont | undefined {
+  if (index < 0) return undefined;
+  let cursor = 0;
+  for (const r of rt) {
+    const next = cursor + r.text.length;
+    if (index < next) return r.font;
+    cursor = next;
+  }
+  return undefined;
+}
+
+/**
  * Total character count (UTF-16 code units) across all runs.
  * Equivalent to `richTextToString(rt).length` but avoids the string copy.
  */

@@ -51,6 +51,7 @@ export {
   findAllRichTextIndex,
   findLastRichTextIndex,
   findRichTextIndex,
+  getRichTextFontAt,
   insertRichText,
   isEmptyRichText,
   makeRichText,
