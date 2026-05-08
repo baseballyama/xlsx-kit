@@ -69,6 +69,7 @@ export {
   richTextToUpperCase,
   sliceRichText,
   splitRichTextRuns,
+  trimEndRichText,
   trimRichText,
   trimStartRichText,
 } from './rich-text';

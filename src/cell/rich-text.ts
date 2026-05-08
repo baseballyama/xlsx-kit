@@ -354,6 +354,26 @@ export function trimStartRichText(rt: RichText): RichText {
 }
 
 /**
+ * Trim trailing ASCII whitespace (space, tab, CR, LF) from the concatenated
+ * text of `rt`, returning a new RichText. Per-run fonts are preserved on the
+ * surviving slice; leading whitespace is left intact. Returns an empty
+ * RichText if every character is whitespace.
+ */
+export function trimEndRichText(rt: RichText): RichText {
+  const s = richTextToString(rt);
+  const total = s.length;
+  if (total === 0) return makeRichText([]);
+  let lastNon = total - 1;
+  while (lastNon >= 0) {
+    const ch = s.charCodeAt(lastNon);
+    if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0d && ch !== 0x0a) break;
+    lastNon--;
+  }
+  if (lastNon < 0) return makeRichText([]);
+  return sliceRichText(rt, 0, lastNon + 1);
+}
+
+/**
  * Trim leading and trailing ASCII whitespace (space, tab, CR, LF) from the
  * concatenated text of `rt`, returning a new RichText. Per-run fonts are
  * preserved on the surviving slice. Internal whitespace is left intact.
