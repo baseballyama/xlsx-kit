@@ -1,8 +1,8 @@
 // Tests for the sheet-protection ergonomic helpers.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { isSheetProtected, protectSheet, unprotectSheet } from '../../src/worksheet/protection';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { isSheetProtected, protectSheet, unprotectSheet } from '../../src/xlsx/worksheet/protection';
 
 describe('sheet-protection helpers', () => {
   it('protectSheet applies Excel "Protect Sheet" defaults', () => {

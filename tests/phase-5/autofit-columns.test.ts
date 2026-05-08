@@ -1,13 +1,13 @@
 // Tests for the approximate autofitColumn / autofitColumns helpers.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   autofitColumn,
   autofitColumns,
   getColumnDimension,
   setCell,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('autofitColumn', () => {
   it('sizes a column to max-content-length + default padding (2)', () => {
@@ -99,8 +99,8 @@ describe('autofitColumns', () => {
 
 describe('autofitColumn font-aware mode', () => {
   it('22pt cell produces ~2× the width of an 11pt cell with the same text', async () => {
-    const { setCellFont } = await import('../../src/styles/cell-style');
-    const { makeFont } = await import('../../src/styles/fonts');
+    const { setCellFont } = await import('../../src/xlsx/styles/cell-style');
+    const { makeFont } = await import('../../src/xlsx/styles/fonts');
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'A');
     const c = setCell(ws, 1, 1, 'header text');
@@ -111,8 +111,8 @@ describe('autofitColumn font-aware mode', () => {
   });
 
   it('without workbook, font is ignored (string-length fallback)', async () => {
-    const { setCellFont } = await import('../../src/styles/cell-style');
-    const { makeFont } = await import('../../src/styles/fonts');
+    const { setCellFont } = await import('../../src/xlsx/styles/cell-style');
+    const { makeFont } = await import('../../src/xlsx/styles/fonts');
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'A');
     const c = setCell(ws, 1, 1, 'header text');
@@ -122,8 +122,8 @@ describe('autofitColumn font-aware mode', () => {
   });
 
   it('autofitColumns with workbook scales each column independently', async () => {
-    const { setCellFont } = await import('../../src/styles/cell-style');
-    const { makeFont } = await import('../../src/styles/fonts');
+    const { setCellFont } = await import('../../src/xlsx/styles/cell-style');
+    const { makeFont } = await import('../../src/xlsx/styles/fonts');
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'A');
     const small = setCell(ws, 1, 1, 'small11');

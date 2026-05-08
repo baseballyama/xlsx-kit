@@ -12,8 +12,8 @@
 //   blank cell to verify both structured-reference autocompletes work.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
-import { addTable, setCell, setColumnWidth } from '../../../src/worksheet/index';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
+import { addTable, setCell, setColumnWidth } from '../../../src/xlsx/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 26 — multi-table sheet', () => {

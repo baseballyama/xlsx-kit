@@ -10,11 +10,11 @@
 // fit the anchor box.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
-import { setCell } from '../../../src/worksheet/index';
-import { makeOneCellAnchor } from '../../../src/drawing/anchor';
-import { makeDrawing, makePictureDrawingItem } from '../../../src/drawing/drawing';
-import { loadImage } from '../../../src/drawing/image';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
+import { setCell } from '../../../src/xlsx/worksheet/index';
+import { makeOneCellAnchor } from '../../../src/xlsx/drawing/anchor';
+import { makeDrawing, makePictureDrawingItem } from '../../../src/xlsx/drawing/drawing';
+import { loadImage } from '../../../src/xlsx/drawing/image';
 import { writeWorkbook } from '../_helpers';
 
 // Minimal 4x4 solid-blue PNG. Generated once via:

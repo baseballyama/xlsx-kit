@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-  <title>{data.section.title} — API — openxml-js</title>
+  <title>{data.section.title} — API — ooxml-js</title>
 </svelte:head>
 
 <div class="content">
@@ -44,7 +44,7 @@
       <section class="subgroup" id={group.id}>
         <header class="subgroup-head">
           <h2>{group.label}</h2>
-          <a class="subfile" href="https://github.com/baseballyama/openxml-js/blob/main/{group.sourceFile}" target="_blank" rel="noopener">
+          <a class="subfile" href="https://github.com/baseballyama/ooxml-js/blob/main/{group.sourceFile}" target="_blank" rel="noopener">
             {group.sourceFile}
           </a>
         </header>

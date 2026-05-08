@@ -11,18 +11,18 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { FormulaValue } from '../../src/cell/cell';
+import type { FormulaValue } from '../../src/xlsx/cell/cell';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { getCell, iterRows, type Worksheet } from '../../src/worksheet/worksheet';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { getCell, iterRows, type Worksheet } from '../../src/xlsx/worksheet/worksheet';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');
 
 const loadFixture = (name: string): Buffer => readFileSync(resolve(FIXTURES, name));
 
-const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/xlsx/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected sheet');
   if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;

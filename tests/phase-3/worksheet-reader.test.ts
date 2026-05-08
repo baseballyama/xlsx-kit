@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { FormulaValue } from '../../src/cell/cell';
-import { parseWorksheetXml } from '../../src/worksheet/reader';
-import { getCell } from '../../src/worksheet/worksheet';
+import type { FormulaValue } from '../../src/xlsx/cell/cell';
+import { parseWorksheetXml } from '../../src/xlsx/worksheet/reader';
+import { getCell } from '../../src/xlsx/worksheet/worksheet';
 
 const wrap = (sheetData: string): string =>
   `<?xml version="1.0"?>

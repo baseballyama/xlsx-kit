@@ -12,12 +12,12 @@
 // public API for callers that supply their own cache data.
 
 import { describe, expect, it } from 'vitest';
-import { makeBarChart, makeBarSeries, makeChartSpace, makeLineChart } from '../../../src/chart/chart';
-import type { ChartSpace } from '../../../src/chart/chart';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
-import { setCell } from '../../../src/worksheet/index';
-import { makeOneCellAnchor } from '../../../src/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing } from '../../../src/drawing/drawing';
+import { makeBarChart, makeBarSeries, makeChartSpace, makeLineChart } from '../../../src/xlsx/chart/chart';
+import type { ChartSpace } from '../../../src/xlsx/chart/chart';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
+import { setCell } from '../../../src/xlsx/worksheet/index';
+import { makeOneCellAnchor } from '../../../src/xlsx/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing } from '../../../src/xlsx/drawing/drawing';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 20 — chartex modern chart kinds', () => {

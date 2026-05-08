@@ -17,7 +17,7 @@ import {
   rangeToString,
   shiftRange,
   unionRange,
-} from '../../src/worksheet/cell-range';
+} from '../../src/xlsx/worksheet/cell-range';
 
 describe('makeCellRange / parseRange / rangeToString', () => {
   it('makeCellRange normalises reversed bounds', () => {

@@ -10,10 +10,10 @@ import {
   rotateCellText,
   setCellAlignment,
   wrapCellText,
-} from '../../../src/styles/cell-style';
-import { makeAlignment } from '../../../src/styles/alignment';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
-import { setCell } from '../../../src/worksheet/worksheet';
+} from '../../../src/xlsx/styles/cell-style';
+import { makeAlignment } from '../../../src/xlsx/styles/alignment';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/workbook';
+import { setCell } from '../../../src/xlsx/worksheet/worksheet';
 
 describe('centerCell', () => {
   it('sets horizontal + vertical to "center"', () => {

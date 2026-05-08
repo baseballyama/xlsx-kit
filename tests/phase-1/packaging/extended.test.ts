@@ -16,7 +16,7 @@ describe('extendedProperties — basic', () => {
 
   it('round-trips simple flat fields', () => {
     const p = {
-      application: 'openxml-js',
+      application: 'ooxml-js',
       appVersion: '0.0.0',
       docSecurity: 0,
       scaleCrop: false,

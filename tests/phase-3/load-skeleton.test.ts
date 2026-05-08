@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook, parseSheetEntries, resolveRelTarget } from '../../src/public/load';
+import { loadWorkbook, parseSheetEntries, resolveRelTarget } from '../../src/xlsx/io/load';
 import { parseXml } from '../../src/xml/parser';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -120,7 +120,7 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     const ws = wb.sheets[0]?.sheet;
     if (!ws || !('rows' in ws)) throw new Error('expected one worksheet');
     expect(ws.title).toBe('Data');
-    const { getCell } = await import('../../src/worksheet/worksheet');
+    const { getCell } = await import('../../src/xlsx/worksheet/worksheet');
     expect(getCell(ws, 1, 1)?.value).toBe(42);
     expect(getCell(ws, 1, 2)?.value).toBe(true);
     const f = getCell(ws, 3, 3)?.value as { kind: string; formula: string; cachedValue: number };
@@ -135,7 +135,7 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     const ws = wb.sheets[0]?.sheet;
     if (!ws || !('rows' in ws)) throw new Error('expected one worksheet');
     // empty-with-styles.xlsx has A1 as t="s" -> sst[0] = "TEST HERE"
-    const { getCell } = await import('../../src/worksheet/worksheet');
+    const { getCell } = await import('../../src/xlsx/worksheet/worksheet');
     expect(getCell(ws, 1, 1)?.value).toBe('TEST HERE');
     // A2..A5 are numeric (date / pi / fraction / scientific) — read as numbers.
     expect(typeof getCell(ws, 2, 1)?.value).toBe('number');
@@ -151,7 +151,7 @@ describe('loadWorkbook — empty.xlsx skeleton', () => {
     // The cell A2 has s="2" which points at numFmtId=14 (date format).
     const ws = wb.sheets[0]?.sheet;
     if (!ws || !('rows' in ws)) throw new Error('expected one worksheet');
-    const { getCell } = await import('../../src/worksheet/worksheet');
+    const { getCell } = await import('../../src/xlsx/worksheet/worksheet');
     const a2 = getCell(ws, 2, 1);
     expect(a2?.styleId).toBe(2);
     expect(wb.styles.cellXfs[a2?.styleId ?? 0]?.numFmtId).toBe(14);

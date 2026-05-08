@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { makeBarChart, makeBarSeries, makeChartSpace } from '../../src/chart/chart';
-import { makeWaterfallChart } from '../../src/chart/cx/chartex';
-import { makeTwoCellAnchor } from '../../src/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing } from '../../src/drawing/drawing';
+import { makeBarChart, makeBarSeries, makeChartSpace } from '../../src/xlsx/chart/chart';
+import { makeWaterfallChart } from '../../src/xlsx/chart/cx/chartex';
+import { makeTwoCellAnchor } from '../../src/xlsx/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing } from '../../src/xlsx/drawing/drawing';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import type { Worksheet } from '../../src/worksheet/worksheet';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import type { Worksheet } from '../../src/xlsx/worksheet/worksheet';
 
-const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/xlsx/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected sheet');
   if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;

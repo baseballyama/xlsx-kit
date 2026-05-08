@@ -7,9 +7,9 @@ import {
   setArrayFormula,
   setFormula,
   setSharedFormula,
-} from '../../src/cell/cell';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { setCell } from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/cell/cell';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 describe('getFormulaText', () => {
   it('returns the formula string for a normal formula cell', () => {

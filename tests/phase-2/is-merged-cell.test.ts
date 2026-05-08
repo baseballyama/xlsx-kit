@@ -1,8 +1,8 @@
 // Tests for the `isMergedCell(c)` type guard.
 
 import { describe, expect, it } from 'vitest';
-import type { Cell, MergedCell } from '../../src/cell';
-import { isMergedCell, makeCell } from '../../src/cell';
+import type { Cell, MergedCell } from '../../src/xlsx/cell';
+import { isMergedCell, makeCell } from '../../src/xlsx/cell';
 
 describe('isMergedCell', () => {
   it('returns false for a regular cell with no `merged` flag', () => {

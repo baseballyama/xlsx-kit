@@ -1,24 +1,26 @@
 import { defineConfig } from 'tsdown';
 
-// One bundle per public subpath. The root `openxml-js` barrel was retired in
-// favour of section-scoped subpaths so users only pull in what they actually
-// use.
+// One bundle per public subpath. xlsx-specific entries live under
+// `xlsx/*`; format-agnostic byte I/O + node fs glue + low-level
+// (zip/xml/schema/packaging/utils) live at the top level so they can
+// be reused by future docx/pptx surfaces.
 
 export default defineConfig({
   entry: {
-    cell: 'src/cell/index.ts',
-    chart: 'src/chart/index.ts',
-    chartsheet: 'src/chartsheet/index.ts',
-    drawing: 'src/drawing/index.ts',
+    'xlsx/cell': 'src/xlsx/cell/index.ts',
+    'xlsx/chart': 'src/xlsx/chart/index.ts',
+    'xlsx/chartsheet': 'src/xlsx/chartsheet/index.ts',
+    'xlsx/drawing': 'src/xlsx/drawing/index.ts',
+    'xlsx/io': 'src/xlsx/io/index.ts',
+    'xlsx/streaming': 'src/xlsx/streaming/index.ts',
+    'xlsx/styles': 'src/xlsx/styles/index.ts',
+    'xlsx/workbook': 'src/xlsx/workbook/index.ts',
+    'xlsx/worksheet': 'src/xlsx/worksheet/index.ts',
     io: 'src/io/index.ts',
     node: 'src/node.ts',
     packaging: 'src/packaging/index.ts',
     schema: 'src/schema/index.ts',
-    streaming: 'src/streaming/index.ts',
-    styles: 'src/styles/index.ts',
     utils: 'src/utils/index.ts',
-    workbook: 'src/workbook/index.ts',
-    worksheet: 'src/worksheet/index.ts',
     xml: 'src/xml/index.ts',
     zip: 'src/zip/index.ts',
   },

@@ -1,7 +1,7 @@
 // Tests for unionRangeStr / intersectionRangeStr — A1 set operations.
 
 import { describe, expect, it } from 'vitest';
-import { intersectionRangeStr, unionRangeStr } from '../../src/worksheet/cell-range';
+import { intersectionRangeStr, unionRangeStr } from '../../src/xlsx/worksheet/cell-range';
 
 describe('unionRangeStr', () => {
   it('returns the bounding box of two overlapping ranges', () => {

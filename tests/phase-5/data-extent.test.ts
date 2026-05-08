@@ -1,12 +1,12 @@
 // Tests for getDataExtent / getDataExtentRef bounding-box helpers.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   getDataExtent,
   getDataExtentRef,
   setCell,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('getDataExtent', () => {
   it('returns undefined for an empty sheet', () => {

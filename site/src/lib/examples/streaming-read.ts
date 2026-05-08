@@ -1,8 +1,8 @@
 // Iterate huge sheets without loading the full workbook. iterRows is a SAX
 // pass — it walks the file once and yields each row's cells.
 
-import { fromFile } from 'openxml-js/node';
-import { loadWorkbookStream } from 'openxml-js/streaming';
+import { fromFile } from 'ooxml-js/node';
+import { loadWorkbookStream } from 'ooxml-js/xlsx/streaming';
 
 const wb = await loadWorkbookStream(fromFile('big.xlsx'));
 const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');

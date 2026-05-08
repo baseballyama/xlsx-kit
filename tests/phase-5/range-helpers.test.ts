@@ -9,9 +9,9 @@ import {
   makeFont,
   makePatternFill,
   setRangeStyle,
-} from '../../src/styles';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { applyToRange, getCell, setRangeValues } from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/styles';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { applyToRange, getCell, setRangeValues } from '../../src/xlsx/worksheet/worksheet';
 
 describe('setRangeValues', () => {
   it('lays values down starting at the top-left of the range', () => {

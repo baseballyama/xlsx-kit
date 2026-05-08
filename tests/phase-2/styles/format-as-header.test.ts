@@ -6,9 +6,9 @@ import {
   getCellBorder,
   getCellFill,
   getCellFont,
-} from '../../../src/styles/cell-style';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
-import { setCell } from '../../../src/worksheet/worksheet';
+} from '../../../src/xlsx/styles/cell-style';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/workbook';
+import { setCell } from '../../../src/xlsx/worksheet/worksheet';
 
 describe('formatAsHeader', () => {
   it('default: bold white on dark blue + medium bottom border', () => {

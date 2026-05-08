@@ -1,15 +1,15 @@
 // Tests for describeWorkbook — workbook-level overview snapshot.
 
 import { describe, expect, it } from 'vitest';
-import { setFormula } from '../../src/cell/cell';
+import { setFormula } from '../../src/xlsx/cell/cell';
 import {
   addChartsheet,
   addWorksheet,
   createWorkbook,
   describeWorkbook,
   hideSheet,
-} from '../../src/workbook/workbook';
-import { setCell, mergeCells, addTable, setHyperlink, setComment } from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/workbook/workbook';
+import { setCell, mergeCells, addTable, setHyperlink, setComment } from '../../src/xlsx/worksheet/worksheet';
 
 describe('describeWorkbook', () => {
   it('returns all-zero counts + empty sheets list for an empty workbook', () => {

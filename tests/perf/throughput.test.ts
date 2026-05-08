@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { toBuffer } from '../../src/io/node';
-import { createWriteOnlyWorkbook } from '../../src/streaming/write-only';
+import { createWriteOnlyWorkbook } from '../../src/xlsx/streaming/write-only';
 
 const ROWS = 100_000;
 const COLS = 30;

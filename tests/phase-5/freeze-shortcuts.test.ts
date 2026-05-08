@@ -1,14 +1,14 @@
 // Tests for the freezeFirst* shortcut helpers.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   freezeFirstColumn,
   freezeFirstRow,
   freezeFirstRowAndColumn,
   freezePanes,
   getFreezePanes,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('freeze shortcuts', () => {
   it('freezeFirstRow: freezes row 1 (top-left of unfrozen pane = A2)', () => {

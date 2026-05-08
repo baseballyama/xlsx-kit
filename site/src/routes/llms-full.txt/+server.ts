@@ -6,11 +6,11 @@ import type { RequestHandler } from './$types';
 
 export const prerender = true;
 
-const PREAMBLE = `# openxml-js — full documentation
+const PREAMBLE = `# ooxml-js — full documentation
 
-This file is the concatenation of every page on https://openxml-js's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
+This file is the concatenation of every page on https://ooxml-js's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
 
-Source repo: https://github.com/baseballyama/openxml-js
+Source repo: https://github.com/baseballyama/ooxml-js
 `;
 
 export const GET: RequestHandler = () => {

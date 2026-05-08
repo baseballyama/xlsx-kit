@@ -7,7 +7,7 @@ import {
   setActiveSheet,
   sheetNames,
   swapSheets,
-} from '../../src/workbook/workbook';
+} from '../../src/xlsx/workbook/workbook';
 
 describe('swapSheets', () => {
   it('swaps two adjacent sheets', () => {

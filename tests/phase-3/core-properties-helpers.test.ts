@@ -11,9 +11,9 @@ import {
   setWorkbookSubject,
   setWorkbookTitle,
 } from '../../src/packaging/core';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 
 describe('coreProperties ergonomic helpers', () => {
   it('lazily allocate wb.properties and write each field', () => {

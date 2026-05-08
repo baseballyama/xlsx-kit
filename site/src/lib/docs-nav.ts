@@ -22,7 +22,7 @@ export const docSections: DocSection[] = [
       {
         href: '/docs/install',
         title: 'Install',
-        description: 'Add openxml-js to a Node, Bun, or browser project.',
+        description: 'Add ooxml-js to a Node, Bun, or browser project.',
       },
       {
         href: '/docs/getting-started',

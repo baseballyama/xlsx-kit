@@ -1,7 +1,7 @@
 // Tests for rangeDimensionsStr — A1 range → { rows, cols }.
 
 import { describe, expect, it } from 'vitest';
-import { rangeDimensionsStr } from '../../src/worksheet/cell-range';
+import { rangeDimensionsStr } from '../../src/xlsx/worksheet/cell-range';
 
 describe('rangeDimensionsStr', () => {
   it('returns {rows:1, cols:1} for a single-cell ref', () => {

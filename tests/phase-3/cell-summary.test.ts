@@ -1,8 +1,8 @@
 // Tests for getCellSummary — debug-friendly per-cell snapshot.
 
 import { describe, expect, it } from 'vitest';
-import { setBold } from '../../src/styles/cell-style';
-import { addWorksheet, createWorkbook, getCellSummary } from '../../src/workbook/workbook';
+import { setBold } from '../../src/xlsx/styles/cell-style';
+import { addWorksheet, createWorkbook, getCellSummary } from '../../src/xlsx/workbook/workbook';
 import {
   addConditionalFormatting,
   addDataValidation,
@@ -11,9 +11,9 @@ import {
   setCell,
   setComment,
   setHyperlink,
-} from '../../src/worksheet/worksheet';
-import { parseMultiCellRange } from '../../src/worksheet/cell-range';
-import { makeCfRule } from '../../src/worksheet/conditional-formatting';
+} from '../../src/xlsx/worksheet/worksheet';
+import { parseMultiCellRange } from '../../src/xlsx/worksheet/cell-range';
+import { makeCfRule } from '../../src/xlsx/worksheet/conditional-formatting';
 
 const cellAt = (ws: ReturnType<typeof addWorksheet>, row: number, col: number) => {
   const c = ws.rows.get(row)?.get(col);

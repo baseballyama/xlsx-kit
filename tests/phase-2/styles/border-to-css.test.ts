@@ -1,8 +1,8 @@
 // Tests for borderToCss — Border value-object → CSS-property record.
 
 import { describe, expect, it } from 'vitest';
-import { borderToCss, makeBorder, makeSide } from '../../../src/styles/borders';
-import { makeColor } from '../../../src/styles/colors';
+import { borderToCss, makeBorder, makeSide } from '../../../src/xlsx/styles/borders';
+import { makeColor } from '../../../src/xlsx/styles/colors';
 
 describe('borderToCss', () => {
   it('returns {} for undefined / empty Border', () => {

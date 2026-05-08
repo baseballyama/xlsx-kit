@@ -13,8 +13,8 @@ import {
   setCellValue,
   setFormula,
   setSharedFormula,
-} from '../../../src/cell/cell';
-import { makeRichText, makeTextRun } from '../../../src/cell/rich-text';
+} from '../../../src/xlsx/cell/cell';
+import { makeRichText, makeTextRun } from '../../../src/xlsx/cell/rich-text';
 import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
 
 describe('makeCell / getCoordinate', () => {

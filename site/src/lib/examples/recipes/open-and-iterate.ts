@@ -1,7 +1,7 @@
 // Open a workbook and walk every cell on the first sheet.
 
-import { loadWorkbook } from 'openxml-js/io';
-import { fromFile } from 'openxml-js/node';
+import { loadWorkbook } from 'ooxml-js/xlsx/io';
+import { fromFile } from 'ooxml-js/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 const first = wb.sheets[0];

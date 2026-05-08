@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import type { FormulaValue } from '../../src/cell/cell';
-import { setFormula } from '../../src/cell/cell';
+import type { FormulaValue } from '../../src/xlsx/cell/cell';
+import { setFormula } from '../../src/xlsx/cell/cell';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { saveWorkbook, workbookToBytes } from '../../src/public/save';
-import { setCellFont } from '../../src/styles/cell-style';
-import { makeFont } from '../../src/styles/fonts';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { getCell, setCell, type Worksheet } from '../../src/worksheet/worksheet';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { saveWorkbook, workbookToBytes } from '../../src/xlsx/io/save';
+import { setCellFont } from '../../src/xlsx/styles/cell-style';
+import { makeFont } from '../../src/xlsx/styles/fonts';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { getCell, setCell, type Worksheet } from '../../src/xlsx/worksheet/worksheet';
 
-const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
+const expectSheet = (ws: Worksheet | import('../../src/xlsx/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
   if (!ws) throw new Error('expected worksheet');
   if (!('rows' in ws)) throw new Error('expected worksheet, got chartsheet');
   return ws;

@@ -1,7 +1,7 @@
 // Tests for the `isErrorCell(c)` predicate.
 
 import { describe, expect, it } from 'vitest';
-import { isErrorCell, makeCell, makeErrorValue, setFormula } from '../../src/cell';
+import { isErrorCell, makeCell, makeErrorValue, setFormula } from '../../src/xlsx/cell';
 
 describe('isErrorCell', () => {
   it('returns true when the cell holds an Excel error value', () => {

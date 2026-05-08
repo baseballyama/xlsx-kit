@@ -6,8 +6,8 @@ import {
   createWorkbook,
   findCellInWorkbook,
   findCellsInWorkbook,
-} from '../../src/workbook/workbook';
-import { setCell } from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/workbook/workbook';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 describe('findCellInWorkbook', () => {
   it('returns the first matching cell across all sheets', () => {

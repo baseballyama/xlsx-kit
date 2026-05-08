@@ -43,7 +43,7 @@
 
 ```jsonc
 {
-  "name": "openxml-js",
+  "name": "ooxml-js",
   "type": "module",
   "exports": {
     ".": {
@@ -72,7 +72,7 @@
 
 ### 2.3 Web Streams API を共通言語に
 
-Node 18+ は `ReadableStream`/`WritableStream` をネイティブで提供する。openxml-js の **ストリーミング API は Web Streams を共通インターフェース** として採用し、Node 専用の `Readable`/`Writable` は `Readable.toWeb()` で橋渡しする。
+Node 18+ は `ReadableStream`/`WritableStream` をネイティブで提供する。ooxml-js の **ストリーミング API は Web Streams を共通インターフェース** として採用し、Node 専用の `Readable`/`Writable` は `Readable.toWeb()` で橋渡しする。
 
 ```ts
 // 共通シグネチャ
@@ -84,10 +84,10 @@ interface XlsxSource {
 
 ## 3. パッケージレイアウト（モノレポは採用しない）
 
-> **方針**: 公開パッケージは `openxml-js` の **単一パッケージ**。内部ディレクトリで分離し、サブパス公開で粒度を出す。複数パッケージにすると submodule との対応が崩れて移植コストが跳ねるため、当面は単一パッケージで進める。
+> **方針**: 公開パッケージは `ooxml-js` の **単一パッケージ**。内部ディレクトリで分離し、サブパス公開で粒度を出す。複数パッケージにすると submodule との対応が崩れて移植コストが跳ねるため、当面は単一パッケージで進める。
 
 ```
-openxml-js/
+ooxml-js/
 ├── reference/openpyxl/       # submodule（参照のみ）
 ├── docs/plan/                # 本計画ドキュメント
 ├── docs/api/                 # 自動生成（typedoc）
@@ -351,7 +351,7 @@ openxml-js/
    ```
 8. **「`cell.font = newFont`」スタイルは提供しない**。Workbook のスタイルプールに対する index 操作が必要なため、必ず free function 経由：
    ```ts
-   import { setCellFont } from 'openxml-js/cell-style';
+   import { setCellFont } from 'ooxml-js/cell-style';
    setCellFont(workbook, cell, { bold: true, color: { rgb: 'FF0000' } });
    ```
 9. **「`workbook.save()`」スタイルは提供しない**。`saveWorkbook(wb, sink)` のみ。
@@ -470,11 +470,11 @@ setRangeFont(ws, 'A1:C10', font);
 利用者：
 ```ts
 // 値読み出しだけしたい人（最小バンドル）
-import { loadWorkbook, getCell } from 'openxml-js/read';
+import { loadWorkbook, getCell } from 'ooxml-js/read';
 
 // 書き込みフルセット
-import { createWorkbook, addSheet, save } from 'openxml-js';
-import { setCellFont, defaultBorder } from 'openxml-js/styles';
+import { createWorkbook, addSheet, save } from 'ooxml-js';
+import { setCellFont, defaultBorder } from 'ooxml-js/styles';
 ```
 
 ### 6.2 sideEffect 設定
@@ -486,7 +486,7 @@ import { setCellFont, defaultBorder } from 'openxml-js/styles';
 ### 6.3 dynamic import で「重いモジュール」を切り離す
 
 以下は dynamic import を採用する：
-- **Chart 系の writer**（chart 種別ごとに schema が大きい）：`save` 中に `await import('openxml-js/chart-writer')`
+- **Chart 系の writer**（chart 種別ごとに schema が大きい）：`save` 中に `await import('ooxml-js/chart-writer')`
 - **画像エンコード（image-size）**：drawing が無いワークブックには load されない
 - **Pivot writer / VBA passthrough**：該当機能が使われた時のみ
 - **数式 tokenizer / translator**：shared formula を含むセルを読んだ時だけ
@@ -575,6 +575,6 @@ PR ごとに以下を必須：
 
 | エントリ | サイズ予算（min+gz） |
 |---------|---------------------|
-| `openxml-js`（フル） | ≤ 200 KB |
-| `openxml-js/streaming`（read/write only サブセット） | ≤ 80 KB |
-| `openxml-js/light`（read-only + 値読み出しのみ・将来検討） | ≤ 50 KB |
+| `ooxml-js`（フル） | ≤ 200 KB |
+| `ooxml-js/streaming`（read/write only サブセット） | ≤ 80 KB |
+| `ooxml-js/light`（read-only + 値読み出しのみ・将来検討） | ≤ 50 KB |

@@ -2,11 +2,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { makeFileVersion } from '../../src/workbook/file-version';
-import { setCell } from '../../src/worksheet/worksheet';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { makeFileVersion } from '../../src/xlsx/workbook/file-version';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 describe('fileVersion round-trip', () => {
   it('preserves all five attributes', async () => {

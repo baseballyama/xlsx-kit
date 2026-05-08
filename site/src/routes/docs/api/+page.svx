@@ -10,40 +10,41 @@ The full TypeScript API is bundled with the npm package — your editor will aut
 
 ## Subpath entries
 
-The package has no root barrel — every export lives behind a section subpath, so your editor's autocomplete only surfaces what's relevant to the area you're working in.
+The package has no root barrel — every export lives behind a section subpath, so your editor's autocomplete only surfaces what's relevant to the area you're working in. xlsx-specific entries live under `xlsx/*`; format-agnostic byte I/O + node fs glue + low-level (zip / xml / schema / packaging / utils) live at the top level so they can serve future docx / pptx surfaces too.
 
 ```ts
-// I/O — loadWorkbook / saveWorkbook / workbookToBytes + env-neutral types.
-import { loadWorkbook, workbookToBytes } from 'openxml-js/io';
+// Load and save xlsx — loadWorkbook / saveWorkbook / workbookToBytes.
+import { loadWorkbook, saveWorkbook, workbookToBytes } from 'ooxml-js/xlsx/io';
 
 // Workbook root model — createWorkbook, addWorksheet, defined names, etc.
-import { createWorkbook, addWorksheet } from 'openxml-js/workbook';
+import { createWorkbook, addWorksheet } from 'ooxml-js/xlsx/workbook';
 
 // Worksheet — setCell, getCell, mergeCells, freeze panes, tables, hyperlinks…
-import { setCell, mergeCells } from 'openxml-js/worksheet';
+import { setCell, mergeCells } from 'ooxml-js/xlsx/worksheet';
 
 // Styles — fonts, fills, borders, alignment, number formats, named styles.
-import { makeFont, setBold } from 'openxml-js/styles';
+import { makeFont, setBold } from 'ooxml-js/xlsx/styles';
 
 // Cell value-model + inline rich text.
-import { makeCell, makeRichText } from 'openxml-js/cell';
+import { makeCell, makeRichText } from 'ooxml-js/xlsx/cell';
 
 // Charts (legacy `c:` + chartex `cx:`).
-import { makeBarChart, makeChartSpace } from 'openxml-js/chart';
+import { makeBarChart, makeChartSpace } from 'ooxml-js/xlsx/chart';
 
 // Drawings — anchors, images, chart placement.
-import { addImageAt, loadImage } from 'openxml-js/drawing';
+import { addImageAt, loadImage } from 'ooxml-js/xlsx/drawing';
 
-// Streaming entry — read iter, write-only append. Browser-safe.
-import { loadWorkbookStream, createWriteOnlyWorkbook } from 'openxml-js/streaming';
-import { fromResponse, fromBlob } from 'openxml-js/streaming';
+// Streaming — read iter, write-only append.
+import { loadWorkbookStream, createWriteOnlyWorkbook } from 'ooxml-js/xlsx/streaming';
 
-// Node entry — fs glue + load/save re-exported for ergonomics.
-import { fromFile, toFile, fromBuffer, fromReadable } from 'openxml-js/node';
-import { loadWorkbook, saveWorkbook } from 'openxml-js/node'; // re-exports
+// Byte-level Source / Sink (browser-safe).
+import { fromBlob, fromResponse, fromStream } from 'ooxml-js/io';
+
+// Node fs glue (filesystem / Readable / Writable bridges + Buffer source/sink).
+import { fromFile, toFile, fromBuffer, fromReadable } from 'ooxml-js/node';
 ```
 
-Other available subpaths: `openxml-js/chartsheet`, `openxml-js/packaging`, `openxml-js/utils`, `openxml-js/xml`, `openxml-js/zip`, `openxml-js/schema`.
+Other available subpaths: `ooxml-js/xlsx/chartsheet`, `ooxml-js/packaging`, `ooxml-js/utils`, `ooxml-js/xml`, `ooxml-js/zip`, `ooxml-js/schema`.
 
 Each entry has the bundle budgets enforced by `pnpm size` in CI. All exports are tree-shakable — `"sideEffects": false` is set in `package.json`.
 
@@ -51,49 +52,51 @@ Each entry has the bundle budgets enforced by `pnpm size` in CI. All exports are
 
 The library exposes a layered model split across subpaths:
 
-- **I/O glue** (`openxml-js/io`) — `XlsxSource`, `XlsxSink`, `BufferedSinkWriter`, `loadWorkbook`, `saveWorkbook`, `workbookToBytes`. Concrete env-specific helpers live in `openxml-js/node` and `openxml-js/streaming`.
-- **Packaging** (`openxml-js/packaging`) — content types, relationships, core/extended/custom properties (the OPC layer below the workbook).
-- **XML / schema** (`openxml-js/xml`, `openxml-js/schema`, `openxml-js/zip`) — low-level XML reader / writer + Excel namespace constants. You won't touch these directly unless you're extending the library.
-- **Workbook** (`openxml-js/workbook`) — `createWorkbook`, `addWorksheet`, `Workbook` shape, defined names, calc properties, file metadata.
-- **Worksheet** (`openxml-js/worksheet`) — cells, rows, columns, merged cells, freeze panes, autoFilter, Tables, hyperlinks, data validations, conditional formatting, legacy comments.
-- **Styles** (`openxml-js/styles`) — `Font`, `Fill`, `Border`, `Alignment`, `Protection`, `NumberFormat`, full stylesheet pool with dedup, named styles + DXF.
-- **Drawings** (`openxml-js/drawing`) — anchors, images (PNG/JPEG/GIF/BMP/WebP/TIFF/SVG/EMF/WMF) with auto-detected format + dimensions.
-- **Charts** (`openxml-js/chart`) — 16 legacy `c:` chart kinds + 8 `cx:` chartex kinds (Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel, BoxWhisker, RegionMap).
+- **Byte I/O** (`ooxml-js/io`) — `XlsxSource`, `XlsxSink`, `BufferedSinkWriter` types plus browser-safe helpers (`fromBlob`, `fromResponse`, `fromStream`, `fromArrayBuffer`, `toBlob`, `toArrayBuffer`).
+- **Node fs glue** (`ooxml-js/node`) — `fromFile`, `toFile`, `fromBuffer`, `toBuffer`, `fromReadable`, `toWritable`. Format-agnostic so the same helpers feed xlsx today and docx / pptx in the future.
+- **Packaging** (`ooxml-js/packaging`) — content types, relationships, core/extended/custom properties (the OPC layer below the workbook).
+- **XML / schema** (`ooxml-js/xml`, `ooxml-js/schema`, `ooxml-js/zip`) — low-level XML reader / writer + Excel namespace constants. You won't touch these directly unless you're extending the library.
+- **xlsx I/O** (`ooxml-js/xlsx/io`) — `loadWorkbook`, `saveWorkbook`, `workbookToBytes`.
+- **xlsx Workbook** (`ooxml-js/xlsx/workbook`) — `createWorkbook`, `addWorksheet`, `Workbook` shape, defined names, calc properties, file metadata.
+- **xlsx Worksheet** (`ooxml-js/xlsx/worksheet`) — cells, rows, columns, merged cells, freeze panes, autoFilter, Tables, hyperlinks, data validations, conditional formatting, legacy comments.
+- **xlsx Styles** (`ooxml-js/xlsx/styles`) — `Font`, `Fill`, `Border`, `Alignment`, `Protection`, `NumberFormat`, full stylesheet pool with dedup, named styles + DXF.
+- **xlsx Drawings** (`ooxml-js/xlsx/drawing`) — anchors, images (PNG/JPEG/GIF/BMP/WebP/TIFF/SVG/EMF/WMF) with auto-detected format + dimensions.
+- **xlsx Charts** (`ooxml-js/xlsx/chart`) — 16 legacy `c:` chart kinds + 8 `cx:` chartex kinds (Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel, BoxWhisker, RegionMap).
 
 ## Cell helpers
 
 | Function | Purpose |
 |----------|---------|
 | `setCell(sheet, row, col, value)` | Set a cell value; coercion handled (string / number / boolean). |
-| `setCellFormula(sheet, row, col, formula)` | Set an `=...` formula; supports normal / array / shared / dataTable. |
-| `getCell(sheet, row, col)` | Read a cell. Returns `null` if empty. |
-| `setCellStyle(sheet, row, col, styleId)` | Apply a style ID from the workbook stylesheet. |
+| `setFormula(cell, formula)` | Apply a formula to a Cell returned by `setCell`. Use `setSharedFormula` / `setArrayFormula` from `ooxml-js/xlsx/cell` for the array / shared variants. |
+| `getCell(sheet, row, col)` | Read a cell. Returns `undefined` if empty. |
+| `setCellStyle(wb, cell, opts)` | Apply per-aspect style (font / fill / border / alignment / numberFormat) to a cell. |
 
-Coordinates are 1-indexed (`row=1, col=1` is `A1`). To convert: `colLetter(col)` and `parseCellRef('A1')`.
+Coordinates are 1-indexed (`row=1, col=1` is `A1`). For A1 ↔ row/col conversion, reach for `ooxml-js/utils`.
 
 ## Loading and saving
 
 ```ts
 // Source-side
 loadWorkbook(source: XlsxSource): Promise<Workbook>
-loadWorkbookStream(source: XlsxSource): Promise<StreamingWorkbook> // streaming entry
+loadWorkbookStream(source: XlsxSource): Promise<StreamingWorkbook>
 
 // Sink-side
 workbookToBytes(wb: Workbook): Promise<Uint8Array>
-saveWorkbook(wb: Workbook, sink: XlsxSink): Promise<void>     // node entry
-createWriteOnlyWorkbook(sink: XlsxSink): Promise<WriteOnlyWorkbook> // streaming entry
+saveWorkbook(wb: Workbook, sink: XlsxSink): Promise<void>
+createWriteOnlyWorkbook(sink: XlsxSink): Promise<WriteOnlyWorkbook>
 ```
 
-`loadWorkbook` and `workbookToBytes` come from `openxml-js/io`; `loadWorkbookStream` and `createWriteOnlyWorkbook` from `openxml-js/streaming`; `saveWorkbook` from either `openxml-js/io` (env-neutral) or `openxml-js/node` (re-exported for ergonomics).
+`loadWorkbook` / `saveWorkbook` / `workbookToBytes` come from `ooxml-js/xlsx/io`; `loadWorkbookStream` / `createWriteOnlyWorkbook` from `ooxml-js/xlsx/streaming`.
 
-`XlsxSource` accepts anything from a `Uint8Array` to a `ReadableStream<Uint8Array>` to a `Blob` to a Node `Readable`. The matching `from*` helpers are split between `openxml-js/node` (fs / buffer / readable) and `openxml-js/streaming` (response / blob / web stream).
+`XlsxSource` accepts anything from a `Uint8Array` to a `ReadableStream<Uint8Array>` to a `Blob` to a Node `Readable`. The matching `from*` helpers are split between `ooxml-js/node` (fs / buffer / readable) and `ooxml-js/io` (blob / response / web stream / array buffer).
 
 ## Errors
 
 - **Encrypted workbook** — we detect the CFB Compound Document magic and throw `EncryptedWorkbookError`. Decrypt with [`msoffcrypto-tool`](https://github.com/nolze/msoffcrypto-tool) first.
-- **ZIP64 write** — fflate's writer can't emit the ZIP64 EOCD record, so we fail-fast on > 65 535 entries during write. Read works.
+- **ZIP64 write** — workbooks with > 65 535 entries get a ZIP64 EOCD record + locator. Read works too.
 - **Malformed XML** — every XML parse path runs through a single hardened SAX layer. Errors include the file part path so you know which `xl/...` part triggered it.
 
 ## Migration
 
-If you're coming from openpyxl: see [`docs/migrate-from-openpyxl.md`](https://github.com/baseballyama/openxml-js/blob/main/docs/migrate-from-openpyxl.md) in the repo for the function-by-function map.
+If you're coming from openpyxl: see [`docs/migrate-from-openpyxl.md`](https://github.com/baseballyama/ooxml-js/blob/main/docs/migrate-from-openpyxl.md) in the repo for the function-by-function map.

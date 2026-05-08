@@ -1,15 +1,15 @@
 // Tests for getCellHyperlink resolver.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   addInternalHyperlink,
   addUrlHyperlink,
-} from '../../src/worksheet/hyperlinks';
+} from '../../src/xlsx/worksheet/hyperlinks';
 import {
   getCellHyperlink,
   setCell,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('getCellHyperlink', () => {
   it('resolves a single-cell ref', () => {

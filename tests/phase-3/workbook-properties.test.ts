@@ -2,11 +2,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { makeWorkbookProperties } from '../../src/workbook/workbook-properties';
-import { setCell } from '../../src/worksheet/worksheet';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { makeWorkbookProperties } from '../../src/xlsx/workbook/workbook-properties';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 describe('workbookPr round-trip', () => {
   it('preserves codeName + defaultThemeVersion + updateLinks + showObjects', async () => {

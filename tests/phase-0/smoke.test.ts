@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('phase-0 smoke', () => {
   it('vitest can import a section subpath', async () => {
-    const mod = await import('../../src/workbook/index');
+    const mod = await import('../../src/xlsx/workbook/index');
     expect(mod).toBeTypeOf('object');
     expect(typeof mod.createWorkbook).toBe('function');
   });

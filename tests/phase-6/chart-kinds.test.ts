@@ -15,8 +15,8 @@ import {
   type PieChart,
   type RadarChart,
   type ScatterChart,
-} from '../../src/chart/chart';
-import { chartToBytes, parseChartXml } from '../../src/chart/chart-xml';
+} from '../../src/xlsx/chart/chart';
+import { chartToBytes, parseChartXml } from '../../src/xlsx/chart/chart-xml';
 
 const wrap = <T>(chart: { kind: string }, withAxes = true) =>
   makeChartSpace({

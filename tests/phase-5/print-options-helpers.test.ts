@@ -7,11 +7,11 @@ import {
   setPrintCentered,
   setPrintGridLines,
   setPrintHeadings,
-} from '../../src/worksheet/page-setup';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import type { Worksheet } from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/page-setup';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import type { Worksheet } from '../../src/xlsx/worksheet/worksheet';
 
 describe('setPrintGridLines', () => {
   it('lazily creates printOptions and pairs gridLines + gridLinesSet', () => {

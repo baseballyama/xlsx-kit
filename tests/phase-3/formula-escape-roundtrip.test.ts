@@ -4,12 +4,12 @@
 // cycle.
 
 import { describe, expect, it } from 'vitest';
-import { type FormulaValue, setFormula } from '../../src/cell/cell';
+import { type FormulaValue, setFormula } from '../../src/xlsx/cell/cell';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { setCell } from '../../src/worksheet/worksheet';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 const roundTripFormula = async (formula: string): Promise<string | undefined> => {
   const wb = createWorkbook();

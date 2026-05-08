@@ -5,36 +5,38 @@
 export type ApiKind = 'function' | 'class' | 'variable';
 
 export type ApiModule =
-  | 'cell'
-  | 'chart'
-  | 'chartsheet'
-  | 'drawing'
   | 'io'
   | 'node'
   | 'packaging'
   | 'schema'
-  | 'streaming'
-  | 'styles'
   | 'utils'
-  | 'workbook'
-  | 'worksheet'
+  | 'xlsx/cell'
+  | 'xlsx/chart'
+  | 'xlsx/chartsheet'
+  | 'xlsx/drawing'
+  | 'xlsx/io'
+  | 'xlsx/streaming'
+  | 'xlsx/styles'
+  | 'xlsx/workbook'
+  | 'xlsx/worksheet'
   | 'xml'
   | 'zip';
 
 export const API_MODULES: readonly ApiModule[] = [
-  'cell',
-  'chart',
-  'chartsheet',
-  'drawing',
   'io',
   'node',
   'packaging',
   'schema',
-  'streaming',
-  'styles',
   'utils',
-  'workbook',
-  'worksheet',
+  'xlsx/cell',
+  'xlsx/chart',
+  'xlsx/chartsheet',
+  'xlsx/drawing',
+  'xlsx/io',
+  'xlsx/streaming',
+  'xlsx/styles',
+  'xlsx/workbook',
+  'xlsx/worksheet',
   'xml',
   'zip',
 ] as const;

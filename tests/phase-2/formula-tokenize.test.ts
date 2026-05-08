@@ -29,7 +29,7 @@ import {
   tokenize,
   WSPACE,
   WSPACE_RE,
-} from '../../src/formula/tokenizer';
+} from '../../src/xlsx/formula/tokenizer';
 
 // --- regex tests (mirrors openpyxl test_tokenizer.TestTokenizerRegexes) ----
 

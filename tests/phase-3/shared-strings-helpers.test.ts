@@ -7,7 +7,7 @@ import {
   getSharedStringIndex,
   makeSharedStrings,
   sharedStringCount,
-} from '../../src/workbook/shared-strings';
+} from '../../src/xlsx/workbook/shared-strings';
 
 describe('SST helpers', () => {
   it('count grows with each unique add', () => {

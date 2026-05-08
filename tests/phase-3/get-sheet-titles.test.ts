@@ -7,7 +7,7 @@ import {
   createWorkbook,
   getSheetTitles,
   hideSheet,
-} from '../../src/workbook/workbook';
+} from '../../src/xlsx/workbook/workbook';
 
 describe('getSheetTitles', () => {
   it('returns every sheet title in tab-strip order by default', () => {

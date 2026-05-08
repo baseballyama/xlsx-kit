@@ -1,13 +1,13 @@
 // Tests for removeAllHyperlinks / removeAllComments.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { addUrlHyperlink } from '../../src/worksheet/hyperlinks';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { addUrlHyperlink } from '../../src/xlsx/worksheet/hyperlinks';
 import {
   removeAllComments,
   removeAllHyperlinks,
   setComment,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('removeAllHyperlinks', () => {
   it('drops every hyperlink and returns the count', () => {

@@ -1,13 +1,13 @@
 // Tests for fillToCss — Fill value-object → CSS-property record.
 
 import { describe, expect, it } from 'vitest';
-import { makeColor } from '../../../src/styles/colors';
+import { makeColor } from '../../../src/xlsx/styles/colors';
 import {
   fillToCss,
   makeGradientFill,
   makeGradientStop,
   makePatternFill,
-} from '../../../src/styles/fills';
+} from '../../../src/xlsx/styles/fills';
 
 describe('fillToCss', () => {
   it('returns {} for undefined / "none" / no patternType', () => {

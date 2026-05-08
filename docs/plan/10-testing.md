@@ -27,7 +27,7 @@ tests/
 │   ├── genuine -> ../reference/openpyxl/openpyxl/tests/data/genuine
 │   ├── reader -> ...
 │   ├── writer -> ...
-│   └── openxml-js/             # 自前フィクスチャ（生成スクリプト付き）
+│   └── ooxml-js/             # 自前フィクスチャ（生成スクリプト付き）
 ├── golden/                     # canonical XML / SHA256 ハッシュ
 ├── browser/                    # ブラウザ専用テスト
 ├── perf/                       # ベンチマーク
@@ -69,7 +69,7 @@ export function compareXml(a: string | Uint8Array, b: string | Uint8Array): { eq
 各 schema に対して以下を必ず書く：
 
 ```ts
-import { fromTree, toTree } from 'openxml-js/schema';
+import { fromTree, toTree } from 'ooxml-js/schema';
 import { FontSchema } from 'src/styles/fonts.schema.js';
 
 describe('Font schema', () => {
@@ -190,7 +190,7 @@ CI で前 commit と比較し、25% 劣化で fail。
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import { loadWorkbook, fromBlob, toBlob } from 'openxml-js';
+import { loadWorkbook, fromBlob, toBlob } from 'ooxml-js';
 
 describe('browser: round-trip from Blob', () => {
   it('reads Blob and writes Blob', async () => {

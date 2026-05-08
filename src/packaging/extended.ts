@@ -125,7 +125,7 @@ export function extendedPropsFromBytes(bytes: Uint8Array | string): ExtendedProp
 
 // ---- Workbook ergonomic helpers ----------------------------------------
 
-import type { Workbook } from '../workbook/workbook';
+import type { Workbook } from '../xlsx/workbook/workbook';
 
 const ensureAppProperties = (wb: Workbook): ExtendedProperties => {
   if (!wb.appProperties) wb.appProperties = {};

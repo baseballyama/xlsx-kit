@@ -19,7 +19,7 @@
 <footer>
   <div class="footer-inner">
     <p>
-      <a href="https://github.com/baseballyama/openxml-js">openxml-js</a> · MIT licensed · A
+      <a href="https://github.com/baseballyama/ooxml-js">ooxml-js</a> · MIT licensed · A
       TypeScript port of <a href="https://openpyxl.readthedocs.io/">openpyxl</a>.
     </p>
     <p class="muted">

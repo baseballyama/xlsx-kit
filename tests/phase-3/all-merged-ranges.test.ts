@@ -1,14 +1,14 @@
 // Tests for getAllMergedRanges.
 
 import { describe, expect, it } from 'vitest';
-import { rangeToString } from '../../src/worksheet/cell-range';
+import { rangeToString } from '../../src/xlsx/worksheet/cell-range';
 import {
   addChartsheet,
   addWorksheet,
   createWorkbook,
   getAllMergedRanges,
-} from '../../src/workbook/workbook';
-import { mergeCells } from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/workbook/workbook';
+import { mergeCells } from '../../src/xlsx/worksheet/worksheet';
 
 describe('getAllMergedRanges', () => {
   it('aggregates merges across every worksheet in tab-strip order', () => {

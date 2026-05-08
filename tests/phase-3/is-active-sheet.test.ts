@@ -6,7 +6,7 @@ import {
   createWorkbook,
   isActiveSheet,
   setActiveSheet,
-} from '../../src/workbook/workbook';
+} from '../../src/xlsx/workbook/workbook';
 
 describe('isActiveSheet', () => {
   it('returns true when the title matches the active sheet', () => {

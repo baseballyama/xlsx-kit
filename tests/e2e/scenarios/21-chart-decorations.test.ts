@@ -10,18 +10,18 @@
 //   point, with a separate exponential trendline.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
-import { setCell } from '../../../src/worksheet/index';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
+import { setCell } from '../../../src/xlsx/worksheet/index';
 import {
   makeBarChart,
   makeBarSeries,
   makeChartSpace,
   makeScatterChart,
   makeScatterSeries,
-} from '../../../src/chart/chart';
-import type { ChartSpace } from '../../../src/chart/chart';
-import { makeOneCellAnchor } from '../../../src/drawing/anchor';
-import { makeChartDrawingItem, makeDrawing } from '../../../src/drawing/drawing';
+} from '../../../src/xlsx/chart/chart';
+import type { ChartSpace } from '../../../src/xlsx/chart/chart';
+import { makeOneCellAnchor } from '../../../src/xlsx/drawing/anchor';
+import { makeChartDrawingItem, makeDrawing } from '../../../src/xlsx/drawing/drawing';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 21 — chart decorations (dLbls / trendline / errBars)', () => {

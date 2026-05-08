@@ -1,12 +1,12 @@
 // Tests for the workbook-protection ergonomic helpers.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   isWorkbookProtected,
   protectWorkbook,
   unprotectWorkbook,
-} from '../../src/workbook/protection';
+} from '../../src/xlsx/workbook/protection';
 
 describe('workbook-protection helpers', () => {
   it('protectWorkbook sets lockStructure=true by default', () => {

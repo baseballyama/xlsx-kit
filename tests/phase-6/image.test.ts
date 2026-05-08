@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { makeAbsoluteAnchor, makeOneCellAnchor, makeTwoCellAnchor } from '../../src/drawing/anchor';
-import { makeDrawing, makePictureDrawingItem } from '../../src/drawing/drawing';
-import { drawingToBytes, parseDrawingXml } from '../../src/drawing/drawing-xml';
-import { detectImageDimensions, detectImageFormat, loadImage, type XlsxImage } from '../../src/drawing/image';
+import { makeAbsoluteAnchor, makeOneCellAnchor, makeTwoCellAnchor } from '../../src/xlsx/drawing/anchor';
+import { makeDrawing, makePictureDrawingItem } from '../../src/xlsx/drawing/drawing';
+import { drawingToBytes, parseDrawingXml } from '../../src/xlsx/drawing/drawing-xml';
+import { detectImageDimensions, detectImageFormat, loadImage, type XlsxImage } from '../../src/xlsx/drawing/image';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 
 // ---- Test fixtures (synthesised in-memory rather than reading binary files) ----
 

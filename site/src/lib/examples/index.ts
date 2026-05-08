@@ -33,7 +33,7 @@ export const examples = {
     title: 'Direct fs helpers',
     path: 'site/src/lib/examples/node-fs.ts',
     description:
-      'fromFile / toFile from openxml-js/node skip the manual readFile + writeFile glue.',
+      'fromFile / toFile from ooxml-js/node skip the manual readFile + writeFile glue.',
     source: nodeFs,
   },
   browserFetch: {

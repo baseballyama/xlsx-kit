@@ -2,11 +2,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { makeCalcProperties } from '../../src/workbook/calc-properties';
-import { setCell } from '../../src/worksheet/worksheet';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { makeCalcProperties } from '../../src/xlsx/workbook/calc-properties';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 describe('calcPr round-trip', () => {
   it('preserves calcId / calcMode / fullCalcOnLoad / refMode', async () => {

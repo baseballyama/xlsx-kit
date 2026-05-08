@@ -1,15 +1,16 @@
 // Merge a header range across the top row and freeze the first row so
 // it stays visible while scrolling.
 
-import { saveWorkbook, toFile } from 'openxml-js/node';
-import { centerCell, setBold } from 'openxml-js/styles';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
+import { saveWorkbook } from 'ooxml-js/xlsx/io';
+import { toFile } from 'ooxml-js/node';
+import { centerCell, setBold } from 'ooxml-js/xlsx/styles';
+import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
 import {
   makeFreezePane,
   makeSheetView,
   mergeCells,
   setCell,
-} from 'openxml-js/worksheet';
+} from 'ooxml-js/xlsx/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Report');

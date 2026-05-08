@@ -1,7 +1,7 @@
 // Tests for shiftRangeStr — A1-string range translation.
 
 import { describe, expect, it } from 'vitest';
-import { shiftRangeStr } from '../../src/worksheet/cell-range';
+import { shiftRangeStr } from '../../src/xlsx/worksheet/cell-range';
 
 describe('shiftRangeStr', () => {
   it('shifts both row and column with positive offsets', () => {

@@ -1,12 +1,12 @@
 // Tests for countCellsByKind — value-kind histogram of populated cells.
 
 import { describe, expect, it } from 'vitest';
-import { setFormula } from '../../src/cell/cell';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setFormula } from '../../src/xlsx/cell/cell';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   countCellsByKind,
   setCell,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 const zeros = {
   null: 0,

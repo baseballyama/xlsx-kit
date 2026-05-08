@@ -11,13 +11,13 @@ import {
   makeScatterChart,
   makeScatterSeries,
   type Trendline,
-} from '../../src/chart/chart';
-import { chartToBytes, parseChartXml } from '../../src/chart/chart-xml';
-import { makeColor, makeSrgbColor } from '../../src/drawing/dml/colors';
-import { makeSolidFill } from '../../src/drawing/dml/fill';
-import { makeLine } from '../../src/drawing/dml/line';
-import { makeShapeProperties } from '../../src/drawing/dml/shape-properties';
-import { makeParagraph, makeRun, makeSimpleTextBody, makeTextBody } from '../../src/drawing/dml/text';
+} from '../../src/xlsx/chart/chart';
+import { chartToBytes, parseChartXml } from '../../src/xlsx/chart/chart-xml';
+import { makeColor, makeSrgbColor } from '../../src/xlsx/drawing/dml/colors';
+import { makeSolidFill } from '../../src/xlsx/drawing/dml/fill';
+import { makeLine } from '../../src/xlsx/drawing/dml/line';
+import { makeShapeProperties } from '../../src/xlsx/drawing/dml/shape-properties';
+import { makeParagraph, makeRun, makeSimpleTextBody, makeTextBody } from '../../src/xlsx/drawing/dml/text';
 
 const roundTrip = (s: ChartSpace): ChartSpace => parseChartXml(chartToBytes(s));
 

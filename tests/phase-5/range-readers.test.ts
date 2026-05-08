@@ -1,14 +1,14 @@
 // Tests for getRangeValues / getColumnValues / getRowValues read helpers.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   getColumnValues,
   getRangeValues,
   getRowValues,
   setCell,
   setRangeValues,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('getRangeValues', () => {
   it('returns a dense 2-D array with nulls for empty cells', () => {

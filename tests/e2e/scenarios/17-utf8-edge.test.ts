@@ -12,8 +12,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { MAX_COL, MAX_ROW } from '../../../src/utils/index';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
-import { setCell } from '../../../src/worksheet/index';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
+import { setCell } from '../../../src/xlsx/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 17 — UTF-8 + edge coordinates', () => {

@@ -2,10 +2,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { makeCustomWorkbookView } from '../../src/workbook/views';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { makeCustomWorkbookView } from '../../src/xlsx/workbook/views';
 
 describe('customWorkbookViews round-trip', () => {
   it('preserves a saved view with full attribute set', async () => {

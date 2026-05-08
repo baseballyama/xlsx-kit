@@ -1,10 +1,11 @@
 // Set a formula. Optionally cache its evaluated value so Excel renders
 // the result before recalculating on open.
 
-import { setFormula } from 'openxml-js/cell';
-import { saveWorkbook, toFile } from 'openxml-js/node';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { setCell } from 'openxml-js/worksheet';
+import { setFormula } from 'ooxml-js/xlsx/cell';
+import { saveWorkbook } from 'ooxml-js/xlsx/io';
+import { toFile } from 'ooxml-js/node';
+import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
+import { setCell } from 'ooxml-js/xlsx/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Sheet1');

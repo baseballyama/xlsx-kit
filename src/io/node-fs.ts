@@ -3,10 +3,10 @@
 //
 // Kept separate from `./node.ts` so the buffer-only entry stays free of
 // `node:fs` / `node:stream` imports — important for the
-// `openxml-js/streaming` browser-targeted bundle, which can re-export
+// `ooxml-js/streaming` browser-targeted bundle, which can re-export
 // `fromBuffer` / `toBuffer` without dragging Node-only modules into the
 // browser surface. Users who want filesystem I/O reach this module
-// directly (or through `openxml-js/node` once that subpath lands).
+// directly (or through `ooxml-js/node` once that subpath lands).
 
 import { createReadStream, createWriteStream, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';

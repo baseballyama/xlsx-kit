@@ -6,7 +6,7 @@ import {
   createWorkbook,
   getCellAtAddress,
   setCellAtAddress,
-} from '../../src/workbook/workbook';
+} from '../../src/xlsx/workbook/workbook';
 
 describe('setCellAtAddress', () => {
   it('writes a value at the address and returns the Cell', () => {

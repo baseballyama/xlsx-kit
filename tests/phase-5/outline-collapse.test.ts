@@ -3,9 +3,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   collapseColumnGroup,
   collapseRowGroup,
@@ -17,7 +17,7 @@ import {
   groupRows,
   setRowHeight,
   type Worksheet,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('collapseRowGroup / expandRowGroup', () => {
   it('collapse hides + flags collapsed; expand reverses', () => {

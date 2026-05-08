@@ -1,7 +1,8 @@
-// One-shot read + save direct from / to disk via the openxml-js/node
+// One-shot read + save direct from / to disk via the ooxml-js/node
 // helpers, no manual fs glue needed.
 
-import { fromFile, loadWorkbook, saveWorkbook, toFile } from 'openxml-js/node';
+import { loadWorkbook, saveWorkbook } from 'ooxml-js/xlsx/io';
+import { fromFile, toFile } from 'ooxml-js/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 // ...mutate wb...

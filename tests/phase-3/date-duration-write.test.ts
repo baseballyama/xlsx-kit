@@ -4,13 +4,13 @@
 // the workbook's epoch (Windows 1900 by default; Mac 1904 honoured).
 
 import { describe, expect, it } from 'vitest';
-import { makeDurationValue } from '../../src/cell/cell';
+import { makeDurationValue } from '../../src/xlsx/cell/cell';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
 import { dateToExcel, durationToExcel } from '../../src/utils/datetime';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { setCell } from '../../src/worksheet/worksheet';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 describe('phase-3 §5.5 — Date / Duration cell write', () => {
   it('writes a Date cell as the Windows-epoch serial number', async () => {

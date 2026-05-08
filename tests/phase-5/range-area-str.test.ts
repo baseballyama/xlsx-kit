@@ -1,7 +1,7 @@
 // Tests for rangeAreaStr — A1-string range area helper.
 
 import { describe, expect, it } from 'vitest';
-import { rangeAreaStr } from '../../src/worksheet/cell-range';
+import { rangeAreaStr } from '../../src/xlsx/worksheet/cell-range';
 
 describe('rangeAreaStr', () => {
   it('returns 1 for a single-cell ref', () => {

@@ -8,7 +8,7 @@ import {
   parseSharedStringsXml,
   serializeSharedStrings,
   sharedStringsToBytes,
-} from '../../src/workbook/shared-strings';
+} from '../../src/xlsx/workbook/shared-strings';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');

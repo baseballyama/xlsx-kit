@@ -1,11 +1,11 @@
 # 08. フェーズ6: 描画 / 画像 / チャート / Chartsheet
 
-**目的**: DrawingML と ChartML を **フル構造化**。とくに ChartML は **「Excel でできることを openxml-js でも全部できる」** をゴールとする最重要モジュール。
+**目的**: DrawingML と ChartML を **フル構造化**。とくに ChartML は **「Excel でできることを ooxml-js でも全部できる」** をゴールとする最重要モジュール。
 **期間目安**: 8〜12週間（最重量フェーズ）
 **前提**: フェーズ1〜5
 **完了条件**: ECMA-376 Part 1 §21（DrawingML） / §17.16（ChartML） のうち SpreadsheetML から到達するすべての要素を構造化し、編集 API を提供する。passthrough は **最終手段としてだけ残す**（未知 extLst 等）。
 
-> **このフェーズだけは「passthrough で逃げない」**。Excel でできるチャート機能は openxml-js でも作れる、編集できる、再現できるのが目標。
+> **このフェーズだけは「passthrough で逃げない」**。Excel でできるチャート機能は ooxml-js でも作れる、編集できる、再現できるのが目標。
 
 ## 1. 全体方針
 
@@ -21,7 +21,7 @@ DrawingML と ChartML は OOXML 内で **最も schema 量が多い** 領域。o
 3. **openpyxl の構造**：参考実装。ただし完全網羅していない領域がある。
 4. **LibreOffice Calc の挙動**：互換性の確認用。
 
-差分があれば **Excel 365 を正** とする（openpyxl が拾えていない属性は openxml-js 側で拾う）。
+差分があれば **Excel 365 を正** とする（openpyxl が拾えていない属性は ooxml-js 側で拾う）。
 
 ### 1.2 Schema を厚くする
 
@@ -795,7 +795,7 @@ export interface CxSeries {
 
 - [ ] chartex 8 種すべての round-trip
 - [ ] mixed cluster (chartex + 標準 chart 混在) の round-trip
-- [ ] Excel で chartex 図を作って openxml-js で読んでも seriesData が消えない
+- [ ] Excel で chartex 図を作って ooxml-js で読んでも seriesData が消えない
 
 ## 7. Chartsheet（`src/chartsheet/`）
 
@@ -851,7 +851,7 @@ export function addChartTextBox(chart: ChartSpace, text: string | TextBody, anch
 ### 8.1 受け入れ条件
 
 - [ ] chartDrawing 上のテキストボックス・図形・画像の round-trip
-- [ ] chart 上に矢印を引く編集が openxml-js で可能、かつ Excel で問題なく開ける
+- [ ] chart 上に矢印を引く編集が ooxml-js で可能、かつ Excel で問題なく開ける
 
 ## 9. VML（legacy comments の anchor）
 
@@ -886,5 +886,5 @@ PR 単位で以下を手動 QA：
 - [ ] チャートの **全 25 種** が round-trip
 - [ ] チャート全装飾要素（trendline, errorBar, marker, dLbl, legend, axis, view3D, fill/line/effect）が round-trip
 - [ ] 既存フェーズの回帰なし
-- [ ] バンドルサイズ予算: `openxml-js/chart` は ChartML の量が多いため特例で **≤ 120KB min+gz**（基本サブセット）。`openxml-js/chart/extended` で chartex を分離して **≤ 60KB min+gz** 追加。`openxml-js/drawing` ≤ 40KB min+gz
+- [ ] バンドルサイズ予算: `ooxml-js/chart` は ChartML の量が多いため特例で **≤ 120KB min+gz**（基本サブセット）。`ooxml-js/chart/extended` で chartex を分離して **≤ 60KB min+gz** 追加。`ooxml-js/drawing` ≤ 40KB min+gz
 - [ ] LibreOffice + Excel 365 + Google Sheets で各 chart が **視覚的に等価**（QA 画像で照合）

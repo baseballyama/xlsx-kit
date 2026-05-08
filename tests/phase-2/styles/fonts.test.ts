@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fromTree, toTree } from '../../../src/schema/serialize';
-import { makeColor } from '../../../src/styles/colors';
+import { makeColor } from '../../../src/xlsx/styles/colors';
 import {
   DEFAULT_FONT,
   FONT_SCHEMES,
@@ -8,8 +8,8 @@ import {
   makeFont,
   UNDERLINE_STYLES,
   VERT_ALIGNS,
-} from '../../../src/styles/fonts';
-import { FontSchema } from '../../../src/styles/fonts.schema';
+} from '../../../src/xlsx/styles/fonts';
+import { FontSchema } from '../../../src/xlsx/styles/fonts.schema';
 import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
 import { parseXml } from '../../../src/xml/parser';
 import { serializeXml } from '../../../src/xml/serializer';

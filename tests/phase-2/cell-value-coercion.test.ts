@@ -11,8 +11,8 @@ import {
   isRichTextValue,
   makeDurationValue,
   makeErrorValue,
-} from '../../src/cell/cell';
-import { makeRichText } from '../../src/cell/rich-text';
+} from '../../src/xlsx/cell/cell';
+import { makeRichText } from '../../src/xlsx/cell/rich-text';
 
 describe('value type guards', () => {
   it('isFormulaValue narrows the formula variant', () => {

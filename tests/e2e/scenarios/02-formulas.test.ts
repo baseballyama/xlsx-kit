@@ -11,9 +11,9 @@
 // - F1 cell with #N/A error returned by NA().
 
 import { describe, expect, it } from 'vitest';
-import { setArrayFormula, setFormula, setSharedFormula } from '../../../src/cell/index';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
-import { setCell } from '../../../src/worksheet/index';
+import { setArrayFormula, setFormula, setSharedFormula } from '../../../src/xlsx/cell/index';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
+import { setCell } from '../../../src/xlsx/worksheet/index';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 02 — formulas', () => {

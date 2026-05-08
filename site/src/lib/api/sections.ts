@@ -31,20 +31,26 @@ export const SECTIONS: SectionDef[] = [
     title: 'Loading & saving',
     description: 'Open a workbook from any source, write it back to any sink.',
     match: ({ sourceFile }) =>
-      startsWith('src/public/', 'src/io/')(sourceFile) ||
-      fileEquals('src/node.ts', 'src/streaming/index.ts')(sourceFile),
+      startsWith('src/xlsx/io/')(sourceFile) || sourceFile === 'src/io/index.ts',
   },
   {
     id: 'streaming-io',
     title: 'Streaming readers & writers',
     description:
       'createWriteOnlyWorkbook, loadWorkbookStream, and the iter-based row APIs.',
-    match: ({ sourceFile }) => startsWith('src/streaming/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/streaming/')(sourceFile),
+  },
+  {
+    id: 'byte-io',
+    title: 'Byte I/O (Source / Sink)',
+    description:
+      'Format-agnostic byte sources/sinks: Blob / Response / ReadableStream / ArrayBuffer adapters.',
+    match: ({ sourceFile }) => startsWith('src/io/')(sourceFile),
   },
   {
     id: 'node-helpers',
     title: 'Node fs helpers',
-    description: 'fromFile / toFile and Readable / Writable bridges.',
+    description: 'fromFile / toFile / fromBuffer / fromReadable / toWritable.',
     match: ({ module }) => module === 'node',
   },
   {
@@ -62,7 +68,7 @@ export const SECTIONS: SectionDef[] = [
         'src/utils/coordinate.ts',
         'src/utils/datetime.ts',
         'src/utils/units.ts',
-      )(sourceFile) || sourceFile === 'src/worksheet/cell-range.ts',
+      )(sourceFile) || sourceFile === 'src/xlsx/worksheet/cell-range.ts',
   },
   {
     id: 'inference',
@@ -79,14 +85,17 @@ export const SECTIONS: SectionDef[] = [
     id: 'cells',
     title: 'Cells & values',
     description: 'Cell shape, formula helpers, inline rich-text composition.',
-    match: ({ sourceFile }) => startsWith('src/cell/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/cell/')(sourceFile),
   },
   {
     id: 'tables',
     title: 'Tables & autoFilter',
     description: 'Excel Tables, table styles, and column-level autoFilter.',
     match: ({ sourceFile }) =>
-      fileEquals('src/worksheet/table.ts', 'src/worksheet/auto-filter.ts')(sourceFile),
+      fileEquals(
+        'src/xlsx/worksheet/table.ts',
+        'src/xlsx/worksheet/auto-filter.ts',
+      )(sourceFile),
   },
   {
     id: 'validation',
@@ -94,8 +103,8 @@ export const SECTIONS: SectionDef[] = [
     description: 'Data validation rules and conditional formatting.',
     match: ({ sourceFile }) =>
       fileEquals(
-        'src/worksheet/data-validations.ts',
-        'src/worksheet/conditional-formatting.ts',
+        'src/xlsx/worksheet/data-validations.ts',
+        'src/xlsx/worksheet/conditional-formatting.ts',
       )(sourceFile),
   },
   {
@@ -104,9 +113,9 @@ export const SECTIONS: SectionDef[] = [
     description: 'Legacy comments, threaded comments, and hyperlinks.',
     match: ({ sourceFile }) =>
       fileEquals(
-        'src/worksheet/comments.ts',
-        'src/worksheet/threaded-comments.ts',
-        'src/worksheet/hyperlinks.ts',
+        'src/xlsx/worksheet/comments.ts',
+        'src/xlsx/worksheet/threaded-comments.ts',
+        'src/xlsx/worksheet/hyperlinks.ts',
       )(sourceFile),
   },
   {
@@ -114,44 +123,44 @@ export const SECTIONS: SectionDef[] = [
     title: 'Worksheet',
     description:
       'Worksheet shape and the cell / row / column helpers built on top of it.',
-    match: ({ sourceFile }) => startsWith('src/worksheet/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/worksheet/')(sourceFile),
   },
   {
     id: 'styles',
     title: 'Styles',
     description: 'Font, Fill, Border, Alignment, NumberFormat, Stylesheet.',
-    match: ({ sourceFile }) => startsWith('src/styles/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/styles/')(sourceFile),
   },
   {
     id: 'drawings',
     title: 'Drawings & images',
     description: 'Picture / chart anchors, image format detection.',
-    match: ({ sourceFile }) => startsWith('src/drawing/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/drawing/')(sourceFile),
   },
   {
     id: 'charts',
     title: 'Charts',
     description: 'Legacy `c:` chart kinds plus the `cx:` chartex family.',
-    match: ({ sourceFile }) => startsWith('src/chart/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/chart/')(sourceFile),
   },
   {
     id: 'chartsheets',
     title: 'Chartsheets',
     description: 'Standalone chartsheet objects and their views.',
-    match: ({ sourceFile }) => startsWith('src/chartsheet/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/chartsheet/')(sourceFile),
   },
   {
     id: 'workbook',
     title: 'Workbook',
     description:
       'Workbook root model: sheets, defined names, properties, calc settings.',
-    match: ({ sourceFile }) => startsWith('src/workbook/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/workbook/')(sourceFile),
   },
   {
     id: 'formulas',
     title: 'Formulas',
     description: 'Formula tokens, evaluator scaffolding, name parsing.',
-    match: ({ sourceFile }) => startsWith('src/formula/')(sourceFile),
+    match: ({ sourceFile }) => startsWith('src/xlsx/formula/')(sourceFile),
   },
   {
     id: 'low-level',

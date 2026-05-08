@@ -7,10 +7,10 @@ import {
   createWorkbook,
   getAllDataValidations,
   getAllTables,
-} from '../../src/workbook/workbook';
-import { addListValidation } from '../../src/worksheet/data-validations';
-import { addExcelTable } from '../../src/worksheet/table';
-import { setCell } from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/workbook/workbook';
+import { addListValidation } from '../../src/xlsx/worksheet/data-validations';
+import { addExcelTable } from '../../src/xlsx/worksheet/table';
+import { setCell } from '../../src/xlsx/worksheet/worksheet';
 
 describe('getAllTables', () => {
   it('aggregates tables across every worksheet in tab-strip order', () => {

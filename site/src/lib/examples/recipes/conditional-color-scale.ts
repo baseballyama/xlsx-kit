@@ -1,14 +1,15 @@
 // Color-scale rule: red for low values, yellow for the middle, green
 // for high. Excel's classic 3-color heat-map.
 
-import { saveWorkbook, toFile } from 'openxml-js/node';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
+import { saveWorkbook } from 'ooxml-js/xlsx/io';
+import { toFile } from 'ooxml-js/node';
+import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
 import {
   addConditionalFormatting,
   makeCfRule,
   makeConditionalFormatting,
   setCell,
-} from 'openxml-js/worksheet';
+} from 'ooxml-js/xlsx/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Heat');

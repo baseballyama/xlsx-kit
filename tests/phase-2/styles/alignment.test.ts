@@ -6,8 +6,8 @@ import {
   HORIZONTAL_ALIGNMENTS,
   makeAlignment,
   VERTICAL_ALIGNMENTS,
-} from '../../../src/styles/alignment';
-import { AlignmentSchema } from '../../../src/styles/alignment.schema';
+} from '../../../src/xlsx/styles/alignment';
+import { AlignmentSchema } from '../../../src/xlsx/styles/alignment.schema';
 import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
 import { parseXml } from '../../../src/xml/parser';
 import { serializeXml } from '../../../src/xml/serializer';

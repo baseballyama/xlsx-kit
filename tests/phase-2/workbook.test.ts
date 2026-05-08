@@ -11,7 +11,7 @@ import {
   removeSheet,
   setActiveSheet,
   sheetNames,
-} from '../../src/workbook/workbook';
+} from '../../src/xlsx/workbook/workbook';
 import {
   appendRow,
   countCells,
@@ -22,7 +22,7 @@ import {
   iterRows,
   iterValues,
   setCell,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('createWorkbook', () => {
   it('starts empty with a fresh Stylesheet', () => {

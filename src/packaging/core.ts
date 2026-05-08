@@ -103,7 +103,7 @@ export function corePropsFromBytes(bytes: Uint8Array | string): CoreProperties {
 
 // ---- Workbook ergonomic helpers ----------------------------------------
 
-import type { Workbook } from '../workbook/workbook';
+import type { Workbook } from '../xlsx/workbook/workbook';
 
 const ensureCoreProperties = (wb: Workbook): CoreProperties => {
   if (!wb.properties) wb.properties = {};

@@ -2,8 +2,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
-import { loadWorkbook } from '../../src/public/load';
-import { workbookToBytes } from '../../src/public/save';
+import { loadWorkbook } from '../../src/xlsx/io/load';
+import { workbookToBytes } from '../../src/xlsx/io/save';
 import {
   getActiveTab,
   getFirstSheet,
@@ -12,8 +12,8 @@ import {
   setShowSheetTabs,
   setTabRatio,
   setWorkbookWindow,
-} from '../../src/workbook/views';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+} from '../../src/xlsx/workbook/views';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 
 describe('workbook view helpers', () => {
   it('getActiveTab returns 0 on a fresh workbook with no bookViews', () => {

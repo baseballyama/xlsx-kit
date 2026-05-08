@@ -1,8 +1,8 @@
 // Tests for addDefinedNameForRange — sheet-qualified DefinedName builder.
 
 import { describe, expect, it } from 'vitest';
-import { addDefinedNameForRange } from '../../src/workbook/defined-names';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addDefinedNameForRange } from '../../src/xlsx/workbook/defined-names';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 
 describe('addDefinedNameForRange', () => {
   it('registers a workbook-scoped name with the sheet-qualified ref', () => {

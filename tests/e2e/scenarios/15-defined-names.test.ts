@@ -11,9 +11,9 @@
 //   titles).
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/index';
-import { setCell } from '../../../src/worksheet/index';
-import { makeDefinedName } from '../../../src/workbook/defined-names';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/index';
+import { setCell } from '../../../src/xlsx/worksheet/index';
+import { makeDefinedName } from '../../../src/xlsx/workbook/defined-names';
 import { writeWorkbook } from '../_helpers';
 
 describe('e2e 15 — defined names (named ranges + print area)', () => {

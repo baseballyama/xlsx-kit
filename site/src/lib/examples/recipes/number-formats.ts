@@ -1,14 +1,15 @@
 // Apply number formats: currency, percentage, and a date-time.
 
-import { saveWorkbook, toFile } from 'openxml-js/node';
+import { saveWorkbook } from 'ooxml-js/xlsx/io';
+import { toFile } from 'ooxml-js/node';
 import {
   FORMAT_DATE_DATETIME,
   setCellAsCurrency,
   setCellAsPercent,
   setCellNumberFormat,
-} from 'openxml-js/styles';
-import { addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { setCell } from 'openxml-js/worksheet';
+} from 'ooxml-js/xlsx/styles';
+import { addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
+import { setCell } from 'ooxml-js/xlsx/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Numbers');

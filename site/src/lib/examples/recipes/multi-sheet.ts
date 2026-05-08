@@ -1,10 +1,11 @@
 // Build several worksheets in one workbook and use named ranges
 // to refer between them.
 
-import { setFormula } from 'openxml-js/cell';
-import { saveWorkbook, toFile } from 'openxml-js/node';
-import { addDefinedName, addWorksheet, createWorkbook } from 'openxml-js/workbook';
-import { setCell } from 'openxml-js/worksheet';
+import { setFormula } from 'ooxml-js/xlsx/cell';
+import { saveWorkbook } from 'ooxml-js/xlsx/io';
+import { toFile } from 'ooxml-js/node';
+import { addDefinedName, addWorksheet, createWorkbook } from 'ooxml-js/xlsx/workbook';
+import { setCell } from 'ooxml-js/xlsx/worksheet';
 
 const wb = createWorkbook();
 const inputs = addWorksheet(wb, 'Inputs');

@@ -8,14 +8,14 @@ import {
   makeChartSpace,
   makeScatterChart,
   makeScatterSeries,
-} from '../../src/chart/chart';
-import { chartToBytes, parseChartXml } from '../../src/chart/chart-xml';
-import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/drawing/dml/colors';
-import { makeNoFill, makeSolidFill } from '../../src/drawing/dml/fill';
-import { makePresetGeometry } from '../../src/drawing/dml/geometry';
-import { makeLine } from '../../src/drawing/dml/line';
-import { makeShapeProperties } from '../../src/drawing/dml/shape-properties';
-import { makeParagraph, makeRun, makeSimpleTextBody, makeTextBody } from '../../src/drawing/dml/text';
+} from '../../src/xlsx/chart/chart';
+import { chartToBytes, parseChartXml } from '../../src/xlsx/chart/chart-xml';
+import { makeColor, makeSchemeColor, makeSrgbColor } from '../../src/xlsx/drawing/dml/colors';
+import { makeNoFill, makeSolidFill } from '../../src/xlsx/drawing/dml/fill';
+import { makePresetGeometry } from '../../src/xlsx/drawing/dml/geometry';
+import { makeLine } from '../../src/xlsx/drawing/dml/line';
+import { makeShapeProperties } from '../../src/xlsx/drawing/dml/shape-properties';
+import { makeParagraph, makeRun, makeSimpleTextBody, makeTextBody } from '../../src/xlsx/drawing/dml/text';
 
 const roundTrip = (s: ChartSpace): ChartSpace => parseChartXml(chartToBytes(s));
 

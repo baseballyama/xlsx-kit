@@ -9,13 +9,13 @@ import {
   getCellNumberFormat,
   setCellAsCurrency,
   setCellFont,
-} from '../../../src/styles/cell-style';
-import { makeColor } from '../../../src/styles/colors';
-import { makeFill, makePatternFill } from '../../../src/styles/fills';
-import { makeFont } from '../../../src/styles/fonts';
-import { setCellFill } from '../../../src/styles/cell-style';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
-import { setCell } from '../../../src/worksheet/worksheet';
+} from '../../../src/xlsx/styles/cell-style';
+import { makeColor } from '../../../src/xlsx/styles/colors';
+import { makeFill, makePatternFill } from '../../../src/xlsx/styles/fills';
+import { makeFont } from '../../../src/xlsx/styles/fonts';
+import { setCellFill } from '../../../src/xlsx/styles/cell-style';
+import { addWorksheet, createWorkbook } from '../../../src/xlsx/workbook/workbook';
+import { setCell } from '../../../src/xlsx/worksheet/worksheet';
 
 describe('copyCellStyle (same workbook)', () => {
   it('shares the source styleId without allocating a new xf', () => {

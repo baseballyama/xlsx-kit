@@ -1,12 +1,12 @@
 // Tests for getCellsInRow / getCellsInColumn — enumerate populated cells.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
 import {
   getCellsInColumn,
   getCellsInRow,
   setCell,
-} from '../../src/worksheet/worksheet';
+} from '../../src/xlsx/worksheet/worksheet';
 
 describe('getCellsInRow / getCellsInColumn', () => {
   it('row: returns populated cells in column order, skipping gaps', () => {

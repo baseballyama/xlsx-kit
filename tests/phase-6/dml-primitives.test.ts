@@ -5,7 +5,7 @@ import {
   makeColor,
   makeSchemeColor,
   makeSrgbColor,
-} from '../../src/drawing/dml/colors';
+} from '../../src/xlsx/drawing/dml/colors';
 import {
   parseDmlColor,
   parseFill,
@@ -15,7 +15,7 @@ import {
   serializeFill,
   serializeLine,
   serializeShapeProperties,
-} from '../../src/drawing/dml/dml-xml';
+} from '../../src/xlsx/drawing/dml/dml-xml';
 import {
   type Fill,
   makeGradientFill,
@@ -23,9 +23,9 @@ import {
   makePatternFill,
   makeSolidFill,
   PRESET_PATTERN_NAMES,
-} from '../../src/drawing/dml/fill';
-import { type LineProperties, makeLine } from '../../src/drawing/dml/line';
-import { makeShapeProperties, type ShapeProperties } from '../../src/drawing/dml/shape-properties';
+} from '../../src/xlsx/drawing/dml/fill';
+import { type LineProperties, makeLine } from '../../src/xlsx/drawing/dml/line';
+import { makeShapeProperties, type ShapeProperties } from '../../src/xlsx/drawing/dml/shape-properties';
 import { parseXml } from '../../src/xml/parser';
 import { findChild } from '../../src/xml/tree';
 

@@ -1,8 +1,8 @@
 // Tests for appendRows — bulk version of appendRow.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { appendRow, appendRows } from '../../src/worksheet/worksheet';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { appendRow, appendRows } from '../../src/xlsx/worksheet/worksheet';
 
 describe('appendRows', () => {
   it('appends a 2D array of values and returns {firstRow, lastRow}', () => {

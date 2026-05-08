@@ -1,8 +1,8 @@
 // Tests for getRangeAddress — sheet-qualified A1 range string.
 
 import { describe, expect, it } from 'vitest';
-import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
-import { getRangeAddress } from '../../src/worksheet/worksheet';
+import { addWorksheet, createWorkbook } from '../../src/xlsx/workbook/workbook';
+import { getRangeAddress } from '../../src/xlsx/worksheet/worksheet';
 
 describe('getRangeAddress', () => {
   it('returns the sheet-qualified address for a single-cell ref', () => {

@@ -21,7 +21,7 @@ const mdsvexOptions = {
 };
 
 // BASE_PATH lets the same build run locally (=''), on a GitHub user page
-// or custom domain (=''), or on a project page (e.g. '/openxml-js'). Set
+// or custom domain (=''), or on a project page (e.g. '/ooxml-js'). Set
 // it in CI for GitHub Actions deploys.
 const basePath = process.env.BASE_PATH ?? '';
 
@@ -34,21 +34,22 @@ const config = {
     prerender: { entries: ['*'] },
     paths: { base: basePath, relative: true },
     alias: {
-      'openxml-js/cell': '../src/cell/index.ts',
-      'openxml-js/chart': '../src/chart/index.ts',
-      'openxml-js/chartsheet': '../src/chartsheet/index.ts',
-      'openxml-js/drawing': '../src/drawing/index.ts',
-      'openxml-js/io': '../src/io/index.ts',
-      'openxml-js/node': '../src/node.ts',
-      'openxml-js/packaging': '../src/packaging/index.ts',
-      'openxml-js/schema': '../src/schema/index.ts',
-      'openxml-js/streaming': '../src/streaming/index.ts',
-      'openxml-js/styles': '../src/styles/index.ts',
-      'openxml-js/utils': '../src/utils/index.ts',
-      'openxml-js/workbook': '../src/workbook/index.ts',
-      'openxml-js/worksheet': '../src/worksheet/index.ts',
-      'openxml-js/xml': '../src/xml/index.ts',
-      'openxml-js/zip': '../src/zip/index.ts',
+      'ooxml-js/xlsx/cell': '../src/xlsx/cell/index.ts',
+      'ooxml-js/xlsx/chart': '../src/xlsx/chart/index.ts',
+      'ooxml-js/xlsx/chartsheet': '../src/xlsx/chartsheet/index.ts',
+      'ooxml-js/xlsx/drawing': '../src/xlsx/drawing/index.ts',
+      'ooxml-js/xlsx/io': '../src/xlsx/io/index.ts',
+      'ooxml-js/xlsx/streaming': '../src/xlsx/streaming/index.ts',
+      'ooxml-js/xlsx/styles': '../src/xlsx/styles/index.ts',
+      'ooxml-js/xlsx/workbook': '../src/xlsx/workbook/index.ts',
+      'ooxml-js/xlsx/worksheet': '../src/xlsx/worksheet/index.ts',
+      'ooxml-js/io': '../src/io/index.ts',
+      'ooxml-js/node': '../src/node.ts',
+      'ooxml-js/packaging': '../src/packaging/index.ts',
+      'ooxml-js/schema': '../src/schema/index.ts',
+      'ooxml-js/utils': '../src/utils/index.ts',
+      'ooxml-js/xml': '../src/xml/index.ts',
+      'ooxml-js/zip': '../src/zip/index.ts',
     },
   },
 };

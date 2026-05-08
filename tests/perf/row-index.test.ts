@@ -8,8 +8,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer, toBuffer } from '../../src/io/node';
-import { createWriteOnlyWorkbook } from '../../src/streaming/write-only';
-import { loadWorkbookStream } from '../../src/streaming/read-only';
+import { createWriteOnlyWorkbook } from '../../src/xlsx/streaming/write-only';
+import { loadWorkbookStream } from '../../src/xlsx/streaming/read-only';
 
 const PERF_ROW_INDEX_GATE = process.env['PERF_ROW_INDEX_GATE'] === '1';
 // Row-index path should beat the no-min walk by a substantial margin

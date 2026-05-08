@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeColor } from '../../../src/styles/colors';
+import { makeColor } from '../../../src/xlsx/styles/colors';
 import {
   DEFAULT_EMPTY_FILL,
   DEFAULT_GRAY_FILL,
@@ -9,8 +9,8 @@ import {
   makeGradientStop,
   makePatternFill,
   PATTERN_TYPES,
-} from '../../../src/styles/fills';
-import { fillFromTree, fillToTree } from '../../../src/styles/fills.schema';
+} from '../../../src/xlsx/styles/fills';
+import { fillFromTree, fillToTree } from '../../../src/xlsx/styles/fills.schema';
 import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
 import { parseXml } from '../../../src/xml/parser';
 import { serializeXml } from '../../../src/xml/serializer';
