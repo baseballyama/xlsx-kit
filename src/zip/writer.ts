@@ -5,17 +5,19 @@
 // stream and the resulting ZIP chunks land on the sink one at a time —
 // the buffered `toBytes()` sink concatenates them on finish, while a
 // streaming sink can flush them as they arrive.
+//
+// ZIP64 (entry count > 65535): fflate's `Zip` emits a plain ZIP32 EOCD
+// in all cases, so on finalize we splice in a ZIP64 EOCD record + locator
+// when needed via `applyZip64EntryCountPatch`. That keeps the per-entry
+// LFH/CDH layout fflate produces (correct as long as no individual size
+// or offset overflows 32 bits) and only rewrites the trailing records
+// — enough for xlsx, which never approaches single-entry 4 GiB limits.
 
 import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import type { XlsxSink } from '../io/sink';
-import { OpenXmlIoError, OpenXmlNotImplementedError } from '../utils/exceptions';
+import { OpenXmlIoError } from '../utils/exceptions';
+import { applyZip64EntryCountPatch } from './zip64-patch';
 
-// ZIP32 caps the End-of-Central-Directory entry-count fields at 16 bits.
-// fflate's writer doesn't emit a ZIP64 record when this overflows, which
-// would produce an archive that readers truncate to (count % 65536) on
-// the central directory. We surface that as a clear error so callers
-// know to split their archives. xlsx files in the wild are several
-// orders of magnitude below this limit.
 const ZIP32_MAX_ENTRIES = 0xffff;
 
 export interface ZipWriter {
@@ -73,6 +75,11 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
   let endCalled = false;
   const seen = new Set<string>();
   const errors: Error[] = [];
+  // fflate emits the [CD | EOCD] block in a single ondata call with
+  // `final=true`. We capture only that chunk so we can apply the ZIP64
+  // patch on finalize; all preceding entry-data chunks stream straight
+  // to the sink to preserve the writer's incremental flushing contract.
+  let finalChunk: Uint8Array | undefined;
   let zipFinishResolve: (() => void) | undefined;
   const zipFinishPromise = new Promise<void>((resolve) => {
     zipFinishResolve = resolve;
@@ -85,7 +92,14 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
     }
     // ZipDeflate emits an empty trailer chunk on the final callback even
     // when there are no bytes; guard against pushing an undefined chunk.
-    if (chunk && chunk.byteLength > 0) writer.write(chunk);
+    if (chunk && chunk.byteLength > 0) {
+      if (final) {
+        // Buffer the trailing CD + EOCD block; written after possible patch.
+        finalChunk = chunk;
+      } else {
+        writer.write(chunk);
+      }
+    }
     if (final && zipFinishResolve) {
       zipFinishResolve();
       zipFinishResolve = undefined;
@@ -103,11 +117,6 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
     }
     if (seen.has(path)) {
       throw new OpenXmlIoError(`createZipWriter: duplicate entry "${path}"`);
-    }
-    if (seen.size >= ZIP32_MAX_ENTRIES) {
-      throw new OpenXmlNotImplementedError(
-        `createZipWriter: archive would exceed the ZIP32 entry limit (${ZIP32_MAX_ENTRIES}). ZIP64 write is not supported by the underlying deflate library; split the archive into multiple files.`,
-      );
     }
   };
 
@@ -195,6 +204,17 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
         await zipFinishPromise;
         if (errors.length > 0) {
           throw new OpenXmlIoError('createZipWriter: stream error during finalize', { cause: errors[0] });
+        }
+
+        // Apply the ZIP64 patch to fflate's [CD | EOCD] tail when the
+        // entry count exceeds ZIP32's 16-bit cap, then flush the
+        // (possibly patched) tail to the sink.
+        if (finalChunk) {
+          const patched =
+            seen.size > ZIP32_MAX_ENTRIES
+              ? applyZip64EntryCountPatch(finalChunk, seen.size)
+              : finalChunk;
+          writer.write(patched);
         }
         return writer.finish();
       })();
