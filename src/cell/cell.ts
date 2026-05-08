@@ -271,6 +271,11 @@ export function cellHasHyperlink(c: Cell): boolean {
   return c.hyperlinkId !== undefined;
 }
 
+/** Returns true iff the cell has a comment registered (`commentId` set). */
+export function cellHasComment(c: Cell): boolean {
+  return c.commentId !== undefined;
+}
+
 /**
  * Get the formula text from a formula-bearing cell, or `undefined`
  * for non-formula cells. Equivalent to:

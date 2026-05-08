@@ -12,6 +12,7 @@ export type {
 } from './cell';
 export {
   bindValue,
+  cellHasComment,
   cellHasHyperlink,
   cellValueAsBoolean,
   cellValueAsDate,
