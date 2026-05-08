@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`richTextStartsWith(rt, search, fromIndex?)` 先頭一致 helper を追加** — `String.prototype.startsWith` 同等の boolean predicate。`richTextToString(rt).startsWith(search, fromIndex)` の thin wrapper。空 `search` は `true`。`fromIndex` 省略時は 0 (`String.prototype.startsWith` 仕様準拠)。
+- **次のタスク**: **`richTextEndsWith(rt, search, endIndex?)` 末尾一致 helper を追加** — `String.prototype.endsWith` 同等の boolean predicate。`richTextToString(rt).endsWith(search, endIndex)` の thin wrapper。空 `search` は `true`。`endIndex` 省略時は length (`String.prototype.endsWith` 仕様準拠)。
+  1. `src/cell/rich-text.ts` に `richTextEndsWith(rt: RichText, search: string, endIndex?: number): boolean` を export 追加: `richTextToString(rt).endsWith(search, endIndex)` を return。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextEndsWith` を re-export。
+  3. `tests/phase-2/rich-text-ends-with.test.ts` 4 件: 単一 run 内で末尾一致 / 複数 run 跨ぎ末尾一致 / 一致しない / `endIndex` 指定で短縮範囲の末尾照合。
+
+- **次のタスク (前回)**: **`richTextStartsWith(rt, search, fromIndex?)` 先頭一致 helper を追加** — `String.prototype.startsWith` 同等の boolean predicate。`richTextToString(rt).startsWith(search, fromIndex)` の thin wrapper。空 `search` は `true`。`fromIndex` 省略時は 0 (`String.prototype.startsWith` 仕様準拠)。
   1. `src/cell/rich-text.ts` に `richTextStartsWith(rt: RichText, search: string, fromIndex?: number): boolean` を export 追加: `richTextToString(rt).startsWith(search, fromIndex)` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextStartsWith` を re-export。
   3. `tests/phase-2/rich-text-starts-with.test.ts` 4 件: 単一 run 内で先頭一致 / 複数 run 跨ぎ先頭一致 / 一致しない / `fromIndex` 指定で内部位置から照合。
 
-- **次のタスク (前回)**: **`richTextIncludes(rt, search, fromIndex?)` 部分文字列判定 helper を追加** — `String.prototype.includes` 同等の boolean predicate。`findRichTextIndex(rt, search, fromIndex) >= 0` の thin wrapper。空 `search` は `true` (`String.prototype.includes` 仕様)。
+  empirical: 2488 tests pass (was 2484, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`richTextIncludes(rt, search, fromIndex?)` 部分文字列判定 helper を追加** — `String.prototype.includes` 同等の boolean predicate。`findRichTextIndex(rt, search, fromIndex) >= 0` の thin wrapper。空 `search` は `true` (`String.prototype.includes` 仕様)。
   1. `src/cell/rich-text.ts` に `richTextIncludes(rt: RichText, search: string, fromIndex?: number): boolean` を export 追加: `findRichTextIndex(rt, search, fromIndex) >= 0` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `richTextIncludes` を re-export。
   3. `tests/phase-2/rich-text-includes.test.ts` 4 件: 単一 run 内で含む / 複数 run 跨ぎ含む / 含まない / 空 search で true。

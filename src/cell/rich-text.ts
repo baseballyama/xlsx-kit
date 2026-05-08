@@ -190,6 +190,15 @@ export function richTextIncludes(rt: RichText, search: string, fromIndex?: numbe
 }
 
 /**
+ * Returns true iff the concatenated text of `rt` starts with `search` at
+ * `fromIndex` (default 0). Mirrors `String.prototype.startsWith` semantics,
+ * including treating an empty `search` as `true`.
+ */
+export function richTextStartsWith(rt: RichText, search: string, fromIndex?: number): boolean {
+  return richTextToString(rt).startsWith(search, fromIndex);
+}
+
+/**
  * Reverse the rich-text by reversing each run's text (code-point-safe) and
  * also reversing the run order. The total concatenated text equals the
  * reverse of `richTextToString(rt)`; per-character font assignments are

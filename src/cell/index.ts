@@ -62,6 +62,7 @@ export {
   richTextIncludes,
   richTextLength,
   makeTextRun as richTextRun,
+  richTextStartsWith,
   richTextToString,
   sliceRichText,
   splitRichTextRuns,
