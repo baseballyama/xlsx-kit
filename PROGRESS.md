@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`padStartRichText(rt, targetLength, padString?)` 先頭パディング helper を追加** — `padEndRichText` の対。`String.prototype.padStart` 同等の semantics で `rt` の先頭に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として先頭に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
+- **次のタスク**: **`repeatRichText(rt, count)` 繰り返し helper を追加** — `String.prototype.repeat` 同等の semantics で `rt` を `count` 回連結した新しい RichText を返す。各 run の font は repeat 全体を通じて保持。`count = 0` または空 `rt` で空 RichText、`count = 1` で `rt` をそのまま返す (no-op fast path)。負・非有限・小数は `RangeError` (Math.floor で整数化、ただし負/NaN/Infinity は throw)。
+  1. `src/cell/rich-text.ts` に `repeatRichText(rt: RichText, count: number): RichText` を export 追加: `Number.isFinite(count) && count >= 0` ガード→ `Math.floor(count)` → 0 または 空 rt で `makeRichText([])` / 1 で `rt` / それ以外は `concatRichText(...Array(n).fill(rt))`。
+  2. `src/cell/index.ts` (= subpath barrel) から `repeatRichText` を re-export。
+  3. `tests/phase-2/rich-text-repeat.test.ts` 5 件: count=3 で複数 run repeat (font 維持) / count=0 で空 / count=1 で同 rt 返却 / 空 rt で count=5 でも空 / 負 count で RangeError。
+
+- **次のタスク (前回)**: **`padStartRichText(rt, targetLength, padString?)` 先頭パディング helper を追加** — `padEndRichText` の対。`String.prototype.padStart` 同等の semantics で `rt` の先頭に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として先頭に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
   1. `src/cell/rich-text.ts` に `padStartRichText(rt: RichText, targetLength: number, padString?: string): RichText` を export 追加: `richTextLength(rt)` → 不足分 `n = targetLength - cur` を `''.padStart(n, padString ?? ' ')` で生成 → `concatRichText(padded, rt)`。`padString === ''` または `targetLength <= cur` で `rt` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `padStartRichText` を re-export。
   3. `tests/phase-2/rich-text-pad-start.test.ts` 4 件: default ' ' で先頭パディング (font 既存 run 維持) / カスタム padString が割り切れない場合 / `targetLength <= length` で no-op / 空 padString で no-op。
 
-- **次のタスク (前回)**: **`padEndRichText(rt, targetLength, padString?)` 末尾パディング helper を追加** — `String.prototype.padEnd` 同等の semantics で `rt` の末尾に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として末尾に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
+  empirical: 2475 tests pass (was 2471, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`padEndRichText(rt, targetLength, padString?)` 末尾パディング helper を追加** — `String.prototype.padEnd` 同等の semantics で `rt` の末尾に `padString` (default `' '`) を `targetLength` 文字到達まで詰める。pad 部分は font なしの単一 run として末尾に concat。`targetLength <= 現在の length` または空 `padString` は input そのまま返す。
   1. `src/cell/rich-text.ts` に `padEndRichText(rt: RichText, targetLength: number, padString?: string): RichText` を export 追加: `richTextLength(rt)` → 不足分 `n = targetLength - cur` を `''.padEnd(n, padString ?? ' ')` で文字列生成 → `concatRichText(rt, padded)`。`padString === ''` または `targetLength <= cur` で `rt` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `padEndRichText` を re-export。
   3. `tests/phase-2/rich-text-pad-end.test.ts` 4 件: default ' ' で末尾パディング (font 既存 run 維持) / カスタム padString が割り切れない場合 (e.g. `'ab'` を 5 char target で `'ababa'` 部分) / `targetLength <= length` で no-op / 空 padString で no-op。
