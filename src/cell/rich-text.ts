@@ -62,6 +62,11 @@ export function richText(text: string, font?: InlineFont): RichText {
   return makeRichText([font !== undefined ? { text, font } : { text }]);
 }
 
+/** Return a new frozen RichText with `(text, font?)` appended. The input is not mutated. */
+export function appendRichTextRun(rt: RichText, text: string, font?: InlineFont): RichText {
+  return makeRichText([...rt, makeTextRun(text, font)]);
+}
+
 /**
  * Concatenate the plain-text content of a rich-text value (rich-text
  * read paths often want the raw text without formatting).
