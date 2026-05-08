@@ -55,5 +55,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
+      # ECMA-376 conformance tests shell out to xmllint (libxml2-utils).
+      # ubuntu-latest usually ships it, but install explicitly so the gate
+      # never silently degrades to "no schema validation ran".
+      - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
