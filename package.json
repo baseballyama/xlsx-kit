@@ -99,8 +99,7 @@
     }
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "scripts": {
     "prepare": "git submodule update --init --recursive || true",
