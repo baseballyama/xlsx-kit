@@ -181,6 +181,22 @@ export function findRichTextIndex(rt: RichText, search: string, fromIndex?: numb
 }
 
 /**
+ * Reverse the rich-text by reversing each run's text (code-point-safe) and
+ * also reversing the run order. The total concatenated text equals the
+ * reverse of `richTextToString(rt)`; per-character font assignments are
+ * preserved (each font travels with its character).
+ */
+export function reverseRichText(rt: RichText): RichText {
+  const reversedRuns: TextRun[] = [];
+  for (const r of rt) {
+    const reversedText = Array.from(r.text).reverse().join('');
+    reversedRuns.push(makeTextRun(reversedText, r.font));
+  }
+  reversedRuns.reverse();
+  return makeRichText(reversedRuns);
+}
+
+/**
  * Replace every non-overlapping occurrence of `search` with `replacement`,
  * returning a new RichText. An empty `search` is a no-op (returns `rt`
  * unchanged).

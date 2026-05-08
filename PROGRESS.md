@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`reverseRichText(rt)` 逆順 helper を追加** — RichText の各 run の text を反転 (Array.from + reverse + join, code-point safe) し、run 順序も反転した新しい RichText を返す。`richTextToString(rt).split('').reverse().join('')` の文字列等価動作だが run-level の font は (反転位置にあわせて) 移動する。
+- **次のタスク**: **`trimRichText(rt)` ASCII 空白トリム helper を追加** — RichText 全体の前後の空白 (ASCII space / tab / CR / LF) を削除した新しい RichText を返す。実装は `richTextToString(rt)` の前後 trim 量を計測 → `sliceRichText(rt, leadingTrim, length - trailingTrim)`。中間の空白は維持。
+  1. `src/cell/rich-text.ts` に `trimRichText(rt: RichText): RichText` を export 追加: `richTextToString` → `String.prototype.search(/\S/)` で leadingTrim を、reverse search で trailingTrim を求める (全 whitespace なら空 RichText)。`sliceRichText` で再構築。
+  2. `src/cell/index.ts` (= subpath barrel) から `trimRichText` を re-export。
+  3. `tests/phase-2/rich-text-trim.test.ts` 4 件: 単一 run 前後トリム (font 維持) / 複数 run 跨ぎ前後トリム / 全 whitespace で空 RichText / 中間空白は維持。
+
+- **次のタスク (前回)**: **`reverseRichText(rt)` 逆順 helper を追加** — RichText の各 run の text を反転 (Array.from + reverse + join, code-point safe) し、run 順序も反転した新しい RichText を返す。`richTextToString(rt).split('').reverse().join('')` の文字列等価動作だが run-level の font は (反転位置にあわせて) 移動する。
   1. `src/cell/rich-text.ts` に `reverseRichText(rt: RichText): RichText` を export 追加: 各 run を `makeTextRun(Array.from(r.text).reverse().join(''), r.font)` として再生成 → 配列を `.reverse()` → `makeRichText`。
   2. `src/cell/index.ts` (= subpath barrel) から `reverseRichText` を re-export。
   3. `tests/phase-2/rich-text-reverse.test.ts` 4 件: 単一 run 反転 (font 維持) / 複数 run 反転 (順序+各 run text 両方反転) / 空 RichText で空 / `splitRichTextRuns` 経由でも結果一致。
 
-- **次のタスク (前回)**: **`replaceAllRichText(rt, search, replacement)` 全置換 helper を追加** — `findRichTextIndex` + `replaceRichText` の primitive を組み合わせた高レベル helper。`search: string` の全出現を `replacement: RichText | string` で置換した新しい RichText を返す。空 `search` は no-op (input そのまま)。
+  empirical: 2463 tests pass (was 2459, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`replaceAllRichText(rt, search, replacement)` 全置換 helper を追加** — `findRichTextIndex` + `replaceRichText` の primitive を組み合わせた高レベル helper。`search: string` の全出現を `replacement: RichText | string` で置換した新しい RichText を返す。空 `search` は no-op (input そのまま)。
   1. `src/cell/rich-text.ts` に `replaceAllRichText(rt: RichText, search: string, replacement: RichText | string): RichText` を export 追加: ループで `findRichTextIndex` → `replaceRichText`、search.length 分 fromIndex 進める。replacement の length は新 fromIndex 計算に使用 (string なら length、RichText なら richTextLength)。空 search は input return。
   2. `src/cell/index.ts` (= subpath barrel) から `replaceAllRichText` を re-export。
   3. `tests/phase-2/rich-text-replace-all.test.ts` 4 件: 単一 run 内で全置換 / 複数 run 跨ぎ全置換 / RichText replacement で font 維持 / 空 search で no-op。
