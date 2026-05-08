@@ -262,6 +262,24 @@ export function concatRichText(...parts: ReadonlyArray<RichText | string | TextR
 }
 
 /**
+ * Repeat `rt` `count` times, returning a new RichText. Each run's font is
+ * preserved across repetitions. Mirrors `String.prototype.repeat` semantics:
+ * `count = 0` (or empty `rt`) yields an empty RichText, `count = 1` returns
+ * `rt` unchanged, and a negative or non-finite `count` throws `RangeError`.
+ * Fractional `count` is truncated toward zero.
+ */
+export function repeatRichText(rt: RichText, count: number): RichText {
+  if (!Number.isFinite(count) || count < 0) {
+    throw new RangeError('repeatRichText: count must be a non-negative finite number');
+  }
+  const n = Math.floor(count);
+  if (n === 0 || rt.length === 0) return makeRichText([]);
+  if (n === 1) return rt;
+  const parts: RichText[] = new Array(n).fill(rt);
+  return concatRichText(...parts);
+}
+
+/**
  * Pad the start of `rt` with copies of `padString` (default `' '`) until the
  * concatenated text length reaches `targetLength`, mirroring
  * `String.prototype.padStart`. The pad characters form a single font-less

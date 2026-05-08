@@ -54,6 +54,7 @@ export {
   mergeAdjacentRichTextRuns,
   padEndRichText,
   padStartRichText,
+  repeatRichText,
   replaceAllRichText,
   replaceRichText,
   reverseRichText,
