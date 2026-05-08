@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`insertRichText(rt, index, insertion)` 部分挿入 helper を追加** — `replaceRichText` の cousin。`index` 位置に `insertion: RichText | string` を挿入した新しい RichText を返す。実装は `replaceRichText(rt, index, index, insertion)` の thin alias。負 index は `String.prototype.slice` 同様の semantics。
+- **次のタスク**: **`findRichTextIndex(rt, search, fromIndex?)` 検索 helper を追加** — `richTextToString(rt).indexOf(search, fromIndex)` の thin wrapper だが、内部で string concat を 1 回しか行わない (毎回ループ inline)。string 内の最初の出現位置 (見つからなければ -1) を返す ergonomic helper。`replaceRichText` / `sliceRichText` と組み合わせて find-and-replace の primitive となる。
+  1. `src/cell/rich-text.ts` に `findRichTextIndex(rt: RichText, search: string, fromIndex?: number): number` を export 追加: 内部で `richTextToString(rt)` を生成し `String.prototype.indexOf(search, fromIndex)` 結果を return (シンプルな実装、後で最適化可能)。空 string `''` は仕様上 `String.prototype.indexOf` と同じ semantics (常に `fromIndex` 返却)。
+  2. `src/cell/index.ts` (= subpath barrel) から `findRichTextIndex` を re-export。
+  3. `tests/phase-2/rich-text-find.test.ts` 4 件: 単一 run 内で検索 / 複数 run 跨ぎ検索 / `fromIndex` で 2nd 出現発見 / 見つからない場合 -1。
+
+- **次のタスク (前回)**: **`insertRichText(rt, index, insertion)` 部分挿入 helper を追加** — `replaceRichText` の cousin。`index` 位置に `insertion: RichText | string` を挿入した新しい RichText を返す。実装は `replaceRichText(rt, index, index, insertion)` の thin alias。負 index は `String.prototype.slice` 同様の semantics。
   1. `src/cell/rich-text.ts` に `insertRichText(rt: RichText, index: number, insertion: RichText | string): RichText` を export 追加: `replaceRichText(rt, index, index, insertion)` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `insertRichText` を re-export。
   3. `tests/phase-2/rich-text-insert.test.ts` 4 件: 中間挿入 / 先頭挿入 (index=0) / 末尾挿入 (index=length) / 負 index で末尾オフセット挿入。
 
-- **次のタスク (前回)**: **`replaceRichText(rt, start, end, replacement)` 部分置換 helper を追加** — `sliceRichText` の cousin。`[start, end)` 範囲を `replacement: RichText | string` で置き換えた新しい RichText を返す。`String.prototype.slice` 同様の負 index semantics。`replacement` の各 run は font を保持。
+  empirical: 2451 tests pass (was 2447, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`replaceRichText(rt, start, end, replacement)` 部分置換 helper を追加** — `sliceRichText` の cousin。`[start, end)` 範囲を `replacement: RichText | string` で置き換えた新しい RichText を返す。`String.prototype.slice` 同様の負 index semantics。`replacement` の各 run は font を保持。
   1. `src/cell/rich-text.ts` に `replaceRichText(rt: RichText, start: number, end: number, replacement: RichText | string): RichText` を export 追加。`sliceRichText(rt, 0, start)` と `sliceRichText(rt, end)` の前後を、string 形式 replacement は `richText(replacement)`、RichText 形式は as-is で `concatRichText` 結合。
   2. `src/cell/index.ts` (= subpath barrel) から `replaceRichText` を re-export。
   3. `tests/phase-2/rich-text-replace.test.ts` 5 件: string replacement で単純置換 / RichText replacement で font 保持 / 空 replacement で削除 / 負 index 処理 / 末尾まで置換 (`end >= length`)。

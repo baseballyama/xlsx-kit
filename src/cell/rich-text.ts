@@ -162,6 +162,15 @@ export function replaceRichText(
 }
 
 /**
+ * Insert `insertion` (a `RichText` or font-less `string`) at `index`.
+ * Equivalent to `replaceRichText(rt, index, index, insertion)`. Negative
+ * indices follow `String.prototype.slice`.
+ */
+export function insertRichText(rt: RichText, index: number, insertion: RichText | string): RichText {
+  return replaceRichText(rt, index, index, insertion);
+}
+
+/**
  * Merge adjacent runs whose `font` is structurally equal, concatenating their
  * `text`. Useful as a cleanup pass after `splitRichTextRuns`, per-char
  * styling, or `concatRichText` chains. The input is not mutated.
