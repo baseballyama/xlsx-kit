@@ -23,9 +23,10 @@ import {
 import { boundariesToRangeString } from '../utils/coordinate';
 import { getDataExtent, readRangeAsObjects, type Worksheet } from './worksheet';
 
-type JsonValue = string | number | boolean | null;
+export type JsonValue = string | number | boolean | null;
+export type JsonRow = Record<string, JsonValue>;
 
-const cellValueAsJson = (v: CellValue | null): JsonValue => {
+export const cellValueAsJson = (v: CellValue | null): JsonValue => {
   if (v === null) return null;
   if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
   if (v instanceof Date) return v.toISOString();
@@ -68,17 +69,30 @@ export function worksheetToJson(
   range: string,
   opts: WorksheetToJsonOptions = {},
 ): string {
+  return JSON.stringify(worksheetRowsAsJson(ws, range, opts), null, opts.pretty ? 2 : undefined);
+}
+
+/**
+ * Build an array of JSON-safe row objects for a range. Same coercion
+ * as {@link worksheetToJson} but returns structured rows instead of
+ * a serialised string, so workbook-wide aggregators can `JSON.stringify`
+ * once over the combined shape (e.g. {@link getWorkbookAsJsonString}).
+ */
+export function worksheetRowsAsJson(
+  ws: Worksheet,
+  range: string,
+  opts: WorksheetToJsonOptions = {},
+): JsonRow[] {
   const rows = readRangeAsObjects(
     ws,
     range,
     opts.skipEmptyRows ? { skipEmptyRows: true } : {},
   );
-  const mapped: Record<string, JsonValue>[] = rows.map((row) => {
-    const obj: Record<string, JsonValue> = {};
+  return rows.map((row) => {
+    const obj: JsonRow = {};
     for (const [k, v] of Object.entries(row)) obj[k] = cellValueAsJson(v);
     return obj;
   });
-  return JSON.stringify(mapped, null, opts.pretty ? 2 : undefined);
 }
 
 /**
@@ -92,4 +106,19 @@ export function getWorksheetAsJson(ws: Worksheet, opts: WorksheetToJsonOptions =
   const ext = getDataExtent(ws);
   if (!ext) return '[]';
   return worksheetToJson(ws, boundariesToRangeString(ext), opts);
+}
+
+/**
+ * Whole-worksheet variant of {@link worksheetRowsAsJson} (data extent →
+ * `JsonRow[]`). Returns `[]` for an empty worksheet. Used by
+ * {@link getWorkbookAsJsonString} to assemble a single combined JSON
+ * document without re-parsing per-sheet output.
+ */
+export function getWorksheetRowsAsJson(
+  ws: Worksheet,
+  opts: WorksheetToJsonOptions = {},
+): JsonRow[] {
+  const ext = getDataExtent(ws);
+  if (!ext) return [];
+  return worksheetRowsAsJson(ws, boundariesToRangeString(ext), opts);
 }

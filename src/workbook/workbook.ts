@@ -32,7 +32,12 @@ import { coordinateToTuple, parseSheetRange } from '../utils/coordinate';
 import { multiCellRangeContainsCell, parseRange, rangeContainsCell, rangeToString } from '../worksheet/cell-range';
 import { getWorksheetAsCsv, parseCsvToRange } from '../worksheet/csv';
 import { getWorksheetAsHtml } from '../worksheet/html';
-import { getWorksheetAsJson, type WorksheetToJsonOptions } from '../worksheet/json';
+import {
+  getWorksheetAsJson,
+  getWorksheetRowsAsJson,
+  type JsonRow,
+  type WorksheetToJsonOptions,
+} from '../worksheet/json';
 import { getWorksheetAsMarkdownTable } from '../worksheet/markdown';
 import { getWorksheetAsTextTable } from '../worksheet/text';
 import type { LegacyComment } from '../worksheet/comments';
@@ -1306,6 +1311,33 @@ export function getWorkbookAsJsonRecord(
     out[ws.title] = getWorksheetAsJson(ws, opts);
   }
   return out;
+}
+
+/**
+ * Workbook-wide JSON export bundled into a single JSON document.
+ * Returns a string of the shape `{"<sheet1>":[…],"<sheet2>":[…]}`,
+ * keyed by sheet title with each value a `JsonRow[]` (data extent of
+ * that sheet, same coercion as {@link worksheetToJson}). Empty
+ * worksheets serialise as `[]`. Chartsheets are skipped.
+ *
+ * Unlike {@link getWorkbookAsJsonRecord} (which returns a `Record`
+ * of pre-serialised JSON strings), this produces one combined JSON
+ * document — useful when piping the workbook to a JSON sink that
+ * expects a single value.
+ *
+ * `opts.pretty` applies 2-space indentation to the outer document
+ * and is forwarded to per-sheet row coercion. `opts.skipEmptyRows`
+ * is forwarded too.
+ */
+export function getWorkbookAsJsonString(
+  wb: Workbook,
+  opts: WorksheetToJsonOptions = {},
+): string {
+  const out: Record<string, JsonRow[]> = {};
+  for (const ws of iterWorksheets(wb)) {
+    out[ws.title] = getWorksheetRowsAsJson(ws, opts);
+  }
+  return JSON.stringify(out, null, opts.pretty ? 2 : undefined);
 }
 
 /**

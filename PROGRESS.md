@@ -37,13 +37,22 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`getWorkbookAsJsonString(wb, opts?)` を追加** — JSON export matrix の最後の 1 ピース。Record を 1 本の JSON ドキュメントに結合 (`{ "<sheetTitle>": [...rows] }`)。
+- **次のタスク**: **`parseJsonToRange(ws, range, json, opts?)` を追加** — JSON 配列 → worksheet range の inverse import。`worksheetToJson` の round-trip パートナー。
+  1. `src/worksheet/json.ts` に `parseJsonToRange(ws, topLeft: string, json: string | unknown[], opts?: { keys?: string[] })` を追加: `JSON.parse` (string 渡し時) → `keys` 指定 or `Object.keys(rows[0])` で header 順を確定 → header row を `topLeft` から書き、続く各 row を `cellValueFromJson` で coerce してセット。空 array no-op。
+  2. cell value 復元規則: number / boolean / null は as-is、ISO 8601 string は `Date` に再構築 (`/^\d{4}-\d{2}-\d{2}T/` で短絡)、それ以外の string はそのまま、object/array は `String(...)` fallback。
+  3. `src/worksheet/index.ts` から re-export。
+  4. `tests/phase-5/parse-json-to-range.test.ts` 6 件: 通常 / `keys` で header 並べ替え / Date round-trip / null 値 / 空 array で no-op / number/boolean/string mix。
+  5. round-trip 用 e2e: `tests/phase-5/worksheet-json-roundtrip.test.ts` 2 件 (worksheetToJson → parseJsonToRange / opts.skipEmptyRows + restore identity)。
+
+- **次のタスク (前回)**: **`getWorkbookAsJsonString(wb, opts?)` を追加** — JSON export matrix の最後の 1 ピース。Record を 1 本の JSON ドキュメントに結合 (`{ "<sheetTitle>": [...rows] }`)。
   1. `src/workbook/workbook.ts` に `getWorkbookAsJsonString(wb, opts?)` を追加: iterWorksheets walk で `Record<string, JsonRow[]>` を組み立て (chartsheet skip / 空 sheet は `[]`)、`JSON.stringify(..., null, opts.pretty ? 2 : undefined)`。row 値は `worksheetToJson` と同じ coercion (Date→ISO / formula→cached or text / duration→ms / error→code / rich-text→concat text)。
-  2. `getWorksheetAsJson` の cell-coercion ロジックを再利用しやすくするため、`src/worksheet/json.ts` から `cellValueAsJson` を named export して共有 (or 新 helper `worksheetRowsAsJson(ws, opts?)` を追加して内部利用)。
+  2. `getWorksheetAsJson` の cell-coercion ロジックを再利用しやすくするため、`src/worksheet/json.ts` から `cellValueAsJson` を named export して共有 (or 新 helper `worksheetRowsAsJson(ws, opts?)` を追加して内部利用)。 → 後者を採用 + `getWorksheetRowsAsJson` も追加 (ext → JsonRow[])。`JsonValue` / `JsonRow` も export。
   3. `src/workbook/index.ts` から re-export。
   4. `tests/phase-3/workbook-as-json-string.test.ts` 5 件: 通常 (複数 sheet) / 空 wb は `'{}'` / 空 sheet は `[]` 値 / opts.pretty / chartsheet skip。
 
-- **次のタスク (前回)**: **`getWorksheetAsJson(ws, opts?)` + `getWorkbookAsJsonRecord(wb, opts?)` を追加** — JSON export matrix の per-sheet shortcut + workbook Record。
+  empirical: 2390 tests pass (was 2385, +5)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`getWorksheetAsJson(ws, opts?)` + `getWorkbookAsJsonRecord(wb, opts?)` を追加** — JSON export matrix の per-sheet shortcut + workbook Record。
   1. `src/worksheet/json.ts` に `getWorksheetAsJson(ws, opts?)` を追加: getDataExtent → boundariesToRangeString → worksheetToJson。空 ws は `'[]'`。
   2. `src/workbook/workbook.ts` に `getWorkbookAsJsonRecord(wb, opts?)` を追加: iterWorksheets + getWorksheetAsJson → Record (chartsheet skip)。
   3. `src/worksheet/index.ts` + `src/workbook/index.ts` から re-export。

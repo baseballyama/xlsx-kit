@@ -48,6 +48,7 @@ export {
   getWorkbookAsCsvRecord,
   getWorkbookAsHtmlRecord,
   getWorkbookAsJsonRecord,
+  getWorkbookAsJsonString,
   getWorkbookAsMarkdownRecord,
   getWorkbookAsTextTableRecord,
   getWorkbookCellsByKind,
