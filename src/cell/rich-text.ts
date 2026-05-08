@@ -68,6 +68,17 @@ export function appendRichTextRun(rt: RichText, text: string, font?: InlineFont)
 }
 
 /**
+ * Apply `fn` to each run, returning a new frozen RichText. Useful for run-level
+ * bulk transforms (e.g. add `b: true` to every run). The input is not mutated.
+ */
+export function mapRichTextRuns(
+  rt: RichText,
+  fn: (run: TextRun, index: number) => TextRun | { text: string; font?: InlineFont },
+): RichText {
+  return makeRichText(Array.from(rt, fn));
+}
+
+/**
  * Flatten any number of `RichText | string | TextRun` parts into a single
  * frozen RichText. `string` becomes a font-less 1-run; `TextRun` becomes a
  * single run; `RichText` (array) is spread in.

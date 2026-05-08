@@ -47,6 +47,7 @@ export {
   concatRichText,
   makeRichText,
   makeTextRun,
+  mapRichTextRuns,
   richText,
   richTextLength,
   makeTextRun as richTextRun,
