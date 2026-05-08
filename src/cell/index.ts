@@ -23,6 +23,7 @@ export {
   getFormulaText,
   isDurationValue,
   isEmptyCell,
+  isErrorCell,
   isErrorValue,
   isFormulaCell,
   isFormulaValue,

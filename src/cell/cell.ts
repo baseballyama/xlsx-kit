@@ -296,6 +296,11 @@ export function isMergedCell(c: Cell): c is MergedCell {
   return (c as MergedCell).merged === true;
 }
 
+/** Returns true iff the cell holds an Excel error value (`#REF!`, `#NAME?`, …). */
+export function isErrorCell(c: Cell): boolean {
+  return isErrorValue(c.value);
+}
+
 /**
  * Get the formula text from a formula-bearing cell, or `undefined`
  * for non-formula cells. Equivalent to:
