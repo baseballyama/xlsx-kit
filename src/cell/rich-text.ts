@@ -101,6 +101,38 @@ export function splitRichTextRuns(rt: RichText): RichText {
 }
 
 /**
+ * Slice the concatenated text of all runs as if it were one string, returning a
+ * new RichText covering `[start, end)`. Each output run keeps its parent run's
+ * font. Negative indices are interpreted relative to the total length, mirroring
+ * `String.prototype.slice`. An out-of-range or empty range yields `[]`.
+ */
+export function sliceRichText(rt: RichText, start: number, end?: number): RichText {
+  const total = richTextLength(rt);
+  let s = Math.trunc(start);
+  let e = end === undefined ? total : Math.trunc(end);
+  if (s < 0) s = Math.max(0, total + s);
+  if (e < 0) e = Math.max(0, total + e);
+  s = Math.min(s, total);
+  e = Math.min(e, total);
+  if (s >= e) return makeRichText([]);
+  const out: TextRun[] = [];
+  let cursor = 0;
+  for (const r of rt) {
+    const runLen = r.text.length;
+    if (runLen === 0) continue;
+    const runStart = cursor;
+    const runEnd = cursor + runLen;
+    cursor = runEnd;
+    if (runEnd <= s) continue;
+    if (runStart >= e) break;
+    const localStart = Math.max(0, s - runStart);
+    const localEnd = Math.min(runLen, e - runStart);
+    out.push(makeTextRun(r.text.slice(localStart, localEnd), r.font));
+  }
+  return makeRichText(out);
+}
+
+/**
  * Merge adjacent runs whose `font` is structurally equal, concatenating their
  * `text`. Useful as a cleanup pass after `splitRichTextRuns`, per-char
  * styling, or `concatRichText` chains. The input is not mutated.
