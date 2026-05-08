@@ -287,6 +287,16 @@ export function isStyledCell(c: Cell): boolean {
 }
 
 /**
+ * Type guard for `MergedCell` — true iff the cell is a placeholder for
+ * a merged-range covered cell (the top-left of a merged range holds
+ * the value; the rest are `MergedCell`). Use this to filter merge-
+ * placeholders out of value-walking loops.
+ */
+export function isMergedCell(c: Cell): c is MergedCell {
+  return (c as MergedCell).merged === true;
+}
+
+/**
  * Get the formula text from a formula-bearing cell, or `undefined`
  * for non-formula cells. Equivalent to:
  *   isFormulaValue(c.value) ? c.value.formula : undefined

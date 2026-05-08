@@ -26,6 +26,7 @@ export {
   isErrorValue,
   isFormulaCell,
   isFormulaValue,
+  isMergedCell,
   isRichTextCell,
   isRichTextValue,
   isStyledCell,
