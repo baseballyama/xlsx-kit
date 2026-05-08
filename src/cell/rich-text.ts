@@ -95,6 +95,14 @@ export function clearFontsInRichText(rt: RichText): RichText {
 }
 
 /**
+ * Apply `font` to every run, **overriding** existing per-run formatting.
+ * Cousin of `applyFontToRichText`, which preserves per-run fonts.
+ */
+export function setFontOnRichText(rt: RichText, font: InlineFont): RichText {
+  return mapRichTextRuns(rt, (r) => ({ text: r.text, font }));
+}
+
+/**
  * Structural-equality predicate over two RichText values. Returns true iff
  * they have the same number of runs and each run's `text` matches and each
  * `font` (compared by `JSON.stringify(font ?? null)`) is structurally equal.

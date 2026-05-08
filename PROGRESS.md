@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`setFontOnRichText(rt, font)` font 上書き helper を追加** — `applyFontToRichText` の cousin で、per-run の font を**上書き** (= 既存 font は捨てる) する版。全 run に統一 font を強制適用する normalization 用途。
+- **次のタスク**: **`findAllRichTextIndex(rt, search)` 全出現位置 helper を追加** — `findRichTextIndex` の plural 版。`search` の非重複出現位置を全て `number[]` で返す。`countRichTextOccurrences` の位置返却版で、複数 replace の準備や highlight 用。空 `search` は `[]`。
+  1. `src/cell/rich-text.ts` に `findAllRichTextIndex(rt: RichText, search: string): number[]` を export 追加: 空 search で `[]` / `richTextToString(rt)` の `indexOf(search, from)` ループで `out.push(idx)` → `from = idx + search.length`。
+  2. `src/cell/index.ts` (= subpath barrel) から `findAllRichTextIndex` を re-export (`findLastRichTextIndex` の隣)。
+  3. `tests/phase-2/rich-text-find-all.test.ts` 4 件: 単一 run 内で複数出現の index 配列 / 複数 run 跨ぎ出現 / 0 出現で `[]` / 空 search で `[]`。
+
+- **次のタスク (前回)**: **`setFontOnRichText(rt, font)` font 上書き helper を追加** — `applyFontToRichText` の cousin で、per-run の font を**上書き** (= 既存 font は捨てる) する版。全 run に統一 font を強制適用する normalization 用途。
   1. `src/cell/rich-text.ts` に `setFontOnRichText(rt: RichText, font: InlineFont): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text, font }))`。
   2. `src/cell/index.ts` (= subpath barrel) から `setFontOnRichText` を re-export。
   3. `tests/phase-2/rich-text-set-font.test.ts` 3 件: per-run font が上書きされる / font なし run にも font 適用 / 空 RichText で空 RichText 返却。
 
-- **次のタスク (前回)**: **`isEmptyRichText(rt)` 空判定 predicate を追加** — RichText が空 (run 数 0) または全 run が空文字列のときに `true` を返す。`isEmptyCell` の rich-text counterpart。
+  empirical: 2540 tests pass (was 2537, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`isEmptyRichText(rt)` 空判定 predicate を追加** — RichText が空 (run 数 0) または全 run が空文字列のときに `true` を返す。`isEmptyCell` の rich-text counterpart。
   1. `src/cell/rich-text.ts` に `isEmptyRichText(rt: RichText): boolean` を export 追加: `rt.length === 0` で true / 各 run の `text !== ''` を見つけたら false / 全 run 空文字列で true。
   2. `src/cell/index.ts` (= subpath barrel) から `isEmptyRichText` を re-export。
   3. `tests/phase-2/rich-text-is-empty.test.ts` 3 件: 空 RichText で true / 全 run が `text: ''` で true / 1 つでも非空 run があれば false。

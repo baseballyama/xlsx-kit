@@ -72,6 +72,7 @@ export {
   richTextToLowerCase,
   richTextToString,
   richTextToUpperCase,
+  setFontOnRichText,
   sliceRichText,
   splitRichText,
   splitRichTextRuns,
