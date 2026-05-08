@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`iterRichTextChars(rt)` 文字単位イテレータを追加** — `getRichTextCharAt` + `getRichTextFontAt` の generator 版。各文字 (UTF-16 code unit) を `{ char, font, index }` で yield。文字単位 styling/animation/inspection の primitive。
+- **次のタスク**: **`richTextWords(rt)` 単語分割 helper を追加** — ASCII whitespace (`[ \t\r\n]+`) で区切られた連続非 whitespace 部分を `RichText[]` で返す ergonomic helper。各 word は元の font を維持 (= `sliceRichText` で抽出)。先頭・末尾・連続 whitespace は drop。空 / 全 whitespace で `[]`。
+  1. `src/cell/rich-text.ts` に `richTextWords(rt: RichText): RichText[]` を export 追加: `richTextToString(rt)` を `/[^ \t\r\n]+/g` で `exec` ループ、`sliceRichText(rt, m.index, m.index + m[0].length)` を push。
+  2. `src/cell/index.ts` (= subpath barrel) から `richTextWords` を re-export。
+  3. `tests/phase-2/rich-text-words.test.ts` 4 件: 単一 run 内の単語分割 (font 維持) / 複数 run 跨ぎ word でも font 引き継ぎ / 全 whitespace で `[]` / 連続 whitespace を drop して word のみ抽出。
+
+- **次のタスク (前回)**: **`iterRichTextChars(rt)` 文字単位イテレータを追加** — `getRichTextCharAt` + `getRichTextFontAt` の generator 版。各文字 (UTF-16 code unit) を `{ char, font, index }` で yield。文字単位 styling/animation/inspection の primitive。
   1. `src/cell/rich-text.ts` に `iterRichTextChars(rt: RichText): IterableIterator<{ char: string; font: InlineFont | undefined; index: number }>` を export 追加: generator function (`function*`) で各 run の `text` を `for (let i = 0; i < r.text.length; i++)` walk、`yield { char: r.text.charAt(i), font: r.font, index }`、index ++。
   2. `src/cell/index.ts` (= subpath barrel) から `iterRichTextChars` を re-export。
   3. `tests/phase-2/rich-text-iter-chars.test.ts` 3 件: 単一 run の全文字 yield (font 付き) / 複数 run 跨ぎで run 切り替え時に font 切り替え / 空 RichText で 0 yield。
 
-- **次のタスク (前回)**: **`getRichTextCharAt(rt, index)` 位置文字取得 helper を追加** — `String.prototype.charAt` 同等の semantics で結合テキストの `index` 番目の文字 (UTF-16 code unit) を返す。範囲外で空 string `''`。`getRichTextFontAt` と pair で使うことで「位置 i の char + その font」を取り出せる。
+  empirical: 2554 tests pass (was 2551, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`getRichTextCharAt(rt, index)` 位置文字取得 helper を追加** — `String.prototype.charAt` 同等の semantics で結合テキストの `index` 番目の文字 (UTF-16 code unit) を返す。範囲外で空 string `''`。`getRichTextFontAt` と pair で使うことで「位置 i の char + その font」を取り出せる。
   1. `src/cell/rich-text.ts` に `getRichTextCharAt(rt: RichText, index: number): string` を export 追加: `index < 0` で `''` / `cursor` walk → `index < cursor + r.text.length` で `r.text.charAt(index - cursor)` を return / loop 終了で `''`。
   2. `src/cell/index.ts` (= subpath barrel) から `getRichTextCharAt` を re-export。
   3. `tests/phase-2/rich-text-char-at.test.ts` 3 件: 単一 run 内の任意 index で char / 複数 run 跨ぎ index で正しい char / 範囲外で `''`。

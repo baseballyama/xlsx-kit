@@ -574,6 +574,25 @@ export function getRichTextFontAt(rt: RichText, index: number): InlineFont | und
 }
 
 /**
+ * Yield each UTF-16 code unit of the concatenated text of `rt` together with
+ * the covering run's font and the character index. The generator
+ * counterpart of `getRichTextCharAt` + `getRichTextFontAt`. Useful for
+ * per-character styling, animation, or inspection.
+ */
+export function* iterRichTextChars(
+  rt: RichText,
+): IterableIterator<{ char: string; font: InlineFont | undefined; index: number }> {
+  let index = 0;
+  for (const r of rt) {
+    const len = r.text.length;
+    for (let i = 0; i < len; i++) {
+      yield { char: r.text.charAt(i), font: r.font, index };
+      index++;
+    }
+  }
+}
+
+/**
  * Return the UTF-16 code unit at `index` in the concatenated text of `rt`,
  * mirroring `String.prototype.charAt`. Out-of-range indices return `''`.
  * Pairs naturally with `getRichTextFontAt` for `(char, font)` access.

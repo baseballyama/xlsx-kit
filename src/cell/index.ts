@@ -55,6 +55,7 @@ export {
   getRichTextFontAt,
   insertRichText,
   isEmptyRichText,
+  iterRichTextChars,
   makeRichText,
   makeTextRun,
   mapRichTextRuns,
