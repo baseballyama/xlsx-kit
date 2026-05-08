@@ -1,30 +1,30 @@
 [
   {
-    "name": "xlsxify/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
+    "name": "xlsx-craft/streaming (createWriteOnlyWorkbook + loadWorkbookStream)",
     "path": "dist/streaming.mjs",
     "import": "*",
     "limit": "80 KB"
   },
   {
-    "name": "xlsxify/io (loadWorkbook + saveWorkbook)",
+    "name": "xlsx-craft/io (loadWorkbook + saveWorkbook)",
     "path": "dist/io.mjs",
     "import": "*",
     "limit": "120 KB"
   },
   {
-    "name": "xlsxify/workbook",
+    "name": "xlsx-craft/workbook",
     "path": "dist/workbook.mjs",
     "import": "*",
     "limit": "100 KB"
   },
   {
-    "name": "xlsxify/worksheet",
+    "name": "xlsx-craft/worksheet",
     "path": "dist/worksheet.mjs",
     "import": "*",
     "limit": "100 KB"
   },
   {
-    "name": "xlsxify/styles",
+    "name": "xlsx-craft/styles",
     "path": "dist/styles.mjs",
     "import": "*",
     "limit": "60 KB"

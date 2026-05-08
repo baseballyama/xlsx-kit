@@ -2,7 +2,7 @@
 // fromBlob is streaming, so the workbook starts parsing while the file
 // is still being read.
 
-import { fromBlob, loadWorkbook } from 'xlsxify/io';
+import { fromBlob, loadWorkbook } from 'xlsx-craft/io';
 
 export async function loadFromInput(input: HTMLInputElement) {
   const file = input.files?.[0];

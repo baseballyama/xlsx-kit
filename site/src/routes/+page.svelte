@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>xlsxify — TypeScript port of openpyxl</title>
+  <title>xlsx-craft — TypeScript port of openpyxl</title>
 </svelte:head>
 
 <section class="hero">
@@ -23,9 +23,9 @@
       <a href="{base}/docs/getting-started" class="btn primary">Get started →</a>
       <a href="{base}/docs/recipes" class="btn">Recipes</a>
       <a href="{base}/api" class="btn">API reference</a>
-      <a href="https://github.com/baseballyama/xlsxify" class="btn">GitHub</a>
+      <a href="https://github.com/baseballyama/xlsx-craft" class="btn">GitHub</a>
     </div>
-    <p class="install"><code>pnpm add xlsxify</code></p>
+    <p class="install"><code>pnpm add xlsx-craft</code></p>
   </div>
 </section>
 
@@ -44,7 +44,7 @@
       <p>
         <code>createWriteOnlyWorkbook</code> deflates rows as they arrive.
         <code>loadWorkbookStream</code> walks a file once and yields each row. Browser-safe via
-        <code>xlsxify/streaming</code>.
+        <code>xlsx-craft/streaming</code>.
       </p>
     </article>
     <article>
@@ -58,8 +58,8 @@
     <article>
       <h3>Tiny &amp; tree-shakeable</h3>
       <p>
-        <code>xlsxify</code> ≤ 120&nbsp;KB brotli (currently ~78&nbsp;KB).
-        <code>xlsxify/streaming</code> ≤ 80&nbsp;KB brotli (~47&nbsp;KB). All exports are
+        <code>xlsx-craft</code> ≤ 120&nbsp;KB brotli (currently ~78&nbsp;KB).
+        <code>xlsx-craft/streaming</code> ≤ 80&nbsp;KB brotli (~47&nbsp;KB). All exports are
         side-effect-free.
       </p>
     </article>

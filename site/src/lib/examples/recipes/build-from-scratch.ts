@@ -1,9 +1,9 @@
 // Build a one-sheet workbook from scratch and write it to disk.
 
-import { saveWorkbook } from 'xlsxify/io';
-import { toFile } from 'xlsxify/node';
-import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
-import { setCell } from 'xlsxify/worksheet';
+import { saveWorkbook } from 'xlsx-craft/io';
+import { toFile } from 'xlsx-craft/node';
+import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
+import { setCell } from 'xlsx-craft/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Quarterly');

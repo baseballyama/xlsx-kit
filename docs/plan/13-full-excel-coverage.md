@@ -1,7 +1,7 @@
 # 13. openpyxl の枠を越えて Excel 全機能をサポートするためのロードマップ
 
 本リポジトリは openpyxl の TypeScript port として始まったが、最終目標は
-**Excel が「ネイティブに」できる全機能** を xlsxify で読み書きできる
+**Excel が「ネイティブに」できる全機能** を xlsx-craft で読み書きできる
 ことである。openpyxl 自身がサポートしない機能 (Excel 365 の動的配列、
 LAMBDA、threaded comments の編集、Power Query の構造アクセスなど) を含めて
 網羅する必要がある。
@@ -102,7 +102,7 @@ LAMBDA、threaded comments の編集、Power Query の構造アクセスなど) 
 | F6 | 自動 fixture 検査 (load → save → load → diff archive bytes) | ✅ ad-hoc | CI で定期実行する形に組み込む |
 | F7 | Mutation testing (stryker) | ❌ | 未着手。1.0 release 後に検討 |
 | F8 | パフォーマンス CI 比較 (PR で perf 数値を delta 表示) | ❌ | size-limit と同じ仕組みで perf-bot |
-| F9 | Bundle 構成 (`xlsxify/streaming` など) | ✅ | サブパス追加ごとに更新 |
+| F9 | Bundle 構成 (`xlsx-craft/streaming` など) | ✅ | サブパス追加ごとに更新 |
 
 ---
 
@@ -147,7 +147,7 @@ LAMBDA、threaded comments の編集、Power Query の構造アクセスなど) 
 2. **ECMA-376 を一次資料とする**: openpyxl の挙動に固執せず、ECMA-376 と Excel の実際の挙動が食い違ったら ECMA-376 + Excel emit を優先 (openpyxl 自身も同じ流儀)。
 3. **fixture-driven**: 各機能の追加は openpyxl / 自作 / Microsoft 公式の Excel ファイルを round-trip 通すことを必須要件にする。`tests/e2e/` にシナリオ追加 + `tests/phase-*/genuine-edge-fixtures.test.ts` に deep-assert 追加。
 4. **段階的 reveal**: openpyxl が壊さない部分から先に schema 化し、編集 API は後追い。schema 化する前に passthrough で bytes が回ることが前提。
-5. **bundle 予算を破らない**: 機能を増やすときは必ず subpath で分離。`xlsxify` (full) ≤ 200 KB / `xlsxify/streaming` ≤ 80 KB / 大規模機能は `xlsxify/pivot` `xlsxify/powerquery` 等の独立サブパス。
+5. **bundle 予算を破らない**: 機能を増やすときは必ず subpath で分離。`xlsx-craft` (full) ≤ 200 KB / `xlsx-craft/streaming` ≤ 80 KB / 大規模機能は `xlsx-craft/pivot` `xlsx-craft/powerquery` 等の独立サブパス。
 
 ---
 

@@ -1,10 +1,10 @@
 // Promote a range to an Excel Table (named range with banded styling and
 // a built-in filter dropdown on every header).
 
-import { saveWorkbook } from 'xlsxify/io';
-import { toFile } from 'xlsxify/node';
-import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
-import { addExcelTable, setCell } from 'xlsxify/worksheet';
+import { saveWorkbook } from 'xlsx-craft/io';
+import { toFile } from 'xlsx-craft/node';
+import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
+import { addExcelTable, setCell } from 'xlsx-craft/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Inventory');

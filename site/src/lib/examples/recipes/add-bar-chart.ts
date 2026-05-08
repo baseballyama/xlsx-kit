@@ -1,11 +1,11 @@
 // Add a clustered column chart driven by a data range on the same sheet.
 
-import { makeBarChart, makeBarSeries, makeChartSpace } from 'xlsxify/chart';
-import { addChartAt } from 'xlsxify/drawing';
-import { saveWorkbook } from 'xlsxify/io';
-import { toFile } from 'xlsxify/node';
-import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
-import { setCell } from 'xlsxify/worksheet';
+import { makeBarChart, makeBarSeries, makeChartSpace } from 'xlsx-craft/chart';
+import { addChartAt } from 'xlsx-craft/drawing';
+import { saveWorkbook } from 'xlsx-craft/io';
+import { toFile } from 'xlsx-craft/node';
+import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
+import { setCell } from 'xlsx-craft/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Sales');

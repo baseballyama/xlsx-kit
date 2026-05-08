@@ -53,7 +53,7 @@ export function toBlob(mime?: string): XlsxSink & { result(): Blob };
 export function toArrayBuffer(): XlsxSink & { result(): ArrayBuffer };
 ```
 
-`package.json` の `exports` 条件でこれらを `xlsxify/io` のサブパスから両環境が同名 import できるようにする。Node 専用の `fromFile(path)` とブラウザ専用の `fromFile(File)` は **シグネチャ重複でも実体は別ファイル**で ok。
+`package.json` の `exports` 条件でこれらを `xlsx-craft/io` のサブパスから両環境が同名 import できるようにする。Node 専用の `fromFile(path)` とブラウザ専用の `fromFile(File)` は **シグネチャ重複でも実体は別ファイル**で ok。
 
 ### 1.3 受け入れ条件
 
@@ -254,7 +254,7 @@ export function fromTree<T>(node: XmlNode, schema: Schema<T>): T;
 
 - [ ] `Font`, `Border`, `Side`, `Alignment`, `Protection`, `Color`, `NumberFormat` を schema 化して round-trip テスト pass
 - [ ] schema 1 件の最小 module サイズ（min+gz）を計測し、≤ 1.5KB / schema を維持
-- [ ] `defineSchema` が tree-shake で不要な schema を除去できる（テスト: ダミー entry で `import { foo } from 'xlsxify/styles'` 後の bundle に未使用 schema が含まれないこと）
+- [ ] `defineSchema` が tree-shake で不要な schema を除去できる（テスト: ダミー entry で `import { foo } from 'xlsx-craft/styles'` 後の bundle に未使用 schema が含まれないこと）
 
 ## 5. XmlStreamWriter（`src/xml/stream-writer.ts`）
 

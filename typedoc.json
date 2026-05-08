@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "xlsxify",
+  "name": "xlsx-craft",
   "entryPoints": [
     "src/cell/index.ts",
     "src/chart/index.ts",

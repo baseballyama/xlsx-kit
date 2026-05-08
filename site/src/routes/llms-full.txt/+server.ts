@@ -6,11 +6,11 @@ import type { RequestHandler } from './$types';
 
 export const prerender = true;
 
-const PREAMBLE = `# xlsxify — full documentation
+const PREAMBLE = `# xlsx-craft — full documentation
 
-This file is the concatenation of every page on https://xlsxify's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
+This file is the concatenation of every page on https://xlsx-craft's docs site, intended for LLM ingestion. Page boundaries are marked with H1 headings prefixed by the source path.
 
-Source repo: https://github.com/baseballyama/xlsxify
+Source repo: https://github.com/baseballyama/xlsx-craft
 `;
 
 export const GET: RequestHandler = () => {

@@ -1,6 +1,6 @@
 // Phase 6 §10 acceptance: every chart kind we model — 16 legacy `c:` +
 // 8 chartex `cx:` = 24 distinct kinds (the docs/plan calls this "25" but
-// counts Pie + Pie3D + OfPie as three slots; xlsxify implements the
+// counts Pie + Pie3D + OfPie as three slots; xlsx-craft implements the
 // same set). Each chart goes through workbookToBytes → loadWorkbook and
 // the loaded chart's kind / key attributes must match what we wrote.
 

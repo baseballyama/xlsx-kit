@@ -1,7 +1,7 @@
 // Open a workbook and walk every cell on the first sheet.
 
-import { loadWorkbook } from 'xlsxify/io';
-import { fromFile } from 'xlsxify/node';
+import { loadWorkbook } from 'xlsx-craft/io';
+import { fromFile } from 'xlsx-craft/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 const first = wb.sheets[0];

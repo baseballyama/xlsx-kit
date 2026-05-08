@@ -7,7 +7,7 @@ import type { RequestHandler } from './$types';
 
 export const prerender = true;
 
-const HEADER = `# xlsxify
+const HEADER = `# xlsx-craft
 
 > A TypeScript port of openpyxl — read and write Excel \`.xlsx\` workbooks from Node 18+ and modern browsers, with no Python or native runtime dependencies. Includes a streaming writer (10M rows in fixed memory) and a SAX-based row iterator for huge sheets.
 
@@ -16,7 +16,7 @@ This index points at the canonical documentation for the library. Every linked U
 
 function buildBody(): string {
   // Relative paths so the index works under any base path (custom domain,
-  // user page, or project page like /xlsxify/). `docs/install.md` from
+  // user page, or project page like /xlsx-craft/). `docs/install.md` from
   // /llms.txt resolves to <base>/docs/install.md regardless.
   const sections = docSections
     .map((section) => {
@@ -27,7 +27,7 @@ function buildBody(): string {
     })
     .join('\n\n');
 
-  return `${HEADER}\n${sections}\n\n## Source\n\n- [GitHub repository](https://github.com/baseballyama/xlsxify)\n- [npm package](https://www.npmjs.com/package/xlsxify)\n`;
+  return `${HEADER}\n${sections}\n\n## Source\n\n- [GitHub repository](https://github.com/baseballyama/xlsx-craft)\n- [npm package](https://www.npmjs.com/package/xlsx-craft)\n`;
 }
 
 export const GET: RequestHandler = () => {

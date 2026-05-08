@@ -1,8 +1,8 @@
-// One-shot read + save direct from / to disk via the xlsxify/node
+// One-shot read + save direct from / to disk via the xlsx-craft/node
 // helpers, no manual fs glue needed.
 
-import { loadWorkbook, saveWorkbook } from 'xlsxify/io';
-import { fromFile, toFile } from 'xlsxify/node';
+import { loadWorkbook, saveWorkbook } from 'xlsx-craft/io';
+import { fromFile, toFile } from 'xlsx-craft/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 // ...mutate wb...

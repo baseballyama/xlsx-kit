@@ -1,4 +1,4 @@
-# xlsxify
+# xlsx-craft
 
 A TypeScript library for reading and writing Excel `.xlsx` workbooks
 from Node 18+ and modern browsers, with no runtime dependencies on
@@ -13,7 +13,7 @@ Python or Excel. Inspired by [openpyxl](https://openpyxl.readthedocs.io/).
 ## Install
 
 ```sh
-pnpm add xlsxify   # or npm / yarn / bun
+pnpm add xlsx-craft   # or npm / yarn / bun
 ```
 
 Requires Node `>=18.18` for the built-in `Web Streams`, `Blob`, and `fetch`
@@ -28,40 +28,40 @@ convenience re-exports).
 
 | Import                 | Use case                                          |
 |------------------------|---------------------------------------------------|
-| `xlsxify/io`           | `loadWorkbook` / `saveWorkbook` / `workbookToBytes` plus byte-level Source/Sink + browser helpers (Blob/Response/Stream) |
-| `xlsxify/node`         | Node fs glue (`fromFile` / `toFile` / `fromBuffer` / `toBuffer` / `fromReadable` / `toWritable`) |
-| `xlsxify/streaming`    | Read-only iter (`loadWorkbookStream`) + write-only append (`createWriteOnlyWorkbook`) |
-| `xlsxify/workbook`     | `createWorkbook`, `addWorksheet`, defined names   |
-| `xlsxify/worksheet`    | `setCell`, `getCell`, `mergeCells`, tables, …     |
-| `xlsxify/cell`         | Cell value-model + inline rich text               |
-| `xlsxify/styles`       | Fonts, fills, borders, alignment, number formats  |
-| `xlsxify/chart`        | `c:` and `cx:` chart kinds                        |
-| `xlsxify/chartsheet`   | Standalone chartsheets                            |
-| `xlsxify/drawing`      | Anchors, images, chart placement                  |
+| `xlsx-craft/io`           | `loadWorkbook` / `saveWorkbook` / `workbookToBytes` plus byte-level Source/Sink + browser helpers (Blob/Response/Stream) |
+| `xlsx-craft/node`         | Node fs glue (`fromFile` / `toFile` / `fromBuffer` / `toBuffer` / `fromReadable` / `toWritable`) |
+| `xlsx-craft/streaming`    | Read-only iter (`loadWorkbookStream`) + write-only append (`createWriteOnlyWorkbook`) |
+| `xlsx-craft/workbook`     | `createWorkbook`, `addWorksheet`, defined names   |
+| `xlsx-craft/worksheet`    | `setCell`, `getCell`, `mergeCells`, tables, …     |
+| `xlsx-craft/cell`         | Cell value-model + inline rich text               |
+| `xlsx-craft/styles`       | Fonts, fills, borders, alignment, number formats  |
+| `xlsx-craft/chart`        | `c:` and `cx:` chart kinds                        |
+| `xlsx-craft/chartsheet`   | Standalone chartsheets                            |
+| `xlsx-craft/drawing`      | Anchors, images, chart placement                  |
 
-Other subpaths: `xlsxify/packaging`, `xlsxify/utils`, `xlsxify/xml`,
-`xlsxify/zip`, `xlsxify/schema`. All exports are tree-shakable
+Other subpaths: `xlsx-craft/packaging`, `xlsx-craft/utils`, `xlsx-craft/xml`,
+`xlsx-craft/zip`, `xlsx-craft/schema`. All exports are tree-shakable
 (`"sideEffects": false`).
 
 Bundle budgets (min + brotli):
 
-- `xlsxify/streaming` ≤ 80 KB    (currently ~49 KB)
-- `xlsxify/io` ≤ 120 KB           (currently ~85 KB)
+- `xlsx-craft/streaming` ≤ 80 KB    (currently ~49 KB)
+- `xlsx-craft/io` ≤ 120 KB           (currently ~85 KB)
 
 ## Quick examples
 
 ### Read + edit + write
 
 ```ts
-import { loadWorkbook, workbookToBytes } from 'xlsxify/io';
-import { setCell } from 'xlsxify/worksheet';
-import { fromBuffer } from 'xlsxify/node';
+import { loadWorkbook, workbookToBytes } from 'xlsx-craft/io';
+import { setCell } from 'xlsx-craft/worksheet';
+import { fromBuffer } from 'xlsx-craft/node';
 import { readFile, writeFile } from 'node:fs/promises';
 
 const wb = await loadWorkbook(fromBuffer(await readFile('input.xlsx')));
 const sheet = wb.sheets[0];
 if (sheet?.kind === 'worksheet') {
-  setCell(sheet.sheet, /* row */ 1, /* col */ 1, 'Hello from xlsxify');
+  setCell(sheet.sheet, /* row */ 1, /* col */ 1, 'Hello from xlsx-craft');
 }
 await writeFile('output.xlsx', await workbookToBytes(wb));
 ```
@@ -69,8 +69,8 @@ await writeFile('output.xlsx', await workbookToBytes(wb));
 ### Read directly from disk (Node)
 
 ```ts
-import { loadWorkbook, saveWorkbook } from 'xlsxify/io';
-import { fromFile, toFile } from 'xlsxify/node';
+import { loadWorkbook, saveWorkbook } from 'xlsx-craft/io';
+import { fromFile, toFile } from 'xlsx-craft/node';
 
 const wb = await loadWorkbook(fromFile('input.xlsx'));
 // …mutate wb…
@@ -80,7 +80,7 @@ await saveWorkbook(wb, toFile('output.xlsx'));
 ### Read directly from a `fetch` response (browser)
 
 ```ts
-import { fromResponse, loadWorkbook } from 'xlsxify/io';
+import { fromResponse, loadWorkbook } from 'xlsx-craft/io';
 
 const response = await fetch('/sheet.xlsx');
 const wb = await loadWorkbook(fromResponse(response));
@@ -89,8 +89,8 @@ const wb = await loadWorkbook(fromResponse(response));
 ### Streaming write — millions of rows in a fixed memory budget
 
 ```ts
-import { createWriteOnlyWorkbook } from 'xlsxify/streaming';
-import { toFile } from 'xlsxify/node';
+import { createWriteOnlyWorkbook } from 'xlsx-craft/streaming';
+import { toFile } from 'xlsx-craft/node';
 
 const sink = toFile('big.xlsx');
 const wb = await createWriteOnlyWorkbook(sink);
@@ -110,8 +110,8 @@ to disk chunk-by-chunk.
 ### Streaming read — iterate huge sheets without loading them
 
 ```ts
-import { loadWorkbookStream } from 'xlsxify/streaming';
-import { fromFile } from 'xlsxify/node';
+import { loadWorkbookStream } from 'xlsx-craft/streaming';
+import { fromFile } from 'xlsx-craft/node';
 
 const wb = await loadWorkbookStream(fromFile('big.xlsx'));
 const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');

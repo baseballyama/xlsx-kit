@@ -1,6 +1,6 @@
 // xlsx streaming entry point — read-only iter + write-only append.
-// Format-agnostic byte I/O lives at `xlsxify/io` and `xlsxify/node`;
-// error types at `xlsxify/utils`.
+// Format-agnostic byte I/O lives at `xlsx-craft/io` and `xlsx-craft/node`;
+// error types at `xlsx-craft/utils`.
 
 export {
   loadWorkbookStream,

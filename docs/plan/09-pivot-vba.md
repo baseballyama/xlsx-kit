@@ -7,7 +7,7 @@
 
 ## 1. 方針
 
-このフェーズの主目的は **「openpyxl が壊さない xlsx は xlsxify も壊さない」** こと。新しい構造編集 API を提供するのは目的ではない。
+このフェーズの主目的は **「openpyxl が壊さない xlsx は xlsx-craft も壊さない」** こと。新しい構造編集 API を提供するのは目的ではない。
 
 passthrough と construction は明確に区別する：
 

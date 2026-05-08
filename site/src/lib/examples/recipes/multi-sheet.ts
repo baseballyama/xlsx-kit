@@ -1,11 +1,11 @@
 // Build several worksheets in one workbook and use named ranges
 // to refer between them.
 
-import { setFormula } from 'xlsxify/cell';
-import { saveWorkbook } from 'xlsxify/io';
-import { toFile } from 'xlsxify/node';
-import { addDefinedName, addWorksheet, createWorkbook } from 'xlsxify/workbook';
-import { setCell } from 'xlsxify/worksheet';
+import { setFormula } from 'xlsx-craft/cell';
+import { saveWorkbook } from 'xlsx-craft/io';
+import { toFile } from 'xlsx-craft/node';
+import { addDefinedName, addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
+import { setCell } from 'xlsx-craft/worksheet';
 
 const wb = createWorkbook();
 const inputs = addWorksheet(wb, 'Inputs');

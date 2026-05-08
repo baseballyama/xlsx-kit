@@ -1,16 +1,16 @@
 // Merge a header range across the top row and freeze the first row so
 // it stays visible while scrolling.
 
-import { saveWorkbook } from 'xlsxify/io';
-import { toFile } from 'xlsxify/node';
-import { centerCell, setBold } from 'xlsxify/styles';
-import { addWorksheet, createWorkbook } from 'xlsxify/workbook';
+import { saveWorkbook } from 'xlsx-craft/io';
+import { toFile } from 'xlsx-craft/node';
+import { centerCell, setBold } from 'xlsx-craft/styles';
+import { addWorksheet, createWorkbook } from 'xlsx-craft/workbook';
 import {
   makeFreezePane,
   makeSheetView,
   mergeCells,
   setCell,
-} from 'xlsxify/worksheet';
+} from 'xlsx-craft/worksheet';
 
 const wb = createWorkbook();
 const ws = addWorksheet(wb, 'Report');

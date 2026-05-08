@@ -4,16 +4,16 @@
 
 # Install
 
-`xlsxify` ships as ESM-only. Pick the entry that matches your runtime.
+`xlsx-craft` ships as ESM-only. Pick the entry that matches your runtime.
 
 ## Package install
 
 ```sh
-pnpm add xlsxify
+pnpm add xlsx-craft
 # or
-npm install xlsxify
+npm install xlsx-craft
 # or
-bun add xlsxify
+bun add xlsx-craft
 ```
 
 Requires **Node `>=18.18`** for the built-in `Web Streams`, `Blob`, and `fetch` globals. Modern browsers (Chromium, Firefox, Safari with Web Streams) work with the streaming entry. Bun and Deno work via Web Streams.
@@ -22,14 +22,14 @@ Requires **Node `>=18.18`** for the built-in `Web Streams`, `Blob`, and `fetch` 
 
 | Import | Use case |
 |--------|----------|
-| `xlsxify` | Full library: workbook model, charts, drawings. |
-| `xlsxify/streaming` | Read-only iter + write-only append. Browser-safe. |
-| `xlsxify/node` | Filesystem `fromFile` / `toFile` + Node `Readable` / `Writable` glue, plus the full lib. |
+| `xlsx-craft` | Full library: workbook model, charts, drawings. |
+| `xlsx-craft/streaming` | Read-only iter + write-only append. Browser-safe. |
+| `xlsx-craft/node` | Filesystem `fromFile` / `toFile` + Node `Readable` / `Writable` glue, plus the full lib. |
 
 Bundle budgets, min + brotli:
 
-- `xlsxify` ≤ 120 KB *(currently ~78 KB)*
-- `xlsxify/streaming` ≤ 80 KB *(currently ~47 KB)*
+- `xlsx-craft` ≤ 120 KB *(currently ~78 KB)*
+- `xlsx-craft/streaming` ≤ 80 KB *(currently ~47 KB)*
 
 All exports are side-effect-free (`"sideEffects": false`), so unused chart / drawing / pivot code drops out under any modern bundler.
 

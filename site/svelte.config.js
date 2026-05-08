@@ -21,7 +21,7 @@ const mdsvexOptions = {
 };
 
 // BASE_PATH lets the same build run locally (=''), on a GitHub user page
-// or custom domain (=''), or on a project page (e.g. '/xlsxify'). Set
+// or custom domain (=''), or on a project page (e.g. '/xlsx-craft'). Set
 // it in CI for GitHub Actions deploys.
 const basePath = process.env.BASE_PATH ?? '';
 
@@ -34,21 +34,21 @@ const config = {
     prerender: { entries: ['*'] },
     paths: { base: basePath, relative: true },
     alias: {
-      'xlsxify/cell': '../src/cell/index.ts',
-      'xlsxify/chart': '../src/chart/index.ts',
-      'xlsxify/chartsheet': '../src/chartsheet/index.ts',
-      'xlsxify/drawing': '../src/drawing/index.ts',
-      'xlsxify/io': '../src/io/index.ts',
-      'xlsxify/node': '../src/node.ts',
-      'xlsxify/packaging': '../src/packaging/index.ts',
-      'xlsxify/schema': '../src/schema/index.ts',
-      'xlsxify/streaming': '../src/streaming/index.ts',
-      'xlsxify/styles': '../src/styles/index.ts',
-      'xlsxify/utils': '../src/utils/index.ts',
-      'xlsxify/workbook': '../src/workbook/index.ts',
-      'xlsxify/worksheet': '../src/worksheet/index.ts',
-      'xlsxify/xml': '../src/xml/index.ts',
-      'xlsxify/zip': '../src/zip/index.ts',
+      'xlsx-craft/cell': '../src/cell/index.ts',
+      'xlsx-craft/chart': '../src/chart/index.ts',
+      'xlsx-craft/chartsheet': '../src/chartsheet/index.ts',
+      'xlsx-craft/drawing': '../src/drawing/index.ts',
+      'xlsx-craft/io': '../src/io/index.ts',
+      'xlsx-craft/node': '../src/node.ts',
+      'xlsx-craft/packaging': '../src/packaging/index.ts',
+      'xlsx-craft/schema': '../src/schema/index.ts',
+      'xlsx-craft/streaming': '../src/streaming/index.ts',
+      'xlsx-craft/styles': '../src/styles/index.ts',
+      'xlsx-craft/utils': '../src/utils/index.ts',
+      'xlsx-craft/workbook': '../src/workbook/index.ts',
+      'xlsx-craft/worksheet': '../src/worksheet/index.ts',
+      'xlsx-craft/xml': '../src/xml/index.ts',
+      'xlsx-craft/zip': '../src/zip/index.ts',
     },
   },
 };

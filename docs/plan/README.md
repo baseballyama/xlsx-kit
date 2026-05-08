@@ -1,6 +1,6 @@
-# xlsxify 実装計画
+# xlsx-craft 実装計画
 
-`openpyxl`（Python, MIT, 3.1.5 系）を TypeScript に移植し、**Node 18+ / 主要モダンブラウザ** の両方で動作する OOXML (xlsx/xlsm) 操作ライブラリ `xlsxify` を作るための、フェーズ分割された実装計画ドキュメントです。
+`openpyxl`（Python, MIT, 3.1.5 系）を TypeScript に移植し、**Node 18+ / 主要モダンブラウザ** の両方で動作する OOXML (xlsx/xlsm) 操作ライブラリ `xlsx-craft` を作るための、フェーズ分割された実装計画ドキュメントです。
 
 このディレクトリは「これに従えば実装が進む」レベルの設計仕様として整備しています。フェーズごとの**成果物・受け入れ条件**を明記しているため、進捗状況の確認にも使えます。
 
@@ -10,7 +10,7 @@
 |---|----------|------|
 | 00 | [00-goals.md](./00-goals.md) | プロジェクトのゴール、非ゴール、対象ユースケース、互換性方針 |
 | 01 | [01-architecture.md](./01-architecture.md) | 全体アーキテクチャ、パッケージ構成、Node/ブラウザ両対応戦略、外部依存選定 |
-| 02 | [02-mapping.md](./02-mapping.md) | openpyxl Python モジュール ↔ xlsxify TS モジュールの対応表 |
+| 02 | [02-mapping.md](./02-mapping.md) | openpyxl Python モジュール ↔ xlsx-craft TS モジュールの対応表 |
 | 03 | [03-foundations.md](./03-foundations.md) | フェーズ1: 基盤層（ZIP、XML、I/O 抽象、Schema/Descriptor 相当） |
 | 04 | [04-core-model.md](./04-core-model.md) | フェーズ2: 値モデル（Cell, Coordinate, Range, Style, Stylesheet） |
 | 05 | [05-read-write.md](./05-read-write.md) | フェーズ3: workbook / worksheet の read / write 実装 |
