@@ -192,6 +192,24 @@ export function findLastRichTextIndex(rt: RichText, search: string, fromIndex?: 
 }
 
 /**
+ * Count non-overlapping occurrences of `search` in the concatenated text of
+ * `rt`. An empty `search` returns 0 (avoiding the `String.prototype.indexOf`
+ * infinite-loop trap).
+ */
+export function countRichTextOccurrences(rt: RichText, search: string): number {
+  if (search === '') return 0;
+  const s = richTextToString(rt);
+  let count = 0;
+  let from = 0;
+  for (;;) {
+    const idx = s.indexOf(search, from);
+    if (idx < 0) return count;
+    count++;
+    from = idx + search.length;
+  }
+}
+
+/**
  * Returns true iff the concatenated text of `rt` contains `search`. Mirrors
  * `String.prototype.includes` semantics, including treating an empty
  * `search` as `true`.

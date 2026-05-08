@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`countRichTextOccurrences(rt, search)` 出現数 helper を追加** — `replaceAllRichText` の cousin で副作用なし版。`search` の非重複出現回数を返す。空 `search` は 0 を返す (`indexOf` 仕様の無限ループを避けるため、`String.prototype.split` 的な解釈ではなく明示 0 を返却)。
+- **次のタスク**: **`splitRichText(rt, separator, limit?)` 分割 helper を追加** — `String.prototype.split` 同等の semantics で RichText を separator で分割し `RichText[]` を返す。各セグメントは元の font を維持 (= `sliceRichText` で再構築)。`limit` 省略時は全分割、`limit <= 0` は空配列、空 separator は code-unit 単位で 1 文字ずつ分割。
+  1. `src/cell/rich-text.ts` に `splitRichText(rt: RichText, separator: string, limit?: number): RichText[]` を export 追加: `limit <= 0` で `[]` / 空 separator で `[0..length)` を `sliceRichText(rt, i, i+1)` で 1 文字ずつ抽出 (limit 適用) / 通常時は `richTextToString(rt)` の `indexOf` ループで段階的 slice、limit に到達したら return、最後に残り尾部を push。separator が見つからない時は `[rt]`。
+  2. `src/cell/index.ts` (= subpath barrel) から `splitRichText` を re-export (`splitRichTextRuns` の隣)。
+  3. `tests/phase-2/rich-text-split.test.ts` 5 件: 単一 run 内で separator 分割 (font 維持) / 複数 run 跨ぎ separator 分割 / `limit` で末尾 truncate / separator が見つからず `[rt]` / 空 separator で 1 文字ずつ分割。
+
+- **次のタスク (前回)**: **`countRichTextOccurrences(rt, search)` 出現数 helper を追加** — `replaceAllRichText` の cousin で副作用なし版。`search` の非重複出現回数を返す。空 `search` は 0 を返す (`indexOf` 仕様の無限ループを避けるため、`String.prototype.split` 的な解釈ではなく明示 0 を返却)。
   1. `src/cell/rich-text.ts` に `countRichTextOccurrences(rt: RichText, search: string): number` を export 追加: 空 search で 0 / `richTextToString(rt)` を取り、`indexOf(search, from)` ループで count、`from = idx + search.length` で進める。
   2. `src/cell/index.ts` (= subpath barrel) から `countRichTextOccurrences` を re-export。
   3. `tests/phase-2/rich-text-count.test.ts` 4 件: 単一 run 内で複数出現 / 複数 run 跨ぎ出現 (`replaceAllRichText` と同様の non-overlap カウント) / 0 出現 / 空 search で 0。
 
-- **次のタスク (前回)**: **`findLastRichTextIndex(rt, search, fromIndex?)` 末尾検索 helper を追加** — `findRichTextIndex` の対 (`String.prototype.lastIndexOf` 同等)。`richTextToString(rt).lastIndexOf(search, fromIndex)` の thin wrapper。見つからない場合 -1、空 search は仕様上 `min(fromIndex, length)` 返却。
+  empirical: 2516 tests pass (was 2512, +4)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`findLastRichTextIndex(rt, search, fromIndex?)` 末尾検索 helper を追加** — `findRichTextIndex` の対 (`String.prototype.lastIndexOf` 同等)。`richTextToString(rt).lastIndexOf(search, fromIndex)` の thin wrapper。見つからない場合 -1、空 search は仕様上 `min(fromIndex, length)` 返却。
   1. `src/cell/rich-text.ts` に `findLastRichTextIndex(rt: RichText, search: string, fromIndex?: number): number` を export 追加: `richTextToString(rt).lastIndexOf(search, fromIndex)` を return。
   2. `src/cell/index.ts` (= subpath barrel) から `findLastRichTextIndex` を re-export (`findRichTextIndex` の隣)。
   3. `tests/phase-2/rich-text-find-last.test.ts` 4 件: 単一 run 内で最後の出現検索 / 複数 run 跨ぎ最後の出現 / `fromIndex` で前半の出現に絞り込み / 見つからない場合 -1。
