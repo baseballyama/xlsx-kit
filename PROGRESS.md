@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isMergedCell(c)` type guard を追加** — `MergedCell extends Cell { merged: true }` の判別。`c.merged === true` で narrow する predicate。MergedCell は merge 範囲内の non-top-left placeholder で、これを除外したい場面（実値 walk 時など）は多い。`isStyledCell` 系の Cell 級 predicate に typing を含む版として連なる。
+- **次のタスク**: **`isErrorCell(c)` predicate を追加** — Cell の value が Excel error (`isErrorValue(c.value)`) かどうかを判定する Cell 級 predicate。`isFormulaCell` / `isRichTextCell` の line に並ぶ value-type predicate。formula cell が cached で error を返すケース（`{ kind: 'formula', cached: { kind: 'error', ... } }`）も拾いたいので、formula の cached も walk して判定する。
+  1. `src/cell/cell.ts` に `isErrorCell(c: Cell): boolean` を export 追加: `isErrorValue(c.value)` で true、`isFormulaValue(c.value) && c.value.cached !== undefined && isErrorValue(c.value.cached)` でも true、それ以外で false (`isMergedCell` の隣に配置)。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isErrorCell` を re-export (alphabetical 順)。
+  3. `tests/phase-2/is-error-cell.test.ts` 4 件: error value cell で true / 通常の string cell で false / formula cell で cached が error なら true / formula cell で cached が number なら false。
+
+- **次のタスク (前回)**: **`isMergedCell(c)` type guard を追加** — `MergedCell extends Cell { merged: true }` の判別。`c.merged === true` で narrow する predicate。MergedCell は merge 範囲内の non-top-left placeholder で、これを除外したい場面（実値 walk 時など）は多い。`isStyledCell` 系の Cell 級 predicate に typing を含む版として連なる。
   1. `src/cell/cell.ts` に `isMergedCell(c: Cell): c is MergedCell` を export 追加: `(c as MergedCell).merged === true` を return (`isStyledCell` の隣に配置)。
   2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isMergedCell` を re-export (alphabetical 順)。
   3. `tests/phase-2/is-merged-cell.test.ts` 3 件: 通常 cell (`makeCell`) で false / `merged: true` を持つ cell で true / 型ガードとして narrow 後に `merged: true` がアクセス可能 (typecheck — `expectTypeOf` 等あれば、なければ単純な runtime 検証で代替)。
 
-- **次のタスク (前回)**: **`isStyledCell(c)` predicate を追加** — Cell に default 以外の style が当たっているかの判定。`c.styleId !== 0` の thin wrapper。`cellHasHyperlink` / `cellHasComment` と並ぶ Cell 級 attribute predicate。0 = default xf という invariant に依存。
+  empirical: 2570 tests pass (was 2567, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`isStyledCell(c)` predicate を追加** — Cell に default 以外の style が当たっているかの判定。`c.styleId !== 0` の thin wrapper。`cellHasHyperlink` / `cellHasComment` と並ぶ Cell 級 attribute predicate。0 = default xf という invariant に依存。
   1. `src/cell/cell.ts` に `isStyledCell(c: Cell): boolean` を export 追加: `c.styleId !== 0` を return (`cellHasComment` の隣に配置)。
   2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isStyledCell` を re-export (alphabetical 順)。
   3. `tests/phase-2/is-styled-cell.test.ts` 3 件: styleId = 0 で false (default) / styleId = 1 で true / `makeCell` 直後 (default styleId) で false。
