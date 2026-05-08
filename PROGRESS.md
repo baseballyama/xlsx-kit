@@ -37,12 +37,20 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`worksheetToJson(ws, range, opts?)` を追加** — readRangeAsObjects → JSON.stringify (export matrix に JSON を追加)。
+- **次のタスク**: **`getWorksheetAsJson(ws, opts?)` + `getWorkbookAsJsonRecord(wb, opts?)` を追加** — JSON export matrix の per-sheet shortcut + workbook Record。
+  1. `src/worksheet/json.ts` に `getWorksheetAsJson(ws, opts?)` を追加: getDataExtent → boundariesToRangeString → worksheetToJson。空 ws は `'[]'`。
+  2. `src/workbook/workbook.ts` に `getWorkbookAsJsonRecord(wb, opts?)` を追加: iterWorksheets + getWorksheetAsJson → Record (chartsheet skip)。
+  3. `src/worksheet/index.ts` + `src/workbook/index.ts` から re-export。
+  4. `tests/phase-5/worksheet-as-json.test.ts` 4 件 (通常 / 空 sheet '[]' / sparse / opts.pretty) + `tests/phase-3/workbook-as-json-record.test.ts` 4 件 (通常 / 空 sheet / 空 wb / chartsheet skip)。
+
+- **次のタスク (前回)**: **`worksheetToJson(ws, range, opts?)` を追加** — readRangeAsObjects → JSON.stringify (export matrix に JSON を追加)。
   1. `src/worksheet/json.ts` 新規: readRangeAsObjects → JSON.stringify。`opts.pretty` で 2-space indent。Date は ISO、cell の独自オブジェクト (formula / rich-text / duration / error) は値型 mapping (formula→cachedValue or formula text、duration→ms、error→code、rich-text→concat text)。
-  2. `src/index.ts` から re-export。
+  2. `src/worksheet/index.ts` (= subpath barrel) から re-export。
   3. `tests/phase-5/worksheet-to-json.test.ts` 5 件: 通常 / pretty 改行 / Date / formula cached / rich-text concat。
 
-- **次のタスク (前回)**: **export-format smoke test (CSV/HTML/MD/Text 全部 record exercise)**。
+  empirical: 2377 tests pass (was 2371, +6)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **export-format smoke test (CSV/HTML/MD/Text 全部 record exercise)**。
   1. `tests/phase-3/workbook-export-formats-smoke.test.ts` 新規: 自前 wb 生成 + 4 record export + bundle + describeWorkbook を一気に走らせる integration check。
   2. 新 helper 不要。
 
