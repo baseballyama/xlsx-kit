@@ -539,3 +539,12 @@ export function richTextLength(rt: RichText): number {
   for (const r of rt) n += r.text.length;
   return n;
 }
+
+/**
+ * Predicate: true when `rt` has no runs, or every run carries an empty
+ * `text`. Useful as the rich-text counterpart to `isEmptyCell`.
+ */
+export function isEmptyRichText(rt: RichText): boolean {
+  for (const r of rt) if (r.text !== '') return false;
+  return true;
+}

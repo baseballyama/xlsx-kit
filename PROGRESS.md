@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`isEmptyRichText(rt)` 空判定 predicate を追加** — RichText が空 (run 数 0) または全 run が空文字列のときに `true` を返す。`isEmptyCell` の rich-text counterpart。
+- **次のタスク**: **`setFontOnRichText(rt, font)` font 上書き helper を追加** — `applyFontToRichText` の cousin で、per-run の font を**上書き** (= 既存 font は捨てる) する版。全 run に統一 font を強制適用する normalization 用途。
+  1. `src/cell/rich-text.ts` に `setFontOnRichText(rt: RichText, font: InlineFont): RichText` を export 追加: `mapRichTextRuns(rt, (r) => ({ text: r.text, font }))`。
+  2. `src/cell/index.ts` (= subpath barrel) から `setFontOnRichText` を re-export。
+  3. `tests/phase-2/rich-text-set-font.test.ts` 3 件: per-run font が上書きされる / font なし run にも font 適用 / 空 RichText で空 RichText 返却。
+
+- **次のタスク (前回)**: **`isEmptyRichText(rt)` 空判定 predicate を追加** — RichText が空 (run 数 0) または全 run が空文字列のときに `true` を返す。`isEmptyCell` の rich-text counterpart。
   1. `src/cell/rich-text.ts` に `isEmptyRichText(rt: RichText): boolean` を export 追加: `rt.length === 0` で true / 各 run の `text !== ''` を見つけたら false / 全 run 空文字列で true。
   2. `src/cell/index.ts` (= subpath barrel) から `isEmptyRichText` を re-export。
   3. `tests/phase-2/rich-text-is-empty.test.ts` 3 件: 空 RichText で true / 全 run が `text: ''` で true / 1 つでも非空 run があれば false。
 
-- **次のタスク (前回)**: **`truncateRichText(rt, maxLength, ellipsis?)` 切り詰め helper を追加** — `richTextLength(rt) <= maxLength` なら無加工、それ以外は `[0, maxLength)` に slice (font 維持)、`ellipsis` 指定時は末尾を ellipsis で置換。`maxLength <= 0` で空 RichText (ellipsis 無視)、`ellipsis.length >= maxLength` で `richText(ellipsis.slice(0, maxLength))` (ellipsis 自身を hard truncate)。
+  empirical: 2537 tests pass (was 2534, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`truncateRichText(rt, maxLength, ellipsis?)` 切り詰め helper を追加** — `richTextLength(rt) <= maxLength` なら無加工、それ以外は `[0, maxLength)` に slice (font 維持)、`ellipsis` 指定時は末尾を ellipsis で置換。`maxLength <= 0` で空 RichText (ellipsis 無視)、`ellipsis.length >= maxLength` で `richText(ellipsis.slice(0, maxLength))` (ellipsis 自身を hard truncate)。
   1. `src/cell/rich-text.ts` に `truncateRichText(rt: RichText, maxLength: number, ellipsis?: string): RichText` を export 追加: `richTextLength` 計測 → 短ければ `rt` / `maxLength <= 0` で空 / 空 ellipsis で `sliceRichText(rt, 0, maxLength)` / `ellipsis.length >= maxLength` で `richText(ellipsis.slice(0, maxLength))` / それ以外は `concatRichText(sliceRichText(rt, 0, maxLength - ellipsis.length), ellipsis)`。
   2. `src/cell/index.ts` (= subpath barrel) から `truncateRichText` を re-export。
   3. `tests/phase-2/rich-text-truncate.test.ts` 5 件: 短い rt は無加工 / ellipsis なしで hard truncate / `'...'` ellipsis で末尾置換 / `maxLength = 0` で空 RichText / ellipsis が `maxLength` より長い場合 ellipsis を hard truncate。

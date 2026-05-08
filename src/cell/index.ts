@@ -51,6 +51,7 @@ export {
   findLastRichTextIndex,
   findRichTextIndex,
   insertRichText,
+  isEmptyRichText,
   makeRichText,
   makeTextRun,
   mapRichTextRuns,
