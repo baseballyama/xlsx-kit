@@ -66,6 +66,7 @@ export {
   richTextStartsWith,
   richTextToLowerCase,
   richTextToString,
+  richTextToUpperCase,
   sliceRichText,
   splitRichTextRuns,
   trimRichText,

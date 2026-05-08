@@ -371,6 +371,16 @@ export function richTextToLowerCase(rt: RichText): RichText {
 }
 
 /**
+ * Uppercase every run's text via `String.prototype.toUpperCase`, returning a
+ * new RichText. Per-run fonts are preserved. Locale-independent.
+ */
+export function richTextToUpperCase(rt: RichText): RichText {
+  return mapRichTextRuns(rt, (r) =>
+    r.font !== undefined ? { text: r.text.toUpperCase(), font: r.font } : { text: r.text.toUpperCase() },
+  );
+}
+
+/**
  * Concatenate the plain-text content of a rich-text value (rich-text
  * read paths often want the raw text without formatting).
  */
