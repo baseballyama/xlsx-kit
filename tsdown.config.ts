@@ -27,6 +27,10 @@ export default defineConfig({
   format: ['esm'],
   target: 'es2022',
   platform: 'neutral',
+  // `node:*` builtins (used in src/io/node-fs.ts) are runtime-resolved
+  // by Node — leave them as external imports so the bundle works in
+  // both Node and browser targets without baking the implementation in.
+  external: [/^node:/],
   sourcemap: true,
   clean: true,
   treeshake: true,
