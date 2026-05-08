@@ -37,12 +37,19 @@
 - **PR 作業をする場合**: `git push origin main` で main 直 push (このリポジトリはオーナー単独運用)。
 
 
-- **次のタスク**: **`cellHasComment(c)` predicate を追加** — `cellHasHyperlink` の sister。Cell の comment 紐付き判定。`c.commentId !== undefined` の thin wrapper。
+- **次のタスク**: **`isStyledCell(c)` predicate を追加** — Cell に default 以外の style が当たっているかの判定。`c.styleId !== 0` の thin wrapper。`cellHasHyperlink` / `cellHasComment` と並ぶ Cell 級 attribute predicate。0 = default xf という invariant に依存。
+  1. `src/cell/cell.ts` に `isStyledCell(c: Cell): boolean` を export 追加: `c.styleId !== 0` を return (`cellHasComment` の隣に配置)。
+  2. `src/cell/index.ts` (= subpath barrel) の cell exports から `isStyledCell` を re-export (alphabetical 順)。
+  3. `tests/phase-2/is-styled-cell.test.ts` 3 件: styleId = 0 で false (default) / styleId = 1 で true / `makeCell` 直後 (default styleId) で false。
+
+- **次のタスク (前回)**: **`cellHasComment(c)` predicate を追加** — `cellHasHyperlink` の sister。Cell の comment 紐付き判定。`c.commentId !== undefined` の thin wrapper。
   1. `src/cell/cell.ts` に `cellHasComment(c: Cell): boolean` を export 追加: `c.commentId !== undefined` を return (`cellHasHyperlink` の隣に配置)。
   2. `src/cell/index.ts` (= subpath barrel) の cell exports から `cellHasComment` を re-export (alphabetical 順)。
   3. `tests/phase-2/cell-has-comment.test.ts` 3 件: commentId 未設定で false / commentId = 1 で true / commentId = 0 で true。
 
-- **次のタスク (前回)**: **`cellHasHyperlink(c)` predicate を追加** — Cell の hyperlink 紐付き判定。`c.hyperlinkId !== undefined` の thin wrapper。Cell 級の predicate を補強する pivot (rich-text 飽和回避)。
+  empirical: 2564 tests pass (was 2561, +3)、typecheck / lint clean (14 warnings)。
+
+- **次のタスク (前回 2)**: **`cellHasHyperlink(c)` predicate を追加** — Cell の hyperlink 紐付き判定。`c.hyperlinkId !== undefined` の thin wrapper。Cell 級の predicate を補強する pivot (rich-text 飽和回避)。
   1. `src/cell/cell.ts` に `cellHasHyperlink(c: Cell): boolean` を export 追加: `c.hyperlinkId !== undefined` を return。
   2. `src/cell/index.ts` (= subpath barrel) の cell exports から `cellHasHyperlink` を re-export (alphabetical 順、`bindValue` の隣など適切位置)。
   3. `tests/phase-2/cell-has-hyperlink.test.ts` 3 件: hyperlinkId 未設定で false / hyperlinkId = 1 で true / hyperlinkId = 0 (有効 id) で true。
