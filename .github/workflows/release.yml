@@ -10,9 +10,11 @@ name: Release
 #      changesets and instead publishes to npm with provenance and creates
 #      a GitHub Release for each version bump.
 #
-# Required repo secrets:
-#   - NPM_TOKEN: npm "Automation" token (https://www.npmjs.com/settings/{user}/tokens)
-#                Automation tokens bypass 2FA and are required for CI publish.
+# Authentication:
+#   Publishing uses npm Trusted Publishers (OIDC). The package on npm must be
+#   configured to trust this repo + workflow at
+#   https://www.npmjs.com/package/xlsx-kit/access. No NPM_TOKEN secret is
+#   needed; OIDC is brokered via the `id-token: write` permission below.
 #
 # Required repo settings:
 #   - Settings → Actions → General → Workflow permissions:
@@ -45,11 +47,13 @@ jobs:
 
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
+      # Note: do NOT set `registry-url` here — it would have setup-node write
+      # `_authToken=${NODE_AUTH_TOKEN}` into .npmrc, which forces token auth
+      # and blocks the OIDC code path used by Trusted Publishers.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
 
       # ECMA-376 conformance tests shell out to xmllint (libxml2-utils).
       - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
@@ -73,5 +77,4 @@ jobs:
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
