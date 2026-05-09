@@ -157,3 +157,7 @@ vite.config.ts.timestamp-*
 # E2E-generated xlsx files (rebuild with `pnpm test:e2e`)
 tests/e2e/output/*.xlsx
 tests/e2e/output/*.xlsm
+
+# Playwright MCP scratch (page snapshots, screenshots at repo root)
+.playwright-mcp/
+/*.png
