@@ -6,8 +6,7 @@ Python or Excel. Inspired by [openpyxl](https://openpyxl.readthedocs.io/).
 
 > **Status: pre-1.0 alpha.** The core read / write / streaming pipeline is
 > in place and round-trips real-world fixtures (including pivot tables and
-> macro-enabled `.xlsm`), but APIs may shift before `1.0`. See
-> [`docs/plan/`](docs/plan/) for the design spec.
+> macro-enabled `.xlsm`), but APIs may shift before `1.0`.
 
 ## Why xlsx-kit?
 
