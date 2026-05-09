@@ -15,11 +15,11 @@
     "@sveltejs/kit": "^2.59.1",
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
     "@types/node": "^22.19.18",
-    "mdsvex": "^0.12.3",
+    "mdsvex": "^0.12.7",
     "shiki": "^4.0.2",
     "svelte": "^5.55.5",
     "svelte-check": "^4.4.8",
-    "typescript": "^5.7.2",
+    "typescript": "^5.9.3",
     "vite": "^6.4.2"
   }
 }
