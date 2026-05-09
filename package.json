@@ -24,7 +24,7 @@
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=22"
+    "node": ">=22.22.2"
   },
   "files": [
     "dist/**",
@@ -124,7 +124,7 @@
     "@size-limit/preset-small-lib": "^12.1.0",
     "@types/node": "^22.19.18",
     "@vitest/coverage-v8": "^4.1.5",
-    "fast-check": "^3.23.2",
+    "fast-check": "^4.7.0",
     "knip": "^6.12.1",
     "oxlint": "^1.62.0",
     "size-limit": "^12.1.0",

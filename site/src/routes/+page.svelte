@@ -31,7 +31,6 @@
   const stats = [
     { label: 'rows', value: '10,000,000', sub: 'streamed under 100 MB heap' },
     { label: 'bundle', value: '~78 KB', sub: 'brotli, tree-shakeable' },
-    { label: 'deps', value: '0', sub: 'native modules' },
     { label: 'targets', value: 'Node + browser', sub: 'no Python, no Excel' },
   ];
 </script>
@@ -51,8 +50,6 @@
       <span class="meta-tag">v0 · MIT · stable</span>
       <span class="meta-sep">/</span>
       <span class="meta-tag">Node 22+ · browsers</span>
-      <span class="meta-sep">/</span>
-      <span class="meta-tag">0 native deps</span>
     </div>
 
     <h1 class="display">

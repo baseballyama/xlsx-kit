@@ -31,10 +31,6 @@
         <span class="label">Runtime</span>
         <span>Node 22+ · browsers</span>
       </div>
-      <div class="cell">
-        <span class="label">Native deps</span>
-        <span>0</span>
-      </div>
     </div>
     <div class="footer-llms">
       <span class="muted">For LLMs:</span>

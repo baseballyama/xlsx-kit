@@ -12,7 +12,8 @@
     "site": {
       "entry": ["src/**/*.{ts,svelte}"],
       "project": ["src/**/*.{ts,svelte}"],
-      "ignoreDependencies": ["xlsx-kit"]
+      "ignoreDependencies": ["xlsx-kit"],
+      "ignoreUnresolved": ["./\\$types"]
     }
   }
 }

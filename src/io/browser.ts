@@ -33,9 +33,6 @@ export function fromBlob(blob: Blob): XlsxSource {
   };
 }
 
-/** Alias kept for symmetry with the plan; File extends Blob so the implementation is shared. */
-export const fromFile = fromBlob;
-
 /**
  * Wrap a fetch {@link Response} as an XlsxSource. `toBytes` collects
  * the entire response body via `Response.arrayBuffer()`; `toStream`

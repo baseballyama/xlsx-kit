@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   fromArrayBuffer,
   fromBlob,
-  fromFile,
   fromResponse,
   fromStream,
   toArrayBuffer,
@@ -41,10 +40,6 @@ describe('fromBlob', () => {
   it('rejects non-Blob input with OpenXmlIoError', () => {
     // biome-ignore lint/suspicious/noExplicitAny: deliberately exercising the error path
     expect(() => fromBlob('not a blob' as any)).toThrowError(OpenXmlIoError);
-  });
-
-  it('fromFile is a synonym for fromBlob (File extends Blob)', () => {
-    expect(fromFile).toBe(fromBlob);
   });
 });
 
