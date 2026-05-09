@@ -1,5 +1,4 @@
-// Tests for the typed <protectedRanges> model. Per
-// docs/plan/13-full-excel-coverage.md §B5 (sheet-protection family).
+// Tests for the typed <protectedRanges> model. (sheet-protection family).
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

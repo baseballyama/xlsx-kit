@@ -1,12 +1,10 @@
-// `docProps/app.xml` — Office "extended" document properties. Per
-// docs/plan/03-foundations.md §6.3.
+// `docProps/app.xml` — Office "extended" document properties.
 //
-// Mirrors openpyxl/openpyxl/packaging/extended.py. Most fields are flat
-// (text or numeric). The four vector-shaped children — HeadingPairs,
-// TitlesOfParts, HLinks, DigSig — are kept as raw XmlNode subtrees and
-// round-tripped verbatim; modelling vt:vector explicitly is a phase-3
-// concern at the earliest. See docs/plan/02-mapping.md row for
-// `packaging/extended.py`.
+// Mirrors openpyxl/openpyxl/packaging/extended.py. Most fields are flat (text
+// or numeric). The four vector-shaped children — HeadingPairs, TitlesOfParts,
+// HLinks, DigSig — are kept as raw XmlNode subtrees and round-tripped verbatim;
+// modelling vt:vector explicitly is a phase-3 concern at the earliest. See row
+// for `packaging/extended.py`.
 
 import { defineSchema, type Schema } from '../schema/core';
 import { fromTree, toTree } from '../schema/serialize';

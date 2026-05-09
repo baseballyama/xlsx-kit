@@ -1,4 +1,4 @@
-// DrawingML primitive parse / serialize. Per docs/plan/08-charts-drawings.md §4.
+// DrawingML primitive parse / serialize.
 
 import { OpenXmlSchemaError } from '../../utils/exceptions';
 import { DRAWING_NS, REL_NS } from '../../xml/namespaces';
@@ -1325,8 +1325,8 @@ const parseRunProperties = (el: XmlNode): RunProperties => {
   const smtId = intAttr(el, 'smtId');
   if (smtId !== undefined) out.smtId = smtId;
   if (a['bmk'] !== undefined) out.bmk = a['bmk'];
-  // The `rtl` attribute is on rPr per ECMA-376.
-  // Some files keep rtl on pPr; we accept both.
+  // The `rtl` attribute is on rPr per ECMA-376. Some files keep rtl on pPr; we
+  // accept both.
   const rtl = boolAttr(el, 'rtl');
   if (rtl !== undefined) out.rtl = rtl;
   // Nested elements.
@@ -1819,7 +1819,8 @@ export const parseTextBody = (el: XmlNode): TextBody => {
   const lstStyleEl = findChild(el, A('lstStyle'));
   const lstStyle = lstStyleEl ? parseListStyle(lstStyleEl) : undefined;
   // Excel emits a bare `<a:lstStyle/>` even when no level overrides are set;
-  // treat that as absent so round-trip equality holds for `lstStyle: undefined`.
+  // treat that as absent so round-trip equality holds for `lstStyle:
+  // undefined`.
   const lstStyleHasContent = lstStyle && Object.keys(lstStyle).length > 0;
   const paragraphs: TextParagraph[] = [];
   for (const p of findChildren(el, A('p'))) paragraphs.push(parseTextParagraph(p));
@@ -1897,9 +1898,9 @@ const serializeTransform2D = (x: Transform2D): string => {
 };
 
 /**
- * Parse a `<spPr>` (or `<c:spPr>` / `<cdr:spPr>`) element. Caller provides
- * the element directly — we don't filter by tag name so the helper works
- * for any namespace prefix.
+ * Parse a `<spPr>` (or `<c:spPr>` / `<cdr:spPr>`) element. Caller provides the
+ * element directly — we don't filter by tag name so the helper works for any
+ * namespace prefix.
  */
 export const parseShapeProperties = (el: XmlNode): ShapeProperties => {
   const out: ShapeProperties = {};

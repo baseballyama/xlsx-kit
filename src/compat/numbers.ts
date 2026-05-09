@@ -1,11 +1,10 @@
-// Numeric type guards. Per docs/plan/03-foundations.md §8 the compat
-// layer in the TS port is intentionally tiny — most of openpyxl's
-// compat surface (Singleton metaclass, NUMERIC_TYPES tuple, py2/py3
-// shims) has no equivalent in TypeScript.
+// Numeric type guards. The compat layer in the TS port is intentionally tiny —
+// most of openpyxl's compat surface (Singleton metaclass, NUMERIC_TYPES tuple,
+// py2/py3 shims) has no equivalent in TypeScript.
 
 /**
- * `Number.isFinite` typed as a guard. Distinct from the global
- * `isFinite()` which coerces strings. Rejects `NaN` and ±Infinity.
+ * `Number.isFinite` typed as a guard. Distinct from the global `isFinite()`
+ * which coerces strings. Rejects `NaN` and ±Infinity.
  */
 export function isFiniteNumber(x: unknown): x is number {
   return typeof x === 'number' && Number.isFinite(x);
@@ -17,10 +16,10 @@ export function isInteger(x: unknown): x is number {
 }
 
 /**
- * Detect any of the JS typed-array views (Int8Array, Uint8Array,
- * Float32Array, etc.). Used at workbook-build boundaries where
- * integration code may pass numpy-style buffers — we accept them and
- * iterate per-element rather than refusing.
+ * Detect any of the JS typed-array views (Int8Array, Uint8Array, Float32Array,
+ * etc.). Used at workbook-build boundaries where integration code may pass
+ * numpy-style buffers — we accept them and iterate per-element rather than
+ * refusing.
  */
 export function isTypedArray(x: unknown): x is ArrayBufferView {
   return ArrayBuffer.isView(x) && !(x instanceof DataView);

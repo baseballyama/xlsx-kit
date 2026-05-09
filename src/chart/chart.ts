@@ -2,14 +2,13 @@ import type { ShapeProperties } from '../drawing/dml/shape-properties';
 import type { TextBody } from '../drawing/dml/text';
 import type { ChartDrawing } from './user-shapes';
 
-// ChartML data model. Per docs/plan/08-charts-drawings.md §5.
+// ChartML data model.
 //
-// **Stage 1**: BarChart end-to-end. The full 17 SpreadsheetML chart
-// kinds + 8 chartex kinds land across the upcoming iterations; this
-// commit introduces the shared shape so future kinds can plug in
-// without breaking the public surface:
+// **Stage 1**: BarChart end-to-end. The full 17 SpreadsheetML chart kinds + 8
+// chartex kinds land across the upcoming iterations; this commit introduces the
+// shared shape so future kinds can plug in without breaking the public surface:
 //
-//   ChartSpace
+// ChartSpace
 //     ├─ title?: string
 //     ├─ legend?: { position: ... }
 //     └─ plotArea
@@ -17,9 +16,9 @@ import type { ChartDrawing } from './user-shapes';
 //          ├─ catAx?: CategoryAxis  (or Date / Series axis)
 //          └─ valAx?: ValueAxis
 //
-// References to worksheet ranges (`Sheet1!$A$1:$A$5`) are kept as
-// strings; the optional `cache` field carries the last-known data so
-// charts can be rendered without reading the source data.
+// References to worksheet ranges (`Sheet1!$A$1:$A$5`) are kept as strings; the
+// optional `cache` field carries the last-known data so charts can be rendered
+// without reading the source data.
 
 export type LegendPosition = 'r' | 't' | 'l' | 'b' | 'tr';
 export type GroupingType = 'clustered' | 'stacked' | 'percentStacked' | 'standard';
@@ -315,9 +314,9 @@ export interface OfPieChart {
 // ---- 3-D chart variants ---------------------------------------------------
 //
 // 3-D charts share most of their attributes with their 2-D counterparts but
-// land on different XML tag names (<c:bar3DChart>, etc) and use 3 axes
-// (cat / val / ser). We keep them as distinct discriminated-union variants
-// so the chart kind stays type-narrowable.
+// land on different XML tag names (<c:bar3DChart>, etc) and use 3 axes (cat /
+// val / ser). We keep them as distinct discriminated-union variants so the
+// chart kind stays type-narrowable.
 
 export interface Bar3DChart {
   kind: 'bar3D';
@@ -424,8 +423,8 @@ export interface Legend {
 export interface ChartTitle {
   /**
    * Plain title text. When set the serializer emits
-   * `<c:tx><c:rich><a:p><a:r><a:t>text</a:t></a:r></c:rich></c:tx>`.
-   * Mutually exclusive with `tx`.
+   * `<c:tx><c:rich><a:p><a:r><a:t>text</a:t></a:r></c:rich></c:tx>`. Mutually
+   * exclusive with `tx`.
    */
   text?: string;
   /** Rich text body — overrides `text` when both are present. */

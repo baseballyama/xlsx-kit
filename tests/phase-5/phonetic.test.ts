@@ -1,5 +1,4 @@
-// Tests for the typed worksheet-level <phoneticPr> model. Per
-// docs/plan/13-full-excel-coverage.md §B10.
+// Tests for the typed worksheet-level <phoneticPr> model.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

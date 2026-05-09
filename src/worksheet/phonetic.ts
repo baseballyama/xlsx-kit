@@ -1,10 +1,10 @@
 // Worksheet-level <phoneticPr> for East-Asian (mostly Japanese) furigana
-// rendering. Per docs/plan/13-full-excel-coverage.md §B10.
+// rendering.
 //
-// Excel uses `<phoneticPr fontId="..." type="..." alignment="..."/>`
-// to drive how it renders the small phonetic annotation strip above
-// CJK characters in cells. The per-cell `<rPh>` annotations live on
-// shared-string entries and are a separate concern (richer model).
+// Excel uses `<phoneticPr fontId="..." type="..." alignment="..."/>` to drive
+// how it renders the small phonetic annotation strip above CJK characters in
+// cells. The per-cell `<rPh>` annotations live on shared-string entries and are
+// a separate concern (richer model).
 
 export type PhoneticType = 'halfwidthKatakana' | 'fullwidthKatakana' | 'Hiragana' | 'noConversion';
 export type PhoneticAlignment = 'noControl' | 'left' | 'center' | 'distributed';

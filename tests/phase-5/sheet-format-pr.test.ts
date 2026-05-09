@@ -1,5 +1,4 @@
-// Tests for the extended <sheetFormatPr> attributes (B11). Per
-// docs/plan/13-full-excel-coverage.md §B11.
+// Tests for the extended <sheetFormatPr> attributes (B11).
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

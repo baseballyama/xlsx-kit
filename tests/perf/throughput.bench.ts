@@ -1,13 +1,12 @@
-// Perf bench for the write-only streaming path.
-// Per docs/plan/06-streaming.md §3.4 acceptance: ≥500k cells/s on the
-// M1 baseline for the 100k-row × 30-col shape (~3M cells). Vitest's
-// `bench` API runs a sized N=2 batch (2 inner iterations × the warm-up
-// + measurement passes vitest does on its own) and reports ops/sec —
-// reciprocal gives seconds per archive, which we convert to cells/s in
-// the throughput.test.ts gate alongside.
+// Perf bench for the write-only streaming path. Acceptance: ≥500k cells/s on
+// the M1 baseline for the 100k-row × 30-col shape (~3M cells). Vitest's `bench`
+// API runs a sized N=2 batch (2 inner iterations × the warm-up + measurement
+// passes vitest does on its own) and reports ops/sec — reciprocal gives seconds
+// per archive, which we convert to cells/s in the throughput.test.ts gate
+// alongside.
 //
-// Run with: pnpm bench
-// Excluded from `pnpm test` via vitest.config.ts (`exclude: tests/perf/**`).
+// Run with: pnpm bench Excluded from `pnpm test` via vitest.config.ts
+// (`exclude: tests/perf/**`).
 
 import { bench, describe } from 'vitest';
 import { toBuffer } from '../../src/io/node';

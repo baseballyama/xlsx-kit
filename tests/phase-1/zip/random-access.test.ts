@@ -1,9 +1,7 @@
-// Random-access ZIP reader correctness. Verifies that openZip walks the
-// central directory once and inflates entries on demand — reading in
-// any order, repeating reads, and mixing STORE / DEFLATE entries all
-// land on byte-identical payloads.
-//
-// Per docs/plan/03-foundations.md §2.1.
+// Random-access ZIP reader correctness. Verifies that openZip walks the central
+// directory once and inflates entries on demand — reading in any order,
+// repeating reads, and mixing STORE / DEFLATE entries all land on
+// byte-identical payloads.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer, toBuffer } from '../../../src/io/node';
@@ -34,8 +32,8 @@ describe('openZip — random-access reader', () => {
     ]);
     const archive = await openZip(fromBuffer(bytes));
 
-    // Read tail-first to make sure offsets aren't computed from a
-    // sequential cursor.
+    // Read tail-first to make sure offsets aren't computed from a sequential
+    // cursor.
     expect(archive.read('c.bin')).toEqual(c);
     expect(archive.read('a.bin')).toEqual(a);
     expect(archive.read('b.txt')).toEqual(b);

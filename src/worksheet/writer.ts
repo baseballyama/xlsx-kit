@@ -1,15 +1,13 @@
-// Worksheet XML writer. Per docs/plan/05-read-write.md §5.2.
+// Worksheet XML writer.
 //
-// **Stage 1**: hand-rolled serialiser for `<sheetData>/<row>/<c>`
-// covering the common cell-value shapes — number / string (via shared
-// strings) / boolean / error / formula. Streaming through
-// XmlStreamWriter + dimension / sheetView / cols / mergeCells lands in
-// later iterations of the loop.
+// **Stage 1**: hand-rolled serialiser for `<sheetData>/<row>/<c>` covering the
+// common cell-value shapes — number / string (via shared strings) / boolean /
+// error / formula. Streaming through XmlStreamWriter + dimension / sheetView /
+// cols / mergeCells lands in later iterations of the loop.
 //
-// The acceptance criterion (1M cell write in ~5s on M1) needs SAX, but
-// stage-1 prioritises correctness — once loadWorkbook → saveWorkbook
-// round-trips, we can swap the body for a streaming writer without
-// callers noticing.
+// The acceptance criterion (1M cell write in ~5s on M1) needs SAX, but stage-1
+// prioritises correctness — once loadWorkbook → saveWorkbook round-trips, we
+// can swap the body for a streaming writer without callers noticing.
 
 import { type Cell, type CellValue, type ExcelErrorCode, type FormulaValue, getCoordinate } from '../cell/cell';
 import type { Relationships } from '../packaging/relationships';
@@ -48,39 +46,38 @@ export interface WorksheetWriteContext {
   /** Accumulator the writer mutates as it emits string cells. */
   sharedStrings: SharedStringsTable;
   /**
-   * Workbook epoch for `Date` / `{kind:'duration'}` cell serialisation.
-   * `true` = Mac 1904 epoch; `false` (default) = Windows 1900 epoch.
-   * Modern Excel emits 1900-based serials; 1904 only appears in legacy
-   * Mac workbooks but the round-trip respects the workbook setting.
+   * Workbook epoch for `Date` / `{kind:'duration'}` cell serialisation. `true`
+   * = Mac 1904 epoch; `false` (default) = Windows 1900 epoch. Modern Excel
+   * emits 1900-based serials; 1904 only appears in legacy Mac workbooks but the
+   * round-trip respects the workbook setting.
    */
   date1904?: boolean;
   /**
-   * Worksheet rels collector. The writer pushes a rel per external
-   * hyperlink and per Table, allocating ids `rId1..rIdN`. Caller emits
-   * the resulting relationships file alongside the worksheet part.
+   * Worksheet rels collector. The writer pushes a rel per external hyperlink
+   * and per Table, allocating ids `rId1..rIdN`. Caller emits the resulting
+   * relationships file alongside the worksheet part.
    */
   rels?: Relationships;
   /**
-   * Table rel allocator. saveWorkbook hands in a callback that registers
-   * a table part under a workbook-global tableN counter and returns the
-   * relPath ("../tables/tableN.xml") + the worksheet-rels rId. Called
-   * once per `ws.tables` entry while serialising.
+   * Table rel allocator. saveWorkbook hands in a callback that registers a
+   * table part under a workbook-global tableN counter and returns the relPath
+   * ("../tables/tableN.xml") + the worksheet-rels rId. Called once per
+   * `ws.tables` entry while serialising.
    */
   registerTable?: (table: import('./table').TableDefinition) => { rId: string };
   /**
-   * Comments / VML drawing allocator. saveWorkbook emits the comments
-   * part + a placeholder VML drawing for all comments on the sheet, and
-   * returns the worksheet-rels rId for the VML — which the writer
-   * splats into `<legacyDrawing r:id>`. Called once per worksheet that
-   * carries any comments.
+   * Comments / VML drawing allocator. saveWorkbook emits the comments part + a
+   * placeholder VML drawing for all comments on the sheet, and returns the
+   * worksheet-rels rId for the VML — which the writer splats into
+   * `<legacyDrawing r:id>`. Called once per worksheet that carries any
+   * comments.
    */
   registerComments?: (comments: ReadonlyArray<import('./comments').LegacyComment>) => { vmlRelId: string };
   /**
-   * Drawing allocator. saveWorkbook emits xl/drawings/drawingN.xml under
-   * a workbook-global counter, registers a `${REL_NS}/drawing` rel on
-   * the worksheet rels, and returns the worksheet-rels rId — splatted
-   * into `<drawing r:id>` by the writer. Called once when ws.drawing is
-   * set.
+   * Drawing allocator. saveWorkbook emits xl/drawings/drawingN.xml under a
+   * workbook-global counter, registers a `${REL_NS}/drawing` rel on the
+   * worksheet rels, and returns the worksheet-rels rId — splatted into
+   * `<drawing r:id>` by the writer. Called once when ws.drawing is set.
    */
   registerDrawing?: (drawing: import('../drawing/drawing').Drawing) => { rId: string };
 }
@@ -88,10 +85,10 @@ export interface WorksheetWriteContext {
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
 /**
- * Serialise a worksheet to its `xl/worksheets/sheetN.xml` payload. The
- * function mutates `ctx.sharedStrings` — every plain-string cell adds
- * (or dedupes) into the table; the caller is responsible for emitting
- * the resulting sst at the end of the package write.
+ * Serialise a worksheet to its `xl/worksheets/sheetN.xml` payload. The function
+ * mutates `ctx.sharedStrings` — every plain-string cell adds (or dedupes) into
+ * the table; the caller is responsible for emitting the resulting sst at the
+ * end of the package write.
  */
 export function worksheetToBytes(ws: Worksheet, ctx: WorksheetWriteContext): Uint8Array {
   return new TextEncoder().encode(serializeWorksheet(ws, ctx));
@@ -117,8 +114,8 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
   parts.push('<sheetData>');
   // Iterate rows in numeric order so writer output is deterministic.
   const rowKeys = [...ws.rows.keys()].sort((a, b) => a - b);
-  // Walk the union of populated rows + rowDimension entries so dimension-
-  // only rows (e.g. an empty row with custom height) still emit.
+  // Walk the union of populated rows + rowDimension entries so dimension-only
+  // rows (e.g. an empty row with custom height) still emit.
   const rowKeyUnion = new Set<number>(rowKeys);
   for (const k of ws.rowDimensions.keys()) rowKeyUnion.add(k);
   const sortedRowKeys = [...rowKeyUnion].sort((a, b) => a - b);
@@ -140,8 +137,8 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     parts.push('</row>');
   }
   parts.push('</sheetData>');
-  // sheetProtection sits between sheetData and mergeCells per
-  // ECMA-376 §18.3.1.85.
+  // sheetProtection sits between sheetData and mergeCells per ECMA-376
+  // §18.3.1.85.
   if (ws.sheetProtection) {
     const sp = serializeSheetProtection(ws.sheetProtection);
     if (sp) parts.push(sp);
@@ -180,13 +177,12 @@ export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): s
     parts.push(serializeHyperlinks(ws.hyperlinks, ctx.rels));
   }
   // afterSheetData extras live between hyperlinks and the drawing/
-  // legacyDrawing/tableParts tail. ECMA-376 puts printOptions / pageMargins
-  // / pageSetup / headerFooter / rowBreaks / colBreaks here; oleObjects /
-  // controls / picture / legacyDrawingHF technically belong AFTER drawing
-  // and BEFORE tableParts, but Excel reads them in either spot. extLst is
-  // strictly the last child per ECMA, but landing it before tableParts
-  // keeps round-trip Excel-compatible without requiring fine-grained
-  // positional tracking.
+  // legacyDrawing/tableParts tail. ECMA-376 puts printOptions / pageMargins /
+  // pageSetup / headerFooter / rowBreaks / colBreaks here; oleObjects /
+  // controls / picture / legacyDrawingHF technically belong AFTER drawing and
+  // BEFORE tableParts, but Excel reads them in either spot. extLst is strictly
+  // the last child per ECMA, but landing it before tableParts keeps round-trip
+  // Excel-compatible without requiring fine-grained positional tracking.
   if (ws.printOptions) {
     const po = serializePrintOptions(ws.printOptions);
     if (po) parts.push(po);
@@ -261,7 +257,8 @@ const serializeDimension = (ws: Worksheet): string => {
     }
   }
   if (!Number.isFinite(minRow)) return '<dimension ref="A1"/>';
-  // Compose the ref using a temporary Cell-like to share the column-letter logic.
+  // Compose the ref using a temporary Cell-like to share the column-letter
+  // logic.
   const col1 = colLetters(minCol);
   const col2 = colLetters(maxCol);
   const ref = minRow === maxRow && minCol === maxCol ? `${col1}${minRow}` : `${col1}${minRow}:${col2}${maxRow}`;
@@ -281,12 +278,12 @@ const colLetters = (n: number): string => {
 
 /**
  * Serialise a single cell into its `<c .../>` element. Exported so the
- * streaming write-only path can emit cells row-by-row without going
- * through the full Worksheet model — see src/streaming/write-only.ts.
+ * streaming write-only path can emit cells row-by-row without going through the
+ * full Worksheet model — see src/streaming/write-only.ts.
  *
- * Only `ctx.sharedStrings` is consulted for plain-string cells; the
- * other context fields are used by the worksheet-level serializer that
- * wraps this helper.
+ * Only `ctx.sharedStrings` is consulted for plain-string cells; the other
+ * context fields are used by the worksheet-level serializer that wraps this
+ * helper.
  */
 export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string => {
   const ref = getCoordinate(cell);
@@ -294,7 +291,8 @@ export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string =>
   const value = cell.value;
 
   if (value === null) {
-    // Empty-but-styled cells still need to emit so styleId survives the round-trip.
+    // Empty-but-styled cells still need to emit so styleId survives the
+    // round-trip.
     if (cell.styleId === 0) return '';
     return `<c r="${ref}"${styleAttr}/>`;
   }
@@ -308,11 +306,11 @@ export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string =>
     return `<c r="${ref}"${styleAttr} t="e"><v>${code}</v></c>`;
   }
   if (typeof value === 'object' && value !== null && (value as { kind?: string }).kind === 'rich-text') {
-    // Emit rich text inline (t="inlineStr") rather than via the shared-
-    // strings table. Excel only honours per-run formatting for inline
-    // strings; rich-text entries inside `xl/sharedStrings.xml` get
-    // collapsed back to plain text on render. This mirrors openpyxl's
-    // writer (`cell.write` → `t="inlineStr"` for CellRichText values).
+    // Emit rich text inline (t="inlineStr") rather than via the shared-strings
+    // table. Excel only honours per-run formatting for inline strings;
+    // rich-text entries inside `xl/sharedStrings.xml` get collapsed back to
+    // plain text on render. This mirrors openpyxl's writer (`cell.write` →
+    // `t="inlineStr"` for CellRichText values).
     const runs = (value as { kind: 'rich-text'; runs: import('../cell/rich-text').RichText }).runs;
     return `<c r="${ref}"${styleAttr} t="inlineStr"><is>${serializeRichTextRuns(runs)}</is></c>`;
   }
@@ -331,10 +329,10 @@ export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string =>
     return `<c r="${ref}"${styleAttr} t="s"><v>${id}</v></c>`;
   }
   if (value instanceof Date) {
-    // Excel stores dates as serial numbers under the workbook epoch.
-    // The cell shows as a date only if the styleId points at a number-
-    // format with a date code — caller-managed; openpyxl behaves the
-    // same way. We just emit the serial.
+    // Excel stores dates as serial numbers under the workbook epoch. The cell
+    // shows as a date only if the styleId points at a number-format with a date
+    // code — caller-managed; openpyxl behaves the same way. We just emit the
+    // serial.
     const serial = dateToExcel(value, { epoch: ctx.date1904 ? 'mac' : 'windows' });
     return `<c r="${ref}"${styleAttr}><v>${serializeNumber(serial)}</v></c>`;
   }
@@ -347,9 +345,9 @@ export const serializeCell = (cell: Cell, ctx: WorksheetWriteContext): string =>
 };
 
 const serializeNumber = (n: number): string => {
-  // Match Excel's round-trip preference: integers stay as integers, doubles
-  // use the JS default representation. We don't need scientific-notation
-  // tweaking here — Excel reads either form fine.
+  // Match Excel's round-trip preference: integers stay as integers, doubles use
+  // the JS default representation. We don't need scientific-notation tweaking
+  // here — Excel reads either form fine.
   return Number.isInteger(n) ? n.toFixed(0) : String(n);
 };
 
@@ -367,13 +365,12 @@ const serializeFormulaCell = (ref: string, styleAttr: string, f: FormulaValue): 
   if (f.del2) fAttrs.push('del2="1"');
   if (f.aca) fAttrs.push('aca="1"');
   if (f.ca) fAttrs.push('ca="1"');
-  // Pass the formula text through verbatim. Auto-prefixing future-
-  // functions with `_xlfn.` matches what Excel writes on save, but
-  // Excel itself only accepts that form in tandem with `cm="N"` cell
-  // metadata + an `xl/metadata.xml` part — otherwise it raises the
-  // "We found a problem" recovery dialog. Until we emit metadata, ship
-  // bare names: Excel 365 / 2021 still resolves them; older Excel
-  // renders #NAME? but the workbook opens.
+  // Pass the formula text through verbatim. Auto-prefixing future-functions
+  // with `_xlfn.` matches what Excel writes on save, but Excel itself only
+  // accepts that form in tandem with `cm="N"` cell metadata + an
+  // `xl/metadata.xml` part — otherwise it raises the "We found a problem"
+  // recovery dialog. Until we emit metadata, ship bare names: Excel 365 / 2021
+  // still resolves them; older Excel renders #NAME? but the workbook opens.
   const fAttrStr = fAttrs.length > 0 ? ` ${fAttrs.join(' ')}` : '';
   const formulaText = escapeXmlText(escapeCellString(f.formula));
   const fEl = formulaText.length > 0 ? `<f${fAttrStr}>${formulaText}</f>` : `<f${fAttrStr}/>`;
@@ -459,18 +456,18 @@ const serializeSheetFormatPr = (ws: Worksheet): string => {
   let attrs = '';
   if (ws.baseColWidth !== undefined) attrs += ` baseColWidth="${ws.baseColWidth}"`;
   if (ws.defaultColumnWidth !== undefined) attrs += ` defaultColWidth="${ws.defaultColumnWidth}"`;
-  // Excel requires `defaultRowHeight` on <sheetFormatPr>; default to 15
-  // (the body-font row height for Calibri 11pt) when the caller hasn't
-  // specified one.
+  // Excel requires `defaultRowHeight` on <sheetFormatPr>; default to 15 (the
+  // body-font row height for Calibri 11pt) when the caller hasn't specified
+  // one.
   attrs += ` defaultRowHeight="${ws.defaultRowHeight ?? 15}"`;
   if (ws.customHeight !== undefined) attrs += ` customHeight="${ws.customHeight ? '1' : '0'}"`;
   if (ws.zeroHeight !== undefined) attrs += ` zeroHeight="${ws.zeroHeight ? '1' : '0'}"`;
   if (ws.thickTop !== undefined) attrs += ` thickTop="${ws.thickTop ? '1' : '0'}"`;
   if (ws.thickBottom !== undefined) attrs += ` thickBottom="${ws.thickBottom ? '1' : '0'}"`;
 
-  // outlineLevelRow / outlineLevelCol — emit explicit if set, else
-  // auto-compute the max from row/column dimensions so Excel renders
-  // the outline button strip with the right depth.
+  // outlineLevelRow / outlineLevelCol — emit explicit if set, else auto-compute
+  // the max from row/column dimensions so Excel renders the outline button
+  // strip with the right depth.
   const olRow = ws.outlineLevelRow ?? maxOutlineLevel(ws.rowDimensions);
   if (olRow > 0) attrs += ` outlineLevelRow="${olRow}"`;
   const olCol = ws.outlineLevelCol ?? maxOutlineLevel(ws.columnDimensions);
@@ -500,16 +497,16 @@ const serializeCols = (cols: ReadonlyMap<number, ColumnDimension>): string => {
 const serializeColumnDimension = (dim: ColumnDimension): string => {
   let attrs = ` min="${dim.min}" max="${dim.max}"`;
   // Excel rejects `<col>` without `width` — even hidden columns need it.
-  // Default to the workbook's stock 9.140625 (Calibri 11pt) so the
-  // viewport width stays consistent with what Excel itself emits.
+  // Default to the workbook's stock 9.140625 (Calibri 11pt) so the viewport
+  // width stays consistent with what Excel itself emits.
   const width = dim.width ?? 9.140625;
   attrs += ` width="${width}"`;
   if (dim.style !== undefined) attrs += ` style="${dim.style}"`;
   if (dim.hidden) attrs += ' hidden="1"';
   if (dim.bestFit) attrs += ' bestFit="1"';
   // Excel only honours `width` when paired with `customWidth="1"`. Auto-emit
-  // when the user supplied a width even if they didn't set the flag (the
-  // flag is OOXML plumbing, not something most callers think to set).
+  // when the user supplied a width even if they didn't set the flag (the flag
+  // is OOXML plumbing, not something most callers think to set).
   if (dim.customWidth || dim.width !== undefined) attrs += ' customWidth="1"';
   if (dim.outlineLevel !== undefined) attrs += ` outlineLevel="${dim.outlineLevel}"`;
   if (dim.collapsed) attrs += ' collapsed="1"';
@@ -964,9 +961,9 @@ const serializeHyperlinks = (links: ReadonlyArray<Hyperlink>, rels: Relationship
       if (rels) {
         let rId = link.rId;
         if (!rId) {
-          // Find the next free rIdN that doesn't already exist on this
-          // sheet's rels. Pre-loaded relsExtras can occupy low-numbered
-          // ids; a naive `rId${len+1}` would collide.
+          // Find the next free rIdN that doesn't already exist on this sheet's
+          // rels. Pre-loaded relsExtras can occupy low-numbered ids; a naive
+          // `rId${len+1}` would collide.
           let n = rels.rels.length + 1;
           rId = `rId${n}`;
           while (rels.rels.some((r) => r.id === rId)) {
@@ -1007,10 +1004,10 @@ const serializeRowDimensionAttrs = (dim: RowDimension): string => {
 };
 
 /**
- * Serialise a captured worksheet body extra (XmlNode) for inline emit.
- * Reuses the namespace-aware serializer then strips the XML declaration.
- * Excel tolerates the redundant per-element `xmlns="…"` declarations
- * that arise from emitting each child as its own root.
+ * Serialise a captured worksheet body extra (XmlNode) for inline emit. Reuses
+ * the namespace-aware serializer then strips the XML declaration. Excel
+ * tolerates the redundant per-element `xmlns="…"` declarations that arise from
+ * emitting each child as its own root.
  */
 const serializeBodyExtraNode = (node: XmlNode): string =>
   new TextDecoder().decode(serializeXml(node, { xmlDeclaration: false }));

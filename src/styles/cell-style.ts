@@ -1,8 +1,8 @@
-// Cell ↔ Stylesheet bridge. Per docs/plan/04-core-model.md §3.6.
+// Cell ↔ Stylesheet bridge.
 //
-// A cell's `styleId` is an index into `Workbook.styles.cellXfs`. Each
-// CellXf points at slots in the font / fill / border / numFmt pools.
-// To "apply" a Font to a cell we therefore:
+// A cell's `styleId` is an index into `Workbook.styles.cellXfs`. Each CellXf
+// points at slots in the font / fill / border / numFmt pools. To "apply" a Font
+// to a cell we therefore:
 //   1. read the cell's current CellXf (or `defaultCellXf` if it points
 //      at a slot that hasn't been allocated yet — common right after
 //      `makeCell` since `cellXfs` starts empty)
@@ -13,9 +13,9 @@
 //   4. dedup that CellXf via `addCellXf` and write the returned index
 //      back to `c.styleId`
 //
-// Following the no-classes rule, this module is just a flat list of
-// free functions; the workbook is passed in so callers don't need to
-// thread the stylesheet manually.
+// Following the no-classes rule, this module is just a flat list of free
+// functions; the workbook is passed in so callers don't need to thread the
+// stylesheet manually.
 
 import type { Cell } from '../cell/cell';
 import { OpenXmlSchemaError } from '../utils/exceptions';
@@ -82,8 +82,8 @@ export function getCellProtection(wb: Workbook, c: Cell): Protection {
 
 /**
  * Returns the cell's number-format **code** (e.g. `"0.00"`, `"General"`).
- * Built-in IDs resolve through `builtinFormatCode`; custom IDs come from
- * the workbook's numFmts map.
+ * Built-in IDs resolve through `builtinFormatCode`; custom IDs come from the
+ * workbook's numFmts map.
  */
 export function getCellNumberFormat(wb: Workbook, c: Cell): string {
   const id = currentXf(wb.styles, c).numFmtId;
@@ -93,16 +93,16 @@ export function getCellNumberFormat(wb: Workbook, c: Cell): string {
 }
 
 /**
- * Aggregate `fontToCss` + `fillToCss` + `borderToCss` + `alignmentToCss`
- * for a cell into a single CSS-property record. Resolves the cell's
- * `styleId` against the workbook stylesheet, then merges the four
- * partials. On key collision the priority is alignment > border > fill
- * > font (alignment is most specific, font is the broad default). A
- * fully-default cell (`styleId === 0` with empty pools) returns `{}`.
+ * Aggregate `fontToCss` + `fillToCss` + `borderToCss` + `alignmentToCss` for a
+ * cell into a single CSS-property record. Resolves the cell's `styleId` against
+ * the workbook stylesheet, then merges the four partials. On key collision the
+ * priority is alignment > border > fill > font (alignment is most specific,
+ * font is the broad default). A fully-default cell (`styleId === 0` with empty
+ * pools) returns `{}`.
  */
 export function cellStyleToCss(wb: Workbook, c: Cell): Record<string, string> {
-  // Don't pay the resolve cost when the cell points at the default xf and
-  // the stylesheet is still in its initial state.
+  // Don't pay the resolve cost when the cell points at the default xf and the
+  // stylesheet is still in its initial state.
   if (c.styleId === 0) {
     const xf = wb.styles.cellXfs[0];
     if (!xf || (xf.fontId === 0 && xf.fillId === 0 && xf.borderId === 0 && xf.alignment === undefined)) {
@@ -124,11 +124,11 @@ export function cellStyleToCss(wb: Workbook, c: Cell): Record<string, string> {
 // ---- write accessors -------------------------------------------------------
 
 /**
- * Reserve cellXfs[0] for the implicit default xf when the pool is
- * empty. Excel's `<c>` elements without an `s=` attribute resolve to
- * `cellXfs[0]`, so the first time a caller styles any cell we need
- * to make sure that slot stays the default — otherwise unstyled
- * cells in the same sheet would inherit the freshly added styled xf.
+ * Reserve cellXfs[0] for the implicit default xf when the pool is empty.
+ * Excel's `<c>` elements without an `s=` attribute resolve to `cellXfs[0]`, so
+ * the first time a caller styles any cell we need to make sure that slot stays
+ * the default — otherwise unstyled cells in the same sheet would inherit the
+ * freshly added styled xf.
  *
  * Idempotent: calling this on a non-empty pool is a no-op.
  */
@@ -137,8 +137,8 @@ const reserveDefaultXfSlot = (wb: Workbook): void => {
 };
 
 /**
- * Replace one field on the cell's CellXf. Centralises the dedup +
- * styleId update so each `setCell*` is a single dispatch.
+ * Replace one field on the cell's CellXf. Centralises the dedup + styleId
+ * update so each `setCell*` is a single dispatch.
  */
 function applyXfPatch(wb: Workbook, c: Cell, patch: Partial<CellXf>): void {
   reserveDefaultXfSlot(wb);
@@ -170,9 +170,8 @@ export function setCellProtection(wb: Workbook, c: Cell, protection: Protection)
 }
 
 /**
- * Set the cell's number format by its **code** string.
- * Built-in codes resolve to their canonical id; custom codes are
- * registered via `addNumFmt`.
+ * Set the cell's number format by its **code** string. Built-in codes resolve
+ * to their canonical id; custom codes are registered via `addNumFmt`.
  */
 export function setCellNumberFormat(wb: Workbook, c: Cell, formatCode: string): void {
   const numFmtId = addNumFmt(wb.styles, formatCode);
@@ -180,33 +179,31 @@ export function setCellNumberFormat(wb: Workbook, c: Cell, formatCode: string): 
 }
 
 /**
- * Copy the source cell's `styleId` to the target cell. Both cells
- * share the same workbook stylesheet, so the styled appearance
- * carries over without allocating a new xf entry. Pass cells from
- * different workbooks via {@link cloneCellStyle} if you need a
- * deep copy across workbooks.
+ * Copy the source cell's `styleId` to the target cell. Both cells share the
+ * same workbook stylesheet, so the styled appearance carries over without
+ * allocating a new xf entry. Pass cells from different workbooks via {@link
+ * cloneCellStyle} if you need a deep copy across workbooks.
  */
 export function copyCellStyle(_wb: Workbook, source: Cell, target: Cell): void {
   target.styleId = source.styleId;
 }
 
 /**
- * Reset a cell back to the default (unstyled) appearance — equivalent
- * to Excel's "Clear Formatting" command. After the call, the cell
- * inherits the workbook's default font / fill / border / alignment /
- * protection / numberFormat. The underlying xf pool is **not**
- * shrunk (Excel doesn't bother either; the orphaned xf is harmless).
+ * Reset a cell back to the default (unstyled) appearance — equivalent to
+ * Excel's "Clear Formatting" command. After the call, the cell inherits the
+ * workbook's default font / fill / border / alignment / protection /
+ * numberFormat. The underlying xf pool is **not** shrunk (Excel doesn't bother
+ * either; the orphaned xf is harmless).
  */
 export function clearCellStyle(_wb: Workbook, c: Cell): void {
   c.styleId = 0;
 }
 
 /**
- * Range-level shortcut for {@link clearCellStyle}. Walks every cell
- * actually present in the range and resets its `styleId` to 0; cells
- * that don't exist yet are **not** materialised (no-op for sparse
- * regions, unlike the styled `setRange*` family which has to create
- * cells to make the patch observable).
+ * Range-level shortcut for {@link clearCellStyle}. Walks every cell actually
+ * present in the range and resets its `styleId` to 0; cells that don't exist
+ * yet are **not** materialised (no-op for sparse regions, unlike the styled
+ * `setRange*` family which has to create cells to make the patch observable).
  */
 export function clearRangeStyle(wb: Workbook, ws: Worksheet, range: string): void {
   const { minRow, maxRow, minCol, maxCol } = parseRange(range);
@@ -221,9 +218,9 @@ export function clearRangeStyle(wb: Workbook, ws: Worksheet, range: string): voi
 }
 
 /**
- * Deep-copy the source cell's full xf (font / fill / border /
- * alignment / protection / numberFormat) into a possibly-different
- * workbook. Returns the new styleId in the target workbook.
+ * Deep-copy the source cell's full xf (font / fill / border / alignment /
+ * protection / numberFormat) into a possibly-different workbook. Returns the
+ * new styleId in the target workbook.
  */
 export function cloneCellStyle(
   sourceWb: Workbook,
@@ -266,10 +263,9 @@ export function cloneCellStyle(
 }
 
 /**
- * Build a single CellXf id from a multi-axis style spec, then apply
- * it to every cell in `range`. The xf is registered once per style
- * shape, so a 1000-cell range allocates one xf — much faster than
- * looping `setCellStyle` per cell.
+ * Build a single CellXf id from a multi-axis style spec, then apply it to every
+ * cell in `range`. The xf is registered once per style shape, so a 1000-cell
+ * range allocates one xf — much faster than looping `setCellStyle` per cell.
  */
 export function setRangeStyle(
   wb: Workbook,
@@ -313,9 +309,9 @@ export function setRangeStyle(
   reserveDefaultXfSlot(wb);
 
   const { minRow, maxRow, minCol, maxCol } = parseRange(range);
-  // Pre-register the xf for each existing cell — Excel dedupes by
-  // value, so the inner xf-pool ends up the same shape for cells
-  // already carrying part of the patch as for blanks.
+  // Pre-register the xf for each existing cell — Excel dedupes by value, so the
+  // inner xf-pool ends up the same shape for cells already carrying part of the
+  // patch as for blanks.
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
       let cell = ws.rows.get(r)?.get(c);
@@ -327,11 +323,10 @@ export function setRangeStyle(
 }
 
 /**
- * Combined cell-style setter. Each axis is independent — pass any
- * subset and the corresponding `applyXxx` flags get set on the
- * underlying CellXf. Avoids 5+ separate stylesheet round-trips when
- * a caller wants to style a single cell across multiple axes (Excel
- * dedupes the resulting xf record on every call).
+ * Combined cell-style setter. Each axis is independent — pass any subset and
+ * the corresponding `applyXxx` flags get set on the underlying CellXf. Avoids
+ * 5+ separate stylesheet round-trips when a caller wants to style a single cell
+ * across multiple axes (Excel dedupes the resulting xf record on every call).
  */
 export function setCellStyle(
   wb: Workbook,
@@ -379,8 +374,8 @@ export function setCellStyle(
 /**
  * Set the cell's background to a solid color. Accepts a hex string
  * (`'FFAAFFAA'`) or a partial `Color` object (`{ theme: 4, tint: 0.4 }`).
- * Equivalent to `setCellFill(wb, c, makePatternFill({ patternType:
- * 'solid', fgColor: makeColor(...) }))`.
+ * Equivalent to `setCellFill(wb, c, makePatternFill({ patternType: 'solid',
+ * fgColor: makeColor(...) }))`.
  */
 export function setCellBackgroundColor(wb: Workbook, c: Cell, color: string | Partial<Color>): void {
   const colorObj = typeof color === 'string' ? makeColor({ rgb: color }) : makeColor(color);
@@ -393,9 +388,9 @@ export function clearCellBackground(wb: Workbook, c: Cell): void {
 }
 
 /**
- * Range-level shortcut for `setCellBackgroundColor`. Each cell in the
- * range gets the same solid pattern fill via `setRangeStyle`, so the
- * fill pool dedups to a single entry across the whole range.
+ * Range-level shortcut for `setCellBackgroundColor`. Each cell in the range
+ * gets the same solid pattern fill via `setRangeStyle`, so the fill pool dedups
+ * to a single entry across the whole range.
  */
 export function setRangeBackgroundColor(
   wb: Workbook,
@@ -420,9 +415,9 @@ export function setRangeFont(
 }
 
 /**
- * Range-level shortcut for `setCellNumberFormat`. Stamps the same
- * format-code onto every cell in the range; the numFmt pool dedups
- * the code so callers don't pay per-cell pool churn.
+ * Range-level shortcut for `setCellNumberFormat`. Stamps the same format-code
+ * onto every cell in the range; the numFmt pool dedups the code so callers
+ * don't pay per-cell pool churn.
  */
 export function setRangeNumberFormat(
   wb: Workbook,
@@ -434,13 +429,13 @@ export function setRangeNumberFormat(
 }
 
 /**
- * Range-level shortcut for `setCellProtection`. Stamps the same
- * Protection (locked / hidden) onto every cell in the range. Pass a
- * full `Protection` value or a partial — partials default missing
- * fields to `false` per Excel's `<protection>` semantics.
+ * Range-level shortcut for `setCellProtection`. Stamps the same Protection
+ * (locked / hidden) onto every cell in the range. Pass a full `Protection`
+ * value or a partial — partials default missing fields to `false` per Excel's
+ * `<protection>` semantics.
  *
- * Common usage: `setRangeProtection(wb, ws, 'B2:B100', { locked: false })`
- * to leave just an input column editable when the sheet is protected.
+ * Common usage: `setRangeProtection(wb, ws, 'B2:B100', { locked: false })` to
+ * leave just an input column editable when the sheet is protected.
  */
 export function setRangeProtection(
   wb: Workbook,
@@ -456,11 +451,10 @@ export function setRangeProtection(
 }
 
 /**
- * Range-level shortcut for `wrapCellText`. Toggles "Wrap Text" on
- * every cell in the range while preserving each cell's existing
- * alignment (horizontal / vertical / textRotation / indent are not
- * touched). Empty cells in the range are materialised so the
- * alignment patch is observable on round-trip.
+ * Range-level shortcut for `wrapCellText`. Toggles "Wrap Text" on every cell in
+ * the range while preserving each cell's existing alignment (horizontal /
+ * vertical / textRotation / indent are not touched). Empty cells in the range
+ * are materialised so the alignment patch is observable on round-trip.
  */
 export function setRangeWrapText(wb: Workbook, ws: Worksheet, range: string, on = true): void {
   reserveDefaultXfSlot(wb);
@@ -485,8 +479,8 @@ export function setRangeWrapText(wb: Workbook, ws: Worksheet, range: string, on 
  *     by the supplied value. Indent / textRotation / wrapText that
  *     weren't supplied are dropped.
  *
- * Empty cells in the range are materialised so the patch is
- * observable on round-trip.
+ * Empty cells in the range are materialised so the patch is observable on
+ * round-trip.
  */
 export function setRangeAlignment(
   wb: Workbook,
@@ -531,9 +525,9 @@ export function setStrikethrough(wb: Workbook, c: Cell, on = true): void {
 }
 
 /**
- * Set the underline style. Pass `false` to drop underline; pass
- * `'single' | 'double' | 'singleAccounting' | 'doubleAccounting'` to
- * apply that style; pass `true` for the most common single-line.
+ * Set the underline style. Pass `false` to drop underline; pass `'single' |
+ * 'double' | 'singleAccounting' | 'doubleAccounting'` to apply that style; pass
+ * `true` for the most common single-line.
  */
 export function setUnderline(
   wb: Workbook,
@@ -542,8 +536,8 @@ export function setUnderline(
 ): void {
   const cur = getCellFont(wb, c);
   // Strip the existing underline by spreading then overwriting; makeFont
-  // ignores `underline: undefined` so passing nothing for the off-case
-  // drops it entirely.
+  // ignores `underline: undefined` so passing nothing for the off-case drops it
+  // entirely.
   const { underline: _drop, ...rest } = cur;
   if (style === false) {
     setCellFont(wb, c, makeFont(rest));
@@ -564,9 +558,8 @@ export function setFontName(wb: Workbook, c: Cell, name: string): void {
 }
 
 /**
- * Set the font color. Accepts a hex string ("FFAA0033") or a partial
- * `Color` object (`{ theme: 4, tint: 0.4 }`). Preserves other font
- * fields.
+ * Set the font color. Accepts a hex string ("FFAA0033") or a partial `Color`
+ * object (`{ theme: 4, tint: 0.4 }`). Preserves other font fields.
  */
 export function setFontColor(wb: Workbook, c: Cell, color: string | Partial<Color>): void {
   const colorObj = typeof color === 'string' ? makeColor({ rgb: color }) : makeColor(color);
@@ -580,9 +573,9 @@ const mergeAlignment = (current: Alignment | undefined, patch: Partial<Alignment
 };
 
 /**
- * Center a cell horizontally + vertically. Mirrors Excel's "Merge &
- * Center" UI button (without the merge — see {@link mergeCells} for
- * that). Preserves any other alignment fields already present.
+ * Center a cell horizontally + vertically. Mirrors Excel's "Merge & Center" UI
+ * button (without the merge — see {@link mergeCells} for that). Preserves any
+ * other alignment fields already present.
  */
 export function centerCell(wb: Workbook, c: Cell): void {
   const cur = currentXf(wb.styles, c).alignment;
@@ -608,9 +601,9 @@ export function alignCellVertical(wb: Workbook, c: Cell, vertical: VerticalAlign
 }
 
 /**
- * Rotate the cell's text. `degrees` accepts 0..180 (clockwise) or 255
- * for Excel's "vertical stacked" mode. Mirrors the rotate icons in
- * the alignment ribbon.
+ * Rotate the cell's text. `degrees` accepts 0..180 (clockwise) or 255 for
+ * Excel's "vertical stacked" mode. Mirrors the rotate icons in the alignment
+ * ribbon.
  */
 export function rotateCellText(wb: Workbook, c: Cell, degrees: number): void {
   const cur = currentXf(wb.styles, c).alignment;
@@ -625,10 +618,9 @@ export function indentCell(wb: Workbook, c: Cell, levels: number): void {
 
 // ---- format presets -----------------------------------------------------
 //
-// Mirror Excel's "Format Cells → Number → Category" panel. Each preset
-// builds the exact format-code Excel ships with, then routes through
-// the existing `setCellNumberFormat` so the dedup pool sees the same
-// string every time.
+// Mirror Excel's "Format Cells → Number → Category" panel. Each preset builds
+// the exact format-code Excel ships with, then routes through the existing
+// `setCellNumberFormat` so the dedup pool sees the same string every time.
 
 /**
  * Format a cell as currency. Produces one of:
@@ -636,7 +628,7 @@ export function indentCell(wb: Workbook, c: Cell, levels: number): void {
  * - `{ symbol: "€" }` → `"€#,##0.00"`
  * - `{ symbol: "¥", decimals: 0 }` → `"¥#,##0"`
  * - `{ accounting: true }` → `"_-$* #,##0.00_-;-$* #,##0.00_-;_-$* \"-\"??_-;_-@_-"`
- *   (Excel's "Accounting" subtype with right-aligned symbol).
+ * (Excel's "Accounting" subtype with right-aligned symbol).
  */
 export function setCellAsCurrency(
   wb: Workbook,
@@ -653,9 +645,8 @@ export function setCellAsCurrency(
 }
 
 /**
- * Format a cell as a percentage. `decimals` defaults to 0 → `"0%"`;
- * `decimals: 2` → `"0.00%"`. The cell value is multiplied by 100 by
- * Excel during display.
+ * Format a cell as a percentage. `decimals` defaults to 0 → `"0%"`; `decimals:
+ * 2` → `"0.00%"`. The cell value is multiplied by 100 by Excel during display.
  */
 export function setCellAsPercent(wb: Workbook, c: Cell, decimals = 0): void {
   if (!Number.isInteger(decimals) || decimals < 0) {
@@ -675,8 +666,8 @@ export function setCellAsDate(wb: Workbook, c: Cell, format = 'yyyy-mm-dd'): voi
 }
 
 /**
- * Format a cell as a thousands-separated number. `decimals` defaults
- * to 0 → `"#,##0"`; `decimals: 2` → `"#,##0.00"`.
+ * Format a cell as a thousands-separated number. `decimals` defaults to 0 →
+ * `"#,##0"`; `decimals: 2` → `"#,##0.00"`.
  */
 export function setCellAsNumber(wb: Workbook, c: Cell, decimals = 0): void {
   if (!Number.isInteger(decimals) || decimals < 0) {
@@ -689,11 +680,10 @@ export function setCellAsNumber(wb: Workbook, c: Cell, decimals = 0): void {
 // ---- table-header preset ------------------------------------------------
 
 /**
- * Apply Excel's stock "table header" formatting to a range: bold
- * white text on a dark fill, plus a thick bottom border. Override
- * any axis via `opts` — pass `bold: false` to drop the bold, or
- * `fillColor: 'FF305496'` for a different shade. Defaults match
- * Excel's "Table Style Medium 2" header row.
+ * Apply Excel's stock "table header" formatting to a range: bold white text on
+ * a dark fill, plus a thick bottom border. Override any axis via `opts` — pass
+ * `bold: false` to drop the bold, or `fillColor: 'FF305496'` for a different
+ * shade. Defaults match Excel's "Table Style Medium 2" header row.
  */
 export function formatAsHeader(
   wb: Workbook,
@@ -730,14 +720,14 @@ export function formatAsHeader(
 // ---- named / built-in style application --------------------------------
 
 /**
- * Apply a built-in Excel style ("Heading 1" / "Total" / "Good" /
- * "Bad" / "Calculation" / etc.) to a single cell. Registers the
- * built-in on the Stylesheet (idempotent) and points the cell's xf
- * at it via `xfId` while inheriting the matching font/fill/border/
- * numFmt ids so the cell renders correctly on its own.
+ * Apply a built-in Excel style ("Heading 1" / "Total" / "Good" / "Bad" /
+ * "Calculation" / etc.) to a single cell. Registers the built-in on the
+ * Stylesheet (idempotent) and points the cell's xf at it via `xfId` while
+ * inheriting the matching font/fill/border/ numFmt ids so the cell renders
+ * correctly on its own.
  *
- * Throws when `name` isn't in {@link BUILTIN_NAMED_STYLES}; use
- * {@link applyNamedStyle} for user-registered styles.
+ * Throws when `name` isn't in {@link BUILTIN_NAMED_STYLES}; use {@link
+ * applyNamedStyle} for user-registered styles.
  */
 export function applyBuiltinStyle(wb: Workbook, c: Cell, name: string): void {
   const xfId = ensureBuiltinStyle(wb.styles, name);
@@ -761,12 +751,11 @@ const applyNamedStyleByXfId = (wb: Workbook, c: Cell, xfId: number): void => {
   if (!styleXf) {
     throw new OpenXmlSchemaError(`applyNamedStyle: cellStyleXfs[${xfId}] missing`);
   }
-  // Excel only renders the cellStyleXf's font / fill / border when the
-  // cellXf carries the matching `apply*` flag — even a `xfId` reference
-  // alone doesn't make Excel inherit the values. So we copy every
-  // component the named style touches *and* set the corresponding
-  // apply* flag, mirroring what real Excel writes for `s=` referenced
-  // cells using a built-in named style.
+  // Excel only renders the cellStyleXf's font / fill / border when the cellXf
+  // carries the matching `apply*` flag — even a `xfId` reference alone doesn't
+  // make Excel inherit the values. So we copy every component the named style
+  // touches *and* set the corresponding apply* flag, mirroring what real Excel
+  // writes for `s=` referenced cells using a built-in named style.
   const patch: { -readonly [K in keyof CellXf]?: CellXf[K] } = {
     xfId,
     fontId: styleXf.fontId,
@@ -792,10 +781,10 @@ const applyNamedStyleByXfId = (wb: Workbook, c: Cell, xfId: number): void => {
 // ---- border presets ----------------------------------------------------
 
 /**
- * Apply the same {@link SideStyle} to all four edges of a single cell.
- * Optional color via hex string or `Color` partial. Equivalent to
- * `setCellBorder(wb, c, makeBorder({ left, right, top, bottom: side }))`
- * with all four sides identical.
+ * Apply the same {@link SideStyle} to all four edges of a single cell. Optional
+ * color via hex string or `Color` partial. Equivalent to `setCellBorder(wb, c,
+ * makeBorder({ left, right, top, bottom: side }))` with all four sides
+ * identical.
  */
 export function setCellBorderAll(
   wb: Workbook,
@@ -808,12 +797,11 @@ export function setCellBorderAll(
 }
 
 /**
- * Draw an outer border around a rectangular range. Cells on the
- * perimeter receive a partial border (only the edges that face
- * outside the range); inner cells are unaffected unless `inner` is
- * provided, in which case every cell in the range receives a border
- * combining its perimeter edges with the `inner` style for the inside
- * edges.
+ * Draw an outer border around a rectangular range. Cells on the perimeter
+ * receive a partial border (only the edges that face outside the range); inner
+ * cells are unaffected unless `inner` is provided, in which case every cell in
+ * the range receives a border combining its perimeter edges with the `inner`
+ * style for the inside edges.
  */
 export function setRangeBorderBox(
   wb: Workbook,
@@ -834,7 +822,8 @@ export function setRangeBorderBox(
       const onBottom = r === maxRow;
       const onLeft = col === minCol;
       const onRight = col === maxCol;
-      // Skip cells that wouldn't get any styling (interior cells when no inner).
+      // Skip cells that wouldn't get any styling (interior cells when no
+      // inner).
       if (!inner && !onTop && !onBottom && !onLeft && !onRight) continue;
       const sides: { -readonly [K in keyof Border]?: Border[K] } = {};
       const top = onTop ? outer : inner;

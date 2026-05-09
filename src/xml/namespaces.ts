@@ -1,10 +1,9 @@
 // OOXML namespace and well-known package-path constants.
 //
-// Mirrors openpyxl/openpyxl/xml/constants.py so the test corpus stays
-// directly comparable. Where openpyxl exposes a single big dict
-// (NAMESPACES) we keep them as discrete `const` exports — bundlers can
-// then drop the ones a given build path never imports
-// (docs/plan/01-architecture.md §6).
+// Mirrors openpyxl/openpyxl/xml/constants.py so the test corpus stays directly
+// comparable. Where openpyxl exposes a single big dict (NAMESPACES) we keep
+// them as discrete `const` exports — bundlers can then drop the ones a given
+// build path never imports.
 
 // ---- W3C / Dublin Core ------------------------------------------------------
 
@@ -61,9 +60,10 @@ export const THREADED_COMMENTS_NS = 'http://schemas.microsoft.com/office/spreads
 // ---- Default prefix map -----------------------------------------------------
 //
 // Used when serialising XmlNode trees back to text: prefer these prefixes for
-// namespaces we recognise so output matches what Excel / openpyxl conventionally
-// emit. Entries are intentionally short — full prefix discovery falls back to
-// auto-generated names (`ns0`, `ns1`, ...) for namespaces not listed here.
+// namespaces we recognise so output matches what Excel / openpyxl
+// conventionally emit. Entries are intentionally short — full prefix discovery
+// falls back to auto-generated names (`ns0`, `ns1`, ...) for namespaces not
+// listed here.
 
 export const DEFAULT_PREFIXES: Readonly<Record<string, string>> = Object.freeze({
   [XML_NS]: 'xml',
@@ -74,8 +74,8 @@ export const DEFAULT_PREFIXES: Readonly<Record<string, string>> = Object.freeze(
   [REL_NS]: 'r',
   [VTYPES_NS]: 'vt',
   // app.xml uses XPROPS_NS as its default namespace; custom.xml uses
-  // CUSTPROPS_NS the same way. Mark them as '' so serialised output
-  // matches Office / openpyxl convention out of the box.
+  // CUSTPROPS_NS the same way. Mark them as '' so serialised output matches
+  // Office / openpyxl convention out of the box.
   [XPROPS_NS]: '',
   [CUSTPROPS_NS]: '',
   [PKG_REL_NS]: '',
@@ -156,8 +156,8 @@ export const CTRLPROPS_TYPE = 'application/vnd.ms-excel.controlproperties+xml';
 // ---- QName helpers ----------------------------------------------------------
 
 /**
- * Build a Clark-notation QName: `{namespace}localname`. When `namespace`
- * is empty / undefined the local name is returned as-is.
+ * Build a Clark-notation QName: `{namespace}localname`. When `namespace` is
+ * empty / undefined the local name is returned as-is.
  */
 export function qname(namespace: string | undefined, local: string): string {
   return namespace ? `{${namespace}}${local}` : local;
@@ -166,8 +166,8 @@ export function qname(namespace: string | undefined, local: string): string {
 const QNAME_RE = /^\{([^}]*)\}(.+)$/;
 
 /**
- * Inverse of {@link qname}. Returns `{ ns, local }`. For unprefixed names
- * `ns` is the empty string.
+ * Inverse of {@link qname}. Returns `{ ns, local }`. For unprefixed names `ns`
+ * is the empty string.
  */
 export function parseQName(name: string): { ns: string; local: string } {
   const m = QNAME_RE.exec(name);

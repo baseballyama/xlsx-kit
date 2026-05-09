@@ -1,9 +1,9 @@
-// xl/charts/chartN.xml read/write. Per docs/plan/08-charts-drawings.md §5.
+// xl/charts/chartN.xml read/write.
 //
-// Stage-1 covers BarChart end-to-end: parse + serialize with title /
-// legend / catAx / valAx / series (cat + val refs + numCache /
-// strCache). Other chart kinds slot in alongside as their own
-// `<c:lineChart>` / `<c:pieChart>` / etc. parsers.
+// Stage-1 covers BarChart end-to-end: parse + serialize with title / legend /
+// catAx / valAx / series (cat + val refs + numCache / strCache). Other chart
+// kinds slot in alongside as their own `<c:lineChart>` / `<c:pieChart>` / etc.
+// parsers.
 
 import {
   parseShapeProperties,
@@ -330,10 +330,10 @@ const parseDataLabelCommon = (el: XmlNode): DataLabelCommon => {
 };
 
 const serializeDataLabelCommon = (d: DataLabelCommon): string => {
-  // ECMA-376 element ordering inside <c:dLbl>/<c:dLbls>:
-  // numFmt → spPr → txPr → dLblPos → showLegendKey → showVal → showCatName
-  // → showSerName → showPercent → showBubbleSize → separator → showLeaderLines
-  // (delete is exclusive — when true the label has no other children).
+  // ECMA-376 element ordering inside <c:dLbl>/<c:dLbls>: numFmt → spPr → txPr →
+  // dLblPos → showLegendKey → showVal → showCatName → showSerName → showPercent
+  // → showBubbleSize → separator → showLeaderLines (delete is exclusive — when
+  // true the label has no other children).
   if (d.delete) return '<c:delete val="1"/>';
   const parts: string[] = [];
   if (d.numFmt) parts.push(serializeNumberFormat(d.numFmt));
@@ -459,8 +459,8 @@ const parseTrendline = (el: XmlNode): Trendline | undefined => {
 };
 
 const serializeTrendline = (t: Trendline): string => {
-  // ECMA-376: name → spPr → trendlineType → order → period → forward →
-  // backward → intercept → dispRSqr → dispEq → trendlineLbl.
+  // ECMA-376: name → spPr → trendlineType → order → period → forward → backward
+  // → intercept → dispRSqr → dispEq → trendlineLbl.
   const parts: string[] = ['<c:trendline>'];
   if (t.name !== undefined) parts.push(`<c:name>${escapeText(t.name)}</c:name>`);
   if (t.spPr) parts.push(serializeShapeProperties(t.spPr));
@@ -512,7 +512,8 @@ const parseErrBars = (el: XmlNode): ErrorBars | undefined => {
 };
 
 const serializeErrBars = (e: ErrorBars): string => {
-  // ECMA-376: errDir? → errBarType → errValType → noEndCap? → plus? → minus? → val? → spPr?.
+  // ECMA-376: errDir? → errBarType → errValType → noEndCap? → plus? → minus? →
+  // val? → spPr?.
   const parts: string[] = ['<c:errBars>'];
   if (e.errDir) parts.push(`<c:errDir val="${e.errDir}"/>`);
   parts.push(`<c:errBarType val="${e.errBarType}"/>`);
@@ -1050,7 +1051,8 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
   }
   const plotVisOnly = boolVal(findChild(chartEl, PLOT_VIS_ONLY_TAG));
   const dispBlanksAs = valAttr(findChild(chartEl, DISP_BLANKS_AS_TAG)) as ChartSpace['dispBlanksAs'];
-  // Top-level spPr / txPr live on chartSpace (sibling of <c:chart>), not inside <c:chart>.
+  // Top-level spPr / txPr live on chartSpace (sibling of <c:chart>), not inside
+  // <c:chart>.
   const spaceSpPr = parseSpPrSlot(root);
   const spaceTxPr = parseTxPrSlot(root);
   return makeChartSpace({
@@ -1481,9 +1483,9 @@ const serializeChartKind = (chart: ChartKind): string => {
 const serializePlotArea = (plotArea: PlotArea): string => {
   const parts: string[] = ['<c:plotArea>', '<c:layout/>'];
   parts.push(serializeChartKind(plotArea.chart));
-  // Excel rejects charts that reference axIds in a chart-kind element but
-  // don't define matching catAx/valAx siblings under plotArea. Fill in
-  // sensible defaults when callers omit them.
+  // Excel rejects charts that reference axIds in a chart-kind element but don't
+  // define matching catAx/valAx siblings under plotArea. Fill in sensible
+  // defaults when callers omit them.
   const axes = inferAxesForChart(plotArea);
   for (const ax of axes) parts.push(ax);
   if (plotArea.spPr) parts.push(serializeShapeProperties(plotArea.spPr));
@@ -1517,8 +1519,8 @@ const serializeLegend = (legend: Legend): string => {
 
 /**
  * Inspect a parsed chart-space root and return the rId referenced by
- * `<c:userShapes r:id="...">` if any. The loader calls this after parsing
- * the chart so it can resolve the chartDrawing part via the chart's rels.
+ * `<c:userShapes r:id="...">` if any. The loader calls this after parsing the
+ * chart so it can resolve the chartDrawing part via the chart's rels.
  */
 export function findUserShapesRId(bytes: Uint8Array | string): string | undefined {
   const root = parseXml(bytes);
@@ -1542,18 +1544,18 @@ export function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptio
   const parts: string[] = [
     XML_HEADER,
     `<c:chartSpace xmlns:c="${CHART_NS}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL_NS}">`,
-    // chartSpace prelude — `date1904`, `lang`, `roundedCorners` mirror
-    // what real Excel emits and a few Excel versions reject the file
-    // entirely without them.
+    // chartSpace prelude — `date1904`, `lang`, `roundedCorners` mirror what
+    // real Excel emits and a few Excel versions reject the file entirely
+    // without them.
     '<c:date1904 val="0"/>',
     '<c:lang val="en-US"/>',
     '<c:roundedCorners val="0"/>',
     '<c:chart>',
   ];
   if (space.title !== undefined) parts.push(serializeChartTitle(space.title));
-  // <c:autoTitleDeleted> follows <c:title> when present, and is required
-  // by some Excel versions when a title is set; emit `0` when we have a
-  // title and `1` (= no auto-title) otherwise.
+  // <c:autoTitleDeleted> follows <c:title> when present, and is required by
+  // some Excel versions when a title is set; emit `0` when we have a title and
+  // `1` (= no auto-title) otherwise.
   parts.push(`<c:autoTitleDeleted val="${space.title === undefined ? '1' : '0'}"/>`);
   parts.push(serializePlotArea(space.plotArea));
   if (space.legend) parts.push(serializeLegend(space.legend));
@@ -1571,6 +1573,6 @@ export function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptio
   return parts.join('');
 }
 
-// SHEET_DRAWING_NS is imported only to keep import surface stable; the
-// chart serialiser doesn't need it directly.
+// SHEET_DRAWING_NS is imported only to keep import surface stable; the chart
+// serialiser doesn't need it directly.
 void SHEET_DRAWING_NS;

@@ -1,12 +1,11 @@
-// Excel Table object (xl/tables/tableN.xml). Per
-// docs/plan/07-rich-features.md §3.
+// Excel Table object (xl/tables/tableN.xml).
 //
-// Tables ride on top of a worksheet range, give it a name + structured
-// column references, and own their own AutoFilter. Each table sits in
-// a separate part — the worksheet only carries a `<tableParts>` block
-// pointing at the workbook-rels rId. Stage-1 covers the table shell +
-// columns + styleInfo + autoFilter; sortState / totals row formulas /
-// calculated column formulas / xml extlst are reserved for later.
+// Tables ride on top of a worksheet range, give it a name + structured column
+// references, and own their own AutoFilter. Each table sits in a separate part
+// — the worksheet only carries a `<tableParts>` block pointing at the
+// workbook-rels rId. Stage-1 covers the table shell + columns + styleInfo +
+// autoFilter; sortState / totals row formulas / calculated column formulas /
+// xml extlst are reserved for later.
 
 import type { Workbook } from '../workbook/workbook';
 import type { AutoFilter } from './auto-filter';
@@ -100,10 +99,10 @@ const nextTableId = (wb: Workbook): number => {
 };
 
 /**
- * High-level wrapper that builds a TableDefinition + pushes it onto
- * `ws.tables` in one call. Auto-assigns the workbook-unique `id`,
- * derives `displayName` from the supplied `name`, and constructs
- * `TableColumn` records (1-based ids) from a string-array shorthand.
+ * High-level wrapper that builds a TableDefinition + pushes it onto `ws.tables`
+ * in one call. Auto-assigns the workbook-unique `id`, derives `displayName`
+ * from the supplied `name`, and constructs `TableColumn` records (1-based ids)
+ * from a string-array shorthand.
  */
 export const addExcelTable = (
   wb: Workbook,

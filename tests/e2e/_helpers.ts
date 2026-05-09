@@ -19,7 +19,7 @@ export const OUT_DIR = resolve(__dirname, 'output');
 
 mkdirSync(OUT_DIR, { recursive: true });
 
-export const outFile = (name: string): string => resolve(OUT_DIR, name);
+const outFile = (name: string): string => resolve(OUT_DIR, name);
 
 export const writeWorkbook = async (name: string, wb: Workbook): Promise<{ path: string; bytes: number }> => {
   const bytes = await workbookToBytes(wb);

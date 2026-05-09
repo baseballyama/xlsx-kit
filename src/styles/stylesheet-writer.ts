@@ -1,8 +1,8 @@
-// Stylesheet → xl/styles.xml writer. Per docs/plan/05-read-write.md §3.
+// Stylesheet → xl/styles.xml writer.
 //
-// Pairs with parseStylesheetXml. The order of sections matches what
-// Excel emits and what openpyxl writes — readers tolerate any order
-// but Excel's diff-friendly layout helps when comparing fixtures.
+// Pairs with parseStylesheetXml. The order of sections matches what Excel emits
+// and what openpyxl writes — readers tolerate any order but Excel's
+// diff-friendly layout helps when comparing fixtures.
 
 import { toTree } from '../schema/serialize';
 import { qname, SHEET_MAIN_NS } from '../xml/namespaces';
@@ -66,8 +66,8 @@ function buildStylesheetTree(ss: Stylesheet): XmlNode {
   for (const b of ss.borders) bordersEl.children.push(toTree(b, BorderSchema));
   root.children.push(bordersEl);
 
-  // cellStyleXfs (always emitted — Excel rejects styles.xml that omits it
-  // when cellXfs reference an xfId).
+  // cellStyleXfs (always emitted — Excel rejects styles.xml that omits it when
+  // cellXfs reference an xfId).
   const cellStyleXfsEl = el(CELLSTYLEXFS_TAG, {
     count: String(Math.max(ss.cellStyleXfs.length, 1)),
   });
@@ -109,7 +109,8 @@ function buildStylesheetTree(ss: Stylesheet): XmlNode {
     const dxfsEl = el(DXFS_TAG, { count: String(dxfs.length) });
     for (const dxf of dxfs) {
       const dxfEl = el(DXF_TAG);
-      // Order matches openpyxl: font, numFmt, fill, alignment, border, protection.
+      // Order matches openpyxl: font, numFmt, fill, alignment, border,
+      // protection.
       if (dxf.font) dxfEl.children.push(toTree(dxf.font, FontSchema));
       if (dxf.numFmt) dxfEl.children.push(toTree(dxf.numFmt, NumberFormatSchema));
       if (dxf.fill) dxfEl.children.push(fillToTree(dxf.fill));

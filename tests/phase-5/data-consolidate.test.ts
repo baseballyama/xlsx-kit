@@ -1,5 +1,4 @@
-// Tests for the typed <dataConsolidate> model. Per
-// docs/plan/13-full-excel-coverage.md §B7 (sheet view 拡張) sub-piece.
+// Tests for the typed <dataConsolidate> model. (sheet view 拡張) sub-piece.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

@@ -1,7 +1,6 @@
-// Phase 7 §3 acceptance: real openpyxl xlsm fixture round-trip.
-// Per docs/plan/09-pivot-vba.md §3.3 — VBA を含む xlsm の round-trip で
-// vbaProject.bin が byte-identical, ActiveX / ctrlProps / customUI が
-// 消えない、keepVba: false で xlsm を読むと VBA が消えて xlsx になる。
+// Phase 7 §3 acceptance: real openpyxl xlsm fixture round-trip. — VBA を含む xlsm
+// の round-trip で vbaProject.bin が byte-identical, ActiveX / ctrlProps /
+// customUI が 消えない、keepVba: false で xlsm を読むと VBA が消えて xlsx になる。
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

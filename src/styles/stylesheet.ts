@@ -1,11 +1,10 @@
-// Stylesheet pool. Per docs/plan/04-core-model.md §3.4 the workbook
-// holds dedup pools per style component (fonts / fills / borders /
-// numFmts / cellXfs / cellStyleXfs); cells reference entries by index
-// via a `styleId` (an index into cellXfs).
+// Stylesheet pool. The workbook holds dedup pools per style component (fonts /
+// fills / borders / numFmts / cellXfs / cellStyleXfs); cells reference entries
+// by index via a `styleId` (an index into cellXfs).
 //
 // All adds run through `add*` free functions that look up the pool via
-// `stableStringify`-keyed maps so the same logical Font / Fill / etc.
-// added 1000× lands in a single pool slot.
+// `stableStringify`-keyed maps so the same logical Font / Fill / etc. added
+// 1000× lands in a single pool slot.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { stableStringify } from '../utils/stable-stringify';
@@ -23,9 +22,9 @@ import type { Protection } from './protection';
  * One entry in the cellXfs / cellStyleXfs pool. Represents the union of
  * indexes-into-other-pools that a cell or named style points at.
  *
- * Mirrors openpyxl's CellStyle (styles/cell_style.py). The TS port
- * keeps it as a plain readonly object — no class, no methods. The
- * Stylesheet `addCellXf` allocates the index; cells store only that.
+ * Mirrors openpyxl's CellStyle (styles/cell_style.py). The TS port keeps it as
+ * a plain readonly object — no class, no methods. The Stylesheet `addCellXf`
+ * allocates the index; cells store only that.
  */
 export interface CellXf {
   readonly fontId: number;
@@ -69,13 +68,12 @@ export interface Stylesheet {
 }
 
 /**
- * Build a fresh Stylesheet pre-populated with Excel's required default
- * entries. Mirrors openpyxl's empty Stylesheet:
- *   fonts:   [DEFAULT_FONT]               (index 0)
- *   fills:   [DEFAULT_EMPTY_FILL,
+ * Build a fresh Stylesheet pre-populated with Excel's required default entries.
+ * Mirrors openpyxl's empty Stylesheet: fonts: [DEFAULT_FONT] (index 0) fills:
+ * [DEFAULT_EMPTY_FILL,
  *             DEFAULT_GRAY_FILL]          (indices 0, 1 — required)
- *   borders: [DEFAULT_BORDER]             (index 0)
- *   cellXfs: empty                        (indices allocated on demand)
+ * borders: [DEFAULT_BORDER] (index 0) cellXfs: empty (indices allocated on
+ * demand)
  */
 export function makeStylesheet(): Stylesheet {
   const fontKey = stableStringify(DEFAULT_FONT);
@@ -123,7 +121,7 @@ export function addBorder(ss: Stylesheet, border: Border): number {
  * Resolve a number-format string to its numFmtId.
  * - Built-in codes return their canonical OOXML ID.
  * - Otherwise the custom code is registered (and allocated an ID
- *   ≥ {@link BUILTIN_FORMATS_MAX_SIZE}). Idempotent.
+ * ≥ {@link BUILTIN_FORMATS_MAX_SIZE}). Idempotent.
  */
 export function addNumFmt(ss: Stylesheet, formatCode: string): number {
   const builtin = builtinFormatId(formatCode);
@@ -216,8 +214,8 @@ export function listCellStyleXfs(ss: Stylesheet): ReadonlyArray<CellXf> {
 }
 
 /**
- * Convenience: build the default `cellXfs[0]` Excel emits — points at
- * the workbook's font 0 / fill 0 / border 0 / numFmtId 0 (General).
+ * Convenience: build the default `cellXfs[0]` Excel emits — points at the
+ * workbook's font 0 / fill 0 / border 0 / numFmtId 0 (General).
  */
 export function defaultCellXf(): CellXf {
   return Object.freeze({ fontId: 0, fillId: 0, borderId: 0, numFmtId: 0 });

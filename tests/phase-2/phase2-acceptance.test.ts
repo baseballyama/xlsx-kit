@@ -1,8 +1,7 @@
-// Phase 2 acceptance gate per docs/plan/04-core-model.md §8.
-// Sample script: createWorkbook → 100 cells written → JSON-serialised
-// → JSON-revived → identity check across every cell + the styling pool.
-// This complements the targeted json-roundtrip.test.ts by exercising
-// scale + a styling mix.
+// Phase 2 acceptance gate. Sample script: createWorkbook → 100 cells written →
+// JSON-serialised → JSON-revived → identity check across every cell + the
+// styling pool. This complements the targeted json-roundtrip.test.ts by
+// exercising scale + a styling mix.
 
 import { describe, expect, it } from 'vitest';
 import { setCellFont } from '../../src/styles/cell-style';

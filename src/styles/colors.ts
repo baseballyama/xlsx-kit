@@ -7,19 +7,17 @@
 //   * theme   — 0-N index into the workbook's theme colour scheme.
 //   * auto    — boolean "use system default".
 //
-// Per docs/plan/01-architecture.md §5 these are plain readonly objects;
-// `makeColor` freezes its result so the Stylesheet pool can dedupe by
-// reference equality.
+// These are plain readonly objects; `makeColor` freezes its result so the
+// Stylesheet pool can dedupe by reference equality.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 
 /**
- * Colour reference. All fields are optional but Excel expects exactly
- * one of {rgb, indexed, theme, auto} to be set; if none is, the cell
- * inherits the parent style's colour.
+ * Colour reference. All fields are optional but Excel expects exactly one of
+ * {rgb, indexed, theme, auto} to be set; if none is, the cell inherits the
+ * parent style's colour.
  *
- * `tint` modulates the resolved colour; -1 = full black, +1 = full
- * white.
+ * `tint` modulates the resolved colour; -1 = full black, +1 = full white.
  */
 export interface Color {
   /** "AARRGGBB" hex (uppercase). 6-hex inputs are auto-padded with `00` alpha. */
@@ -105,9 +103,11 @@ export const COLOR_INDEX: readonly string[] = Object.freeze([
   '00333333', // 60-63
 ]);
 
-/** Convenience constants — match openpyxl's exports. Inlined rather
- * than indexed off COLOR_INDEX to keep the type system from widening
- * to `string | undefined` on tuple lookup. */
+/**
+ * Convenience constants — match openpyxl's exports. Inlined rather than indexed
+ * off COLOR_INDEX to keep the type system from widening to `string | undefined`
+ * on tuple lookup.
+ */
 export const BLACK = '00000000';
 export const WHITE = '00FFFFFF';
 export const BLUE = '000000FF';
@@ -115,9 +115,9 @@ export const BLUE = '000000FF';
 const ARGB_RE = /^([A-Fa-f0-9]{8}|[A-Fa-f0-9]{6})$/;
 
 /**
- * Normalise an aRGB hex string. Accepts either 6 or 8 hex digits;
- * 6-digit input is padded to 8 by prefixing `00` (alpha=0 = fully
- * opaque per Excel convention). Returns the canonical uppercase form.
+ * Normalise an aRGB hex string. Accepts either 6 or 8 hex digits; 6-digit input
+ * is padded to 8 by prefixing `00` (alpha=0 = fully opaque per Excel
+ * convention). Returns the canonical uppercase form.
  */
 export function normaliseRgb(value: string): string {
   if (typeof value !== 'string' || !ARGB_RE.test(value)) {
@@ -127,8 +127,8 @@ export function normaliseRgb(value: string): string {
 }
 
 /**
- * Build an immutable {@link Color}. Validates ranges (indexed in [0, 65],
- * tint in [-1, 1]) and normalises rgb hex.
+ * Build an immutable {@link Color}. Validates ranges (indexed in [0, 65], tint
+ * in [-1, 1]) and normalises rgb hex.
  */
 export function makeColor(opts: Partial<Color> = {}): Color {
   const out: Mutable<Color> = {};
@@ -156,8 +156,8 @@ export function makeColor(opts: Partial<Color> = {}): Color {
 }
 
 /**
- * Resolve `indexed` references against {@link COLOR_INDEX}. Returns
- * undefined for 64/65 (system fg/bg, not in the palette) or out-of-range.
+ * Resolve `indexed` references against {@link COLOR_INDEX}. Returns undefined
+ * for 64/65 (system fg/bg, not in the palette) or out-of-range.
  */
 export function resolveIndexedColor(idx: number): string | undefined {
   return COLOR_INDEX[idx];
@@ -169,10 +169,10 @@ export function rgbColor(hex: string): Color {
 }
 
 /**
- * Read a {@link Color} value-object back to a normalised ARGB hex.
- * Resolution order: explicit `rgb` → `indexed` palette lookup. Returns
- * `undefined` for `theme` / `auto` / empty inputs (unresolvable without
- * a theme), so callers can fall back to a default.
+ * Read a {@link Color} value-object back to a normalised ARGB hex. Resolution
+ * order: explicit `rgb` → `indexed` palette lookup. Returns `undefined` for
+ * `theme` / `auto` / empty inputs (unresolvable without a theme), so callers
+ * can fall back to a default.
  */
 export function colorToHex(color: Color | undefined): string | undefined {
   if (!color) return undefined;
@@ -185,9 +185,9 @@ export function colorToHex(color: Color | undefined): string | undefined {
 }
 
 /**
- * Compute the relative luminance of an ARGB / RGB hex string per
- * the WCAG 2.x formula. Returns a value in `[0, 1]` where 0 is
- * black and 1 is white. The alpha channel (if present) is ignored.
+ * Compute the relative luminance of an ARGB / RGB hex string per the WCAG 2.x
+ * formula. Returns a value in `[0, 1]` where 0 is black and 1 is white. The
+ * alpha channel (if present) is ignored.
  */
 export function luminance(hex: string): number {
   const rgb = normaliseRgb(hex); // 8-char AARRGGBB upper-case
@@ -199,9 +199,9 @@ export function luminance(hex: string): number {
 }
 
 /**
- * WCAG contrast ratio between two ARGB hex colors. Returns a value
- * in `[1, 21]`; 1 = identical luminance, 21 = pure black on pure
- * white. The order of arguments doesn't matter.
+ * WCAG contrast ratio between two ARGB hex colors. Returns a value in `[1,
+ * 21]`; 1 = identical luminance, 21 = pure black on pure white. The order of
+ * arguments doesn't matter.
  */
 export function contrastRatio(hexA: string, hexB: string): number {
   const lA = luminance(hexA);
@@ -211,13 +211,13 @@ export function contrastRatio(hexA: string, hexB: string): number {
 }
 
 /**
- * Pick the higher-contrast text color (`'FF000000'` black or
- * `'FFFFFFFF'` white) for a background hex. Useful when applying a
- * solid fill and wanting the cell text to stay readable.
+ * Pick the higher-contrast text color (`'FF000000'` black or `'FFFFFFFF'`
+ * white) for a background hex. Useful when applying a solid fill and wanting
+ * the cell text to stay readable.
  */
 export function pickReadableTextColor(backgroundHex: string): 'FF000000' | 'FFFFFFFF' {
-  // WCAG midpoint of 0.179 splits "near-black bg → white text"
-  // from "lighter bg → black text".
+  // WCAG midpoint of 0.179 splits "near-black bg → white text" from "lighter bg
+  // → black text".
   return luminance(backgroundHex) < 0.179 ? 'FFFFFFFF' : 'FF000000';
 }
 
@@ -239,9 +239,9 @@ const toHexByte = (n: number): string => {
 const clampUnit = (x: number): number => Math.max(0, Math.min(1, x));
 
 /**
- * Lighten a color by mixing it with white. `amount` is in `[0, 1]`:
- * 0 returns the input unchanged, 1 returns pure white. Alpha
- * channel is preserved. Equivalent to `mixColors(hex, 'FFFFFFFF', amount)`.
+ * Lighten a color by mixing it with white. `amount` is in `[0, 1]`: 0 returns
+ * the input unchanged, 1 returns pure white. Alpha channel is preserved.
+ * Equivalent to `mixColors(hex, 'FFFFFFFF', amount)`.
  */
 export function lighten(hex: string, amount: number): string {
   const t = clampUnit(amount);
@@ -250,9 +250,8 @@ export function lighten(hex: string, amount: number): string {
 }
 
 /**
- * Darken a color by mixing it with black. `amount` is in `[0, 1]`:
- * 0 returns the input unchanged, 1 returns pure black (preserving
- * the alpha channel).
+ * Darken a color by mixing it with black. `amount` is in `[0, 1]`: 0 returns
+ * the input unchanged, 1 returns pure black (preserving the alpha channel).
  */
 export function darken(hex: string, amount: number): string {
   const t = clampUnit(amount);
@@ -261,9 +260,8 @@ export function darken(hex: string, amount: number): string {
 }
 
 /**
- * Linearly interpolate between two ARGB colors. `t = 0` returns
- * `hexA`; `t = 1` returns `hexB`; intermediate values mix per channel
- * (including alpha).
+ * Linearly interpolate between two ARGB colors. `t = 0` returns `hexA`; `t = 1`
+ * returns `hexB`; intermediate values mix per channel (including alpha).
  */
 export function mixColors(hexA: string, hexB: string, t: number): string {
   const k = clampUnit(t);
@@ -273,11 +271,10 @@ export function mixColors(hexA: string, hexB: string, t: number): string {
 }
 
 /**
- * Convert an ARGB / RGB hex to its HSL representation. Returns
- * `{ h, s, l, a }` with `h ∈ [0, 360)`, `s ∈ [0, 1]`, `l ∈ [0, 1]`,
- * `a ∈ [0, 255]` (alpha as the original byte). Useful for theme
- * tweaking (rotate hue, desaturate, etc.) before round-tripping
- * through {@link hslToHex}.
+ * Convert an ARGB / RGB hex to its HSL representation. Returns `{ h, s, l, a }`
+ * with `h ∈ [0, 360)`, `s ∈ [0, 1]`, `l ∈ [0, 1]`, `a ∈ [0, 255]` (alpha as the
+ * original byte). Useful for theme tweaking (rotate hue, desaturate, etc.)
+ * before round-tripping through {@link hslToHex}.
  */
 export function hexToHsl(hex: string): { h: number; s: number; l: number; a: number } {
   const { a, r: rb, g: gb, b: bb } = splitArgb(hex);
@@ -300,9 +297,9 @@ export function hexToHsl(hex: string): { h: number; s: number; l: number; a: num
 }
 
 /**
- * Rotate the hue of a color by `degrees` (positive = clockwise).
- * Saturation and lightness are preserved; alpha is preserved.
- * Equivalent to `hexToHsl` → adjust `h` → `hslToHex`.
+ * Rotate the hue of a color by `degrees` (positive = clockwise). Saturation and
+ * lightness are preserved; alpha is preserved. Equivalent to `hexToHsl` →
+ * adjust `h` → `hslToHex`.
  */
 export function rotateHue(hex: string, degrees: number): string {
   const { h, s, l, a } = hexToHsl(hex);
@@ -310,9 +307,9 @@ export function rotateHue(hex: string, degrees: number): string {
 }
 
 /**
- * Adjust the saturation of a color by `delta` (added directly to the
- * `[0, 1]` saturation channel and clamped). Positive = more vivid,
- * negative = closer to gray. Hue, lightness, and alpha are preserved.
+ * Adjust the saturation of a color by `delta` (added directly to the `[0, 1]`
+ * saturation channel and clamped). Positive = more vivid, negative = closer to
+ * gray. Hue, lightness, and alpha are preserved.
  */
 export function adjustSaturation(hex: string, delta: number): string {
   const { h, s, l, a } = hexToHsl(hex);
@@ -320,10 +317,10 @@ export function adjustSaturation(hex: string, delta: number): string {
 }
 
 /**
- * Adjust the lightness of a color by `delta` (added directly to the
- * `[0, 1]` lightness channel and clamped). Positive = lighter,
- * negative = darker. Distinct from {@link lighten} / {@link darken}
- * which mix toward white/black in RGB space.
+ * Adjust the lightness of a color by `delta` (added directly to the `[0, 1]`
+ * lightness channel and clamped). Positive = lighter, negative = darker.
+ * Distinct from {@link lighten} / {@link darken} which mix toward white/black
+ * in RGB space.
  */
 export function adjustLightness(hex: string, delta: number): string {
   const { h, s, l, a } = hexToHsl(hex);
@@ -331,9 +328,9 @@ export function adjustLightness(hex: string, delta: number): string {
 }
 
 /**
- * Convert HSL components back to an ARGB hex string. `h` wraps
- * mod-360, `s` and `l` clamp to `[0, 1]`. `alpha` is the byte
- * (default 255 = opaque), placed in the high byte of the result.
+ * Convert HSL components back to an ARGB hex string. `h` wraps mod-360, `s` and
+ * `l` clamp to `[0, 1]`. `alpha` is the byte (default 255 = opaque), placed in
+ * the high byte of the result.
  */
 export function hslToHex(h: number, s: number, l: number, alpha = 255): string {
   const hh = ((h % 360) + 360) % 360;

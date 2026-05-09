@@ -1,7 +1,7 @@
-// Public surface for the style value-objects + cell ↔ stylesheet bridge.
-// Per docs/plan/04-core-model.md §3 — Color / Font / Fill / Border /
-// Alignment / Protection / NumberFormat are plain objects with `make*`
-// factories, and Stylesheet pools dedup equal values via stable keys.
+// Public surface for the style value-objects + cell ↔ stylesheet bridge. —
+// Color / Font / Fill / Border / Alignment / Protection / NumberFormat are
+// plain objects with `make*` factories, and Stylesheet pools dedup equal values
+// via stable keys.
 
 export type { Alignment, HorizontalAlignment, VerticalAlignment } from './alignment';
 export { alignmentToCss, makeAlignment } from './alignment';

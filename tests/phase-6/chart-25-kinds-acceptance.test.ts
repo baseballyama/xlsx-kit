@@ -1,8 +1,8 @@
-// Phase 6 §10 acceptance: every chart kind we model — 16 legacy `c:` +
-// 8 chartex `cx:` = 24 distinct kinds (the docs/plan calls this "25" but
-// counts Pie + Pie3D + OfPie as three slots; xlsx-kit implements the
-// same set). Each chart goes through workbookToBytes → loadWorkbook and
-// the loaded chart's kind / key attributes must match what we wrote.
+// Phase 6 acceptance: every chart kind we model — 16 legacy `c:` + 8 chartex
+// `cx:` = 24 distinct kinds (some references count Pie + Pie3D + OfPie as three
+// slots and call it "25"; xlsx-kit implements the same set either way). Each
+// chart goes through workbookToBytes → loadWorkbook and the loaded chart's kind
+// / key attributes must match what we wrote.
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -424,9 +424,8 @@ const CHARTEX_CASES: ChartExCase[] = [
 
 const buildWorkbook = (chartSpaces: Array<{ space?: ChartSpace; cxSpace?: CxChartSpace }>): Promise<Uint8Array> => {
   const wb = createWorkbook();
-  // One worksheet hosting all charts as a single drawing — keeps the
-  // archive flat and exercises the workbook-global chartN / drawingN
-  // counters at scale.
+  // One worksheet hosting all charts as a single drawing — keeps the archive
+  // flat and exercises the workbook-global chartN / drawingN counters at scale.
   const ws = addWorksheet(wb, 'Charts');
   let row = 1;
   ws.drawing = makeDrawing(

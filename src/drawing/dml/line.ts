@@ -1,4 +1,4 @@
-// DrawingML line properties. Per docs/plan/08-charts-drawings.md §4.3.
+// DrawingML line properties.
 
 import type { Fill } from './fill';
 

@@ -42,9 +42,9 @@ import {
   schemaFor,
 } from './schema-map';
 
-export type Tier = 'opc' | 'xsd' | 'semantic';
+type Tier = 'opc' | 'xsd' | 'semantic';
 
-export interface ValidationIssue {
+interface ValidationIssue {
   tier: Tier;
   part: string;
   message: string;

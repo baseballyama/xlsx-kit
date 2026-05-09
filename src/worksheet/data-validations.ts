@@ -1,10 +1,9 @@
-// Data validations. Per docs/plan/07-rich-features.md §5.
+// Data validations.
 //
-// A DataValidation entry attaches a constraint (one of seven type
-// kinds, optional operator, two formula slots) to a sqref-style
-// MultiCellRange. Stage-1 maps every OOXML attribute we have a use for;
-// imeMode + numeric/value clamps land later when phase 7's Asian-locale
-// support catches up.
+// A DataValidation entry attaches a constraint (one of seven type kinds,
+// optional operator, two formula slots) to a sqref-style MultiCellRange.
+// Stage-1 maps every OOXML attribute we have a use for; imeMode + numeric/value
+// clamps land later when phase 7's Asian-locale support catches up.
 
 import { type MultiCellRange, parseMultiCellRange } from './cell-range';
 
@@ -89,8 +88,8 @@ export interface ValidationCommon {
 }
 
 /**
- * Add a list-type dropdown validation to a range. `values` may be an
- * inline list (`['Red', 'Green', 'Blue']`) or a sheet reference
+ * Add a list-type dropdown validation to a range. `values` may be an inline
+ * list (`['Red', 'Green', 'Blue']`) or a sheet reference
  * (`'=Sheet1!$A$1:$A$10'`).
  */
 export const addListValidation = (
@@ -120,9 +119,9 @@ export const addListValidation = (
 };
 
 /**
- * Add a number-range validation. `between(min, max)` matches Excel's
- * "Whole Number" → "between" form by default. Use `kind: 'decimal'`
- * for decimal (default 'whole').
+ * Add a number-range validation. `between(min, max)` matches Excel's "Whole
+ * Number" → "between" form by default. Use `kind: 'decimal'` for decimal
+ * (default 'whole').
  */
 export const addNumberValidation = (
   ws: Worksheet,
@@ -152,8 +151,8 @@ export const addNumberValidation = (
 };
 
 /**
- * Add a date-range validation. Dates are passed as Excel serial
- * numbers (use `dateToExcel` to convert from JS `Date`).
+ * Add a date-range validation. Dates are passed as Excel serial numbers (use
+ * `dateToExcel` to convert from JS `Date`).
  */
 export const addDateValidation = (
   ws: Worksheet,

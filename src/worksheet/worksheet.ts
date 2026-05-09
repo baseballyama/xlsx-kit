@@ -1,10 +1,9 @@
-// Worksheet data model. Per docs/plan/04-core-model.md §4.3.
+// Worksheet data model.
 //
-// Cells live in a sparse two-level Map (row → col → Cell). The choice
-// is deliberate: a workbook with 1 M cells in 1 column shouldn't
-// allocate 1 M empty rows, and JSON.stringify with `Map` round-trips
-// cleanly via the workbook's `jsonReplacer`. Worksheets are mutable
-// for hot-path performance — see docs/plan/01-architecture.md §5.1.
+// Cells live in a sparse two-level Map (row → col → Cell). The choice is
+// deliberate: a workbook with 1 M cells in 1 column shouldn't allocate 1 M
+// empty rows, and JSON.stringify with `Map` round-trips cleanly via the
+// workbook's `jsonReplacer`. Worksheets are mutable for hot-path performance.
 
 import type { CellValue } from '../cell/cell';
 import { type Cell, cellValueAsString, makeCell, setArrayFormula, setFormula } from '../cell/cell';
@@ -47,28 +46,28 @@ export interface Worksheet {
   /** Sparse store: row index → (col index → Cell). */
   rows: Map<number, Map<number, Cell>>;
   /**
-   * Highest row index touched by `appendRow`; used to keep appendRow
-   * O(1) without re-scanning the row map. Direct setCell / deleteCell
-   * may move the actual maximum elsewhere.
+   * Highest row index touched by `appendRow`; used to keep appendRow O(1)
+   * without re-scanning the row map. Direct setCell / deleteCell may move the
+   * actual maximum elsewhere.
    */
   _appendRowCursor: number;
   /**
-   * Merged cell ranges. The top-left cell holds the value; the rest are
-   * mostly invisible to Excel until unmerge restores them. We persist the
-   * list as plain CellRange[] so mergeCells / unmergeCells can mutate it
-   * without rebuilding any helper structures.
+   * Merged cell ranges. The top-left cell holds the value; the rest are mostly
+   * invisible to Excel until unmerge restores them. We persist the list as
+   * plain CellRange[] so mergeCells / unmergeCells can mutate it without
+   * rebuilding any helper structures.
    */
   mergedCells: CellRange[];
   /**
-   * Per-bookView display settings. Most workbooks have exactly one view.
-   * The list stays empty until something — read or API — populates it; a
-   * lone default view doesn't earn its keep on the wire.
+   * Per-bookView display settings. Most workbooks have exactly one view. The
+   * list stays empty until something — read or API — populates it; a lone
+   * default view doesn't earn its keep on the wire.
    */
   views: SheetView[];
   /**
    * Per-column metadata keyed by the entry's `min` index. The value's
-   * `min`/`max` may cover a multi-column run; iteration over the map
-   * yields one entry per run, in `min`-ascending order.
+   * `min`/`max` may cover a multi-column run; iteration over the map yields one
+   * entry per run, in `min`-ascending order.
    */
   columnDimensions: Map<number, ColumnDimension>;
   /** Per-row metadata keyed by 1-based row index. */
@@ -78,9 +77,9 @@ export interface Worksheet {
   /** Default row height (points) when not overridden by a row dimension. */
   defaultRowHeight?: number;
   /**
-   * Highest outline depth used among `rowDimensions`. Excel uses this to
-   * size the outline button strip on the left of the row numbers. Auto-
-   * computed by the writer when undefined — set explicitly to override.
+   * Highest outline depth used among `rowDimensions`. Excel uses this to size
+   * the outline button strip on the left of the row numbers. Auto-computed by
+   * the writer when undefined — set explicitly to override.
    */
   outlineLevelRow?: number;
   /** Highest outline depth used among `columnDimensions`. Auto-computed by the writer when undefined. */
@@ -114,56 +113,54 @@ export interface Worksheet {
    */
   sheetProperties?: SheetProperties;
   /**
-   * Sheet-protection state. When `sheet=true` Excel locks the sheet
-   * against edits (subject to the per-action allow flags here).
-   * Password hashing helpers come later — for now `saltValue` /
-   * `spinCount` / `algorithmName` / `hashValue` round-trip verbatim.
+   * Sheet-protection state. When `sheet=true` Excel locks the sheet against
+   * edits (subject to the per-action allow flags here). Password hashing
+   * helpers come later — for now `saltValue` / `spinCount` / `algorithmName` /
+   * `hashValue` round-trip verbatim.
    */
   sheetProtection?: SheetProtection;
   /**
-   * `<protectedRanges>` — per-range edit-allowance overrides used when
-   * the sheet is otherwise protected (Review → Allow Edit Ranges).
+   * `<protectedRanges>` — per-range edit-allowance overrides used when the
+   * sheet is otherwise protected (Review → Allow Edit Ranges).
    */
   protectedRanges: ProtectedRange[];
   /**
-   * `<sortState>` — last-applied sort criteria. Excel persists this so
-   * the rows come back in the same order after a save/load cycle.
+   * `<sortState>` — last-applied sort criteria. Excel persists this so the rows
+   * come back in the same order after a save/load cycle.
    */
   sortState?: SortState;
   /**
-   * `<picture r:id="…"/>` — sheet background image (Page Layout →
-   * Background). The rId points at a media part registered in the
-   * worksheet rels (preserved via the existing relsExtras machinery).
+   * `<picture r:id="…"/>` — sheet background image (Page Layout → Background).
+   * The rId points at a media part registered in the worksheet rels (preserved
+   * via the existing relsExtras machinery).
    */
   backgroundPictureRId?: string;
   /**
    * `<legacyDrawingHF r:id="…"/>` — VML drawing used for header/footer
-   * background images on print. Parallel to legacyDrawing (which
-   * carries comment markers); the rels link rides relsExtras.
+   * background images on print. Parallel to legacyDrawing (which carries
+   * comment markers); the rels link rides relsExtras.
    */
   legacyDrawingHFRId?: string;
   /**
-   * `<smartTags>` — per-cell smart-tag annotations (Excel 2003 era).
-   * Pairs with the workbook-level smartTagTypes registry.
+   * `<smartTags>` — per-cell smart-tag annotations (Excel 2003 era). Pairs with
+   * the workbook-level smartTagTypes registry.
    */
   smartTags: import('./smart-tags').CellSmartTags[];
   /**
-   * `<customSheetViews>` — saved per-user view presets for this
-   * worksheet (Excel's "Custom Views" feature). Each entry snapshots
-   * zoom / gridline / formula / heading toggles plus its own page-
-   * setup block and break list.
+   * `<customSheetViews>` — saved per-user view presets for this worksheet
+   * (Excel's "Custom Views" feature). Each entry snapshots zoom / gridline /
+   * formula / heading toggles plus its own page-setup block and break list.
    */
   customSheetViews: import('./custom-sheet-views').CustomSheetView[];
   /**
-   * `<oleObjects>` — embedded OLE objects (linked Word documents,
-   * Equation editor formulas, etc.). The objectPr child is round-
-   * tripped verbatim as an XmlNode.
+   * `<oleObjects>` — embedded OLE objects (linked Word documents, Equation
+   * editor formulas, etc.). The objectPr child is round-tripped verbatim as an
+   * XmlNode.
    */
   oleObjects: import('./ole-objects').OleObject[];
   /**
-   * `<controls>` — form controls (checkboxes / list boxes / spin
-   * buttons placed via the Developer tab). The controlPr child is
-   * round-tripped verbatim.
+   * `<controls>` — form controls (checkboxes / list boxes / spin buttons placed
+   * via the Developer tab). The controlPr child is round-tripped verbatim.
    */
   controls: import('./ole-objects').FormControl[];
   /** `<printOptions>` — gridlines, headings, horizontal/vertical centering on the printed page. */
@@ -188,8 +185,8 @@ export interface Worksheet {
   /** `<webPublishItems>` — Excel 2007's "Publish to web" entries. Almost always empty in modern files. */
   webPublishItems: WebPublishItem[];
   /**
-   * `<phoneticPr>` — East-Asian furigana rendering hints (font index +
-   * IME conversion mode + alignment). Common in Japanese workbooks.
+   * `<phoneticPr>` — East-Asian furigana rendering hints (font index + IME
+   * conversion mode + alignment). Common in Japanese workbooks.
    */
   phoneticPr?: WorksheetPhoneticProperties;
   /**
@@ -202,37 +199,35 @@ export interface Worksheet {
   /** Cells pinned in Excel's Watch Window (`<cellWatches><cellWatch r="…"/></cellWatches>`). */
   cellWatches: CellWatch[];
   /**
-   * Per-region "ignore this error class" rules (`<ignoredErrors>`).
-   * Suppresses the small green-triangle warning for the listed checks.
+   * Per-region "ignore this error class" rules (`<ignoredErrors>`). Suppresses
+   * the small green-triangle warning for the listed checks.
    */
   ignoredErrors: IgnoredError[];
   /**
-   * Spreadsheet drawing — at most one per worksheet. Hosts charts /
-   * pictures / shapes. Persisted as `xl/drawings/drawingN.xml` plus a
-   * worksheet-rels entry; on the wire the worksheet body emits
-   * `<drawing r:id>`.
+   * Spreadsheet drawing — at most one per worksheet. Hosts charts / pictures /
+   * shapes. Persisted as `xl/drawings/drawingN.xml` plus a worksheet-rels
+   * entry; on the wire the worksheet body emits `<drawing r:id>`.
    */
   drawing?: Drawing;
   /**
-   * Per-sheet rels entries we don't model (pivotTable / queryTable /
-   * slicer / printerSettings / customProperty / oleObject etc.). Re-emitted
-   * verbatim so Excel still resolves the captured passthrough parts after
-   * a round-trip.
+   * Per-sheet rels entries we don't model (pivotTable / queryTable / slicer /
+   * printerSettings / customProperty / oleObject etc.). Re-emitted verbatim so
+   * Excel still resolves the captured passthrough parts after a round-trip.
    */
   relsExtras?: ReadonlyArray<{ id: string; type: string; target: string }>;
   /**
    * Top-level `<worksheet>` children we don't model — `<sheetPr>`,
    * `<printOptions>`, `<pageMargins>`, `<pageSetup>`, `<headerFooter>`,
-   * `<rowBreaks>`, `<colBreaks>`, `<oleObjects>`, `<controls>`,
-   * `<picture>`, `<extLst>`, etc. Captured as XmlNodes; the writer emits
-   * them in two anchored slots so common ECMA-376 ordering survives a
-   * round-trip even though we don't track every position individually:
+   * `<rowBreaks>`, `<colBreaks>`, `<oleObjects>`, `<controls>`, `<picture>`,
+   * `<extLst>`, etc. Captured as XmlNodes; the writer emits them in two
+   * anchored slots so common ECMA-376 ordering survives a round-trip even
+   * though we don't track every position individually:
    * - `beforeSheetData` → emitted before our `<dimension>` (typical for
-   *   `<sheetPr>`).
+   * `<sheetPr>`).
    * - `afterSheetData` → emitted between our `<hyperlinks>` and
-   *   `<drawing>` block, which lands page setup / extLst / oleObjects in
-   *   roughly the right place. Excel reads back regardless of strict
-   *   ECMA position; openpyxl-emitted files round-trip cleanly.
+   * `<drawing>` block, which lands page setup / extLst / oleObjects in roughly
+   * the right place. Excel reads back regardless of strict ECMA position;
+   * openpyxl-emitted files round-trip cleanly.
    */
   bodyExtras?: {
     beforeSheetData: import('../xml/tree').XmlNode[];
@@ -287,8 +282,8 @@ export function getCell(ws: Worksheet, row: number, col: number): Cell | undefin
 }
 
 /**
- * Create or update a Cell at (row, col). Existing cells keep their
- * styleId / hyperlinkId / commentId unless explicitly overridden.
+ * Create or update a Cell at (row, col). Existing cells keep their styleId /
+ * hyperlinkId / commentId unless explicitly overridden.
  */
 export function setCell(ws: Worksheet, row: number, col: number, value: CellValue = null, styleId?: number): Cell {
   let rowMap = ws.rows.get(row);
@@ -319,9 +314,9 @@ export function deleteCell(ws: Worksheet, row: number, col: number): void {
 }
 
 /**
- * Delete every populated cell inside a range. Returns the number of
- * cells removed. Row maps that go empty are pruned. Column / row
- * dimensions, merges, comments etc. are left untouched.
+ * Delete every populated cell inside a range. Returns the number of cells
+ * removed. Row maps that go empty are pruned. Column / row dimensions, merges,
+ * comments etc. are left untouched.
  */
 export function clearRange(ws: Worksheet, range: string): number {
   const { minRow, maxRow, minCol, maxCol } = parseRange(range);
@@ -338,10 +333,9 @@ export function clearRange(ws: Worksheet, range: string): number {
 }
 
 /**
- * Wipe every populated cell on the worksheet, leaving styles,
- * dimensions, merges, comments, hyperlinks etc. intact. Returns the
- * count of cells removed. Useful when a sheet should be re-filled
- * from scratch but its formatting kept.
+ * Wipe every populated cell on the worksheet, leaving styles, dimensions,
+ * merges, comments, hyperlinks etc. intact. Returns the count of cells removed.
+ * Useful when a sheet should be re-filled from scratch but its formatting kept.
  */
 export function clearAllCells(ws: Worksheet): number {
   let n = 0;
@@ -352,9 +346,9 @@ export function clearAllCells(ws: Worksheet): number {
 }
 
 /**
- * Append a row of values starting at the next empty row. Returns the
- * row index (1-based). Mirrors openpyxl's `Worksheet.append`. `null`
- * / `undefined` entries leave the cell empty.
+ * Append a row of values starting at the next empty row. Returns the row index
+ * (1-based). Mirrors openpyxl's `Worksheet.append`. `null` / `undefined`
+ * entries leave the cell empty.
  */
 export function appendRow(ws: Worksheet, values: ReadonlyArray<CellValue | undefined>): number {
   const row = ws._appendRowCursor + 1;
@@ -363,17 +357,17 @@ export function appendRow(ws: Worksheet, values: ReadonlyArray<CellValue | undef
     if (value === undefined || value === null) continue;
     setCell(ws, row, i + 1, value);
   }
-  // Even if every value is empty, advance the cursor so the next call
-  // doesn't overwrite this row's would-be position.
+  // Even if every value is empty, advance the cursor so the next call doesn't
+  // overwrite this row's would-be position.
   ws._appendRowCursor = row;
   return row;
 }
 
 /**
- * Bulk version of {@link appendRow}: append a 2D array of values
- * one row at a time. Returns `{firstRow, lastRow}` — both 1-based,
- * inclusive. An empty input returns `{firstRow, lastRow: firstRow - 1}`
- * so callers can detect the no-op without throwing.
+ * Bulk version of {@link appendRow}: append a 2D array of values one row at a
+ * time. Returns `{firstRow, lastRow}` — both 1-based, inclusive. An empty input
+ * returns `{firstRow, lastRow: firstRow - 1}` so callers can detect the no-op
+ * without throwing.
  *
  * Common usage: `appendRows(ws, csvParsedRows)` for fast import.
  */
@@ -393,19 +387,18 @@ export function appendRows(
 }
 
 /**
- * Write a 2D array of values to the sheet starting at the given A1
- * anchor cell. Distinct from {@link appendRows} (which always writes
- * past `_appendRowCursor`) — this lets you place a block at an
- * arbitrary location, e.g. mid-sheet table updates.
+ * Write a 2D array of values to the sheet starting at the given A1 anchor cell.
+ * Distinct from {@link appendRows} (which always writes past
+ * `_appendRowCursor`) — this lets you place a block at an arbitrary location,
+ * e.g. mid-sheet table updates.
  *
  * `null` / `undefined` entries leave the corresponding cell **untouched**
- * (existing cell + style are preserved). Pre-existing cells inside
- * the written rectangle are overwritten in place, so their `styleId`
- * survives the write.
+ * (existing cell + style are preserved). Pre-existing cells inside the written
+ * rectangle are overwritten in place, so their `styleId` survives the write.
  *
  * Returns the bounding-box of the written area as 1-based inclusive
- * coordinates. An empty rows array returns `undefined` rather than
- * an invalid zero-area range.
+ * coordinates. An empty rows array returns `undefined` rather than an invalid
+ * zero-area range.
  */
 export function writeRange(
   ws: Worksheet,
@@ -442,9 +435,9 @@ export interface IterRowsOptions {
 }
 
 /**
- * Iterate the populated cells row-by-row in ascending order. Empty
- * rows are skipped (no `[]` yielded). Within a row, cells are sorted
- * by column index ascending.
+ * Iterate the populated cells row-by-row in ascending order. Empty rows are
+ * skipped (no `[]` yielded). Within a row, cells are sorted by column index
+ * ascending.
  */
 export function* iterRows(ws: Worksheet, opts: IterRowsOptions = {}): IterableIterator<Cell[]> {
   const { minRow = 1, maxRow = MAX_ROW, minCol = 1, maxCol = MAX_COL } = opts;
@@ -469,10 +462,10 @@ export function* iterValues(ws: Worksheet, opts: IterRowsOptions = {}): Iterable
 }
 
 /**
- * Yield every populated cell in the worksheet as a flat stream
- * (row-major, columns ascending). Distinct from {@link iterRows} which
- * yields one Cell[] per populated row — use this when the caller
- * doesn't care about row boundaries.
+ * Yield every populated cell in the worksheet as a flat stream (row-major,
+ * columns ascending). Distinct from {@link iterRows} which yields one Cell[]
+ * per populated row — use this when the caller doesn't care about row
+ * boundaries.
  */
 export function* iterCells(ws: Worksheet, opts: IterRowsOptions = {}): IterableIterator<Cell> {
   for (const row of iterRows(ws, opts)) {
@@ -497,10 +490,10 @@ export function getMaxCol(ws: Worksheet): number {
 }
 
 /**
- * Sorted list of every row index that holds at least one populated
- * cell. Returns `[]` for an empty worksheet. Useful when a caller
- * wants to iterate only the rows the user actually populated, without
- * walking 1..maxRow in dense fashion.
+ * Sorted list of every row index that holds at least one populated cell.
+ * Returns `[]` for an empty worksheet. Useful when a caller wants to iterate
+ * only the rows the user actually populated, without walking 1..maxRow in dense
+ * fashion.
  */
 export function getPopulatedRowIndices(ws: Worksheet): number[] {
   const out: number[] = [];
@@ -511,9 +504,9 @@ export function getPopulatedRowIndices(ws: Worksheet): number[] {
 }
 
 /**
- * Sorted list of every column index that holds at least one populated
- * cell anywhere on the sheet. Distinct columns only; returns `[]` for
- * an empty worksheet.
+ * Sorted list of every column index that holds at least one populated cell
+ * anywhere on the sheet. Distinct columns only; returns `[]` for an empty
+ * worksheet.
  */
 export function getPopulatedColumnIndices(ws: Worksheet): number[] {
   const seen = new Set<number>();
@@ -524,13 +517,13 @@ export function getPopulatedColumnIndices(ws: Worksheet): number[] {
 }
 
 /**
- * Distinct cell values in a column, in first-seen row order. Use for
- * filter-UI affordances or quick deduplication of categorical data.
+ * Distinct cell values in a column, in first-seen row order. Use for filter-UI
+ * affordances or quick deduplication of categorical data.
  *
- * Equality is reference-based for object values (formulas, rich-text,
- * Dates), value-based for primitives — i.e. two `Date` instances with
- * the same epoch will appear as separate values. Pass primitives
- * (numbers / strings / booleans) when you want set semantics.
+ * Equality is reference-based for object values (formulas, rich-text, Dates),
+ * value-based for primitives — i.e. two `Date` instances with the same epoch
+ * will appear as separate values. Pass primitives (numbers / strings /
+ * booleans) when you want set semantics.
  *
  * Options:
  *   - `skipNull` — drop `null` cell values (default `false`).
@@ -557,9 +550,9 @@ export function getDistinctValuesInColumn(
 }
 
 /**
- * Distinct cell values in a row, in first-seen column order. Mirror of
- * {@link getDistinctValuesInColumn}; same equality semantics and
- * `skipNull` / `skipFormulas` options.
+ * Distinct cell values in a row, in first-seen column order. Mirror of {@link
+ * getDistinctValuesInColumn}; same equality semantics and `skipNull` /
+ * `skipFormulas` options.
  */
 export function getDistinctValuesInRow(
   ws: Worksheet,
@@ -582,9 +575,8 @@ export function getDistinctValuesInRow(
 }
 
 /**
- * Tally populated cells by value kind. Useful for stats / debugging
- * dashboards that want a quick "this sheet has N strings, M
- * formulas, K dates" snapshot.
+ * Tally populated cells by value kind. Useful for stats / debugging dashboards
+ * that want a quick "this sheet has N strings, M formulas, K dates" snapshot.
  *
  * Buckets:
  *   - `null`: empty cells (cell exists but value is null)
@@ -640,24 +632,23 @@ export function countCellsByKind(ws: Worksheet): CellsByKindCounts {
 }
 
 /**
- * Sheet-qualified A1 address for a cell — `'Sheet1!A1'` for plain
- * titles, `'\'Quarter 1\'!A1'` for titles needing quoting (spaces,
- * apostrophes, punctuation, leading-digit). Round-trips with
- * {@link parseSheetRange}.
+ * Sheet-qualified A1 address for a cell — `'Sheet1!A1'` for plain titles,
+ * `'\'Quarter 1\'!A1'` for titles needing quoting (spaces, apostrophes,
+ * punctuation, leading-digit). Round-trips with {@link parseSheetRange}.
  *
- * Useful when constructing formulas / defined-names that reference a
- * specific cell across sheets without hand-rolling the quote logic.
+ * Useful when constructing formulas / defined-names that reference a specific
+ * cell across sheets without hand-rolling the quote logic.
  */
 export function getCellAddress(ws: Worksheet, c: Cell): string {
   return formatSheetQualifiedRef(ws.title, tupleToCoordinate(c.col, c.row));
 }
 
 /**
- * Sheet-qualified A1 range address — `'Sheet1!A1:B5'` for plain
- * titles, `'\'Quarter 1\'!A1:B5'` for titles needing quoting. Pass
- * any A1-style range string (single cell `'A1'`, rectangle `'A1:B5'`,
- * row span `'1:5'`, column span `'A:E'`); the helper does no
- * validation on `range` itself — that's the caller's responsibility.
+ * Sheet-qualified A1 range address — `'Sheet1!A1:B5'` for plain titles,
+ * `'\'Quarter 1\'!A1:B5'` for titles needing quoting. Pass any A1-style range
+ * string (single cell `'A1'`, rectangle `'A1:B5'`, row span `'1:5'`, column
+ * span `'A:E'`); the helper does no validation on `range` itself — that's the
+ * caller's responsibility.
  */
 export function getRangeAddress(ws: Worksheet, range: string): string {
   return formatSheetQualifiedRef(ws.title, range);
@@ -665,9 +656,9 @@ export function getRangeAddress(ws: Worksheet, range: string): string {
 
 /**
  * True iff the worksheet has zero non-empty cells. Equivalent to
- * `getNonEmptyCellCount(ws) === 0` but short-circuits on the first
- * non-null value found, so the cost is O(first non-empty cell)
- * rather than O(populated cells).
+ * `getNonEmptyCellCount(ws) === 0` but short-circuits on the first non-null
+ * value found, so the cost is O(first non-empty cell) rather than O(populated
+ * cells).
  */
 export function isWorksheetEmpty(ws: Worksheet): boolean {
   for (const cell of iterCells(ws)) {
@@ -677,13 +668,12 @@ export function isWorksheetEmpty(ws: Worksheet): boolean {
 }
 
 /**
- * Count non-empty cells. Distinct from {@link countCells} which counts
- * every materialised cell (including ones whose `value === null`):
- * this skips cells with a `null` value, plus optionally formulas /
- * rich-text per the opts.
+ * Count non-empty cells. Distinct from {@link countCells} which counts every
+ * materialised cell (including ones whose `value === null`): this skips cells
+ * with a `null` value, plus optionally formulas / rich-text per the opts.
  *
- * Useful for "how many real values does this sheet contain" stats
- * vs the materialised footprint.
+ * Useful for "how many real values does this sheet contain" stats vs the
+ * materialised footprint.
  */
 export function getNonEmptyCellCount(
   ws: Worksheet,
@@ -713,9 +703,9 @@ export function countCells(ws: Worksheet): number {
 }
 
 /**
- * Bounding-box of the populated cells: `{ minRow, maxRow, minCol,
- * maxCol }` covering every cell in `ws.rows`. Returns `undefined`
- * when the sheet is empty. Walks the sparse store once.
+ * Bounding-box of the populated cells: `{ minRow, maxRow, minCol, maxCol }`
+ * covering every cell in `ws.rows`. Returns `undefined` when the sheet is
+ * empty. Walks the sparse store once.
  */
 export function getDataExtent(
   ws: Worksheet,
@@ -740,9 +730,8 @@ export function getDataExtent(
 }
 
 /**
- * Same as {@link getDataExtent} but returns the canonical `"A1:E10"`
- * range string for the bounding box, or `undefined` when the sheet
- * is empty.
+ * Same as {@link getDataExtent} but returns the canonical `"A1:E10"` range
+ * string for the bounding box, or `undefined` when the sheet is empty.
  */
 export function getDataExtentRef(ws: Worksheet): string | undefined {
   const ext = getDataExtent(ws);
@@ -756,10 +745,10 @@ export function getDataExtentRef(ws: Worksheet): string | undefined {
 }
 
 /**
- * Iterate every populated cell, yielding those for which `predicate`
- * returns true. Iteration order is row-then-column ascending. Cells
- * whose `.value === null` (empty placeholders carrying only style or
- * comment metadata) are still visited.
+ * Iterate every populated cell, yielding those for which `predicate` returns
+ * true. Iteration order is row-then-column ascending. Cells whose `.value ===
+ * null` (empty placeholders carrying only style or comment metadata) are still
+ * visited.
  */
 export function* findCells(
   ws: Worksheet,
@@ -787,12 +776,11 @@ export function findFirstCell(
 }
 
 /**
- * Find-and-replace across populated string cells. `search` matches
- * either an exact-string equal (when given a string) or every cell
- * whose value satisfies the predicate (when given a function).
- * `replacement` is the new value for each match. Returns the count
- * of cells changed. Non-string-valued cells are skipped when
- * `search` is a string; predicate-based searches see every cell.
+ * Find-and-replace across populated string cells. `search` matches either an
+ * exact-string equal (when given a string) or every cell whose value satisfies
+ * the predicate (when given a function). `replacement` is the new value for
+ * each match. Returns the count of cells changed. Non-string-valued cells are
+ * skipped when `search` is a string; predicate-based searches see every cell.
  */
 export function replaceCellValues(
   ws: Worksheet,
@@ -816,11 +804,10 @@ export function replaceCellValues(
 }
 
 /**
- * Range-scoped find-and-replace. Same matching rules as
- * {@link replaceCellValues} (string → exact-equal on string-valued
- * cells; function → predicate over every populated cell), but only
- * cells inside the rectangular `range` are visited. Returns the
- * count changed.
+ * Range-scoped find-and-replace. Same matching rules as {@link
+ * replaceCellValues} (string → exact-equal on string-valued cells; function →
+ * predicate over every populated cell), but only cells inside the rectangular
+ * `range` are visited. Returns the count changed.
  */
 export function replaceInRange(
   ws: Worksheet,
@@ -843,10 +830,10 @@ export function replaceInRange(
 }
 
 /**
- * Iterate the populated cells inside a rectangular range. Cells that
- * don't exist in the sparse store are skipped (no auto-allocate). Use
- * {@link applyToRange} when you need every coordinate visited
- * regardless of population.
+ * Iterate the populated cells inside a rectangular range. Cells that don't
+ * exist in the sparse store are skipped (no auto-allocate). Use {@link
+ * applyToRange} when you need every coordinate visited regardless of
+ * population.
  */
 export function* getCellsInRange(ws: Worksheet, range: string): IterableIterator<Cell> {
   const { minRow, maxRow, minCol, maxCol } = parseRange(range);
@@ -861,10 +848,10 @@ export function* getCellsInRange(ws: Worksheet, range: string): IterableIterator
 }
 
 /**
- * Set a cell's value to a rich-text run array. Accepts either a
- * pre-built `RichText` (frozen array of TextRun) or a fresh
- * `Array<{ text, font? }>` shape — `makeRichText` normalises and
- * freezes the runs in either case. Returns the cell.
+ * Set a cell's value to a rich-text run array. Accepts either a pre-built
+ * `RichText` (frozen array of TextRun) or a fresh `Array<{ text, font? }>`
+ * shape — `makeRichText` normalises and freezes the runs in either case.
+ * Returns the cell.
  */
 export function setCellRichText(
   ws: Worksheet,
@@ -877,9 +864,9 @@ export function setCellRichText(
 }
 
 /**
- * Set a cell's value to a normal Excel formula. Combines `setCell`
- * with `setFormula`. The leading `=` is stripped if present so
- * callers can pass `'=A1+1'` or `'A1+1'` interchangeably.
+ * Set a cell's value to a normal Excel formula. Combines `setCell` with
+ * `setFormula`. The leading `=` is stripped if present so callers can pass
+ * `'=A1+1'` or `'A1+1'` interchangeably.
  */
 export function setCellFormula(
   ws: Worksheet,
@@ -895,10 +882,10 @@ export function setCellFormula(
 }
 
 /**
- * Set a cell's value to an array (CSE) formula spanning `ref`. Lands
- * the formula on the top-left cell of the range — Excel reads the
- * `ref` attribute to know how far the result spreads. Equivalent to
- * `setCell` + `setArrayFormula`. Leading `=` is stripped.
+ * Set a cell's value to an array (CSE) formula spanning `ref`. Lands the
+ * formula on the top-left cell of the range — Excel reads the `ref` attribute
+ * to know how far the result spreads. Equivalent to `setCell` +
+ * `setArrayFormula`. Leading `=` is stripped.
  */
 export function setCellArrayFormula(
   ws: Worksheet,
@@ -940,11 +927,11 @@ const toCellRange = (refOrRange: string | CellRange): CellRange =>
   typeof refOrRange === 'string' ? parseRange(refOrRange) : refOrRange;
 
 /**
- * Merge a range. The top-left cell keeps its value; every other cell in
- * the range is dropped from `ws.rows` so the on-wire `<sheetData>` won't
- * carry phantom cells underneath the merge. Mirrors openpyxl's
- * `MergedCellRange.format()`. Idempotent for an identical range, throws
- * when the range overlaps an existing merge.
+ * Merge a range. The top-left cell keeps its value; every other cell in the
+ * range is dropped from `ws.rows` so the on-wire `<sheetData>` won't carry
+ * phantom cells underneath the merge. Mirrors openpyxl's
+ * `MergedCellRange.format()`. Idempotent for an identical range, throws when
+ * the range overlaps an existing merge.
  */
 export function mergeCells(ws: Worksheet, refOrRange: string | CellRange): CellRange {
   const range = toCellRange(refOrRange);
@@ -992,9 +979,9 @@ export function isMergedCell(ws: Worksheet, row: number, col: number): boolean {
 }
 
 /**
- * Look up the merged range covering (row, col), or `undefined` if
- * the coordinate isn't inside any merge. Lets callers introspect a
- * merge without iterating `getMergedCells` themselves.
+ * Look up the merged range covering (row, col), or `undefined` if the
+ * coordinate isn't inside any merge. Lets callers introspect a merge without
+ * iterating `getMergedCells` themselves.
  */
 export function getMergedRangeAt(ws: Worksheet, row: number, col: number): CellRange | undefined {
   for (const range of ws.mergedCells) {
@@ -1004,9 +991,9 @@ export function getMergedRangeAt(ws: Worksheet, row: number, col: number): CellR
 }
 
 /**
- * Drop the merge that contains (row, col), if any. Returns `true`
- * when a merge was unregistered. Useful when callers know a cell
- * coordinate but not the original merge bounds.
+ * Drop the merge that contains (row, col), if any. Returns `true` when a merge
+ * was unregistered. Useful when callers know a cell coordinate but not the
+ * original merge bounds.
  */
 export function unmergeCellsAt(ws: Worksheet, row: number, col: number): boolean {
   for (let i = 0; i < ws.mergedCells.length; i++) {
@@ -1020,9 +1007,9 @@ export function unmergeCellsAt(ws: Worksheet, row: number, col: number): boolean
 }
 
 /**
- * Drop every merged range on the worksheet. Returns the count of
- * merges removed. Cells that were inside the merges keep their
- * values — only the merge metadata is gone.
+ * Drop every merged range on the worksheet. Returns the count of merges
+ * removed. Cells that were inside the merges keep their values — only the merge
+ * metadata is gone.
  */
 export function removeAllMergedRanges(ws: Worksheet): number {
   const n = ws.mergedCells.length;
@@ -1044,8 +1031,8 @@ const ensurePrimaryView = (ws: Worksheet): SheetView => {
 
 /**
  * Freeze rows / columns above + left of `topLeftRef` ("B2" → 1 row + 1 col).
- * Pass `undefined` to clear any existing freeze. Targets the workbook's
- * primary SheetView (`ws.views[0]`); creates one if absent.
+ * Pass `undefined` to clear any existing freeze. Targets the workbook's primary
+ * SheetView (`ws.views[0]`); creates one if absent.
  */
 export function setFreezePanes(ws: Worksheet, topLeftRef: string | undefined): void {
   if (topLeftRef === undefined) {
@@ -1064,9 +1051,8 @@ export function getFreezePanes(ws: Worksheet): string | undefined {
 }
 
 /**
- * Freeze the top `count` rows. Equivalent to
- * `setFreezePanes(ws, "A${count + 1}")` — Excel's "Freeze Top Row"
- * is `freezeRows(ws, 1)`.
+ * Freeze the top `count` rows. Equivalent to `setFreezePanes(ws, "A${count +
+ * 1}")` — Excel's "Freeze Top Row" is `freezeRows(ws, 1)`.
  */
 export function freezeRows(ws: Worksheet, count: number): void {
   if (!Number.isInteger(count) || count < 1) {
@@ -1076,9 +1062,9 @@ export function freezeRows(ws: Worksheet, count: number): void {
 }
 
 /**
- * Freeze the leftmost `count` columns. Equivalent to
- * `setFreezePanes(ws, "${columnLetter(count + 1)}1")` — Excel's
- * "Freeze First Column" is `freezeColumns(ws, 1)`.
+ * Freeze the leftmost `count` columns. Equivalent to `setFreezePanes(ws,
+ * "${columnLetter(count + 1)}1")` — Excel's "Freeze First Column" is
+ * `freezeColumns(ws, 1)`.
  */
 export function freezeColumns(ws: Worksheet, count: number): void {
   if (!Number.isInteger(count) || count < 1) {
@@ -1104,23 +1090,22 @@ export const unfreezePanes = (ws: Worksheet): void => {
 };
 
 /**
- * Freeze the header row (row 1) so it stays visible while scrolling.
- * Equivalent to Excel's "View → Freeze Top Row". Shortcut for
- * `freezeRows(ws, 1)`.
+ * Freeze the header row (row 1) so it stays visible while scrolling. Equivalent
+ * to Excel's "View → Freeze Top Row". Shortcut for `freezeRows(ws, 1)`.
  */
 export const freezeFirstRow = (ws: Worksheet): void => freezeRows(ws, 1);
 
 /**
- * Freeze the leftmost column (column A) so it stays visible while
- * scrolling horizontally. Equivalent to Excel's "View → Freeze First
- * Column". Shortcut for `freezeColumns(ws, 1)`.
+ * Freeze the leftmost column (column A) so it stays visible while scrolling
+ * horizontally. Equivalent to Excel's "View → Freeze First Column". Shortcut
+ * for `freezeColumns(ws, 1)`.
  */
 export const freezeFirstColumn = (ws: Worksheet): void => freezeColumns(ws, 1);
 
 /**
- * Freeze both row 1 and column A so the header row + label column
- * stay visible. Equivalent to selecting B2 and "View → Freeze Panes".
- * Shortcut for `freezePanes(ws, 1, 1)`.
+ * Freeze both row 1 and column A so the header row + label column stay visible.
+ * Equivalent to selecting B2 and "View → Freeze Panes". Shortcut for
+ * `freezePanes(ws, 1, 1)`.
  */
 export const freezeFirstRowAndColumn = (ws: Worksheet): void => freezePanes(ws, 1, 1);
 
@@ -1136,8 +1121,8 @@ const colorFrom = (input: string | Partial<Color>): Color =>
   typeof input === 'string' ? makeColor({ rgb: input }) : makeColor(input);
 
 /**
- * Set the sheet tab strip colour. Accepts either a hex string
- * (`"FF0070C0"`) or a partial `Color` object (`{ theme: 4, tint: 0.4 }`).
+ * Set the sheet tab strip colour. Accepts either a hex string (`"FF0070C0"`) or
+ * a partial `Color` object (`{ theme: 4, tint: 0.4 }`).
  */
 export function setSheetTabColor(ws: Worksheet, color: string | Partial<Color>): Color {
   const c = colorFrom(color);
@@ -1177,8 +1162,8 @@ export function setRightToLeft(ws: Worksheet, rtl: boolean): void {
 }
 
 /**
- * Set the zoom scale (percent) on the primary SheetView. Excel accepts
- * integer percentages in `[10, 400]`.
+ * Set the zoom scale (percent) on the primary SheetView. Excel accepts integer
+ * percentages in `[10, 400]`.
  */
 export function setSheetZoom(ws: Worksheet, scale: number): void {
   if (!Number.isInteger(scale) || scale < 10 || scale > 400) {
@@ -1193,17 +1178,16 @@ export function setSheetViewMode(ws: Worksheet, mode: 'normal' | 'pageBreakPrevi
 }
 
 /**
- * Set the active cell on the primary SheetView. The active cell is
- * the one Excel highlights with the dark border when the sheet is
- * opened. Updates the existing Selection; creates one if missing.
- * Pass an "A1"-style ref.
+ * Set the active cell on the primary SheetView. The active cell is the one
+ * Excel highlights with the dark border when the sheet is opened. Updates the
+ * existing Selection; creates one if missing. Pass an "A1"-style ref.
  */
 export function setActiveCell(ws: Worksheet, ref: string): void {
   const view = ensurePrimaryView(ws);
   const selection = view.selection ?? {};
-  // Excel typically also sets sqref to the same cell when a single
-  // cell is the active one. Only override sqref if it's missing or
-  // tracked the previous activeCell, so explicit selections survive.
+  // Excel typically also sets sqref to the same cell when a single cell is the
+  // active one. Only override sqref if it's missing or tracked the previous
+  // activeCell, so explicit selections survive.
   const prevActive = selection.activeCell;
   if (selection.sqref === undefined || selection.sqref === prevActive) {
     selection.sqref = ref;
@@ -1213,10 +1197,10 @@ export function setActiveCell(ws: Worksheet, ref: string): void {
 }
 
 /**
- * Set the selected range (sqref) on the primary SheetView. Accepts
- * a single cell ("A1"), a single range ("A1:B5"), or a multi-cell
- * range string ("A1 C3:D4"). Leaves activeCell untouched unless
- * absent — in which case it's set to the first ref of `sqref`.
+ * Set the selected range (sqref) on the primary SheetView. Accepts a single
+ * cell ("A1"), a single range ("A1:B5"), or a multi-cell range string ("A1
+ * C3:D4"). Leaves activeCell untouched unless absent — in which case it's set
+ * to the first ref of `sqref`.
  */
 export function setSelectedRange(ws: Worksheet, sqref: string): void {
   const view = ensurePrimaryView(ws);
@@ -1230,10 +1214,10 @@ export function setSelectedRange(ws: Worksheet, sqref: string): void {
 }
 
 /**
- * Set values across a rectangular range from a 2-D array. `rows[0]`
- * is laid down starting at the top-left of `range`; subsequent rows
- * follow. `null` / `undefined` entries skip the cell. Useful for
- * dropping a header + data block in one call.
+ * Set values across a rectangular range from a 2-D array. `rows[0]` is laid
+ * down starting at the top-left of `range`; subsequent rows follow. `null` /
+ * `undefined` entries skip the cell. Useful for dropping a header + data block
+ * in one call.
  */
 export function setRangeValues(
   ws: Worksheet,
@@ -1253,9 +1237,8 @@ export function setRangeValues(
 }
 
 /**
- * Iterate over every cell coordinate in a range, calling `visit`
- * once per (row, col). Allocates the cell on first touch so callers
- * can mutate it freely.
+ * Iterate over every cell coordinate in a range, calling `visit` once per (row,
+ * col). Allocates the cell on first touch so callers can mutate it freely.
  */
 export function applyToRange(
   ws: Worksheet,
@@ -1273,9 +1256,9 @@ export function applyToRange(
 }
 
 /**
- * Read a rectangular range as a dense 2-D array of values. Empty
- * cells yield `null`. The shape is `[maxRow - minRow + 1] ×
- * [maxCol - minCol + 1]`. Inverse of {@link setRangeValues}.
+ * Read a rectangular range as a dense 2-D array of values. Empty cells yield
+ * `null`. The shape is `[maxRow - minRow + 1] × [maxCol - minCol + 1]`. Inverse
+ * of {@link setRangeValues}.
  */
 export function getRangeValues(ws: Worksheet, range: string): (CellValue | null)[][] {
   const { minRow, maxRow, minCol, maxCol } = parseRange(range);
@@ -1293,16 +1276,16 @@ export function getRangeValues(ws: Worksheet, range: string): (CellValue | null)
 }
 
 /**
- * Copy every populated cell from `source` to `target` (within the
- * same worksheet, or across worksheets via `targetWs`). Cells are
- * shallow-cloned: `value` and `styleId` carry over but `row`/`col`
- * are rewritten. The target's existing cells in the destination
- * extent are overwritten; cells outside are untouched.
+ * Copy every populated cell from `source` to `target` (within the same
+ * worksheet, or across worksheets via `targetWs`). Cells are shallow-cloned:
+ * `value` and `styleId` carry over but `row`/`col` are rewritten. The target's
+ * existing cells in the destination extent are overwritten; cells outside are
+ * untouched.
  *
- * The source and target ranges define the top-left corner — their
- * dimensions need not match. If the target range is smaller than the
- * source, only the cells that fit within the target's extent are
- * copied; if larger, only the source's extent is filled.
+ * The source and target ranges define the top-left corner — their dimensions
+ * need not match. If the target range is smaller than the source, only the
+ * cells that fit within the target's extent are copied; if larger, only the
+ * source's extent is filled.
  *
  * Returns the number of cells copied.
  */
@@ -1339,12 +1322,11 @@ export function copyRange(
 
 /**
  * Move every populated cell from `source` to `target`. Equivalent to
- * `copyRange` followed by clearing the source. When the ranges
- * overlap on the same sheet, the copy walks in the direction that
- * preserves data — high-to-low along any axis where the move
- * shifts forward, low-to-high otherwise — so cells aren't
- * overwritten before they've been read. Returns the number of cells
- * moved.
+ * `copyRange` followed by clearing the source. When the ranges overlap on the
+ * same sheet, the copy walks in the direction that preserves data — high-to-low
+ * along any axis where the move shifts forward, low-to-high otherwise — so
+ * cells aren't overwritten before they've been read. Returns the number of
+ * cells moved.
  */
 export function moveRange(
   ws: Worksheet,
@@ -1359,8 +1341,8 @@ export function moveRange(
   const dc = dst.minCol - src.minCol;
   const maxRowOffset = Math.min(src.maxRow - src.minRow, dst.maxRow - dst.minRow);
   const maxColOffset = Math.min(src.maxCol - src.minCol, dst.maxCol - dst.minCol);
-  // Snapshot the source cells so overlapping moves on the same sheet
-  // don't read post-write values during the copy.
+  // Snapshot the source cells so overlapping moves on the same sheet don't read
+  // post-write values during the copy.
   const snap: Array<{ row: number; col: number; cell: Cell }> = [];
   for (let i = 0; i <= maxRowOffset; i++) {
     const srcRow = ws.rows.get(src.minRow + i);
@@ -1371,8 +1353,8 @@ export function moveRange(
       snap.push({ row: src.minRow + i, col: src.minCol + j, cell: srcCell });
     }
   }
-  // Clear the entire source band on the source sheet first so the
-  // pre-existing source cells are gone before we land copies on top.
+  // Clear the entire source band on the source sheet first so the pre-existing
+  // source cells are gone before we land copies on top.
   for (let i = 0; i <= maxRowOffset; i++) {
     const rowIdx = src.minRow + i;
     const srcRow = ws.rows.get(rowIdx);
@@ -1380,8 +1362,8 @@ export function moveRange(
     for (let j = 0; j <= maxColOffset; j++) srcRow.delete(src.minCol + j);
     if (srcRow.size === 0) ws.rows.delete(rowIdx);
   }
-  // Replay the snapshot into the destination — value, styleId, and
-  // optional hyperlinkId / commentId.
+  // Replay the snapshot into the destination — value, styleId, and optional
+  // hyperlinkId / commentId.
   for (const entry of snap) {
     const { row, col, cell } = entry;
     const dstRow = row + dr;
@@ -1394,10 +1376,9 @@ export function moveRange(
 }
 
 /**
- * Read all populated values in a single column. Returns one `(CellValue
- * | null)` per row in `[minRow, maxRow]` (defaults to row 1 ..
- * `getMaxRow(ws)`). Empty cells yield `null`. Returns `[]` when the
- * worksheet is empty.
+ * Read all populated values in a single column. Returns one `(CellValue |
+ * null)` per row in `[minRow, maxRow]` (defaults to row 1 .. `getMaxRow(ws)`).
+ * Empty cells yield `null`. Returns `[]` when the worksheet is empty.
  */
 export function getColumnValues(
   ws: Worksheet,
@@ -1417,9 +1398,9 @@ export function getColumnValues(
 }
 
 /**
- * Read all populated values in a single row. Returns one `(CellValue
- * | null)` per column in `[minCol, maxCol]` (defaults to col 1 ..
- * `getMaxCol(ws)` when the row exists, otherwise `[]`).
+ * Read all populated values in a single row. Returns one `(CellValue | null)`
+ * per column in `[minCol, maxCol]` (defaults to col 1 .. `getMaxCol(ws)` when
+ * the row exists, otherwise `[]`).
  */
 export function getRowValues(
   ws: Worksheet,
@@ -1444,10 +1425,9 @@ export function getRowValues(
 }
 
 /**
- * Enumerate the populated cells of a row in column order. Unlike
- * {@link getRowValues}, this skips empty columns and yields the cell
- * objects (not just their values). Returns `[]` when the row is
- * absent or empty.
+ * Enumerate the populated cells of a row in column order. Unlike {@link
+ * getRowValues}, this skips empty columns and yields the cell objects (not just
+ * their values). Returns `[]` when the row is absent or empty.
  */
 export function getCellsInRow(ws: Worksheet, row: number): Cell[] {
   const rowMap = ws.rows.get(row);
@@ -1462,9 +1442,9 @@ export function getCellsInRow(ws: Worksheet, row: number): Cell[] {
 }
 
 /**
- * Enumerate the populated cells of a column in row order. Walks the
- * row map and collects whichever rows carry the column. Returns `[]`
- * when the worksheet has no cell in that column.
+ * Enumerate the populated cells of a column in row order. Walks the row map and
+ * collects whichever rows carry the column. Returns `[]` when the worksheet has
+ * no cell in that column.
  */
 export function getCellsInColumn(ws: Worksheet, col: number): Cell[] {
   const sortedRows = [...ws.rows.keys()].sort((a, b) => a - b);
@@ -1479,9 +1459,9 @@ export function getCellsInColumn(ws: Worksheet, col: number): Cell[] {
 // ---- column / row dimensions ----------------------------------------------
 
 /**
- * Look up the ColumnDimension covering `col`. The search walks every
- * registered entry's `min..max` range; that's fine for the typical
- * spreadsheet (a handful of column entries) and stays simple.
+ * Look up the ColumnDimension covering `col`. The search walks every registered
+ * entry's `min..max` range; that's fine for the typical spreadsheet (a handful
+ * of column entries) and stays simple.
  */
 export function getColumnDimension(ws: Worksheet, col: number): ColumnDimension | undefined {
   for (const dim of ws.columnDimensions.values()) {
@@ -1492,9 +1472,8 @@ export function getColumnDimension(ws: Worksheet, col: number): ColumnDimension 
 
 /**
  * Set a single-column ColumnDimension entry covering `col`. Shadows any
- * existing run that overlaps — runs are not split for now (callers that
- * need range-spanning entries can write directly into
- * `ws.columnDimensions`).
+ * existing run that overlaps — runs are not split for now (callers that need
+ * range-spanning entries can write directly into `ws.columnDimensions`).
  */
 export function setColumnDimension(
   ws: Worksheet,
@@ -1525,9 +1504,9 @@ export function hideColumn(ws: Worksheet, col: number): ColumnDimension {
 }
 
 /**
- * Convenience: unhide a column. Drops the `hidden` flag from the
- * column's dimension entry (and removes the entry altogether when no
- * other fields remain).
+ * Convenience: unhide a column. Drops the `hidden` flag from the column's
+ * dimension entry (and removes the entry altogether when no other fields
+ * remain).
  */
 export function unhideColumn(ws: Worksheet, col: number): void {
   const existing = getColumnDimension(ws, col);
@@ -1558,9 +1537,9 @@ export function unhideColumns(ws: Worksheet, fromCol: number, toCol: number): vo
 }
 
 /**
- * Set the default column width (characters) for cells without an
- * explicit ColumnDimension entry. Mirrors Excel's "Default Width"
- * dialog. Pass `undefined` to clear.
+ * Set the default column width (characters) for cells without an explicit
+ * ColumnDimension entry. Mirrors Excel's "Default Width" dialog. Pass
+ * `undefined` to clear.
  */
 export function setDefaultColumnWidth(ws: Worksheet, width: number | undefined): void {
   if (width === undefined) {
@@ -1574,9 +1553,9 @@ export function setDefaultColumnWidth(ws: Worksheet, width: number | undefined):
 }
 
 /**
- * Set the default row height (points) for rows without an explicit
- * RowDimension entry. Mirrors Excel's "Default Row Height" dialog.
- * Pass `undefined` to clear.
+ * Set the default row height (points) for rows without an explicit RowDimension
+ * entry. Mirrors Excel's "Default Row Height" dialog. Pass `undefined` to
+ * clear.
  */
 export function setDefaultRowHeight(ws: Worksheet, height: number | undefined): void {
   if (height === undefined) {
@@ -1597,10 +1576,10 @@ const validateOutlineLevel = (level: number): void => {
 };
 
 /**
- * Mirror Excel's "Data → Group → Rows" by stamping every row in
- * `[fromRow, toRow]` with an outline depth of `level` (default 1).
- * Allocates a RowDimension for each row that doesn't already have
- * one. Ungroup with {@link ungroupRows}.
+ * Mirror Excel's "Data → Group → Rows" by stamping every row in `[fromRow,
+ * toRow]` with an outline depth of `level` (default 1). Allocates a
+ * RowDimension for each row that doesn't already have one. Ungroup with {@link
+ * ungroupRows}.
  */
 export function groupRows(ws: Worksheet, fromRow: number, toRow: number, level = 1): void {
   validateOutlineLevel(level);
@@ -1614,8 +1593,8 @@ export function groupRows(ws: Worksheet, fromRow: number, toRow: number, level =
 }
 
 /**
- * Drop the outline grouping for every row in `[fromRow, toRow]`.
- * Removes the `outlineLevel` field from each affected RowDimension.
+ * Drop the outline grouping for every row in `[fromRow, toRow]`. Removes the
+ * `outlineLevel` field from each affected RowDimension.
  */
 export function ungroupRows(ws: Worksheet, fromRow: number, toRow: number): void {
   if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
@@ -1631,8 +1610,8 @@ export function ungroupRows(ws: Worksheet, fromRow: number, toRow: number): void
 }
 
 /**
- * Mirror Excel's "Data → Group → Columns" by stamping every column
- * in `[fromCol, toCol]` with an outline depth of `level` (default 1).
+ * Mirror Excel's "Data → Group → Columns" by stamping every column in
+ * `[fromCol, toCol]` with an outline depth of `level` (default 1).
  */
 export function groupColumns(ws: Worksheet, fromCol: number, toCol: number, level = 1): void {
   validateOutlineLevel(level);
@@ -1646,8 +1625,8 @@ export function groupColumns(ws: Worksheet, fromCol: number, toCol: number, leve
 }
 
 /**
- * Drop the outline grouping for every column in `[fromCol, toCol]`.
- * Removes the `outlineLevel` field from each affected ColumnDimension.
+ * Drop the outline grouping for every column in `[fromCol, toCol]`. Removes the
+ * `outlineLevel` field from each affected ColumnDimension.
  */
 export function ungroupColumns(ws: Worksheet, fromCol: number, toCol: number): void {
   if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
@@ -1669,10 +1648,10 @@ export function ungroupColumns(ws: Worksheet, fromCol: number, toCol: number): v
 }
 
 /**
- * Collapse a row outline group: hide every row in `[fromRow, toRow]`
- * and mark them `collapsed: true`. Mirrors Excel's `−` button on a
- * grouped row strip. Rows must already carry an `outlineLevel` from
- * {@link groupRows} for the collapse to render correctly.
+ * Collapse a row outline group: hide every row in `[fromRow, toRow]` and mark
+ * them `collapsed: true`. Mirrors Excel's `−` button on a grouped row strip.
+ * Rows must already carry an `outlineLevel` from {@link groupRows} for the
+ * collapse to render correctly.
  */
 export function collapseRowGroup(ws: Worksheet, fromRow: number, toRow: number): void {
   if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
@@ -1685,9 +1664,8 @@ export function collapseRowGroup(ws: Worksheet, fromRow: number, toRow: number):
 }
 
 /**
- * Expand a row outline group: drop the `hidden` and `collapsed`
- * flags on every row in `[fromRow, toRow]`. Leaves `outlineLevel`
- * and other dimensions intact.
+ * Expand a row outline group: drop the `hidden` and `collapsed` flags on every
+ * row in `[fromRow, toRow]`. Leaves `outlineLevel` and other dimensions intact.
  */
 export function expandRowGroup(ws: Worksheet, fromRow: number, toRow: number): void {
   if (!Number.isInteger(fromRow) || !Number.isInteger(toRow) || fromRow < 1 || toRow < fromRow) {
@@ -1703,10 +1681,9 @@ export function expandRowGroup(ws: Worksheet, fromRow: number, toRow: number): v
 }
 
 /**
- * Collapse a column outline group: hide + mark `collapsed: true` for
- * every column in `[fromCol, toCol]`. Columns must already carry an
- * `outlineLevel` from {@link groupColumns} for the collapse to
- * render correctly.
+ * Collapse a column outline group: hide + mark `collapsed: true` for every
+ * column in `[fromCol, toCol]`. Columns must already carry an `outlineLevel`
+ * from {@link groupColumns} for the collapse to render correctly.
  */
 export function collapseColumnGroup(ws: Worksheet, fromCol: number, toCol: number): void {
   if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
@@ -1719,8 +1696,8 @@ export function collapseColumnGroup(ws: Worksheet, fromCol: number, toCol: numbe
 }
 
 /**
- * Expand a column outline group: drop `hidden` and `collapsed` from
- * every column in `[fromCol, toCol]`. Leaves `outlineLevel` intact.
+ * Expand a column outline group: drop `hidden` and `collapsed` from every
+ * column in `[fromCol, toCol]`. Leaves `outlineLevel` intact.
  */
 export function expandColumnGroup(ws: Worksheet, fromCol: number, toCol: number): void {
   if (!Number.isInteger(fromCol) || !Number.isInteger(toCol) || fromCol < 1 || toCol < fromCol) {
@@ -1740,8 +1717,8 @@ export function expandColumnGroup(ws: Worksheet, fromCol: number, toCol: number)
 }
 
 /**
- * Per-cell effective string length, optionally scaled by the cell's
- * font size relative to Excel's default 11pt baseline.
+ * Per-cell effective string length, optionally scaled by the cell's font size
+ * relative to Excel's default 11pt baseline.
  */
 const effectiveLength = (cell: Cell, wb: { styles: { cellXfs: ReadonlyArray<{ fontId: number }>; fonts: ReadonlyArray<{ size?: number }> } } | undefined): number => {
   const len = cellValueAsString(cell.value).length;
@@ -1750,26 +1727,25 @@ const effectiveLength = (cell: Cell, wb: { styles: { cellXfs: ReadonlyArray<{ fo
   const fontId = xf?.fontId ?? 0;
   const font = wb.styles.fonts[fontId];
   const size = font?.size ?? 11;
-  // Linear scale: 11pt → 1.0; 22pt → 2.0; etc. Excel's actual
-  // character width grows roughly linearly with point size.
+  // Linear scale: 11pt → 1.0; 22pt → 2.0; etc. Excel's actual character width
+  // grows roughly linearly with point size.
   return len * (size / 11);
 };
 
 /**
- * Approximate autofit for a column. Scans every populated cell in
- * `col` (or in `[opts.minRow, opts.maxRow]`), measures
- * `cellValueAsString` length, and sets the column width to
- * `max(length) + padding`, clamped to `[opts.min ?? 4, opts.max ?? 80]`
- * and bounded above by Excel's hard limit of 255.
+ * Approximate autofit for a column. Scans every populated cell in `col` (or in
+ * `[opts.minRow, opts.maxRow]`), measures `cellValueAsString` length, and sets
+ * the column width to `max(length) + padding`, clamped to `[opts.min ?? 4,
+ * opts.max ?? 80]` and bounded above by Excel's hard limit of 255.
  *
- * Note: this is a string-length approximation — Excel sizes columns
- * with the font's actual character-width metrics. For plain ASCII in
- * the default Calibri 11 face the result is usually within ±1 width
- * unit; CJK / wide glyphs need extra padding.
+ * Note: this is a string-length approximation — Excel sizes columns with the
+ * font's actual character-width metrics. For plain ASCII in the default Calibri
+ * 11 face the result is usually within ±1 width unit; CJK / wide glyphs need
+ * extra padding.
  *
- * Pass `opts.workbook` (or use the `Wb` variant via `autofitColumns`)
- * to enable font-aware scaling — each cell's length is scaled by
- * `(cellFont.size / 11)` so 22pt headings get roughly 2× width.
+ * Pass `opts.workbook` (or use the `Wb` variant via `autofitColumns`) to enable
+ * font-aware scaling — each cell's length is scaled by `(cellFont.size / 11)`
+ * so 22pt headings get roughly 2× width.
  */
 export function autofitColumn(
   ws: Worksheet,
@@ -1802,11 +1778,10 @@ export function autofitColumn(
 }
 
 /**
- * Approximate autofit for every column with at least one populated
- * cell. Walks the worksheet once collecting per-column widest-length
- * + applies {@link autofitColumn} per column. `opts.workbook` enables
- * font-size-aware scaling; without it the helper falls back to plain
- * string length.
+ * Approximate autofit for every column with at least one populated cell. Walks
+ * the worksheet once collecting per-column widest-length + applies {@link
+ * autofitColumn} per column. `opts.workbook` enables font-size-aware scaling;
+ * without it the helper falls back to plain string length.
  */
 export function autofitColumns(
   ws: Worksheet,
@@ -1837,7 +1812,7 @@ export function autofitColumns(
 /**
  * Set widths for many columns in one call. `widths` maps either:
  * - an array `[12, 16, 20]` interpreted positionally starting at
- *   column `startCol` (default 1), or
+ * column `startCol` (default 1), or
  * - a `Record<number, number>` keyed by 1-based column index.
  * Each entry sets `customWidth: true`.
  */
@@ -1881,9 +1856,9 @@ export function setRowHeight(ws: Worksheet, row: number, height: number): RowDim
 }
 
 /**
- * Set heights for many rows in one call. `heights` accepts an array
- * (positional from `startRow`, default 1) or a `Record<number, number>`
- * keyed by 1-based row index. Each entry sets `customHeight: true`.
+ * Set heights for many rows in one call. `heights` accepts an array (positional
+ * from `startRow`, default 1) or a `Record<number, number>` keyed by 1-based
+ * row index. Each entry sets `customHeight: true`.
  */
 export function setRowHeights(
   ws: Worksheet,
@@ -1913,9 +1888,8 @@ export function hideRow(ws: Worksheet, row: number): RowDimension {
 }
 
 /**
- * Convenience: unhide a row. Drops the `hidden` flag from the row's
- * dimension entry (and removes the entry altogether when no other
- * fields remain).
+ * Convenience: unhide a row. Drops the `hidden` flag from the row's dimension
+ * entry (and removes the entry altogether when no other fields remain).
  */
 export function unhideRow(ws: Worksheet, row: number): void {
   const existing = ws.rowDimensions.get(row);
@@ -1944,9 +1918,9 @@ export function unhideRows(ws: Worksheet, fromRow: number, toRow: number): void 
 // ---- hyperlinks -----------------------------------------------------------
 
 /**
- * Replace any prior hyperlink on the same `ref` with the given options.
- * Pass `{ target }` for an external URL, `{ location }` for an internal
- * jump, or both. Returns the resulting Hyperlink record.
+ * Replace any prior hyperlink on the same `ref` with the given options. Pass `{
+ * target }` for an external URL, `{ location }` for an internal jump, or both.
+ * Returns the resulting Hyperlink record.
  */
 export function setHyperlink(
   ws: Worksheet,
@@ -1988,10 +1962,10 @@ export function listHyperlinks(ws: Worksheet): ReadonlyArray<Hyperlink> {
 }
 
 /**
- * Resolve a cell to its hyperlink (if any). Walks every hyperlink
- * entry on the worksheet and returns the first whose `ref` (a
- * single cell `"A1"` or a range `"A1:B5"`) covers the cell's
- * coordinate. Returns `undefined` when no entry matches.
+ * Resolve a cell to its hyperlink (if any). Walks every hyperlink entry on the
+ * worksheet and returns the first whose `ref` (a single cell `"A1"` or a range
+ * `"A1:B5"`) covers the cell's coordinate. Returns `undefined` when no entry
+ * matches.
  */
 export function getCellHyperlink(ws: Worksheet, c: Cell): Hyperlink | undefined {
   for (const h of ws.hyperlinks) {
@@ -2002,9 +1976,9 @@ export function getCellHyperlink(ws: Worksheet, c: Cell): Hyperlink | undefined 
 }
 
 /**
- * Resolve a cell to its legacy comment (if any). Same matching rule
- * as {@link getCellHyperlink} — the comment's `ref` may be a single
- * cell or a range, and the first containing entry wins.
+ * Resolve a cell to its legacy comment (if any). Same matching rule as {@link
+ * getCellHyperlink} — the comment's `ref` may be a single cell or a range, and
+ * the first containing entry wins.
  */
 export function getCellComment(ws: Worksheet, c: Cell): LegacyComment | undefined {
   for (const cm of ws.legacyComments) {
@@ -2125,8 +2099,8 @@ export function removeAllComments(ws: Worksheet): number {
 }
 
 /**
- * Replace just the text of an existing comment, leaving its ref and
- * author untouched. Returns `true` when the comment was found.
+ * Replace just the text of an existing comment, leaving its ref and author
+ * untouched. Returns `true` when the comment was found.
  */
 export function editCommentText(ws: Worksheet, ref: string, newText: string): boolean {
   const i = ws.legacyComments.findIndex((c) => c.ref === ref);
@@ -2138,8 +2112,8 @@ export function editCommentText(ws: Worksheet, ref: string, newText: string): bo
 }
 
 /**
- * Replace just the author of an existing comment, leaving its ref and
- * text untouched. Returns `true` when the comment was found.
+ * Replace just the author of an existing comment, leaving its ref and text
+ * untouched. Returns `true` when the comment was found.
  */
 export function editCommentAuthor(ws: Worksheet, ref: string, newAuthor: string): boolean {
   const i = ws.legacyComments.findIndex((c) => c.ref === ref);
@@ -2151,10 +2125,10 @@ export function editCommentAuthor(ws: Worksheet, ref: string, newAuthor: string)
 }
 
 /**
- * Rename every comment authored by `oldName` to `newName`. Returns
- * the number of comments updated. Useful when consolidating comments
- * after a team handoff (Excel's commentsN.xml dedups authors at save
- * time, so a single rename collapses cleanly).
+ * Rename every comment authored by `oldName` to `newName`. Returns the number
+ * of comments updated. Useful when consolidating comments after a team handoff
+ * (Excel's commentsN.xml dedups authors at save time, so a single rename
+ * collapses cleanly).
  */
 export function renameCommentAuthor(ws: Worksheet, oldName: string, newName: string): number {
   let n = 0;

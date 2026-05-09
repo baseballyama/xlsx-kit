@@ -1,4 +1,4 @@
-// DrawingML fills. Per docs/plan/08-charts-drawings.md §4.2.
+// DrawingML fills.
 
 import type { DmlColor, DmlColorWithMods } from './colors';
 

@@ -1,11 +1,10 @@
-// Worksheet XML reader. Per docs/plan/05-read-write.md §5.1.
+// Worksheet XML reader.
 //
-// **Stage 1**: DOM-based reader for `<sheetData>/<row>/<c>` covering
-// the common cell-value shapes — number / shared-string / boolean /
-// error / inline string / formula. SAX iterparse + dimension /
-// sheetView / mergeCells / hyperlinks etc. land in later iterations
-// of the loop. The function signature is stable so the SAX swap won't
-// break downstream callers.
+// **Stage 1**: DOM-based reader for `<sheetData>/<row>/<c>` covering the common
+// cell-value shapes — number / shared-string / boolean / error / inline string
+// / formula. SAX iterparse + dimension / sheetView / mergeCells / hyperlinks
+// etc. land in later iterations of the loop. The function signature is stable
+// so the SAX swap won't break downstream callers.
 
 import {
   type Cell,
@@ -178,14 +177,14 @@ export interface WorksheetReadContext {
   /** Resolves a worksheet-rels rId pointing at xl/tables/tableN.xml into a parsed TableDefinition. */
   loadTable?: (relId: string) => TableDefinition | undefined;
   /**
-   * Loader for comments parts (rels Type=…/comments). Called once per
-   * matching rel; the reader appends every returned LegacyComment onto
+   * Loader for comments parts (rels Type=…/comments). Called once per matching
+   * rel; the reader appends every returned LegacyComment onto
    * `ws.legacyComments`.
    */
   loadComments?: (relId: string) => ReadonlyArray<LegacyComment> | undefined;
   /**
-   * Loader for the worksheet's drawing part. Called once when the
-   * worksheet inline carries `<drawing r:id="...">`.
+   * Loader for the worksheet's drawing part. Called once when the worksheet
+   * inline carries `<drawing r:id="...">`.
    */
   loadDrawing?: (relId: string) => Drawing | undefined;
 }
@@ -197,10 +196,9 @@ interface SharedFormulaCache {
 }
 
 /**
- * Parse a `xl/worksheets/sheetN.xml` payload into a fully-populated
- * Worksheet. The returned worksheet's `title` matches the `title`
- * argument; the XML doesn't carry the sheet name (it lives in
- * `workbook.xml`).
+ * Parse a `xl/worksheets/sheetN.xml` payload into a fully-populated Worksheet.
+ * The returned worksheet's `title` matches the `title` argument; the XML
+ * doesn't carry the sheet name (it lives in `workbook.xml`).
  */
 export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx: WorksheetReadContext): Worksheet {
   const root = parseXml(bytes);
@@ -209,19 +207,16 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
   }
   const ws = makeWorksheet(title);
 
-  // <sheetPr codeName="…" filterMode="0" ...>
-  //   <tabColor rgb="FF0070C0"/>
-  //   <outlinePr summaryBelow="1" .../>
-  //   <pageSetUpPr fitToPage="1"/>
-  // </sheetPr>
+  // <sheetPr codeName="…" filterMode="0" ...> <tabColor rgb="FF0070C0"/>
+  // <outlinePr summaryBelow="1" .../> <pageSetUpPr fitToPage="1"/> </sheetPr>
   const sheetPrEl = findChild(root, SHEET_PR_TAG);
   if (sheetPrEl) {
     const props = parseSheetProperties(sheetPrEl);
     if (props) ws.sheetProperties = props;
   }
 
-  // <sheetFormatPr> defaults — recorded so dimension-less sheets still
-  // reflect any non-default workbook-wide row height / column width.
+  // <sheetFormatPr> defaults — recorded so dimension-less sheets still reflect
+  // any non-default workbook-wide row height / column width.
   const sheetFormatEl = findChild(root, SHEET_FORMAT_PR_TAG);
   if (sheetFormatEl) {
     const defaultColumnWidth = parseFloatAttr(sheetFormatEl.attrs['defaultColWidth']);
@@ -268,24 +263,24 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
-  // <sheetProtection> sits between sheetData and mergeCells per
-  // ECMA-376 §18.3.1.85. Parse all 16 boolean lock flags + optional
-  // password hash fields.
+  // <sheetProtection> sits between sheetData and mergeCells per ECMA-376
+  // §18.3.1.85. Parse all 16 boolean lock flags + optional password hash
+  // fields.
   const protectionEl = findChild(root, SHEET_PROTECTION_TAG);
   if (protectionEl) {
     ws.sheetProtection = parseSheetProtection(protectionEl);
   }
 
-  // <sortState ref=… columnSort=… caseSensitive=… sortMethod=…>
-  //   <sortCondition ref=… descending=… sortBy=… .../>
-  // </sortState>
+  // <sortState ref=… columnSort=… caseSensitive=… sortMethod=…> <sortCondition
+  // ref=… descending=… sortBy=… .../> </sortState>
   const ssEl = findChild(root, SORT_STATE_TAG);
   if (ssEl) {
     const ss = parseSortState(ssEl);
     if (ss) ws.sortState = ss;
   }
 
-  // <protectedRanges><protectedRange sqref=… name=… [hash quad]/></protectedRanges>
+  // <protectedRanges><protectedRange sqref=… name=… [hash
+  // quad]/></protectedRanges>
   const prsEl = findChild(root, PROTECTED_RANGES_TAG);
   if (prsEl) {
     for (const pr of findChildren(prsEl, PROTECTED_RANGE_TAG)) {
@@ -307,10 +302,10 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
-  // <mergeCells> sits as a sibling of <sheetData>; pull each <mergeCell ref="…"/>
-  // straight onto the worksheet's mergedCells list. We don't go through
-  // mergeCells() here because its overlap check is for *new* merges; the
-  // source xlsx is assumed valid.
+  // <mergeCells> sits as a sibling of <sheetData>; pull each <mergeCell
+  // ref="…"/> straight onto the worksheet's mergedCells list. We don't go
+  // through mergeCells() here because its overlap check is for *new* merges;
+  // the source xlsx is assumed valid.
   const mergeCellsEl = findChild(root, MERGE_CELLS_TAG);
   if (mergeCellsEl) {
     for (const m of findChildren(mergeCellsEl, MERGE_CELL_TAG)) {
@@ -320,8 +315,8 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
-  // <sheetViews> sits early in the worksheet but our load order doesn't
-  // matter — reading it after sheetData keeps the loops separable.
+  // <sheetViews> sits early in the worksheet but our load order doesn't matter
+  // — reading it after sheetData keeps the loops separable.
   const sheetViewsEl = findChild(root, SHEET_VIEWS_TAG);
   if (sheetViewsEl) {
     for (const v of findChildren(sheetViewsEl, SHEET_VIEW_TAG)) {
@@ -374,9 +369,9 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
-  // Comments don't have a sheet-inline anchor — they're discovered via the
-  // rels file (Type ending in /comments). Walk those and let load.ts read
-  // each commentsN.xml part.
+  // Comments don't have a sheet-inline anchor — they're discovered via the rels
+  // file (Type ending in /comments). Walk those and let load.ts read each
+  // commentsN.xml part.
   if (ctx.rels && ctx.loadComments) {
     for (const rel of ctx.rels.rels) {
       if (rel.type === `${REL_NS}/comments`) {
@@ -400,7 +395,8 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     if (rId) ws.legacyDrawingHFRId = rId;
   }
 
-  // <customSheetViews><customSheetView guid="…" scale="…" …>...</customSheetView></customSheetViews>
+  // <customSheetViews><customSheetView guid="…" scale="…"
+  // …>...</customSheetView></customSheetViews>
   const csvWrap = findChild(root, CUSTOM_SHEET_VIEWS_TAG);
   if (csvWrap) {
     for (const v of findChildren(csvWrap, CUSTOM_SHEET_VIEW_TAG)) {
@@ -427,7 +423,8 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
-  // <smartTags><cellSmartTags r="A1"><cellSmartTag type=…><cellSmartTagPr/>…</cellSmartTag></cellSmartTags></smartTags>
+  // <smartTags><cellSmartTags r="A1"><cellSmartTag
+  // type=…><cellSmartTagPr/>…</cellSmartTag></cellSmartTags></smartTags>
   const stEl = findChild(root, SMART_TAGS_TAG);
   if (stEl) {
     for (const cstNode of findChildren(stEl, CELL_SMART_TAGS_TAG)) {
@@ -465,9 +462,9 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     }
   }
 
-  // <printOptions> / <pageMargins> / <pageSetup> / <headerFooter> —
-  // page-setup typed model (B6). Sit between <hyperlinks> and the
-  // legacy drawing block per ECMA-376.
+  // <printOptions> / <pageMargins> / <pageSetup> / <headerFooter> — page-setup
+  // typed model (B6). Sit between <hyperlinks> and the legacy drawing block per
+  // ECMA-376.
   const poEl = findChild(root, PRINT_OPTIONS_TAG);
   if (poEl) {
     const po = parsePrintOptions(poEl);
@@ -528,16 +525,16 @@ export function parseWorksheetXml(bytes: Uint8Array | string, title: string, ctx
     if (pp) ws.phoneticPr = pp;
   }
 
-  // <dataConsolidate function="sum" topLabels="1"…><dataRefs>…</dataRefs></dataConsolidate>
+  // <dataConsolidate function="sum"
+  // topLabels="1"…><dataRefs>…</dataRefs></dataConsolidate>
   const dcEl = findChild(root, DATA_CONSOLIDATE_TAG);
   if (dcEl) {
     const dc = parseDataConsolidate(dcEl);
     if (dc) ws.dataConsolidate = dc;
   }
 
-  // <scenarios current="…" show="…" sqref="…"><scenario name="…">
-  //   <inputCells r="…" val="…"/>
-  // </scenario></scenarios>
+  // <scenarios current="…" show="…" sqref="…"><scenario name="…"> <inputCells
+  // r="…" val="…"/> </scenario></scenarios>
   const scEl = findChild(root, SCENARIOS_TAG);
   if (scEl) {
     const sl = parseScenarioList(scEl);
@@ -1180,13 +1177,12 @@ const parseIgnoredError = (node: XmlNode): IgnoredError => {
 };
 
 /**
- * Pick up every top-level `<worksheet>` child we don't model (e.g.
- * `<sheetPr>`, `<printOptions>`, `<pageMargins>`, `<pageSetup>`,
- * `<headerFooter>`, `<rowBreaks>`, `<colBreaks>`, `<oleObjects>`,
- * `<controls>`, `<picture>`, `<legacyDrawingHF>`, `<extLst>`) so the
- * writer can re-emit them around the modeled blocks. Anything before
- * `<sheetData>` (in document order) goes into the early bucket; the
- * rest goes into the late bucket.
+ * Pick up every top-level `<worksheet>` child we don't model (e.g. `<sheetPr>`,
+ * `<printOptions>`, `<pageMargins>`, `<pageSetup>`, `<headerFooter>`,
+ * `<rowBreaks>`, `<colBreaks>`, `<oleObjects>`, `<controls>`, `<picture>`,
+ * `<legacyDrawingHF>`, `<extLst>`) so the writer can re-emit them around the
+ * modeled blocks. Anything before `<sheetData>` (in document order) goes into
+ * the early bucket; the rest goes into the late bucket.
  */
 function captureWorksheetBodyExtras(root: XmlNode, ws: Worksheet): void {
   const beforeSheetData: XmlNode[] = [];
@@ -1457,7 +1453,8 @@ const decodeCachedValue = (raw: string | undefined, t: string): number | string 
     case 'e':
       return raw;
     case 's':
-      // Cached value of a formula resolving to a shared string is rare; keep as-is.
+      // Cached value of a formula resolving to a shared string is rare; keep
+      // as-is.
       return raw;
     default:
       return raw;
@@ -1465,9 +1462,9 @@ const decodeCachedValue = (raw: string | undefined, t: string): number | string 
 };
 
 // Strip the `_xlfn.` / `_xlfn._xlws.` prefixes Excel writes to disk for
-// future-functions on read. The writer side leaves formula text as-is,
-// but loaded files (typically from real Excel) ship the prefix and we
-// surface a clean bare-name formula to consumers.
+// future-functions on read. The writer side leaves formula text as-is, but
+// loaded files (typically from real Excel) ship the prefix and we surface a
+// clean bare-name formula to consumers.
 const FUTURE_FUNCTION_PREFIX_RE = /\b_xlfn\.(?:_xlws\.)?([A-Z][A-Z0-9.]*)/g;
 const stripFutureFunctionPrefix = (s: string): string =>
   s.length > 0 && s.includes('_xlfn.') ? s.replace(FUTURE_FUNCTION_PREFIX_RE, '$1') : s;
@@ -1517,9 +1514,9 @@ const handleFormula = (
         throw new OpenXmlSchemaError(`worksheet: <f t="shared" si="${si}"/> with no preceding origin formula`);
       }
       const dest = tupleToCoordinate(coord.col, coord.row);
-      // OOXML shared-formula text omits the leading '='; the translator
-      // treats unprefixed input as a LITERAL and skips ref shifting, so we
-      // re-prefix before translating and strip again on the way out.
+      // OOXML shared-formula text omits the leading '='; the translator treats
+      // unprefixed input as a LITERAL and skips ref shifting, so we re-prefix
+      // before translating and strip again on the way out.
       const translated = translateFormula(`=${cache.formula}`, cache.origin, { dest });
       const stripped = translated.startsWith('=') ? translated.slice(1) : translated;
       setSharedFormula(cell, si, stripped, undefined, opts);
@@ -1527,9 +1524,9 @@ const handleFormula = (
     }
     case 'dataTable': {
       // Data-Table formula (What-if Analysis output). Preserve every
-      // dt-specific attribute so the writer re-emits the exact same
-      // <f t="dataTable" r1="…" /> shape and Excel keeps treating the
-      // cell as a Data Table cell.
+      // dt-specific attribute so the writer re-emits the exact same <f
+      // t="dataTable" r1="…" /> shape and Excel keeps treating the cell as a
+      // Data Table cell.
       const ref = fNode.attrs['ref'];
       if (!ref) {
         throw new OpenXmlSchemaError('worksheet: <f t="dataTable"> missing @ref');
@@ -1725,8 +1722,8 @@ const parseCfRule = (node: XmlNode): ConditionalFormattingRule | undefined => {
   if (formulas.length > 0) opts.formulas = formulas;
 
   if (VISUAL_RULE_TYPES.has(type)) {
-    // Round-trip every non-formula child verbatim. Re-serialise to bytes
-    // then back to a string so the writer can emit the same markup.
+    // Round-trip every non-formula child verbatim. Re-serialise to bytes then
+    // back to a string so the writer can emit the same markup.
     const inner: string[] = [];
     for (const child of node.children) {
       if (child.name === FORMULA_TAG) continue;

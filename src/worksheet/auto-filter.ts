@@ -1,10 +1,9 @@
-// AutoFilter. Per docs/plan/07-rich-features.md §4.
+// AutoFilter.
 //
-// **Stage 1**: ref + filterColumns where each entry is the
-// `kind: 'filters'` variant — the value-list dropdown filter that
-// covers >95% of real-world spreadsheets. customFilters / top10 /
-// dynamicFilter / colorFilter / iconFilter / SortState are reserved
-// for later iterations.
+// **Stage 1**: ref + filterColumns where each entry is the `kind: 'filters'`
+// variant — the value-list dropdown filter that covers >95% of real-world
+// spreadsheets. customFilters / top10 / dynamicFilter / colorFilter /
+// iconFilter / SortState are reserved for later iterations.
 
 export type FilterColumn = {
   kind: 'filters';
@@ -49,9 +48,8 @@ export const addAutoFilter = (ws: Worksheet, ref: string): AutoFilter => {
 };
 
 /**
- * Add a value-list dropdown filter to a column inside the existing
- * AutoFilter range. `colId` is 0-based relative to the AutoFilter
- * left edge.
+ * Add a value-list dropdown filter to a column inside the existing AutoFilter
+ * range. `colId` is 0-based relative to the AutoFilter left edge.
  */
 export const addAutoFilterColumn = (
   ws: Worksheet,

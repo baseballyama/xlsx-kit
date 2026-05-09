@@ -1,11 +1,11 @@
-// Conditional formatting. Per docs/plan/07-rich-features.md §6.
+// Conditional formatting.
 //
-// Stage-1 covers the **value-based** rule kinds (cellIs / expression /
-// top10 / aboveAverage / containsText family / containsBlanks family /
-// duplicateValues / uniqueValues / timePeriod). The visual rule kinds
-// — colorScale / dataBar / iconSet — round-trip as opaque inner XML
-// (`innerXml` field) so the data survives a save / load cycle without
-// our needing to model cfvo / colors / iconSets fully.
+// Stage-1 covers the **value-based** rule kinds (cellIs / expression / top10 /
+// aboveAverage / containsText family / containsBlanks family / duplicateValues
+// / uniqueValues / timePeriod). The visual rule kinds — colorScale / dataBar /
+// iconSet — round-trip as opaque inner XML (`innerXml` field) so the data
+// survives a save / load cycle without our needing to model cfvo / colors /
+// iconSets fully.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type MultiCellRange, parseMultiCellRange } from './cell-range';
@@ -84,9 +84,9 @@ export interface ConditionalFormattingRule {
   /** 0..3 formula strings — varies by rule type. */
   formulas: string[];
   /**
-   * Raw inner XML for colorScale / dataBar / iconSet rules. Stage-1 stores
-   * the verbatim child markup so saves round-trip without our needing to
-   * model cfvo / colors / iconSets fully.
+   * Raw inner XML for colorScale / dataBar / iconSet rules. Stage-1 stores the
+   * verbatim child markup so saves round-trip without our needing to model cfvo
+   * / colors / iconSets fully.
    */
   innerXml?: string;
 }
@@ -162,8 +162,8 @@ const pushRule = (
 };
 
 /**
- * "If cell value [op] formula → apply dxf". Mirrors Excel's "Highlight
- * Cell Rules → ..." UI.
+ * "If cell value [op] formula → apply dxf". Mirrors Excel's "Highlight Cell
+ * Rules → ..." UI.
  */
 export const addCellIsRule = (
   ws: Worksheet,
@@ -350,8 +350,8 @@ const renderCfvo = (c: Cfvo): string => {
 const renderColor = (hex: string): string => `<color rgb="${escapeAttr(hex)}"/>`;
 
 /**
- * Color-scale rule — gradient between 2 or 3 reference points. Each
- * cfvo pairs with one color.
+ * Color-scale rule — gradient between 2 or 3 reference points. Each cfvo pairs
+ * with one color.
  */
 export const addColorScaleRule = (
   ws: Worksheet,
@@ -387,8 +387,8 @@ export const addColorScaleRule = (
 };
 
 /**
- * Data-bar rule — a gradient bar inside each cell sized to the value.
- * Defaults to `min`/`max` cfvos so the bar spans the visible range.
+ * Data-bar rule — a gradient bar inside each cell sized to the value. Defaults
+ * to `min`/`max` cfvos so the bar spans the visible range.
  */
 export const addDataBarRule = (
   ws: Worksheet,
@@ -425,9 +425,9 @@ export const addDataBarRule = (
 };
 
 /**
- * Icon-set rule — visual icons (arrows / lights / flags) drawn next
- * to each cell value. The number of cfvos depends on the icon set
- * (3 for `3Arrows`, 4 for `4Arrows`, 5 for `5Arrows`, etc).
+ * Icon-set rule — visual icons (arrows / lights / flags) drawn next to each
+ * cell value. The number of cfvos depends on the icon set (3 for `3Arrows`, 4
+ * for `4Arrows`, 5 for `5Arrows`, etc).
  */
 export const addIconSetRule = (
   ws: Worksheet,

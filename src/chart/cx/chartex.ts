@@ -1,15 +1,15 @@
 import type { ShapeProperties } from '../../drawing/dml/shape-properties';
 import type { TextBody } from '../../drawing/dml/text';
 
-// Chartex (cx:) data model. Per docs/plan/08-charts-drawings.md §6.
+// Chartex (cx:) data model.
 //
-// Chartex covers the eight Excel-2016 chart kinds that aren't part of
-// ECMA-376: Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel,
-// Box-and-Whisker, and Region Map. Unlike the legacy `c:` chart space
-// where each kind has its own `<c:barChart>`/`<c:lineChart>` element,
-// chartex puts the discriminator on the series — `<cx:series layoutId="...">` —
-// and stores all source data once at the top of the document under
-// `<cx:chartData>` so multiple series can share the same numbers.
+// Chartex covers the eight Excel-2016 chart kinds that aren't part of ECMA-376:
+// Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel, Box-and-Whisker, and
+// Region Map. Unlike the legacy `c:` chart space where each kind has its own
+// `<c:barChart>`/`<c:lineChart>` element, chartex puts the discriminator on the
+// series — `<cx:series layoutId="...">` — and stores all source data once at
+// the top of the document under `<cx:chartData>` so multiple series can share
+// the same numbers.
 
 /** Chartex layout discriminator. Lives on `<cx:series layoutId="...">`. */
 export type CxLayoutId =
@@ -316,9 +316,9 @@ export const makeCxChartSpace = (opts: {
 
 // ---- per-kind convenience factories ----------------------------------------
 //
-// Each helper builds a CxChartSpace with one CxData block (id 0) carrying
-// the appropriate dimension shapes for the layoutId. Callers populate the
-// dim point caches directly when they have data on hand.
+// Each helper builds a CxChartSpace with one CxData block (id 0) carrying the
+// appropriate dimension shapes for the layoutId. Callers populate the dim point
+// caches directly when they have data on hand.
 
 export const makeSunburstChart = (opts: { catRef?: string; valRef?: string; valFormatCode?: string }): CxChartSpace =>
   makeCxChartSpace({

@@ -14,8 +14,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const TRANSITIONAL_DIR = resolve(HERE, 'schemas/transitional');
-export const OPC_DIR = resolve(HERE, 'schemas/opc');
+const TRANSITIONAL_DIR = resolve(HERE, 'schemas/transitional');
+const OPC_DIR = resolve(HERE, 'schemas/opc');
 
 const SML = join(TRANSITIONAL_DIR, 'sml.xsd');
 const DML_MAIN = join(TRANSITIONAL_DIR, 'dml-main.xsd');
@@ -34,7 +34,7 @@ const ODOC = 'application/vnd.openxmlformats-officedocument';
 const PKG = 'application/vnd.openxmlformats-package';
 
 /** Maps OPC content type → absolute path of the XSD root file. */
-export const SCHEMA_BY_CONTENT_TYPE: Readonly<Record<string, string>> = {
+const SCHEMA_BY_CONTENT_TYPE: Readonly<Record<string, string>> = {
   // SpreadsheetML core
   [`${SHEETML}.sheet.main+xml`]: SML,
   [`${SHEETML}.template.main+xml`]: SML,

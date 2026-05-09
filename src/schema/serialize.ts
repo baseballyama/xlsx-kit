@@ -1,10 +1,9 @@
-// Schema-driven (de)serialisation. One switch-on-kind walk in each
-// direction; the schema does the work, no class-based descriptors.
+// Schema-driven (de)serialisation. One switch-on-kind walk in each direction;
+// the schema does the work, no class-based descriptors.
 //
-// Per docs/plan/03-foundations.md §4 / docs/plan/01-architecture.md §5.3
-// `toTree` and `fromTree` are pure functions over plain data. They run
-// the same on the schema layer's own types and on user types in the
-// styles / chart / drawing modules.
+// `toTree` and `fromTree` are pure functions over plain data. They run the same
+// on the schema layer's own types and on user types in the styles / chart /
+// drawing modules.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { qname } from '../xml/namespaces';
@@ -106,8 +105,8 @@ export function toTree<T>(value: T, schema: Schema<T>): XmlNode {
     const raw = v[def.key];
     if (raw === undefined) {
       // 'empty' has no `optional`; presence is binary on the value itself.
-      // 'sequence' is implicitly optional (undefined / [] = no items).
-      // 'raw' uses the same optional flag as text/object.
+      // 'sequence' is implicitly optional (undefined / [] = no items). 'raw'
+      // uses the same optional flag as text/object.
       if ((def.kind === 'text' || def.kind === 'object' || def.kind === 'raw') && !def.optional) {
         throw new OpenXmlSchemaError(`<${schema.tagname}>: required element "${def.key}" is missing`);
       }
@@ -137,9 +136,9 @@ export function toTree<T>(value: T, schema: Schema<T>): XmlNode {
       }
       case 'object': {
         const sub = toTree(raw as Record<string, unknown>, def.schema());
-        // Allow the schema to declare its own tagname OR be addressed
-        // by the parent under a different element name. We honour the
-        // schema's tagname (it's the canonical identity for that type).
+        // Allow the schema to declare its own tagname OR be addressed by the
+        // parent under a different element name. We honour the schema's tagname
+        // (it's the canonical identity for that type).
         if (def.name !== undefined && sub.name !== qname(def.xmlNs ?? schema.xmlNs ?? '', def.name)) {
           // Re-tag the produced element to the parent-defined name.
           sub.name = qname(def.xmlNs ?? schema.xmlNs ?? '', def.name);
@@ -151,9 +150,9 @@ export function toTree<T>(value: T, schema: Schema<T>): XmlNode {
         break;
       }
       case 'raw': {
-        // Splice the stored XmlNode back verbatim, but realign its name
-        // to the schema-declared position so the output is well-formed
-        // even when the caller mutates `name`.
+        // Splice the stored XmlNode back verbatim, but realign its name to the
+        // schema-declared position so the output is well-formed even when the
+        // caller mutates `name`.
         const sub = raw as XmlNode;
         const expected = elementXmlName(def, schema.xmlNs);
         if (sub.name !== expected) {
@@ -247,11 +246,11 @@ export function fromTree<T>(node: XmlNode, schema: Schema<T>): T {
       case 'nested': {
         const child = childByName(node, fullName);
         if (child === undefined) {
-          // The element itself was omitted: leave the field unset for
-          // optional nested elements, regardless of `default`. `default`
-          // here governs the "child present but @val omitted" case
-          // (e.g. <u/> meaning underline=single per ECMA-376 §18.4.13),
-          // not "child entirely absent".
+          // The element itself was omitted: leave the field unset for optional
+          // nested elements, regardless of `default`. `default` here governs
+          // the "child present but @val omitted" case (e.g. <u/> meaning
+          // underline=single per ECMA-376 §18.4.13), not "child entirely
+          // absent".
           if (!def.optional) {
             throw new OpenXmlSchemaError(`<${schema.tagname}>: required nested element "${def.key}" is missing`);
           }
@@ -296,8 +295,8 @@ export function fromTree<T>(node: XmlNode, schema: Schema<T>): T {
           break;
         }
         const itemSchema = def.schema();
-        // Address the child by the parent-declared name even if the
-        // child schema names itself differently.
+        // Address the child by the parent-declared name even if the child
+        // schema names itself differently.
         const renamed: XmlNode =
           child.name === qname(itemSchema.xmlNs ?? '', itemSchema.tagname)
             ? child

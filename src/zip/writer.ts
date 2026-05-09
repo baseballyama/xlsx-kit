@@ -1,17 +1,16 @@
-// ZIP write layer. Per docs/plan/03-foundations.md §2.2 / docs/plan/06-
-// streaming.md §3.4: streaming-deflate via fflate's `Zip` + per-entry
-// `ZipDeflate` / `ZipPassThrough` so the writer never holds the whole
-// archive in memory. Each addEntry pushes its bytes through the deflate
-// stream and the resulting ZIP chunks land on the sink one at a time —
-// the buffered `toBytes()` sink concatenates them on finish, while a
-// streaming sink can flush them as they arrive.
+// ZIP write layer. Streaming-deflate via fflate's `Zip` + per-entry
+// `ZipDeflate` / `ZipPassThrough` so the writer never holds the whole archive
+// in memory. Each addEntry pushes its bytes through the deflate stream and the
+// resulting ZIP chunks land on the sink one at a time — the buffered
+// `toBytes()` sink concatenates them on finish, while a streaming sink can
+// flush them as they arrive.
 //
-// ZIP64 (entry count > 65535): fflate's `Zip` emits a plain ZIP32 EOCD
-// in all cases, so on finalize we splice in a ZIP64 EOCD record + locator
-// when needed via `applyZip64EntryCountPatch`. That keeps the per-entry
-// LFH/CDH layout fflate produces (correct as long as no individual size
-// or offset overflows 32 bits) and only rewrites the trailing records
-// — enough for xlsx, which never approaches single-entry 4 GiB limits.
+// ZIP64 (entry count > 65535): fflate's `Zip` emits a plain ZIP32 EOCD in all
+// cases, so on finalize we splice in a ZIP64 EOCD record + locator when needed
+// via `applyZip64EntryCountPatch`. That keeps the per-entry LFH/CDH layout
+// fflate produces (correct as long as no individual size or offset overflows 32
+// bits) and only rewrites the trailing records — enough for xlsx, which never
+// approaches single-entry 4 GiB limits.
 
 import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import type { XlsxSink } from '../io/sink';
@@ -22,26 +21,25 @@ const ZIP32_MAX_ENTRIES = 0xffff;
 
 export interface ZipWriter {
   /**
-   * Stage an entry. Buffered: bytes are held until {@link finalize}.
-   * Streams (ReadableStream) will be accepted once the streaming writer
-   * lands; passing one today throws.
+   * Stage an entry. Buffered: bytes are held until {@link finalize}. Streams
+   * (ReadableStream) will be accepted once the streaming writer lands; passing
+   * one today throws.
    *
-   * `compress` defaults to `true`. Pass `false` for already-compressed
-   * payloads (PNG/JPEG/zip-as-binary content like vbaProject.bin) so
-   * we don't pay deflate costs for no gain.
+   * `compress` defaults to `true`. Pass `false` for already-compressed payloads
+   * (PNG/JPEG/zip-as-binary content like vbaProject.bin) so we don't pay
+   * deflate costs for no gain.
    */
   addEntry(path: string, bytes: Uint8Array | ReadableStream<Uint8Array>, opts?: { compress?: boolean }): Promise<void>;
 
   /**
-   * Open a streaming entry. Returns a writer the caller can `write()`
-   * chunks to and `end()` to seal the entry. Each chunk pushes through
-   * the same fflate `ZipDeflate` / `ZipPassThrough` machinery as
-   * `addEntry`, so peak memory stays at one chunk + deflate scratch
-   * even for multi-GB worksheets.
+   * Open a streaming entry. Returns a writer the caller can `write()` chunks to
+   * and `end()` to seal the entry. Each chunk pushes through the same fflate
+   * `ZipDeflate` / `ZipPassThrough` machinery as `addEntry`, so peak memory
+   * stays at one chunk + deflate scratch even for multi-GB worksheets.
    *
-   * Sequencing: only one streaming entry may be open at a time —
-   * `addEntry` and a second `addStreamingEntry` both throw until the
-   * current entry's `end()` resolves.
+   * Sequencing: only one streaming entry may be open at a time — `addEntry` and
+   * a second `addStreamingEntry` both throw until the current entry's `end()`
+   * resolves.
    */
   addStreamingEntry(path: string, opts?: { compress?: boolean }): StreamingEntryWriter;
 
@@ -61,10 +59,10 @@ export interface StreamingEntryWriter {
 }
 
 /**
- * ZIP writer backed by fflate's streaming `Zip` class. Entries are
- * pushed through `ZipDeflate` / `ZipPassThrough` streams as they arrive,
- * so peak memory stays at the size of the in-flight entry plus the
- * output buffer rather than the full archive.
+ * ZIP writer backed by fflate's streaming `Zip` class. Entries are pushed
+ * through `ZipDeflate` / `ZipPassThrough` streams as they arrive, so peak
+ * memory stays at the size of the in-flight entry plus the output buffer rather
+ * than the full archive.
  */
 export function createZipWriter(sink: XlsxSink): ZipWriter {
   if (!sink.toBytes) {
@@ -76,9 +74,9 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
   const seen = new Set<string>();
   const errors: Error[] = [];
   // fflate emits the [CD | EOCD] block in a single ondata call with
-  // `final=true`. We capture only that chunk so we can apply the ZIP64
-  // patch on finalize; all preceding entry-data chunks stream straight
-  // to the sink to preserve the writer's incremental flushing contract.
+  // `final=true`. We capture only that chunk so we can apply the ZIP64 patch on
+  // finalize; all preceding entry-data chunks stream straight to the sink to
+  // preserve the writer's incremental flushing contract.
   let finalChunk: Uint8Array | undefined;
   let zipFinishResolve: (() => void) | undefined;
   const zipFinishPromise = new Promise<void>((resolve) => {
@@ -90,8 +88,8 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
       errors.push(err instanceof Error ? err : new Error(String(err)));
       return;
     }
-    // ZipDeflate emits an empty trailer chunk on the final callback even
-    // when there are no bytes; guard against pushing an undefined chunk.
+    // ZipDeflate emits an empty trailer chunk on the final callback even when
+    // there are no bytes; guard against pushing an undefined chunk.
     if (chunk && chunk.byteLength > 0) {
       if (final) {
         // Buffer the trailing CD + EOCD block; written after possible patch.
@@ -206,9 +204,9 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
           throw new OpenXmlIoError('createZipWriter: stream error during finalize', { cause: errors[0] });
         }
 
-        // Apply the ZIP64 patch to fflate's [CD | EOCD] tail when the
-        // entry count exceeds ZIP32's 16-bit cap, then flush the
-        // (possibly patched) tail to the sink.
+        // Apply the ZIP64 patch to fflate's [CD | EOCD] tail when the entry
+        // count exceeds ZIP32's 16-bit cap, then flush the (possibly patched)
+        // tail to the sink.
         if (finalChunk) {
           const patched =
             seen.size > ZIP32_MAX_ENTRIES

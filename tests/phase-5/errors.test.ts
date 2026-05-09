@@ -1,5 +1,4 @@
-// Tests for the cellWatches / ignoredErrors high-level API. Per
-// docs/plan/13-full-excel-coverage.md §B8.
+// Tests for the cellWatches / ignoredErrors high-level API.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

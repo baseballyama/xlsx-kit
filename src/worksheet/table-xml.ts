@@ -1,8 +1,8 @@
-// xl/tables/tableN.xml read/write. Per docs/plan/07-rich-features.md §3.
+// xl/tables/tableN.xml read/write.
 //
-// Hand-rolled (no schema) because the table element's attribute set is
-// large and conditional, and we want minimum bundle weight. Pairs with
-// the loader/writer wiring in src/public/{load,save}.ts.
+// Hand-rolled (no schema) because the table element's attribute set is large
+// and conditional, and we want minimum bundle weight. Pairs with the
+// loader/writer wiring in src/public/{load,save}.ts.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { SHEET_MAIN_NS } from '../xml/namespaces';

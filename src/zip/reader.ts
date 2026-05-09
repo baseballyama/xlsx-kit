@@ -1,11 +1,11 @@
-// ZIP read layer. Per docs/plan/03-foundations.md §2.1.
+// ZIP read layer.
 //
-// `openZip(source)` walks the central directory once and inflates each
-// entry on demand inside `read(path)` (see `./random-access-reader.ts`).
-// That keeps peak memory at compressed-archive size + per-entry inflate
-// scratch, instead of holding every uncompressed entry resident at once
-// the way the old `unzipSync` shortcut did. The fallback path through
-// fflate's `unzipSync` is preserved for ZIP64 / non-standard archives.
+// `openZip(source)` walks the central directory once and inflates each entry on
+// demand inside `read(path)` (see `./random-access-reader.ts`). That keeps peak
+// memory at compressed-archive size + per-entry inflate scratch, instead of
+// holding every uncompressed entry resident at once the way the old `unzipSync`
+// shortcut did. The fallback path through fflate's `unzipSync` is preserved for
+// ZIP64 / non-standard archives.
 
 import type { XlsxSource } from '../io/source';
 import { OpenXmlIoError, OpenXmlNotImplementedError } from '../utils/exceptions';
@@ -35,9 +35,9 @@ export interface ZipArchive {
 }
 
 /**
- * Open a zip archive from any {@link XlsxSource}. Memory-bounded:
- * the source is fully materialised, then handed to fflate.unzipSync to
- * produce a path → bytes map.
+ * Open a zip archive from any {@link XlsxSource}. Memory-bounded: the source is
+ * fully materialised, then handed to fflate.unzipSync to produce a path → bytes
+ * map.
  */
 export async function openZip(source: XlsxSource): Promise<ZipArchive> {
   let bytes: Uint8Array;
@@ -49,9 +49,9 @@ export async function openZip(source: XlsxSource): Promise<ZipArchive> {
 
   // Encrypted xlsx files (Excel 2007+ password protection) wrap the real
   // package inside an OLE Compound File Binary container with the magic
-  // signature `D0 CF 11 E0 A1 B1 1A E1`. Detect that early and surface a
-  // clear "decrypt first" error rather than letting fflate fail with a
-  // generic invalid-zip message.
+  // signature `D0 CF 11 E0 A1 B1 1A E1`. Detect that early and surface a clear
+  // "decrypt first" error rather than letting fflate fail with a generic
+  // invalid-zip message.
   if (isCfbCompoundDocument(bytes)) {
     throw new OpenXmlNotImplementedError(
       'Encrypted xlsx is not supported. Decrypt with msoffcrypto-tool first.',

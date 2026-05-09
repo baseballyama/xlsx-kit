@@ -1,12 +1,11 @@
-// SheetView / Pane / Selection. Per docs/plan/04-core-model.md §4.3
-// (`Worksheet.views`) + the openpyxl reference at `worksheet/views.py`.
+// SheetView / Pane / Selection. (`Worksheet.views`) + the openpyxl reference at
+// `worksheet/views.py`.
 //
-// **Stage 1**: SheetView with the most-used field subset (tabSelected,
-// view, workbookViewId, showGridLines, zoomScale, topLeftCell, pane,
-// selection). Reader / writer cover the round-trip; `setFreezePanes`
-// builds the pane from an "A1"-style top-left ref. Per-pane
-// multi-selection blocks aren't widespread in real-world fixtures, so
-// stage-1 stores a single Selection.
+// **Stage 1**: SheetView with the most-used field subset (tabSelected, view,
+// workbookViewId, showGridLines, zoomScale, topLeftCell, pane, selection).
+// Reader / writer cover the round-trip; `setFreezePanes` builds the pane from
+// an "A1"-style top-left ref. Per-pane multi-selection blocks aren't widespread
+// in real-world fixtures, so stage-1 stores a single Selection.
 
 import { coordinateToTuple, tupleToCoordinate } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';

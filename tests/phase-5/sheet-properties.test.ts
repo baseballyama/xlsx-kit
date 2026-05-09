@@ -1,5 +1,5 @@
-// Tests for the typed `<sheetPr>` model. Per docs/plan/13-full-excel-coverage.md
-// §B7 (sheet view 拡張: tabColor / outlinePr / pageSetUpPr).
+// Tests for the typed `<sheetPr>` model. (sheet view 拡張: tabColor / outlinePr /
+// pageSetUpPr).
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

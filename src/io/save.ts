@@ -1,4 +1,4 @@
-// Public `saveWorkbook` entry point. Per docs/plan/05-read-write.md §1.2.
+// Public `saveWorkbook` entry point.
 //
 // **Stage 1 minimum**: emits the bare set of parts a Workbook needs to
 // round-trip through `loadWorkbook`:
@@ -11,8 +11,8 @@
 //     xl/styles.xml
 //     xl/sharedStrings.xml             (only when sst is non-empty)
 //
-// docProps / theme / VBA / drawings / charts are reserved for later
-// iterations — load tolerates their absence.
+// docProps / theme / VBA / drawings / charts are reserved for later iterations
+// — load tolerates their absence.
 
 import { chartToBytes } from '../chart/chart-xml';
 import { chartExToBytes } from '../chart/cx/chartex-xml';
@@ -118,8 +118,8 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   // Workbook-global table counter so xl/tables/tableN.xml ids stay unique.
   const tableEmits: Array<{ id: number; bytes: Uint8Array }> = [];
   let nextTableId = 1;
-  // Same counter pattern for comments parts. The comments part and the
-  // VML drawing share their N because Excel always emits them paired.
+  // Same counter pattern for comments parts. The comments part and the VML
+  // drawing share their N because Excel always emits them paired.
   interface CommentEmit {
     id: number;
     commentsBytes: Uint8Array;
@@ -137,8 +137,8 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   }
   const drawingEmits: DrawingEmit[] = [];
   let nextDrawingId = 1;
-  // Chart parts share a workbook-global counter so xl/charts/chartN.xml
-  // ids stay unique.
+  // Chart parts share a workbook-global counter so xl/charts/chartN.xml ids
+  // stay unique.
   const chartEmits: Array<{
     id: number;
     bytes: Uint8Array;
@@ -147,8 +147,8 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     rels?: Relationships;
   }> = [];
   let nextChartId = 1;
-  // Workbook-global counter for chartDrawing parts. Each chart with
-  // userShapes set produces one xl/drawings/chartDrawingN.xml entry.
+  // Workbook-global counter for chartDrawing parts. Each chart with userShapes
+  // set produces one xl/drawings/chartDrawingN.xml entry.
   const userShapeEmits: Array<{ id: number; bytes: Uint8Array }> = [];
   let nextUserShapesId = 1;
   // Workbook-global counter for image media parts. Excel uses
@@ -162,14 +162,14 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
   const imageEmits: ImageEmit[] = [];
   const imageExts = new Set<string>();
   let nextImageId = 1;
-  // Track separate counters so worksheet / chartsheet IDs do not collide
-  // (Excel uses xl/worksheets/sheetN.xml and xl/chartsheets/sheetM.xml
-  // independently of one another).
+  // Track separate counters so worksheet / chartsheet IDs do not collide (Excel
+  // uses xl/worksheets/sheetN.xml and xl/chartsheets/sheetM.xml independently
+  // of one another).
   let nextWorksheetId = 1;
   let nextChartsheetId = 1;
-  // Pre-claim every original rId so freshly allocated ones (sheets without
-  // a captured rId, plus modeled non-sheet rels) avoid collision with
-  // captured workbookRelsExtras and the modeled non-sheet original ids.
+  // Pre-claim every original rId so freshly allocated ones (sheets without a
+  // captured rId, plus modeled non-sheet rels) avoid collision with captured
+  // workbookRelsExtras and the modeled non-sheet original ids.
   const claimedRIds = new Set<string>();
   for (const ref of wb.sheets) {
     if (ref.rId !== undefined) claimedRIds.add(ref.rId);
@@ -202,10 +202,10 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     if (isChartsheet) nextChartsheetId++;
     else nextWorksheetId++;
     const sheetRels = makeRelationships();
-    // Pre-claim every captured relsExtras rId so freshly allocated modeled
-    // rels never clash. The extras themselves are appended to sheetRels at
-    // the end so any rId already used inside the worksheet body (drawing /
-    // hyperlink refs) keeps pointing at our newly emitted rel.
+    // Pre-claim every captured relsExtras rId so freshly allocated modeled rels
+    // never clash. The extras themselves are appended to sheetRels at the end
+    // so any rId already used inside the worksheet body (drawing / hyperlink
+    // refs) keeps pointing at our newly emitted rel.
     const sheetRelsClaimed = new Set<string>();
     const sheetRelsExtras = ref.kind === 'worksheet' ? (ref.sheet.relsExtras ?? []) : [];
     for (const e of sheetRelsExtras) sheetRelsClaimed.add(e.id);
@@ -262,19 +262,18 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
         target: `../drawings/drawing${id}.xml`,
       });
       // Walk drawing items: for each chart with a payload, allocate a
-      // workbook-global chartN id and a per-drawing rId. Emit the chart
-      // part + collect a drawing-rels entry so drawing.xml's
-      // <c:chart r:id> resolves.
+      // workbook-global chartN id and a per-drawing rId. Emit the chart part +
+      // collect a drawing-rels entry so drawing.xml's <c:chart r:id> resolves.
       const drawingRels = makeRelationships();
       const itemsForXml: DrawingItem[] = [];
       for (const item of drawing.items) {
         if (item.content.kind === 'chart' && (item.content.chart.space || item.content.chart.cxSpace)) {
           const chartId = nextChartId++;
           const chartRId = `rId${drawingRels.rels.length + 1}`;
-          // chartex parts use a different relationship Type than the
-          // legacy ECMA-376 charts. Excel rejects the workbook when the
-          // drawing rels claim a `relationships/chart` target that
-          // actually contains a `cx:chartSpace` root.
+          // chartex parts use a different relationship Type than the legacy
+          // ECMA-376 charts. Excel rejects the workbook when the drawing rels
+          // claim a `relationships/chart` target that actually contains a
+          // `cx:chartSpace` root.
           const isCxChart = item.content.chart.cxSpace !== undefined;
           drawingRels.rels.push({
             id: chartRId,
@@ -289,9 +288,9 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
             });
           } else if (item.content.chart.space) {
             const space = item.content.chart.space;
-            // If the chart carries user shapes, allocate the chartDrawingN
-            // part + a per-chart rels file referencing it, then bake the
-            // resulting r:id into the chart's <c:userShapes> element.
+            // If the chart carries user shapes, allocate the chartDrawingN part
+            // + a per-chart rels file referencing it, then bake the resulting
+            // r:id into the chart's <c:userShapes> element.
             let userShapesRId: string | undefined;
             let chartRelsFile: Relationships | undefined;
             if (space.userShapes && space.userShapes.shapes.length > 0) {
@@ -371,16 +370,16 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
         registerDrawing,
       });
     } else {
-      // Chartsheet: register the drawing (if any), then emit the
-      // chartsheet part with the resulting r:id baked in.
+      // Chartsheet: register the drawing (if any), then emit the chartsheet
+      // part with the resulting r:id baked in.
       let drawingRId: string | undefined;
       if (ref.sheet.drawing) drawingRId = registerDrawing(ref.sheet.drawing).rId;
       bytes = chartsheetToBytes(ref.sheet, drawingRId !== undefined ? { drawingRId } : {});
     }
-    // Append captured per-sheet rels passthrough (pivotTable / queryTable
-    // / printerSettings / oleObject / customProperty / threadedComment …)
-    // verbatim. Their original rIds were pre-claimed so the modeled
-    // allocations above never collide with them.
+    // Append captured per-sheet rels passthrough (pivotTable / queryTable /
+    // printerSettings / oleObject / customProperty / threadedComment …)
+    // verbatim. Their original rIds were pre-claimed so the modeled allocations
+    // above never collide with them.
     for (const e of sheetRelsExtras) {
       sheetRels.rels.push({ id: e.id, type: e.type, target: e.target });
     }
@@ -397,11 +396,11 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     sheetEmits.push(emit);
   });
 
-  // ---- 2. workbook rels -- sheets first, then sst (if any), then styles,
-  // then theme / vbaProject, then any captured workbookRelsExtras (e.g.
-  // pivotCacheDefinition rels referenced by `<pivotCaches>`).
-  // Modeled non-sheet rels prefer the rId captured at load time so any
-  // captured extras XML using that Id still resolves after the round-trip.
+  // ---- 2. workbook rels -- sheets first, then sst (if any), then styles, then
+  // theme / vbaProject, then any captured workbookRelsExtras (e.g.
+  // pivotCacheDefinition rels referenced by `<pivotCaches>`). Modeled non-sheet
+  // rels prefer the rId captured at load time so any captured extras XML using
+  // that Id still resolves after the round-trip.
   const wbRels = makeRelationships();
   wbRels.rels = sheetEmits.map((e) => ({
     id: e.id,
@@ -504,8 +503,8 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
     await writer.addEntry(ARC_SHARED_STRINGS, sharedStringsToBytes(sst));
   }
 
-  // ---- 5b. theme1.xml (passthrough) — only when wb carries one. The theme
-  // rel was already added to wbRels above so workbook.xml.rels references it.
+  // ---- 5b. theme1.xml (passthrough) — only when wb carries one. The theme rel
+  // was already added to wbRels above so workbook.xml.rels references it.
   if (wb.themeXml) await writer.addEntry(ARC_THEME, wb.themeXml);
 
   // ---- 5c. docProps/{core,app,custom}.xml (when present) ------------------
@@ -596,7 +595,8 @@ export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOpti
       if (ct !== undefined) addOverride(manifest, `/${path}`, ct);
     }
   }
-  // Each unique image extension gets a Default entry (`<Default Extension="png" ContentType="image/png"/>`).
+  // Each unique image extension gets a Default entry (`<Default Extension="png"
+  // ContentType="image/png"/>`).
   for (const ext of imageExts) {
     const fmt = (Object.entries(IMAGE_FORMAT_EXTENSION).find(([, e]) => e === ext) ?? [])[0] as
       | XlsxImageFormat
@@ -629,9 +629,9 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
   if (wb.workbookXmlExtras?.beforeSheets) {
     for (const node of wb.workbookXmlExtras.beforeSheets) parts.push(serializeChildNode(node));
   }
-  // Emit <workbookPr> from the typed model; fall back to a minimal
-  // {date1904: true} synthesis so a fresh workbook (no load history)
-  // still round-trips through Excel with the right epoch.
+  // Emit <workbookPr> from the typed model; fall back to a minimal {date1904:
+  // true} synthesis so a fresh workbook (no load history) still round-trips
+  // through Excel with the right epoch.
   const effectiveWp = effectiveWorkbookProperties(wb);
   if (effectiveWp) {
     const wp = serializeWorkbookProperties(effectiveWp);
@@ -684,10 +684,10 @@ function serializeWorkbookXml(wb: Workbook, sheetRIds: ReadonlyArray<string>): s
     const cp = serializeCalcProperties(wb.calcProperties);
     if (cp) parts.push(cp);
   }
-  // No default `<calcPr>` — Excel handles its absence by inserting one
-  // on save. Hand-rolled `calcId` values (especially the modern 191029)
-  // made Excel reject workbooks whose future-function formulas (LET /
-  // LAMBDA / FILTER…) couldn't be evaluated against the declared engine.
+  // No default `<calcPr>` — Excel handles its absence by inserting one on save.
+  // Hand-rolled `calcId` values (especially the modern 191029) made Excel
+  // reject workbooks whose future-function formulas (LET / LAMBDA / FILTER…)
+  // couldn't be evaluated against the declared engine.
   if (wb.oleSize !== undefined) {
     parts.push(`<oleSize ref="${escapeAttr(wb.oleSize)}"/>`);
   }
@@ -958,11 +958,11 @@ const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g,
 const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
 /**
- * Serialise an XmlNode child of `<workbook>` for inline injection back
- * into the workbook XML stream. Reuses serializeXml then strips the
- * declaration. Captured nodes carry Clark-notation names so namespace
- * prefixes get reallocated by serializeXml — Excel tolerates the extra
- * `xmlns="…"` declarations on each captured root.
+ * Serialise an XmlNode child of `<workbook>` for inline injection back into the
+ * workbook XML stream. Reuses serializeXml then strips the declaration.
+ * Captured nodes carry Clark-notation names so namespace prefixes get
+ * reallocated by serializeXml — Excel tolerates the extra `xmlns="…"`
+ * declarations on each captured root.
  */
 function serializeChildNode(node: import('../xml/tree').XmlNode): string {
   const bytes = serializeXmlNode(node, { xmlDeclaration: false });

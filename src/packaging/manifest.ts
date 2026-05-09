@@ -1,6 +1,5 @@
-// [Content_Types].xml — the package manifest. Tracks default content
-// types per file extension and per-part Override entries. Per
-// docs/plan/03-foundations.md §6.1.
+// [Content_Types].xml — the package manifest. Tracks default content types per
+// file extension and per-part Override entries.
 
 import { defineSchema, type Schema } from '../schema/core';
 import { fromTree, toTree } from '../schema/serialize';

@@ -1,14 +1,14 @@
-// DOM-style XML parser. fast-xml-parser does the lexing, then we walk
-// its preserveOrder tree to:
+// DOM-style XML parser. fast-xml-parser does the lexing, then we walk its
+// preserveOrder tree to:
 //   1. resolve `prefix:local` element + attribute names to Clark notation
 //      (`{ns}local`) using a namespace-declaration stack;
 //   2. fold text segments into XmlNode.text for text-only elements;
 //   3. drop XML declarations and processing instructions.
 //
-// Per docs/plan/03-foundations.md §3.4, DOCTYPE / external entity
-// declarations are rejected outright via a byte-level prescan before the
-// parser ever sees the input — fast-xml-parser does not expand external
-// entities, but we still want the offending document to fail loudly.
+// DOCTYPE / external entity declarations are rejected outright via a byte-level
+// prescan before the parser ever sees the input — fast-xml-parser does not
+// expand external entities, but we still want the offending document to fail
+// loudly.
 
 import { XMLParser } from 'fast-xml-parser';
 import { OpenXmlSchemaError } from '../utils/exceptions';
@@ -25,8 +25,8 @@ const decodeForPrescan = (input: Uint8Array | string): string => {
 };
 
 const checkForDoctype = (text: string): void => {
-  // Strip XML declaration so any subsequent `<!DOCTYPE` is the real thing.
-  // The declaration is always the first non-BOM token in well-formed XML.
+  // Strip XML declaration so any subsequent `<!DOCTYPE` is the real thing. The
+  // declaration is always the first non-BOM token in well-formed XML.
   const stripped = text.replace(/^﻿/, '');
   if (/<!DOCTYPE\b/.test(stripped)) {
     throw new OpenXmlSchemaError('DTD declarations are not permitted in OOXML payloads');
@@ -46,8 +46,8 @@ const parser = new XMLParser({
   trimValues: false,
   parseTagValue: false,
   parseAttributeValue: false,
-  // OOXML needs the standard XML entities (&amp; / &lt; / &gt; / &quot; / &apos;)
-  // expanded; HTML / numeric entities outside that set are not used in
+  // OOXML needs the standard XML entities (&amp; / &lt; / &gt; / &quot; /
+  // &apos;) expanded; HTML / numeric entities outside that set are not used in
   // SpreadsheetML payloads.
   processEntities: true,
   htmlEntities: false,
@@ -65,10 +65,9 @@ const TEXT_KEY = '#text';
 // ---- public API -------------------------------------------------------------
 
 /**
- * Parse a UTF-8 XML payload into an {@link XmlNode} tree. Element and
- * attribute names are returned in Clark notation. Throws
- * {@link OpenXmlSchemaError} on DTD/entity declarations or on multi-root
- * documents.
+ * Parse a UTF-8 XML payload into an {@link XmlNode} tree. Element and attribute
+ * names are returned in Clark notation. Throws {@link OpenXmlSchemaError} on
+ * DTD/entity declarations or on multi-root documents.
  */
 export function parseXml(input: Uint8Array | string): XmlNode {
   const text = decodeForPrescan(input);
@@ -81,8 +80,8 @@ export function parseXml(input: Uint8Array | string): XmlNode {
     throw new OpenXmlSchemaError('parseXml: failed to parse XML payload', { cause });
   }
 
-  // Skip XML declaration, processing instructions and any leading
-  // whitespace text nodes.
+  // Skip XML declaration, processing instructions and any leading whitespace
+  // text nodes.
   const roots: FxpEntry[] = [];
   for (const entry of raw) {
     const tag = elementTag(entry);
@@ -179,8 +178,8 @@ const filterAttrs = (rawAttrs: FxpAttrs | undefined, stack: NamespaceStack): { r
   if (rawAttrs === undefined) return { resolved };
   for (const [k, v] of Object.entries(rawAttrs)) {
     // xmlns / xmlns:* declarations: dropped from the XmlNode attribute table.
-    // The serializer rebuilds them from the Clark-notation namespaces it
-    // walks, so round-tripping does not require preserving the declarations.
+    // The serializer rebuilds them from the Clark-notation namespaces it walks,
+    // so round-tripping does not require preserving the declarations.
     if (k === 'xmlns' || k.startsWith('xmlns:')) continue;
     resolved[resolveAttrName(k, stack)] = v;
   }

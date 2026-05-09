@@ -1,12 +1,11 @@
-// Sheet-protection model. Per docs/plan/13-full-excel-coverage.md §B5
-// (without password hashing — saltValue / spinCount / algorithmName /
-// hashValue round-trip verbatim, but no helper to compute them yet).
+// Sheet-protection model. (without password hashing — saltValue / spinCount /
+// algorithmName / hashValue round-trip verbatim, but no helper to compute them
+// yet).
 //
-// Excel uses the listed booleans inversely: `true` typically means
-// "users CAN do this even when the sheet is locked" (e.g. `formatCells:
-// true` lets people change cell formatting on a protected sheet). The
-// only universally meaningful field is `sheet: true`, which actually
-// enables the lock.
+// Excel uses the listed booleans inversely: `true` typically means "users CAN
+// do this even when the sheet is locked" (e.g. `formatCells: true` lets people
+// change cell formatting on a protected sheet). The only universally meaningful
+// field is `sheet: true`, which actually enables the lock.
 
 export interface SheetProtection {
   /** Master toggle — when true the sheet is protected. */
@@ -29,9 +28,8 @@ export interface SheetProtection {
   autoFilter?: boolean;
   pivotTables?: boolean;
 
-  // Password-protection fields. Round-trip only — computing a fresh
-  // hash from a plaintext password lives behind a future helper (see
-  // docs/plan/13 §D for the hashing track).
+  // Password-protection fields. Round-trip only — computing a fresh hash from a
+  // plaintext password lives behind a future helper.
   /** Base-64 salt for the password hash. */
   saltValue?: string;
   /** Number of hash iterations. */
@@ -76,10 +74,9 @@ export const makeSheetProtection = (opts: SheetProtection = {}): SheetProtection
 import type { Worksheet } from './worksheet';
 
 /**
- * Excel's "Protect Sheet" defaults — when you click the dialog without
- * changing any checkbox, it locks structure but allows the listed
- * actions. This matches Excel's wire form (sheet=1 + the listed flags
- * left at their defaults).
+ * Excel's "Protect Sheet" defaults — when you click the dialog without changing
+ * any checkbox, it locks structure but allows the listed actions. This matches
+ * Excel's wire form (sheet=1 + the listed flags left at their defaults).
  */
 const PROTECT_SHEET_DEFAULTS: SheetProtection = Object.freeze({
   sheet: true,
@@ -101,12 +98,12 @@ const PROTECT_SHEET_DEFAULTS: SheetProtection = Object.freeze({
 });
 
 /**
- * Lock a worksheet with Excel's "Protect Sheet" defaults. Pass
- * `overrides` to allow specific actions while otherwise locked
- * (e.g. `{ sort: true, autoFilter: true }` for "allow sort + filter
- * on locked sheet"). Password-hash fields can be supplied as a quad
- * (algorithmName / hashValue / saltValue / spinCount); plaintext
- * passwords are out of scope until the D-tier hashing helper lands.
+ * Lock a worksheet with Excel's "Protect Sheet" defaults. Pass `overrides` to
+ * allow specific actions while otherwise locked (e.g. `{ sort: true,
+ * autoFilter: true }` for "allow sort + filter on locked sheet"). Password-hash
+ * fields can be supplied as a quad (algorithmName / hashValue / saltValue /
+ * spinCount); plaintext passwords are out of scope until the D-tier hashing
+ * helper lands.
  */
 export const protectSheet = (
   ws: Worksheet,

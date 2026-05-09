@@ -1,7 +1,5 @@
-// Tests for the typed <sheetProtection> model. Per
-// docs/plan/13-full-excel-coverage.md §B5 (without the password-hashing
-// helper — saltValue/spinCount/algorithmName/hashValue round-trip
-// verbatim).
+// Tests for the typed <sheetProtection> model. (without the password-hashing
+// helper — saltValue/spinCount/algorithmName/hashValue round-trip verbatim).
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

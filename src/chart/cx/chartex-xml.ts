@@ -1,5 +1,4 @@
 // xl/charts/chartN.xml read/write for the chartex (cx:) namespace.
-// Per docs/plan/08-charts-drawings.md §6.
 
 import {
   parseShapeProperties,
@@ -184,7 +183,8 @@ const parseTitle = (el: XmlNode): CxTitle => {
   const alignRaw = el.attrs['align'];
   const align = alignRaw === 'ctr' || alignRaw === 'l' || alignRaw === 'r' ? alignRaw : undefined;
   const overlay = boolAttr(el, 'overlay');
-  // Plain text body inside <cx:tx><cx:rich>... <a:r><a:t>text</a:t></a:r> </cx:rich></cx:tx>
+  // Plain text body inside <cx:tx><cx:rich>... <a:r><a:t>text</a:t></a:r>
+  // </cx:rich></cx:tx>
   let text: string | undefined;
   let txDataRef: string | undefined;
   const tx = findChild(el, TX);
@@ -430,12 +430,12 @@ const parseChart = (el: XmlNode): CxChart => {
   for (const sEl of findChildren(region, SERIES)) series.push(parseSeries(sEl));
   const axes: CxAxis[] = [];
   // Axes live as siblings of <cx:plotAreaRegion> under <cx:plotArea>, but
-  // tolerate writers (including older revisions of this library) that
-  // nest them inside the region.
+  // tolerate writers (including older revisions of this library) that nest them
+  // inside the region.
   for (const aEl of findChildren(plotAreaEl, AXIS)) axes.push(parseAxis(aEl));
   for (const aEl of findChildren(region, AXIS)) axes.push(parseAxis(aEl));
-  // <cx:plotSurface> sits inside plotAreaRegion and carries the plot
-  // background spPr.
+  // <cx:plotSurface> sits inside plotAreaRegion and carries the plot background
+  // spPr.
   const plotSurfaceEl = findChild(region, PLOT_SURFACE);
   const plotSurfaceSpPr = plotSurfaceEl ? parseShapeProperties(plotSurfaceEl) : undefined;
   const legendEl = findChild(el, LEGEND);
@@ -625,10 +625,10 @@ const serializeAxis = (a: CxAxis): string => {
   const attrs: string[] = [`id="${a.id}"`];
   if (a.hidden !== undefined) attrs.push(`hidden="${a.hidden ? '1' : '0'}"`);
   const parts: string[] = [`<cx:axis ${attrs.join(' ')}>`];
-  // Excel rejects an empty `<cx:axis>` — every axis needs at least a
-  // scaling child. Default to `<cx:valScaling/>` when the caller didn't
-  // pick one, which is the safer fallback (numeric axes are far more
-  // common than category axes in chartex layouts).
+  // Excel rejects an empty `<cx:axis>` — every axis needs at least a scaling
+  // child. Default to `<cx:valScaling/>` when the caller didn't pick one, which
+  // is the safer fallback (numeric axes are far more common than category axes
+  // in chartex layouts).
   let scalingEmitted = false;
   if (a.valScaling) {
     const va: string[] = [];
@@ -654,8 +654,8 @@ const serializeChart = (c: CxChart): string => {
   const parts: string[] = ['<cx:chart>'];
   if (c.title) parts.push(serializeTitle(c.title));
   parts.push('<cx:plotArea><cx:plotAreaRegion>');
-  // <cx:plotSurface> sits at the start of <cx:plotAreaRegion> and carries
-  // the plot background spPr.
+  // <cx:plotSurface> sits at the start of <cx:plotAreaRegion> and carries the
+  // plot background spPr.
   if (c.plotArea.spPr) parts.push(serializeShapeProperties(c.plotArea.spPr, 'cx:plotSurface'));
   for (const s of c.plotArea.series) parts.push(serializeSeries(s));
   parts.push('</cx:plotAreaRegion>');

@@ -1,16 +1,15 @@
-// Workbook-level <workbookProtection>. Per ECMA-376 §18.2.29 and
-// docs/plan/13-full-excel-coverage.md §B5 (workbook side).
+// Workbook-level <workbookProtection>. Per ECMA-376 §18.2.29 and (workbook
+// side).
 //
-// Two parallel password-hash quadruples cover Excel's "Protect
-// Workbook" dialog: one set locks structure / window resize, the
-// other locks the revision-tracking history. The wire-form attrs
-// round-trip verbatim — computing a fresh hash from a plaintext
-// password lives behind a future helper (D-tier in the roadmap).
+// Two parallel password-hash quadruples cover Excel's "Protect Workbook"
+// dialog: one set locks structure / window resize, the other locks the
+// revision-tracking history. The wire-form attrs round-trip verbatim —
+// computing a fresh hash from a plaintext password lives behind a future helper
+// (D-tier in the roadmap).
 //
-// Note: the non-hash `workbookPassword` / `revisionsPassword` attrs
-// are the legacy Excel 97/2000 hex hash form. Modern files use the
-// `*HashValue` + `*SaltValue` + `*SpinCount` + `*AlgorithmName` quad
-// instead.
+// Note: the non-hash `workbookPassword` / `revisionsPassword` attrs are the
+// legacy Excel 97/2000 hex hash form. Modern files use the `*HashValue` +
+// `*SaltValue` + `*SpinCount` + `*AlgorithmName` quad instead.
 
 export interface WorkbookProtection {
   /** Legacy 16-bit hex hash of the workbook password ("CC1A" etc.). */
@@ -66,8 +65,8 @@ import type { Workbook } from './workbook';
 /**
  * Lock the workbook with Excel's "Protect Workbook → Structure" default
  * (lockStructure=true). Pass `overrides` to also lock windows /
- * revision-tracking, or to attach a password-hash quad. Plaintext
- * password support is deferred until the D-tier hashing helper lands.
+ * revision-tracking, or to attach a password-hash quad. Plaintext password
+ * support is deferred until the D-tier hashing helper lands.
  */
 export const protectWorkbook = (
   wb: Workbook,

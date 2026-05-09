@@ -1,12 +1,11 @@
-// Node filesystem + Readable / Writable I/O helpers. Per docs/plan/03-
-// foundations.md §1.1.
+// Node filesystem + Readable / Writable I/O helpers.
 //
 // Kept separate from `./node.ts` so the buffer-only entry stays free of
-// `node:fs` / `node:stream` imports — important for the
-// `xlsx-kit/streaming` browser-targeted bundle, which can re-export
-// `fromBuffer` / `toBuffer` without dragging Node-only modules into the
-// browser surface. Users who want filesystem I/O reach this module
-// directly (or through `xlsx-kit/node` once that subpath lands).
+// `node:fs` / `node:stream` imports — important for the `xlsx-kit/streaming`
+// browser-targeted bundle, which can re-export `fromBuffer` / `toBuffer`
+// without dragging Node-only modules into the browser surface. Users who want
+// filesystem I/O reach this module directly (or through `xlsx-kit/node` once
+// that subpath lands).
 
 import { createReadStream, createWriteStream, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -16,10 +15,10 @@ import type { BufferedSinkWriter, XlsxSink } from './sink';
 import type { XlsxSource } from './source';
 
 /**
- * Wrap a filesystem path as an XlsxSource. `toBytes` reads the whole
- * file into memory; `toStream` opens a `fs.createReadStream` and bridges
- * it to a Web {@link ReadableStream} via `Readable.toWeb` so the ZIP
- * reader can iterate without loading the entire xlsx up front.
+ * Wrap a filesystem path as an XlsxSource. `toBytes` reads the whole file into
+ * memory; `toStream` opens a `fs.createReadStream` and bridges it to a Web
+ * {@link ReadableStream} via `Readable.toWeb` so the ZIP reader can iterate
+ * without loading the entire xlsx up front.
  */
 export function fromFile(path: string): XlsxSource {
   if (typeof path !== 'string' || path.length === 0) {
@@ -41,10 +40,10 @@ export function fromFile(path: string): XlsxSource {
 }
 
 /**
- * Synchronous variant of {@link fromFile}. Convenience for tooling /
- * scripts where the cost of `await fs.readFile` outweighs the
- * ergonomic gain. The returned source's `toBytes` resolves immediately
- * with the bytes already in memory.
+ * Synchronous variant of {@link fromFile}. Convenience for tooling / scripts
+ * where the cost of `await fs.readFile` outweighs the ergonomic gain. The
+ * returned source's `toBytes` resolves immediately with the bytes already in
+ * memory.
  */
 export function fromFileSync(path: string): XlsxSource {
   if (typeof path !== 'string' || path.length === 0) {
@@ -72,12 +71,11 @@ export function fromFileSync(path: string): XlsxSource {
 }
 
 /**
- * Filesystem sink. Each `write(chunk)` call streams the bytes to disk
- * via `fs.createWriteStream`, so the streaming ZIP backend can flush
- * chunks as they arrive instead of buffering the whole archive.
- * `result()` returns the destination path; `finish()` resolves with
- * the on-disk bytes for callers that want to inspect them after the
- * write (mirrors the toBuffer / toBlob shape).
+ * Filesystem sink. Each `write(chunk)` call streams the bytes to disk via
+ * `fs.createWriteStream`, so the streaming ZIP backend can flush chunks as they
+ * arrive instead of buffering the whole archive. `result()` returns the
+ * destination path; `finish()` resolves with the on-disk bytes for callers that
+ * want to inspect them after the write (mirrors the toBuffer / toBlob shape).
  */
 export function toFile(path: string): XlsxSink & { toBytes(): BufferedSinkWriter; result(): string } {
   if (typeof path !== 'string' || path.length === 0) {
@@ -133,10 +131,9 @@ export function toFile(path: string): XlsxSink & { toBytes(): BufferedSinkWriter
 }
 
 /**
- * Wrap a Node.js {@link Readable} as an XlsxSource. `toBytes` consumes
- * the entire stream synchronously (collecting chunks); `toStream`
- * bridges to a Web ReadableStream via `Readable.toWeb` so the ZIP
- * reader can pull chunks lazily.
+ * Wrap a Node.js {@link Readable} as an XlsxSource. `toBytes` consumes the
+ * entire stream synchronously (collecting chunks); `toStream` bridges to a Web
+ * ReadableStream via `Readable.toWeb` so the ZIP reader can pull chunks lazily.
  */
 export function fromReadable(readable: Readable): XlsxSource {
   if (!(readable instanceof Readable)) {
@@ -170,9 +167,9 @@ export function fromReadable(readable: Readable): XlsxSource {
 }
 
 /**
- * Wrap a Node.js {@link Writable} as an XlsxSink. Each write streams
- * directly to the underlying writable; `result()` returns the writable
- * itself for downstream chaining.
+ * Wrap a Node.js {@link Writable} as an XlsxSink. Each write streams directly
+ * to the underlying writable; `result()` returns the writable itself for
+ * downstream chaining.
  */
 export function toWritable(writable: Writable): XlsxSink & { toBytes(): BufferedSinkWriter; result(): Writable } {
   if (!(writable instanceof Writable)) {

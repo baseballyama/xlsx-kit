@@ -3,11 +3,11 @@
 // tokenizer is **not** an evaluator — it splits a formula string into a flat
 // list of typed tokens that the writer / shared-formula translator consume.
 //
-// Per docs/plan/04-core-model.md §5 and the project no-classes rule, the
-// state is kept in a `TokenizerState` struct and the parsing rules are free
-// functions that mutate it. The public surface is `tokenize(formula)` which
-// returns the resulting token array, plus `renderTokens(items)` for the
-// `Tokenizer.render()` equivalent (used by tests + array-formula round-trip).
+// Per the project no-classes rule, the state is kept in a `TokenizerState`
+// struct and the parsing rules are free functions that mutate it. The public
+// surface is `tokenize(formula)` which returns the resulting token array, plus
+// `renderTokens(items)` for the `Tokenizer.render()` equivalent (used by tests
+// + array-formula round-trip).
 
 import { OpenXmlError } from '../utils/exceptions';
 
@@ -92,9 +92,9 @@ export function makeOperand(value: string): Token {
 /**
  * Build a "subexpression" token (FUNC / PAREN / ARRAY, OPEN or CLOSE).
  *
- * `value` must end with one of `{ } ( )`. If `func` is true, the type is
- * forced to FUNC regardless of the bare-bracket heuristic — mirrors the
- * `func=True` overload in openpyxl `Token.make_subexp`.
+ * `value` must end with one of `{ } ( )`. If `func` is true, the type is forced
+ * to FUNC regardless of the bare-bracket heuristic — mirrors the `func=True`
+ * overload in openpyxl `Token.make_subexp`.
  */
 export function makeSubexp(value: string, func = false): Token {
   const last = value[value.length - 1];
@@ -353,9 +353,9 @@ function checkScientificNotation(s: TokenizerState): boolean {
 /**
  * Tokenize a formula string into a flat list of `Token`s.
  *
- * Mirrors `openpyxl.formula.tokenizer.Tokenizer(formula).items`. A formula
- * that does not start with `=` becomes a single LITERAL token. Empty input
- * yields the empty array.
+ * Mirrors `openpyxl.formula.tokenizer.Tokenizer(formula).items`. A formula that
+ * does not start with `=` becomes a single LITERAL token. Empty input yields
+ * the empty array.
  */
 export function tokenize(formula: string): Token[] {
   const s = createState(formula);

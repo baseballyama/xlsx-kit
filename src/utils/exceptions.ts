@@ -1,10 +1,9 @@
-// Error hierarchy for xlsx-kit. Per docs/plan/01-architecture.md §9
-// public APIs throw subclasses of OpenXmlError; internals chain via the
-// `cause` option (Node 18+ / modern browsers all support Error.cause).
+// Error hierarchy for xlsx-kit. Public APIs throw subclasses of OpenXmlError;
+// internals chain via the `cause` option (Node 18+ / modern browsers all
+// support Error.cause).
 //
-// Class is the one explicitly allowed exception to the no-class rule
-// (docs/plan/01-architecture.md §5.1) because Error subclasses are how
-// `instanceof` discrimination is expressed in JS.
+// Class is the one explicitly allowed exception to the no-class rule because
+// Error subclasses are how `instanceof` discrimination is expressed in JS.
 
 export interface OpenXmlErrorOptions {
   /** Underlying cause; preserved on the standard `cause` property. */

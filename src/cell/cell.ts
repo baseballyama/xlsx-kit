@@ -1,11 +1,10 @@
 // Cell value model. Mirrors openpyxl/openpyxl/cell/cell.py.
 //
-// A Cell is a plain mutable object: the worksheet stores millions of
-// these, so per-cell freezes / spreads aren't viable on the hot path.
-// Per docs/plan/04-core-model.md §2 the public surface stays small —
-// makeCell + getCoordinate + targeted setters — and uses
-// discriminated unions for the special CellValue shapes (formula,
-// rich text, duration, error).
+// A Cell is a plain mutable object: the worksheet stores millions of these, so
+// per-cell freezes / spreads aren't viable on the hot path. The public surface
+// stays small — makeCell + getCoordinate + targeted setters — and uses
+// discriminated unions for the special CellValue shapes (formula, rich text,
+// duration, error).
 
 import { columnLetterFromIndex, MAX_COL, MAX_ROW } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
@@ -91,9 +90,8 @@ export function getCoordinate(c: Cell): string {
 }
 
 /**
- * Direct value setter. No type inference, no validation beyond the
- * union — the caller is in charge. Use {@link bindValue} for the
- * "do what I mean" path.
+ * Direct value setter. No type inference, no validation beyond the union — the
+ * caller is in charge. Use {@link bindValue} for the "do what I mean" path.
  */
 export function setCellValue(c: Cell, value: CellValue): void {
   c.value = value;
@@ -105,9 +103,9 @@ export function setCellValue(c: Cell, value: CellValue): void {
  * - `string` matching an Excel error token → error variant
  * - other primitives / Date / null pass through verbatim
  *
- * Intentionally not the default — explicit is clearer for typed code,
- * and inferring on every write costs measurable time on the worksheet
- * write hot path.
+ * Intentionally not the default — explicit is clearer for typed code, and
+ * inferring on every write costs measurable time on the worksheet write hot
+ * path.
  */
 export function bindValue(c: Cell, value: number | string | boolean | Date | null): void {
   if (typeof value === 'string') {
@@ -156,9 +154,9 @@ export function setArrayFormula(
 }
 
 /**
- * Shared formula. The first cell in the group carries the formula text
- * + ref; subsequent cells with the same `si` carry only the index and
- * Excel reconstructs the formula via reference shifting.
+ * Shared formula. The first cell in the group carries the formula text + ref;
+ * subsequent cells with the same `si` carry only the index and Excel
+ * reconstructs the formula via reference shifting.
  */
 export function setSharedFormula(
   c: Cell,
@@ -182,18 +180,18 @@ export function setSharedFormula(
 }
 
 /**
- * Excel data-table formula (`<f t="dataTable">`). These appear as the
- * "What-if Analysis → Data Table" feature output: a 1- or 2-variable
- * sensitivity grid where the formula references one or two input
- * cells. The wire format mirrors openpyxl's `DataTableFormula`:
+ * Excel data-table formula (`<f t="dataTable">`). These appear as the "What-if
+ * Analysis → Data Table" feature output: a 1- or 2-variable sensitivity grid
+ * where the formula references one or two input cells. The wire format mirrors
+ * openpyxl's `DataTableFormula`:
  *
  * - `ref`     — inclusive cell range the formula spans.
  * - `r1`, `r2`— input cell coordinates ("$A$1" etc.).
  * - `dt2D`    — true for two-variable tables (uses both r1 and r2).
  * - `dtr`     — row-direction flag (true) vs column-direction (false).
  * - `del1`/`del2` — Excel marks one of these true when the
- *   corresponding input cell has been deleted; the formula keeps
- *   round-tripping so Excel can show the warning state.
+ * corresponding input cell has been deleted; the formula keeps round-tripping
+ * so Excel can show the warning state.
  * - `aca`/`ca` — alwaysCalculate / calculate flags.
  */
 export interface DataTableFormulaOpts {
@@ -210,9 +208,9 @@ export interface DataTableFormulaOpts {
 }
 
 /**
- * Set a data-table formula on a cell. Preserves all the dt-specific
- * attributes so the writer can re-emit `<f t="dataTable" r1="..." />`
- * verbatim and Excel keeps treating the cell as a Data Table cell.
+ * Set a data-table formula on a cell. Preserves all the dt-specific attributes
+ * so the writer can re-emit `<f t="dataTable" r1="..." />` verbatim and Excel
+ * keeps treating the cell as a Data Table cell.
  */
 export function setDataTableFormula(c: Cell, formula: string, opts: DataTableFormulaOpts): void {
   const v: FormulaValue = {
@@ -267,10 +265,10 @@ export function isEmptyCell(c: Cell): boolean {
 }
 
 /**
- * Type guard for `MergedCell` — true iff the cell is a placeholder for
- * a merged-range covered cell (the top-left of a merged range holds
- * the value; the rest are `MergedCell`). Use this to filter merge-
- * placeholders out of value-walking loops.
+ * Type guard for `MergedCell` — true iff the cell is a placeholder for a
+ * merged-range covered cell (the top-left of a merged range holds the value;
+ * the rest are `MergedCell`). Use this to filter merge-placeholders out of
+ * value-walking loops.
  */
 export function isMergedCell(c: Cell): c is MergedCell {
   return (c as MergedCell).merged === true;
@@ -282,19 +280,18 @@ export function isErrorCell(c: Cell): boolean {
 }
 
 /**
- * Get the formula text from a formula-bearing cell, or `undefined`
- * for non-formula cells. Equivalent to:
- *   isFormulaValue(c.value) ? c.value.formula : undefined
- * but spares callers the type-narrow + member access.
+ * Get the formula text from a formula-bearing cell, or `undefined` for
+ * non-formula cells. Equivalent to: isFormulaValue(c.value) ? c.value.formula :
+ * undefined but spares callers the type-narrow + member access.
  */
 export function getFormulaText(c: Cell): string | undefined {
   return isFormulaValue(c.value) ? c.value.formula : undefined;
 }
 
 /**
- * Get the cached value Excel last computed for a formula cell, or
- * `undefined` for non-formula / uncached cells. Useful for `data_only`
- * read paths that want the displayed result without re-evaluating.
+ * Get the cached value Excel last computed for a formula cell, or `undefined`
+ * for non-formula / uncached cells. Useful for `data_only` read paths that want
+ * the displayed result without re-evaluating.
  */
 export function getCachedFormulaValue(c: Cell): number | string | boolean | undefined {
   return isFormulaValue(c.value) ? c.value.cachedValue : undefined;
@@ -324,10 +321,10 @@ export function isDurationValue(v: CellValue): v is { kind: 'duration'; ms: numb
 
 /**
  * Coerce a CellValue to its plain-string display form. Numbers / booleans
- * convert via `String`; rich text concatenates run text; formulas yield
- * the cached value (or empty string when uncached); errors yield their
- * Excel token; durations yield `"<ms> ms"` with no formatting; Dates
- * yield `Date.toISOString()`; `null` yields `""`.
+ * convert via `String`; rich text concatenates run text; formulas yield the
+ * cached value (or empty string when uncached); errors yield their Excel token;
+ * durations yield `"<ms> ms"` with no formatting; Dates yield
+ * `Date.toISOString()`; `null` yields `""`.
  */
 export function cellValueAsString(v: CellValue): string {
   if (v === null) return '';
@@ -345,13 +342,12 @@ export function cellValueAsString(v: CellValue): string {
 }
 
 /**
- * Coerce a CellValue to `boolean | undefined`. Booleans pass through;
- * `'TRUE'` / `'true'` and `'FALSE'` / `'false'` (case-insensitive)
- * parse to true / false; numbers yield `false` for 0 and `true` for
- * any other finite value (matching Excel's truthy-number coercion);
- * formula cells return their cached boolean if any. Everything else
- * (null, Date, error, duration, rich-text, non-bool strings) yields
- * `undefined`.
+ * Coerce a CellValue to `boolean | undefined`. Booleans pass through; `'TRUE'`
+ * / `'true'` and `'FALSE'` / `'false'` (case-insensitive) parse to true /
+ * false; numbers yield `false` for 0 and `true` for any other finite value
+ * (matching Excel's truthy-number coercion); formula cells return their cached
+ * boolean if any. Everything else (null, Date, error, duration, rich-text,
+ * non-bool strings) yields `undefined`.
  */
 export function cellValueAsBoolean(v: CellValue): boolean | undefined {
   if (typeof v === 'boolean') return v;
@@ -370,12 +366,12 @@ export function cellValueAsBoolean(v: CellValue): boolean | undefined {
 }
 
 /**
- * Coerce a CellValue to a `Date` when one is meaningful. Pass-through
- * for `Date`-typed values; ISO-8601 strings (anything `new Date(s)`
- * parses to a finite time) round-trip; durations are interpreted as
- * `new Date(ms)`. Numbers, booleans, formulas, errors, rich text,
- * and null all return `undefined` — this helper does **not** apply
- * the Excel-serial-to-Date conversion (use `excelToDate` for that).
+ * Coerce a CellValue to a `Date` when one is meaningful. Pass-through for
+ * `Date`-typed values; ISO-8601 strings (anything `new Date(s)` parses to a
+ * finite time) round-trip; durations are interpreted as `new Date(ms)`.
+ * Numbers, booleans, formulas, errors, rich text, and null all return
+ * `undefined` — this helper does **not** apply the Excel-serial-to-Date
+ * conversion (use `excelToDate` for that).
  */
 export function cellValueAsDate(v: CellValue): Date | undefined {
   if (v instanceof Date) return v;
@@ -390,11 +386,11 @@ export function cellValueAsDate(v: CellValue): Date | undefined {
 }
 
 /**
- * Coerce a CellValue to a number when one is meaningful. Booleans yield
- * 0/1; numeric strings parse via `Number(s)`; rich-text concats then
- * parses; formulas with a numeric cached value pass through. Returns
- * `undefined` when there's no sensible numeric reading (text strings,
- * errors, dates, durations, null, empty).
+ * Coerce a CellValue to a number when one is meaningful. Booleans yield 0/1;
+ * numeric strings parse via `Number(s)`; rich-text concats then parses;
+ * formulas with a numeric cached value pass through. Returns `undefined` when
+ * there's no sensible numeric reading (text strings, errors, dates, durations,
+ * null, empty).
  */
 export function cellValueAsNumber(v: CellValue): number | undefined {
   if (v === null) return undefined;

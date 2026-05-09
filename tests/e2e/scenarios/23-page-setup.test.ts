@@ -1,17 +1,17 @@
-// Scenario 23: page setup / print options / margins / header-footer.
-// Output: 23-page-setup.xlsx
+// Scenario 23: page setup / print options / margins / header-footer. Output:
+// 23-page-setup.xlsx
 //
 // What to verify in Excel:
 // - File → Print preview shows landscape A4 with 1-inch top/bottom +
-//   0.5-inch left/right margins, fitted to one page wide.
+// 0.5-inch left/right margins, fitted to one page wide.
 // - Header (centre) reads "Quarterly Report — &P / &N". Footer (left)
-//   reads the file name `&F`, footer (right) "Confidential".
+// reads the file name `&F`, footer (right) "Confidential".
 // - Sheet has 80 rows so the print preview spans multiple pages, with
-//   a manual page break sitting above row 41 (View → Page Break Preview
-//   shows the dashed line at the break).
+// a manual page break sitting above row 41 (View → Page Break Preview shows the
+// dashed line at the break).
 //
 // Wired through the typed `printOptions` / `pageMargins` / `pageSetup` /
-// `headerFooter` / `rowBreaks` APIs (B6 in docs/plan/13).
+// `headerFooter` / `rowBreaks` APIs (B6 in).
 
 import { describe, expect, it } from 'vitest';
 import { addWorksheet, createWorkbook } from '../../../src/workbook/index';

@@ -1,10 +1,9 @@
 // User shapes (chartDrawing) — annotations on a chart.
-// Per docs/plan/08-charts-drawings.md §8.
 //
 // `xl/drawings/chartDrawingN.xml` is referenced from a `<c:chartSpace>` via
-// `<c:userShapes r:id="...">`. It contains text boxes, arrows, and other
-// shapes positioned either relatively (0..1 of chart width / height) or
-// absolutely (relative anchor + EMU extent).
+// `<c:userShapes r:id="...">`. It contains text boxes, arrows, and other shapes
+// positioned either relatively (0..1 of chart width / height) or absolutely
+// (relative anchor + EMU extent).
 
 import type { ShapeProperties, PositiveSize2D } from '../drawing/dml/shape-properties';
 import type { TextBody } from '../drawing/dml/text';

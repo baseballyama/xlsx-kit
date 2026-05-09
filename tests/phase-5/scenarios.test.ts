@@ -1,5 +1,4 @@
-// Tests for the typed <scenarios> model. Per
-// docs/plan/13-full-excel-coverage.md §B7 (Scenario Manager).
+// Tests for the typed <scenarios> model. (Scenario Manager).
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

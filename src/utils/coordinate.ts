@@ -1,10 +1,9 @@
 // Worksheet coordinate utilities. Mirrors openpyxl/openpyxl/utils/cell.py.
 //
-// Per docs/plan/03-foundations.md §7.1 and docs/plan/01-architecture.md
-// §7.4 these functions are on the worksheet read/write hot path
-// (millions of calls when streaming a sheet) so the implementations
-// stay branch-light, regex-based only at the entry points, with bounded
-// Map caches for the bidirectional column letter <-> index mapping.
+// These functions are on the worksheet read/write hot path (millions of calls
+// when streaming a sheet) so the implementations stay branch-light, regex-based
+// only at the entry points, with bounded Map caches for the bidirectional
+// column letter <-> index mapping.
 
 import { OpenXmlSchemaError } from './exceptions';
 
@@ -19,8 +18,8 @@ const indexByLetter = new Map<string, number>();
 const letterByIndex = new Map<number, string>();
 
 /**
- * 1-based column index → spreadsheet column letter ("A", "Z", "AA",
- * "XFD"). Throws OpenXmlSchemaError when out of range.
+ * 1-based column index → spreadsheet column letter ("A", "Z", "AA", "XFD").
+ * Throws OpenXmlSchemaError when out of range.
  */
 export function columnLetterFromIndex(n: number): string {
   const cached = letterByIndex.get(n);
@@ -40,8 +39,8 @@ export function columnLetterFromIndex(n: number): string {
 }
 
 /**
- * Column letter → 1-based column index. Case-insensitive but at most
- * 3 letters (the spec ceiling). Throws on empty / non-A-Z / over-range.
+ * Column letter → 1-based column index. Case-insensitive but at most 3 letters
+ * (the spec ceiling). Throws on empty / non-A-Z / over-range.
  */
 export function columnIndexFromLetter(letter: string): number {
   const cached = indexByLetter.get(letter);
@@ -98,8 +97,8 @@ const ROW_RANGE_RE = /^[$]?([1-9][0-9]*):[$]?([1-9][0-9]*)$/;
 const SHEET_RANGE_RE = /^(?:'((?:[^']|'')+)'|([^'!]+))!(.+)$/;
 
 /**
- * Parse a single-cell coordinate string ("A1", "$XFD$1048576") into
- * its column letter (always uppercased) and 1-based row.
+ * Parse a single-cell coordinate string ("A1", "$XFD$1048576") into its column
+ * letter (always uppercased) and 1-based row.
  */
 export function coordinateFromString(coord: string): CellCoordinate {
   const m = COORD_RE.exec(coord);
@@ -117,8 +116,8 @@ export function coordinateFromString(coord: string): CellCoordinate {
 }
 
 /**
- * Same as {@link coordinateFromString} but returning the column as its
- * 1-based numeric index. Thin convenience for the worksheet read path.
+ * Same as {@link coordinateFromString} but returning the column as its 1-based
+ * numeric index. Thin convenience for the worksheet read path.
  */
 export function coordinateToTuple(coord: string): CellCoordinateNumeric {
   const c = coordinateFromString(coord);
@@ -134,11 +133,11 @@ export function tupleToCoordinate(col: number, row: number): string {
 }
 
 /**
- * Predicate: true iff `s` is a valid single-cell A1 coordinate
- * (`"A1"`, `"XFD1048576"`). Strings with `$` absolute markers,
- * surrounding whitespace, ranges (`A1:B2`), or out-of-bound row /
- * column return false. Useful for sanitising user input before
- * passing to {@link coordinateToTuple} or `setCellByCoord`.
+ * Predicate: true iff `s` is a valid single-cell A1 coordinate (`"A1"`,
+ * `"XFD1048576"`). Strings with `$` absolute markers, surrounding whitespace,
+ * ranges (`A1:B2`), or out-of-bound row / column return false. Useful for
+ * sanitising user input before passing to {@link coordinateToTuple} or
+ * `setCellByCoord`.
  */
 export function isValidCellRef(s: unknown): s is string {
   if (typeof s !== 'string') return false;
@@ -155,10 +154,10 @@ export function isValidCellRef(s: unknown): s is string {
 }
 
 /**
- * Predicate: true iff `s` is a valid A1-style range expression —
- * single cell, two-corner range, whole column (`A:A`), or whole
- * row (`1:1`). `$` markers, whitespace, and out-of-bound bounds
- * fail. Sanity-check before {@link rangeBoundaries} / `parseRange`.
+ * Predicate: true iff `s` is a valid A1-style range expression — single cell,
+ * two-corner range, whole column (`A:A`), or whole row (`1:1`). `$` markers,
+ * whitespace, and out-of-bound bounds fail. Sanity-check before {@link
+ * rangeBoundaries} / `parseRange`.
  */
 export function isValidRangeRef(s: unknown): s is string {
   if (typeof s !== 'string' || s.length === 0) return false;
@@ -205,9 +204,9 @@ const columnIndexFromLetterUnchecked = (letters: string): number => {
 };
 
 /**
- * Predicate: true iff `s` is a valid 1..3-char column letter
- * (`"A"` through `"XFD"`, case-insensitive). Empty / over-long /
- * out-of-bound / non-string fails.
+ * Predicate: true iff `s` is a valid 1..3-char column letter (`"A"` through
+ * `"XFD"`, case-insensitive). Empty / over-long / out-of-bound / non-string
+ * fails.
  */
 export function isValidColumnLetter(s: unknown): s is string {
   if (typeof s !== 'string' || s.length === 0 || s.length > 3) return false;
@@ -217,25 +216,25 @@ export function isValidColumnLetter(s: unknown): s is string {
 }
 
 /**
- * Predicate: true iff `n` is a valid 1-based row index in
- * `[1, 1048576]`. Non-finite / non-integer / out-of-bound fails.
+ * Predicate: true iff `n` is a valid 1-based row index in `[1, 1048576]`.
+ * Non-finite / non-integer / out-of-bound fails.
  */
 export function isValidRowNumber(n: unknown): n is number {
   return typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= MAX_ROW;
 }
 
 /**
- * Predicate: true iff `n` is a valid 1-based column index in
- * `[1, 16384]`. Non-finite / non-integer / out-of-bound fails.
+ * Predicate: true iff `n` is a valid 1-based column index in `[1, 16384]`.
+ * Non-finite / non-integer / out-of-bound fails.
  */
 export function isValidColumnNumber(n: unknown): n is number {
   return typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= MAX_COL;
 }
 
 /**
- * Parse "A1:B5" / "A:A" / "1:1" / single-cell into 1-based
- * (minCol, minRow, maxCol, maxRow). Whole-column ranges fill rows to
- * [1, MAX_ROW]; whole-row ranges fill cols to [1, MAX_COL].
+ * Parse "A1:B5" / "A:A" / "1:1" / single-cell into 1-based (minCol, minRow,
+ * maxCol, maxRow). Whole-column ranges fill rows to [1, MAX_ROW]; whole-row
+ * ranges fill cols to [1, MAX_COL].
  */
 export function rangeBoundaries(range: string): CellRangeBoundaries {
   const trimmed = range.trim();
@@ -300,9 +299,9 @@ export function boundariesToRangeString(b: CellRangeBoundaries): string {
 }
 
 /**
- * Parse a sheet-qualified range ("Sheet1!A1:B5" / "'Quarter 1'!A1").
- * Sheet names with single quotes inside use SQL-style doubling
- * ("'Bob''s Sheet'!A1") — we unescape on the way out.
+ * Parse a sheet-qualified range ("Sheet1!A1:B5" / "'Quarter 1'!A1"). Sheet
+ * names with single quotes inside use SQL-style doubling ("'Bob''s Sheet'!A1")
+ * — we unescape on the way out.
  */
 export function parseSheetRange(input: string): {
   sheet: string;
@@ -322,14 +321,14 @@ export function parseSheetRange(input: string): {
 const BARE_SHEET_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 /**
- * Inverse of {@link parseSheetRange}: format a sheet title + range
- * (or single-cell ref) as `Sheet1!A1` or `'Quarter 1'!A1` per
- * Excel's sheet-qualified syntax. Single quotes inside the title are
- * escaped by doubling (`'Bob''s Sheet'`).
+ * Inverse of {@link parseSheetRange}: format a sheet title + range (or
+ * single-cell ref) as `Sheet1!A1` or `'Quarter 1'!A1` per Excel's
+ * sheet-qualified syntax. Single quotes inside the title are escaped by
+ * doubling (`'Bob''s Sheet'`).
  *
- * Quoting rule: sheet titles consisting only of `[A-Za-z_][A-Za-z0-9_]*`
- * are emitted bare; everything else (spaces, digits-leading, hyphens,
- * apostrophes, punctuation…) gets wrapped in single quotes.
+ * Quoting rule: sheet titles consisting only of `[A-Za-z_][A-Za-z0-9_]*` are
+ * emitted bare; everything else (spaces, digits-leading, hyphens, apostrophes,
+ * punctuation…) gets wrapped in single quotes.
  */
 export function formatSheetQualifiedRef(sheet: string, ref: string): string {
   if (BARE_SHEET_NAME.test(sheet)) return `${sheet}!${ref}`;

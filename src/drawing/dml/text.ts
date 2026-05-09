@@ -1,10 +1,10 @@
-// DrawingML text. Per docs/plan/08-charts-drawings.md §4.6.
+// DrawingML text.
 //
 // Text body (`<a:txBody>`) is the universal "rich text" container chart
-// elements use for titles, axis labels, legend entries, etc. The model
-// covers ECMA-376 §21.1.2 (Text Body), §21.1.2.2 (Text Body Properties),
-// §21.1.2.3 (List Style), §21.1.2.4 (Text Paragraph), §21.1.2.5 (Run /
-// Break / Field), and the Run / Paragraph property element groups.
+// elements use for titles, axis labels, legend entries, etc. The model covers
+// ECMA-376 §21.1.2 (Text Body), §21.1.2.2 (Text Body Properties), §21.1.2.3
+// (List Style), §21.1.2.4 (Text Paragraph), §21.1.2.5 (Run / Break / Field),
+// and the Run / Paragraph property element groups.
 
 import type { DmlColorWithMods } from './colors';
 import type { EffectsRef } from './effect';
@@ -197,9 +197,9 @@ export interface TextBodyProperties {
 }
 
 /**
- * `<a:lstStyle>` (list / level styles). ECMA-376 §21.1.2.4.12.
- * One ParagraphProperties per indent level (0..8). `defPPr` is the
- * default applied when no level-specific override exists.
+ * `<a:lstStyle>` (list / level styles). ECMA-376 §21.1.2.4.12. One
+ * ParagraphProperties per indent level (0..8). `defPPr` is the default applied
+ * when no level-specific override exists.
  */
 export interface TextListStyle {
   defPPr?: ParagraphProperties;

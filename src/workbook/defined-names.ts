@@ -1,13 +1,11 @@
-// Workbook-level defined names. Per docs/plan/07-rich-features.md §3
-// + the OOXML schema's `<definedName>` element.
+// Workbook-level defined names. Models the OOXML schema's `<definedName>` element.
 //
-// A defined name binds an identifier to a formula-style value
-// (`'Sheet 1'!$A$1:$B$10`, `SUM(A:A)`, etc). Workbook-scope names omit
-// `localSheetId`; sheet-scope names use the 0-based sheet index. Excel
-// reserves a handful of names with the `_xlnm.` prefix for built-in
-// uses (Print_Area, Print_Titles, Sheet_Title, etc) — those round-trip
-// here as plain DefinedName entries since the value semantics are the
-// same.
+// A defined name binds an identifier to a formula-style value (`'Sheet
+// 1'!$A$1:$B$10`, `SUM(A:A)`, etc). Workbook-scope names omit `localSheetId`;
+// sheet-scope names use the 0-based sheet index. Excel reserves a handful of
+// names with the `_xlnm.` prefix for built-in uses (Print_Area, Print_Titles,
+// Sheet_Title, etc) — those round-trip here as plain DefinedName entries since
+// the value semantics are the same.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 
@@ -43,8 +41,8 @@ import type { Workbook } from './workbook';
 
 /**
  * One parsed leg of a defined name's value. Defined-name values can be
- * comma-separated multi-range expressions (e.g. `_xlnm.Print_Titles`
- * sets `Sheet!$1:$1,Sheet!$A:$A`); this represents one such leg.
+ * comma-separated multi-range expressions (e.g. `_xlnm.Print_Titles` sets
+ * `Sheet!$1:$1,Sheet!$A:$A`); this represents one such leg.
  */
 export interface DefinedNameTarget {
   sheet: string;
@@ -53,10 +51,10 @@ export interface DefinedNameTarget {
 }
 
 /**
- * Add a workbook-scope or sheet-scope defined name. If a defined name
- * with the same `name` (and `scope`) already exists, it's replaced —
- * Excel allows one workbook-scope and one per-sheet-scope name, but
- * not two with the same scope. Returns the resulting `DefinedName`.
+ * Add a workbook-scope or sheet-scope defined name. If a defined name with the
+ * same `name` (and `scope`) already exists, it's replaced — Excel allows one
+ * workbook-scope and one per-sheet-scope name, but not two with the same scope.
+ * Returns the resulting `DefinedName`.
  */
 export const addDefinedName = (
   wb: Workbook,
@@ -74,14 +72,14 @@ export const addDefinedName = (
 };
 
 /**
- * High-level: register a defined name pointing at a worksheet range.
- * Combines {@link getRangeAddress} (sheet-qualified, properly quoted)
- * with {@link addDefinedName}, so the caller doesn't have to assemble
- * the formula string by hand.
+ * High-level: register a defined name pointing at a worksheet range. Combines
+ * {@link getRangeAddress} (sheet-qualified, properly quoted) with {@link
+ * addDefinedName}, so the caller doesn't have to assemble the formula string by
+ * hand.
  *
- * Pass `opts.localToSheet: true` to scope the name to the worksheet
- * (instead of the workbook). Re-using the same `name` + scope replaces
- * the previous entry (Excel's per-scope-uniqueness rule).
+ * Pass `opts.localToSheet: true` to scope the name to the worksheet (instead of
+ * the workbook). Re-using the same `name` + scope replaces the previous entry
+ * (Excel's per-scope-uniqueness rule).
  *
  * Throws when `localToSheet: true` is set but the worksheet isn't on
  * `wb.sheets` — that would be a stale Worksheet reference.
@@ -121,16 +119,14 @@ export const getDefinedName = (
 ): DefinedName | undefined => wb.definedNames.find((d) => d.name === name && d.scope === scope);
 
 /**
- * Resolve a defined name's `value` into one or more
- * {@link DefinedNameTarget}s. Comma-separated values (e.g.
- * `_xlnm.Print_Titles` typically sets `Sheet!$1:$1,Sheet!$A:$A`)
- * yield one entry per leg; a plain `Sheet!A1:B5` yields a single-
- * element array.
+ * Resolve a defined name's `value` into one or more {@link DefinedNameTarget}s.
+ * Comma-separated values (e.g. `_xlnm.Print_Titles` typically sets
+ * `Sheet!$1:$1,Sheet!$A:$A`) yield one entry per leg; a plain `Sheet!A1:B5`
+ * yields a single-element array.
  *
- * Returns `undefined` when the name doesn't exist; throws when the
- * value can't be parsed (e.g. a constant or a non-range formula —
- * defined names are sometimes used for things like `=42` or
- * `=SUM(A:A)` which aren't ranges).
+ * Returns `undefined` when the name doesn't exist; throws when the value can't
+ * be parsed (e.g. a constant or a non-range formula — defined names are
+ * sometimes used for things like `=42` or `=SUM(A:A)` which aren't ranges).
  */
 export const getDefinedNameTarget = (
   wb: Workbook,
@@ -139,17 +135,17 @@ export const getDefinedNameTarget = (
 ): DefinedNameTarget[] | undefined => {
   const dn = getDefinedName(wb, name, scope);
   if (!dn) return undefined;
-  // Defined-name values use `,` as the leg separator. Sheet titles
-  // can themselves contain commas inside `'...'` quotes — split on
-  // commas that aren't inside an unbalanced single-quoted segment.
+  // Defined-name values use `,` as the leg separator. Sheet titles can
+  // themselves contain commas inside `'...'` quotes — split on commas that
+  // aren't inside an unbalanced single-quoted segment.
   const legs: string[] = [];
   let current = '';
   let inQuote = false;
   for (let i = 0; i < dn.value.length; i++) {
     const c = dn.value[i];
     if (c === "'") {
-      // Doubled `''` inside a quoted run is the escape for a literal
-      // apostrophe — skip the second one without flipping the state.
+      // Doubled `''` inside a quoted run is the escape for a literal apostrophe
+      // — skip the second one without flipping the state.
       if (inQuote && dn.value[i + 1] === "'") {
         current += "''";
         i++;
@@ -171,8 +167,8 @@ export const getDefinedNameTarget = (
 };
 
 /**
- * Remove a defined name by identifier + scope. Returns true if any
- * entry was removed.
+ * Remove a defined name by identifier + scope. Returns true if any entry was
+ * removed.
  */
 export const removeDefinedName = (wb: Workbook, name: string, scope?: number): boolean => {
   const idx = wb.definedNames.findIndex((d) => d.name === name && d.scope === scope);
@@ -182,9 +178,9 @@ export const removeDefinedName = (wb: Workbook, name: string, scope?: number): b
 };
 
 /**
- * Read-only snapshot of every defined name. Pass `{ scope }` to
- * narrow to workbook-scope (`scope: undefined`) or one specific
- * sheet (`scope: 0`) — omit the option entirely to list all.
+ * Read-only snapshot of every defined name. Pass `{ scope }` to narrow to
+ * workbook-scope (`scope: undefined`) or one specific sheet (`scope: 0`) — omit
+ * the option entirely to list all.
  */
 export const listDefinedNames = (
   wb: Workbook,
@@ -197,8 +193,8 @@ export const listDefinedNames = (
 };
 
 /**
- * Bulk-remove every defined name matching `predicate`. Returns the
- * count removed. Mirrors {@link removeDataValidations} on worksheets.
+ * Bulk-remove every defined name matching `predicate`. Returns the count
+ * removed. Mirrors {@link removeDataValidations} on worksheets.
  */
 export const removeDefinedNames = (
   wb: Workbook,
@@ -210,9 +206,9 @@ export const removeDefinedNames = (
 };
 
 /**
- * Rename a defined name, scoped or workbook-scope. Returns `true`
- * when an entry was renamed. Throws when `newName` is already taken
- * with the same scope (Excel forbids duplicates within a scope).
+ * Rename a defined name, scoped or workbook-scope. Returns `true` when an entry
+ * was renamed. Throws when `newName` is already taken with the same scope
+ * (Excel forbids duplicates within a scope).
  */
 export const renameDefinedName = (
   wb: Workbook,
@@ -233,17 +229,17 @@ export const renameDefinedName = (
 };
 
 /**
- * Read-only snapshot of every `_xlnm.Print_Area` defined name. Each
- * entry is the raw DefinedName carrying `scope` (sheet index) and
- * `value` (the print-area expression like `'Sheet1'!$A$1:$D$10`).
+ * Read-only snapshot of every `_xlnm.Print_Area` defined name. Each entry is
+ * the raw DefinedName carrying `scope` (sheet index) and `value` (the
+ * print-area expression like `'Sheet1'!$A$1:$D$10`).
  */
 export const listPrintAreas = (wb: Workbook): ReadonlyArray<DefinedName> =>
   wb.definedNames.filter((d) => d.name === '_xlnm.Print_Area');
 
 /**
- * Read-only snapshot of every `_xlnm.Print_Titles` defined name. Each
- * entry's `value` is the title-row / title-col expression Excel re-uses
- * on every printed page.
+ * Read-only snapshot of every `_xlnm.Print_Titles` defined name. Each entry's
+ * `value` is the title-row / title-col expression Excel re-uses on every
+ * printed page.
  */
 export const listPrintTitles = (wb: Workbook): ReadonlyArray<DefinedName> =>
   wb.definedNames.filter((d) => d.name === '_xlnm.Print_Titles');
@@ -262,8 +258,8 @@ export const setPrintArea = (wb: Workbook, sheetIndex: number, ref: string): Def
 
 /**
  * Define print-title rows / columns on a sheet. Excel uses the
- * `_xlnm.Print_Titles` defined name. Pass `rows` ("$1:$1") to repeat
- * row 1 on every printed page; `cols` ("$A:$A") to repeat column A.
+ * `_xlnm.Print_Titles` defined name. Pass `rows` ("$1:$1") to repeat row 1 on
+ * every printed page; `cols` ("$A:$A") to repeat column A.
  */
 export const setPrintTitles = (
   wb: Workbook,
@@ -271,8 +267,8 @@ export const setPrintTitles = (
   opts: { rows?: string; cols?: string; sheetName: string },
 ): DefinedName => {
   const parts: string[] = [];
-  // The wire form is "Sheet!$1:$1,Sheet!$A:$A"; both refs share the
-  // sheet prefix.
+  // The wire form is "Sheet!$1:$1,Sheet!$A:$A"; both refs share the sheet
+  // prefix.
   if (opts.cols !== undefined) parts.push(`'${opts.sheetName}'!${opts.cols}`);
   if (opts.rows !== undefined) parts.push(`'${opts.sheetName}'!${opts.rows}`);
   if (parts.length === 0) {

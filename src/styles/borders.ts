@@ -1,10 +1,9 @@
 // Border / Side value objects. Mirrors openpyxl/openpyxl/styles/borders.py.
 //
-// A `Border` describes the edges drawn around a cell. Each edge is a
-// `Side` carrying a stroke style and an optional `Color`. Per
-// docs/plan/04-core-model.md §3.1 these are plain readonly objects;
-// the `make*` constructors freeze their results so the Stylesheet
-// pool can dedupe by reference identity once we wire it up.
+// A `Border` describes the edges drawn around a cell. Each edge is a `Side`
+// carrying a stroke style and an optional `Color`. These are plain readonly
+// objects; the `make*` constructors freeze their results so the Stylesheet pool
+// can dedupe by reference identity once we wire it up.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type Color, colorToHex, makeColor } from './colors';
@@ -105,9 +104,9 @@ export const EMPTY_SIDE: Side = makeSide();
 export const DEFAULT_BORDER: Border = makeBorder();
 
 /**
- * Map an Excel {@link SideStyle} to a CSS `border` shorthand fragment
- * (`<width> <style>`). Returns `undefined` for unmappable styles or
- * a missing/no-style side. Colour is appended by the caller.
+ * Map an Excel {@link SideStyle} to a CSS `border` shorthand fragment (`<width>
+ * <style>`). Returns `undefined` for unmappable styles or a missing/no-style
+ * side. Colour is appended by the caller.
  */
 function sideStyleToCss(style: SideStyle | undefined): string | undefined {
   switch (style) {
@@ -137,12 +136,11 @@ function sideStyleToCss(style: SideStyle | undefined): string | undefined {
 }
 
 /**
- * Translate a {@link Border} to a CSS-property record suitable for
- * HTML preview. Each present side becomes `border-<edge>: <width>
- * <style> <#color>`. Theme/auto/missing colours fall back to
- * `currentColor`. Diagonal / vertical / horizontal sides are skipped
- * (CSS has no native equivalent for in-cell strokes). Empty Border
- * returns `{}`.
+ * Translate a {@link Border} to a CSS-property record suitable for HTML
+ * preview. Each present side becomes `border-<edge>: <width> <style> <#color>`.
+ * Theme/auto/missing colours fall back to `currentColor`. Diagonal / vertical /
+ * horizontal sides are skipped (CSS has no native equivalent for in-cell
+ * strokes). Empty Border returns `{}`.
  */
 export function borderToCss(border: Border | undefined): Record<string, string> {
   const css: Record<string, string> = {};

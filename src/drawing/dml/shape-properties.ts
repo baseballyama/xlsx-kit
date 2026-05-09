@@ -1,11 +1,10 @@
-// DrawingML shape properties. Per docs/plan/08-charts-drawings.md §4.7.
+// DrawingML shape properties.
 //
-// `<a:spPr>` is the universal "how should this be drawn" wrapper that
-// every chart element (chartSpace, chart container, plotArea, series,
-// dataPoint, axis, …) accepts. The model intentionally splits the
-// wrapper (this file) from the leaves (colors / fill / line / geometry /
-// effect / text) so the slot grows by attribute as new primitive
-// modules land.
+// `<a:spPr>` is the universal "how should this be drawn" wrapper that every
+// chart element (chartSpace, chart container, plotArea, series, dataPoint,
+// axis, …) accepts. The model intentionally splits the wrapper (this file) from
+// the leaves (colors / fill / line / geometry / effect / text) so the slot
+// grows by attribute as new primitive modules land.
 
 import type { Point2D, PositiveSize2D } from '../anchor';
 import type { EffectsRef } from './effect';
@@ -41,9 +40,9 @@ export interface Transform2D {
 }
 
 /**
- * `<a:spPr>` wrapper. 3-D / text-body slots will be added as their
- * primitive modules land — kept absent here so the type stays closed
- * under the modules currently shipped.
+ * `<a:spPr>` wrapper. 3-D / text-body slots will be added as their primitive
+ * modules land — kept absent here so the type stays closed under the modules
+ * currently shipped.
  */
 export interface ShapeProperties {
   bwMode?: BlackWhiteMode;

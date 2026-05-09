@@ -1,5 +1,5 @@
-// Tests for the typed worksheet-level <customProperties> +
-// <webPublishItems> models. Per docs/plan/13-full-excel-coverage.md §B9.
+// Tests for the typed worksheet-level <customProperties> + <webPublishItems>
+// models.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

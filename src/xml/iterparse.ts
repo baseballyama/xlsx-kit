@@ -1,17 +1,17 @@
-// SAX iterator over OOXML XML payloads. Wraps `saxes` (XMLNS-aware) and
-// yields a flat stream of {start | end | text} events with names already
-// converted to Clark notation (`{ns}local`) — same shape as the DOM
-// parser produces for static XmlNode trees, so consumers can switch
-// between bulk and streaming reads without retouching name comparison.
+// SAX iterator over OOXML XML payloads. Wraps `saxes` (XMLNS-aware) and yields
+// a flat stream of {start | end | text} events with names already converted to
+// Clark notation (`{ns}local`) — same shape as the DOM parser produces for
+// static XmlNode trees, so consumers can switch between bulk and streaming
+// reads without retouching name comparison.
 //
-// Phase 1 §3 acceptance: 1 k–row sheetData walked end-to-end with cell
-// counts matching the source. The phase-4 read-only worksheet drives
-// real-world use; this layer just produces the events.
+// Phase 1 §3 acceptance: 1 k–row sheetData walked end-to-end with cell counts
+// matching the source. The phase-4 read-only worksheet drives real-world use;
+// this layer just produces the events.
 //
-// Per docs/plan/03-foundations.md §3.4 DOCTYPE / external entity
-// declarations are forbidden. saxes does not expand external entities,
-// but a prescan also rejects DTDs in non-streaming inputs. Streaming
-// inputs are checked on the first chunk before being fed to the parser.
+// DOCTYPE / external entity declarations are forbidden. saxes does not expand
+// external entities, but a prescan also rejects DTDs in non-streaming inputs.
+// Streaming inputs are checked on the first chunk before being fed to the
+// parser.
 
 import { SaxesParser } from 'saxes';
 import { OpenXmlSchemaError } from '../utils/exceptions';
@@ -23,9 +23,9 @@ export type SaxEvent =
   | { kind: 'text'; text: string };
 
 /**
- * Streamable input: `Uint8Array`, plain string, or a Web `ReadableStream`
- * of `Uint8Array` chunks (produced by xlsx zip entries via fflate, fetch,
- * file streams, etc.).
+ * Streamable input: `Uint8Array`, plain string, or a Web `ReadableStream` of
+ * `Uint8Array` chunks (produced by xlsx zip entries via fflate, fetch, file
+ * streams, etc.).
  */
 export type SaxInput = Uint8Array | string | ReadableStream<Uint8Array>;
 
@@ -66,9 +66,9 @@ interface SaxesCloseTag {
 const buildAttrsClark = (attrs: SaxesOpenTag['attributes']): Record<string, string> => {
   const out: Record<string, string> = {};
   for (const [, info] of Object.entries(attrs)) {
-    // saxes already resolved the namespace when xmlns: true is set; raw
-    // xmlns / xmlns:* declarations have prefix='xmlns' (or local==='xmlns'
-    // when default) and we drop those — they're rebuilt by the serializer.
+    // saxes already resolved the namespace when xmlns: true is set; raw xmlns /
+    // xmlns:* declarations have prefix='xmlns' (or local==='xmlns' when
+    // default) and we drop those — they're rebuilt by the serializer.
     if (info.prefix === 'xmlns' || (info.prefix === '' && info.local === 'xmlns')) continue;
     const key = qname(info.uri, info.local);
     out[key] = info.value;
@@ -77,12 +77,12 @@ const buildAttrsClark = (attrs: SaxesOpenTag['attributes']): Record<string, stri
 };
 
 /**
- * Parse the input as a stream of SAX events. Element / attribute names
- * are returned in Clark notation (`{ns}local`).
+ * Parse the input as a stream of SAX events. Element / attribute names are
+ * returned in Clark notation (`{ns}local`).
  */
 export async function* iterParse(input: SaxInput): AsyncIterableIterator<SaxEvent> {
-  // Set up the parser. xmlns: true gives us resolved {uri, local, prefix}
-  // on every open / close tag and on every attribute.
+  // Set up the parser. xmlns: true gives us resolved {uri, local, prefix} on
+  // every open / close tag and on every attribute.
   const parser = new SaxesParser({ xmlns: true, fragment: false });
 
   const queue: SaxEvent[] = [];

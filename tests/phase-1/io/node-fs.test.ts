@@ -1,5 +1,4 @@
 // Node filesystem + Readable/Writable I/O helpers.
-// Per docs/plan/03-foundations.md §1.1.
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

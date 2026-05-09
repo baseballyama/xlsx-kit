@@ -1,11 +1,10 @@
-// In-memory Node helpers. Per docs/plan/03-foundations.md §1.1.
+// In-memory Node helpers.
 //
-// `fromBuffer` / `toBuffer` rely only on the global `Buffer` symbol —
-// no `node:*` imports — so they're safe to ship through the
-// `xlsx-kit/streaming` browser-targeted entry too. Filesystem +
-// Readable / Writable helpers live in `./node-fs.ts` (re-exported via
-// `xlsx-kit/node`) where the `node:fs` / `node:stream` imports stay
-// out of the browser-safe surface.
+// `fromBuffer` / `toBuffer` rely only on the global `Buffer` symbol — no
+// `node:*` imports — so they're safe to ship through the `xlsx-kit/streaming`
+// browser-targeted entry too. Filesystem + Readable / Writable helpers live in
+// `./node-fs.ts` (re-exported via `xlsx-kit/node`) where the `node:fs` /
+// `node:stream` imports stay out of the browser-safe surface.
 
 import { OpenXmlIoError } from '../utils/exceptions';
 import type { BufferedSinkWriter, XlsxSink } from './sink';
@@ -13,8 +12,8 @@ import type { XlsxSource } from './source';
 
 /**
  * Wrap a Buffer or Uint8Array as an XlsxSource. The underlying bytes are
- * referenced — no copy — so callers must not mutate them while the source
- * is in use.
+ * referenced — no copy — so callers must not mutate them while the source is in
+ * use.
  */
 export function fromBuffer(buf: Buffer | Uint8Array): XlsxSource {
   if (!(buf instanceof Uint8Array)) {
@@ -38,9 +37,9 @@ export function fromBuffer(buf: Buffer | Uint8Array): XlsxSource {
 }
 
 /**
- * In-memory Buffer sink. The buffered path concatenates appended chunks
- * into a single allocation when {@link BufferedSinkWriter.finish} resolves;
- * the convenience `result()` returns it as a Node Buffer.
+ * In-memory Buffer sink. The buffered path concatenates appended chunks into a
+ * single allocation when {@link BufferedSinkWriter.finish} resolves; the
+ * convenience `result()` returns it as a Node Buffer.
  */
 export function toBuffer(): XlsxSink & { toBytes(): BufferedSinkWriter; result(): Buffer } {
   const chunks: Uint8Array[] = [];

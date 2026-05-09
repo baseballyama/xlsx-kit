@@ -1,11 +1,11 @@
-// xl/styles.xml → Stylesheet reader. Per docs/plan/05-read-write.md §3.
+// xl/styles.xml → Stylesheet reader.
 //
-// The reader preserves slot ordering exactly — cellXfs[3] in the source
-// xlsx must come back as cellXfs[3] in the loaded Workbook because every
-// `<c s="3">` reference depends on the index, not on the value's identity.
-// That rules out the `addFont` / `addCellXf` dedup helpers (which collapse
-// equal values); instead we push raw entries and rebuild the
-// `_*IdByKey` maps at the end so subsequent edits go back through dedup.
+// The reader preserves slot ordering exactly — cellXfs[3] in the source xlsx
+// must come back as cellXfs[3] in the loaded Workbook because every `<c s="3">`
+// reference depends on the index, not on the value's identity. That rules out
+// the `addFont` / `addCellXf` dedup helpers (which collapse equal values);
+// instead we push raw entries and rebuild the `_*IdByKey` maps at the end so
+// subsequent edits go back through dedup.
 
 import { fromTree } from '../schema/serialize';
 import { OpenXmlSchemaError } from '../utils/exceptions';
@@ -48,9 +48,9 @@ const ALIGNMENT_TAG = qname(SHEET_MAIN_NS, 'alignment');
 const PROTECTION_TAG = qname(SHEET_MAIN_NS, 'protection');
 
 /**
- * Parse `xl/styles.xml` and return a fully-populated {@link Stylesheet}.
- * Slot ordering is preserved verbatim; the dedup index Maps are rebuilt
- * after the fact so future `addFont` / `addCellXf` calls keep working.
+ * Parse `xl/styles.xml` and return a fully-populated {@link Stylesheet}. Slot
+ * ordering is preserved verbatim; the dedup index Maps are rebuilt after the
+ * fact so future `addFont` / `addCellXf` calls keep working.
  */
 export function parseStylesheetXml(bytes: Uint8Array | string): Stylesheet {
   const root = parseXml(bytes);

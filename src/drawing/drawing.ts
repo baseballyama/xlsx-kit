@@ -1,11 +1,10 @@
-// Spreadsheet drawing data model. Per docs/plan/08-charts-drawings.md §3.2.
+// Spreadsheet drawing data model.
 //
-// A `Drawing` is the per-worksheet `xl/drawings/drawingN.xml` part — a
-// list of anchor entries, each carrying a content variant (chart,
-// picture, shape, connector, group). Stage-1 implements the chart
-// variant as a "rels-only" reference (the full ChartML model lands in
-// later iterations); picture / shape / connector / group are reserved
-// for later.
+// A `Drawing` is the per-worksheet `xl/drawings/drawingN.xml` part — a list of
+// anchor entries, each carrying a content variant (chart, picture, shape,
+// connector, group). Stage-1 implements the chart variant as a "rels-only"
+// reference (the full ChartML model lands in later iterations); picture / shape
+// / connector / group are reserved for later.
 
 import type { ChartSpace } from '../chart/chart';
 import type { CxChartSpace } from '../chart/cx/chartex';
@@ -30,11 +29,10 @@ export interface ChartReference {
    */
   cxSpace?: CxChartSpace;
   /**
-   * `true` when the resolved chart part is a chartex (`cx:`) chart. Set
-   * by the package writer so the drawing emitter knows to use the
-   * chartex `<a:graphicData uri>` instead of the legacy chart URI —
-   * Excel rejects the workbook when the URI doesn't match the chart's
-   * actual root namespace.
+   * `true` when the resolved chart part is a chartex (`cx:`) chart. Set by the
+   * package writer so the drawing emitter knows to use the chartex
+   * `<a:graphicData uri>` instead of the legacy chart URI — Excel rejects the
+   * workbook when the URI doesn't match the chart's actual root namespace.
    */
   isCx?: boolean;
 }
@@ -89,17 +87,16 @@ import { makeOneCellAnchor } from './anchor';
 import type { Worksheet } from '../worksheet/worksheet';
 
 /**
- * Drop an image onto a worksheet at a single-cell anchor. Lazy-
- * allocates `ws.drawing` (as `makeDrawing([])`) on first call and
- * appends a picture DrawingItem.
+ * Drop an image onto a worksheet at a single-cell anchor. Lazy-allocates
+ * `ws.drawing` (as `makeDrawing([])`) on first call and appends a picture
+ * DrawingItem.
  *
- * `image` accepts either an `XlsxImage` (already loaded via
- * `loadImage`) or raw image bytes — in the bytes case, this helper
- * sniffs the format with `loadImage` itself.
+ * `image` accepts either an `XlsxImage` (already loaded via `loadImage`) or raw
+ * image bytes — in the bytes case, this helper sniffs the format with
+ * `loadImage` itself.
  *
- * `at` is a cell ref like `"C3"`. Override `widthPx` / `heightPx` to
- * scale; otherwise the helper uses 96×96 defaults that look fine
- * for typical icons.
+ * `at` is a cell ref like `"C3"`. Override `widthPx` / `heightPx` to scale;
+ * otherwise the helper uses 96×96 defaults that look fine for typical icons.
  */
 export const addImageAt = (
   ws: Worksheet,
@@ -122,8 +119,8 @@ export const addImageAt = (
 /**
  * Anchor a chart to a worksheet at a single-cell ref. Lazy-allocates
  * `ws.drawing`. `chart` is the same `ChartReference` shape `makeChart
- * DrawingItem` accepts (`{ space }` for legacy chart, `{ cxSpace }`
- * for chartex).
+ * DrawingItem` accepts (`{ space }` for legacy chart, `{ cxSpace }` for
+ * chartex).
  */
 export const addChartAt = (
   ws: Worksheet,
@@ -143,10 +140,9 @@ export const addChartAt = (
 };
 
 /**
- * Read-only snapshot of every picture DrawingItem on the sheet.
- * Returns the matching items (each with its anchor + picture
- * reference). Empty array when the sheet has no drawing or only
- * non-picture items.
+ * Read-only snapshot of every picture DrawingItem on the sheet. Returns the
+ * matching items (each with its anchor + picture reference). Empty array when
+ * the sheet has no drawing or only non-picture items.
  */
 export const listImagesOnSheet = (ws: Worksheet): ReadonlyArray<DrawingItem> => {
   if (!ws.drawing) return [];
@@ -154,8 +150,8 @@ export const listImagesOnSheet = (ws: Worksheet): ReadonlyArray<DrawingItem> => 
 };
 
 /**
- * Read-only snapshot of every chart DrawingItem on the sheet.
- * Each item has its anchor + chart reference.
+ * Read-only snapshot of every chart DrawingItem on the sheet. Each item has its
+ * anchor + chart reference.
  */
 export const listChartsOnSheet = (ws: Worksheet): ReadonlyArray<DrawingItem> => {
   if (!ws.drawing) return [];
@@ -163,10 +159,9 @@ export const listChartsOnSheet = (ws: Worksheet): ReadonlyArray<DrawingItem> => 
 };
 
 /**
- * Drop every DrawingItem from the worksheet. Returns the count
- * removed. The `ws.drawing` field itself is left in place (empty)
- * so subsequent `addImageAt` / `addChartAt` calls don't have to
- * re-allocate.
+ * Drop every DrawingItem from the worksheet. Returns the count removed. The
+ * `ws.drawing` field itself is left in place (empty) so subsequent `addImageAt`
+ * / `addChartAt` calls don't have to re-allocate.
  */
 export const removeAllDrawingItems = (ws: Worksheet): number => {
   if (!ws.drawing) return 0;
@@ -176,8 +171,8 @@ export const removeAllDrawingItems = (ws: Worksheet): number => {
 };
 
 /**
- * Drop every picture DrawingItem from the worksheet, leaving charts
- * and any other content kinds untouched. Returns the count removed.
+ * Drop every picture DrawingItem from the worksheet, leaving charts and any
+ * other content kinds untouched. Returns the count removed.
  */
 export const removeAllImages = (ws: Worksheet): number => {
   if (!ws.drawing) return 0;
@@ -187,8 +182,8 @@ export const removeAllImages = (ws: Worksheet): number => {
 };
 
 /**
- * Drop every chart DrawingItem from the worksheet, leaving pictures
- * and any other content kinds untouched. Returns the count removed.
+ * Drop every chart DrawingItem from the worksheet, leaving pictures and any
+ * other content kinds untouched. Returns the count removed.
  */
 export const removeAllCharts = (ws: Worksheet): number => {
   if (!ws.drawing) return 0;

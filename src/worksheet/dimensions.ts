@@ -1,19 +1,16 @@
-// Column / row dimension metadata. Per docs/plan/04-core-model.md §4.3
-// (`columnDimensions` / `rowDimensions` Maps + `defaultColumnWidth` /
-// `defaultRowHeight`) and the openpyxl reference at
+// Column / row dimension metadata. (`columnDimensions` / `rowDimensions` Maps +
+// `defaultColumnWidth` / `defaultRowHeight`) and the openpyxl reference at
 // `worksheet/dimensions.py`.
 //
-// **Stage 1**: width / height / hidden / customWidth / customHeight /
-// bestFit / outlineLevel + style fall-back. Multi-`<col>` runs collapse
-// per-column entries when adjacent equal entries are persisted (writer
-// side) — read keeps each column its own entry so user mutations don't
-// surprise neighbours.
+// **Stage 1**: width / height / hidden / customWidth / customHeight / bestFit /
+// outlineLevel + style fall-back. Multi-`<col>` runs collapse per-column
+// entries when adjacent equal entries are persisted (writer side) — read keeps
+// each column its own entry so user mutations don't surprise neighbours.
 
 /**
- * Single-column-or-range dimension entry. Mirrors the OOXML `<col>`
- * element. The `min`/`max` pair always covers a contiguous run; the
- * worksheet's `columnDimensions` Map keys by `min` so per-column edits
- * stay O(log n).
+ * Single-column-or-range dimension entry. Mirrors the OOXML `<col>` element.
+ * The `min`/`max` pair always covers a contiguous run; the worksheet's
+ * `columnDimensions` Map keys by `min` so per-column edits stay O(log n).
  */
 export interface ColumnDimension {
   /** 1-based first column the entry covers (inclusive). */

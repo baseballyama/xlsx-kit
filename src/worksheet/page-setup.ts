@@ -1,9 +1,9 @@
-// Page-setup typed model. Per docs/plan/13-full-excel-coverage.md §B6.
+// Page-setup typed model.
 //
-// Promotes <printOptions> / <pageMargins> / <pageSetup> / <headerFooter>
-// from the bodyExtras passthrough into typed Worksheet fields with
-// round-trip readers / writers. Mirrors openpyxl/openpyxl/worksheet/
-// page.py + header_footer.py.
+// Promotes <printOptions> / <pageMargins> / <pageSetup> / <headerFooter> from
+// the bodyExtras passthrough into typed Worksheet fields with round-trip
+// readers / writers. Mirrors openpyxl/openpyxl/worksheet/ page.py +
+// header_footer.py.
 
 export interface PrintOptions {
   /** Center the printed sheet horizontally on the page. */
@@ -66,10 +66,10 @@ export interface HeaderFooter {
   /** Mirror Excel's "align header/footer with margins" toggle. Default true. */
   alignWithMargins?: boolean;
   /**
-   * Mini-format string. Excel uses `&L` / `&C` / `&R` to split the
-   * three sections, plus codes like `&P` (page number), `&N` (page
-   * count), `&F` (file name), `&A` (sheet name), `&D` / `&T` (date /
-   * time). We round-trip the literal text — no parsing into sections.
+   * Mini-format string. Excel uses `&L` / `&C` / `&R` to split the three
+   * sections, plus codes like `&P` (page number), `&N` (page count), `&F` (file
+   * name), `&A` (sheet name), `&D` / `&T` (date / time). We round-trip the
+   * literal text — no parsing into sections.
    */
   oddHeader?: string;
   oddFooter?: string;
@@ -95,10 +95,10 @@ export const makePageSetup = (opts: PageSetup = {}): PageSetup => ({ ...opts });
 export const makeHeaderFooter = (opts: HeaderFooter = {}): HeaderFooter => ({ ...opts });
 
 /**
- * One manual page break. `id` is the row (for rowBreaks) or column
- * (for colBreaks) index where the break sits; `min`/`max` constrain the
- * orthogonal range Excel honours; `man=true` means a user-placed break
- * (default true). `pt` indicates a "pivot table" break — rare.
+ * One manual page break. `id` is the row (for rowBreaks) or column (for
+ * colBreaks) index where the break sits; `min`/`max` constrain the orthogonal
+ * range Excel honours; `man=true` means a user-placed break (default true).
+ * `pt` indicates a "pivot table" break — rare.
  */
 export interface PageBreak {
   id?: number;
@@ -189,10 +189,9 @@ export const setFooter = (ws: Worksheet, section: HeaderFooterSection, text: str
 };
 
 /**
- * Excel's reserved header / footer code tokens. Drop these into the
- * left / center / right text inputs of {@link buildHeaderFooterText}
- * (or directly into a setHeader / setFooter string) to render dynamic
- * values at print time.
+ * Excel's reserved header / footer code tokens. Drop these into the left /
+ * center / right text inputs of {@link buildHeaderFooterText} (or directly into
+ * a setHeader / setFooter string) to render dynamic values at print time.
  */
 export const HEADER_FOOTER_CODES = Object.freeze({
   /** Current page number. */
@@ -214,11 +213,10 @@ export const HEADER_FOOTER_CODES = Object.freeze({
 });
 
 /**
- * Build a header / footer string from optional left / center / right
- * fragments using Excel's `&L` / `&C` / `&R` markers. An empty fragment
- * is omitted (no marker emitted) so a center-only header doesn't leave
- * a stray `&L` prefix. Returns `''` when all three fragments are
- * undefined.
+ * Build a header / footer string from optional left / center / right fragments
+ * using Excel's `&L` / `&C` / `&R` markers. An empty fragment is omitted (no
+ * marker emitted) so a center-only header doesn't leave a stray `&L` prefix.
+ * Returns `''` when all three fragments are undefined.
  */
 export const buildHeaderFooterText = (
   parts: { left?: string; center?: string; right?: string },
@@ -231,10 +229,10 @@ export const buildHeaderFooterText = (
 };
 
 /**
- * Set a header by left / center / right parts. `section` defaults
- * to `'odd'` (the standard pages); pass `'first'` or `'even'` to
- * target the alternate sections (Excel auto-flips the corresponding
- * differentOddEven / differentFirst flag).
+ * Set a header by left / center / right parts. `section` defaults to `'odd'`
+ * (the standard pages); pass `'first'` or `'even'` to target the alternate
+ * sections (Excel auto-flips the corresponding differentOddEven /
+ * differentFirst flag).
  */
 export const setHeaderText = (
   ws: Worksheet,
@@ -286,8 +284,8 @@ export const setPrintHeadings = (ws: Worksheet, on: boolean): void => {
 };
 
 /**
- * Toggle horizontal / vertical centering on the printed page. Pass
- * either field to leave the other untouched.
+ * Toggle horizontal / vertical centering on the printed page. Pass either field
+ * to leave the other untouched.
  */
 export const setPrintCentered = (
   ws: Worksheet,

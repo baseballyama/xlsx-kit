@@ -1,17 +1,15 @@
-// Heap-budget metric for the write-only path. docs/plan/06-streaming.md
-// §3.4 sets an aspirational target of 100M cells in 1GB heap. The
-// current `createWriteOnlyWorkbook` keeps each Cell as an object on the
-// Worksheet rows Map until close(), so it can't meet that target
-// end-to-end — but tracking the cells/MB ratio at modest cell counts
+// Heap-budget metric for the write-only path. Sets an aspirational target of
+// 100M cells in 1GB heap. The current `createWriteOnlyWorkbook` keeps each Cell
+// as an object on the Worksheet rows Map until close(), so it can't meet that
+// target end-to-end — but tracking the cells/MB ratio at modest cell counts
 // surfaces regressions early.
 //
-// Excluded from the default `pnpm test` run (see vitest.config.ts).
-// Run explicitly:
-//   pnpm test:perf
-//   PERF_HEAP_GATE=1 pnpm test:perf  # asserts the cells/MB floor
+// Excluded from the default `pnpm test` run (see vitest.config.ts). Run
+// explicitly: pnpm test:perf PERF_HEAP_GATE=1 pnpm test:perf # asserts the
+// cells/MB floor
 //
-// Numbers depend on Node version + V8 GC mood. The default gate is off;
-// the test is primarily a long-term tracking metric.
+// Numbers depend on Node version + V8 GC mood. The default gate is off; the
+// test is primarily a long-term tracking metric.
 
 import { describe, expect, it } from 'vitest';
 import { toBuffer } from '../../src/io/node';
@@ -22,18 +20,17 @@ const COLS = 30;
 const TOTAL_CELLS = ROWS * COLS;
 
 const PERF_HEAP_GATE = process.env['PERF_HEAP_GATE'] === '1';
-// Tracking floor for the *streaming-deflate* implementation (each row
-// pushes through the deflate stream as ~64 KB chunks, no rowChunks /
-// no Cell / no Map retention). Empirically lands around 88_000 cells
-// per heapUsed MB on M-series Node 22 — set the gate at 50_000 to
-// leave breathing room while catching real regressions. This puts us
-// within striking distance of the docs target (100M cells in 1 GB
-// heap → 100k cells/MB).
+// Tracking floor for the *streaming-deflate* implementation (each row pushes
+// through the deflate stream as ~64 KB chunks, no rowChunks / no Cell / no Map
+// retention). Empirically lands around 88_000 cells per heapUsed MB on M-series
+// Node 22 — set the gate at 50_000 to leave breathing room while catching real
+// regressions. This puts us within striking distance of the docs target (100M
+// cells in 1 GB heap → 100k cells/MB).
 const FLOOR_CELLS_PER_HEAP_MB = 50_000;
 
-// Sink that writes to /dev/null — drops every chunk on the floor so
-// heap measurements isolate the writer + deflate state from the
-// buffered-output retention dominating large runs.
+// Sink that writes to /dev/null — drops every chunk on the floor so heap
+// measurements isolate the writer + deflate state from the buffered-output
+// retention dominating large runs.
 const discardSink = (): Parameters<typeof createWriteOnlyWorkbook>[0] & { result(): number } => {
   let total = 0;
   return {
@@ -102,11 +99,10 @@ describe('phase-4 perf — heap stays flat as cells grow', () => {
   it(
     'verifies the 100M-cells / 1GB-heap target by measuring 1M / 3M / 10M with a discard sink',
     async () => {
-      // The streaming-deflate write keeps a fixed-cost working set
-      // (encoding scratch + ZipDeflate sliding window). With a discard
-      // sink the buffered-output retention vanishes too, so heap
-      // shouldn't scale with cell count. If it does, we've regressed
-      // the streaming property.
+      // The streaming-deflate write keeps a fixed-cost working set (encoding
+      // scratch + ZipDeflate sliding window). With a discard sink the
+      // buffered-output retention vanishes too, so heap shouldn't scale with
+      // cell count. If it does, we've regressed the streaming property.
       const sizes: Array<{ rows: number; cols: number }> = [
         { rows: 33_333, cols: 30 }, // ~1M
         { rows: 100_000, cols: 30 }, // ~3M
@@ -124,8 +120,8 @@ describe('phase-4 perf — heap stays flat as cells grow', () => {
         heaps.push(r.heapMb);
       }
       process.stderr.write(`${lines.join('\n')}\n`);
-      // Heap at 10M cells must stay well under 1 GB. If our scaling
-      // were linear we'd be at ~330 MB; in practice it's < 100 MB.
+      // Heap at 10M cells must stay well under 1 GB. If our scaling were linear
+      // we'd be at ~330 MB; in practice it's < 100 MB.
       expect(heaps[heaps.length - 1] ?? Infinity).toBeLessThan(500);
     },
     /* timeout */ 10 * 60_000,
@@ -136,8 +132,8 @@ describe('phase-4 perf — write-only heap budget', () => {
   it(
     `writes ${TOTAL_CELLS.toLocaleString()} cells and reports peak heap`,
     async () => {
-      // Stabilise the baseline by GC-ing before measurement when --expose-gc
-      // is active. Without it we just snapshot whatever V8 has resident.
+      // Stabilise the baseline by GC-ing before measurement when --expose-gc is
+      // active. Without it we just snapshot whatever V8 has resident.
       const gc = (globalThis as { gc?: () => void }).gc;
       if (typeof gc === 'function') gc();
       const before = process.memoryUsage();

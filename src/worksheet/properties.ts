@@ -1,12 +1,11 @@
-// Worksheet `<sheetPr>` properties. Per docs/plan/13-full-excel-coverage.md
-// §B7 (sheet view 拡張). Mirrors openpyxl/openpyxl/worksheet/properties.py.
+// Worksheet `<sheetPr>` properties. (sheet view 拡張). Mirrors
+// openpyxl/openpyxl/worksheet/properties.py.
 //
-// Promoting sheetPr out of `bodyExtras.beforeSheetData` gives consumers a
-// typed handle for the most common fields (`tabColor`, `codeName`) and
-// for the two child elements that drive Excel's outline / page-setup
-// behaviour. The full set is modeled so a load → save round-trip
-// preserves the element verbatim — niche sync* / transition* attrs
-// included.
+// Promoting sheetPr out of `bodyExtras.beforeSheetData` gives consumers a typed
+// handle for the most common fields (`tabColor`, `codeName`) and for the two
+// child elements that drive Excel's outline / page-setup behaviour. The full
+// set is modeled so a load → save round-trip preserves the element verbatim —
+// niche sync* / transition* attrs included.
 
 import type { Color } from '../styles/colors';
 

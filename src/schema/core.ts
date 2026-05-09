@@ -1,14 +1,13 @@
 // Schema layer types — pure data, zero classes.
 //
-// A Schema<T> describes how a plain `T` is mapped to and from an
-// XmlNode. Per docs/plan/03-foundations.md §4 the runtime serialiser
-// (src/schema/serialize.ts) is a single switch-on-kind walk that needs
-// nothing beyond these tables; bundlers can drop schemas a build path
-// never imports because each lives in its own const.
+// A Schema<T> describes how a plain `T` is mapped to and from an XmlNode. The
+// runtime serialiser (src/schema/serialize.ts) is a single switch-on-kind walk
+// that needs nothing beyond these tables; bundlers can drop schemas a build
+// path never imports because each lives in its own const.
 //
-// Lazy element schemas (`schema: () => SideSchema`) are how circular
-// references — Border has Sides, Side has its own Color, etc. — stay
-// expressible without hoisting hazards at module load.
+// Lazy element schemas (`schema: () => SideSchema`) are how circular references
+// — Border has Sides, Side has its own Color, etc. — stay expressible without
+// hoisting hazards at module load.
 
 /** Primitive coercion kinds attribute values may declare. */
 export type Primitive = 'string' | 'int' | 'float' | 'bool';
@@ -20,9 +19,9 @@ export interface AttrDef {
   /** Treat the attribute as optional; missing → undefined. */
   optional?: boolean;
   /**
-   * Default applied during fromTree when the attribute is absent.
-   * Never auto-stripped during toTree — round-trip equivalence is the
-   * primary concern; explicit emitters decide when to omit.
+   * Default applied during fromTree when the attribute is absent. Never
+   * auto-stripped during toTree — round-trip equivalence is the primary
+   * concern; explicit emitters decide when to omit.
    */
   default?: unknown;
   /** Numeric range bounds for kind in {'int', 'float'}. */
@@ -35,9 +34,9 @@ export interface AttrDef {
 }
 
 /**
- * Discriminated union of element shapes a schema can declare. Names
- * are unprefixed (`xmlNs` carries the namespace); the serialiser pairs
- * them into Clark names internally.
+ * Discriminated union of element shapes a schema can declare. Names are
+ * unprefixed (`xmlNs` carries the namespace); the serialiser pairs them into
+ * Clark names internally.
  */
 export type ElementDef =
   | {
@@ -52,12 +51,12 @@ export type ElementDef =
       default?: unknown;
       /**
        * Fixed attributes always emitted on this element. Keys in Clark
-       * notation. On parse, attributes other than these are ignored;
-       * keep the schema strict only for the value (text content).
+       * notation. On parse, attributes other than these are ignored; keep the
+       * schema strict only for the value (text content).
        *
-       * Used for the `xsi:type="dcterms:W3CDTF"` marker that
-       * docProps/core.xml emits on its <dcterms:created> /
-       * <dcterms:modified> children, and similar fixed-marker patterns.
+       * Used for the `xsi:type="dcterms:W3CDTF"` marker that docProps/core.xml
+       * emits on its <dcterms:created> / <dcterms:modified> children, and
+       * similar fixed-marker patterns.
        */
       attrs?: Record<string, string>;
     }
@@ -66,7 +65,8 @@ export type ElementDef =
       key: string;
       name?: string;
       xmlNs?: string;
-      // biome-ignore lint/suspicious/noExplicitAny: Schema is contravariant in T at the element boundary; named types come back via T anyway
+      // biome-ignore lint/suspicious/noExplicitAny: Schema is contravariant in
+      // T at the element boundary; named types come back via T anyway
       schema: () => Schema<any>;
       optional?: boolean;
     }
@@ -76,7 +76,8 @@ export type ElementDef =
       /** Local name of the repeated child element. */
       itemName: string;
       itemNs?: string;
-      // biome-ignore lint/suspicious/noExplicitAny: see ElementDef.kind === 'object'
+      // biome-ignore lint/suspicious/noExplicitAny: see ElementDef.kind ===
+      // 'object'
       itemSchema: () => Schema<any>;
       /** Optional wrapper element holding the items. */
       container?: { name: string; xmlNs?: string; count?: boolean };
@@ -93,11 +94,11 @@ export type ElementDef =
     }
   | {
       /**
-       * `<key val="value"/>` style child carrying a single primitive
-       * value via an attribute (default `val`). This is openpyxl's
-       * NestedString / NestedFloat / NestedInteger / NestedBool /
-       * NestedNoneSet pattern; it shows up across Font, NumberFormat
-       * children and several chart sub-elements.
+       * `<key val="value"/>` style child carrying a single primitive value via
+       * an attribute (default `val`). This is openpyxl's NestedString /
+       * NestedFloat / NestedInteger / NestedBool / NestedNoneSet pattern; it
+       * shows up across Font, NumberFormat children and several chart
+       * sub-elements.
        */
       kind: 'nested';
       key: string;
@@ -116,11 +117,11 @@ export type ElementDef =
     }
   | {
       /**
-       * Opaque round-trip slot — fromTree stores the matched child as a
-       * raw `XmlNode`, toTree splices it back verbatim. Used for
-       * subtrees we don't want to model in detail (e.g. the vt:vector
-       * content under app.xml's HeadingPairs / TitlesOfParts) but still
-       * need to preserve byte-for-byte through edits.
+       * Opaque round-trip slot — fromTree stores the matched child as a raw
+       * `XmlNode`, toTree splices it back verbatim. Used for subtrees we don't
+       * want to model in detail (e.g. the vt:vector content under app.xml's
+       * HeadingPairs / TitlesOfParts) but still need to preserve byte-for-byte
+       * through edits.
        */
       kind: 'raw';
       key: string;
@@ -145,8 +146,8 @@ export interface Schema<T> {
 }
 
 /**
- * Identity helper that pins inference to the supplied `T`. The runtime
- * is just `s => s`; the value matters only for the call-site type.
+ * Identity helper that pins inference to the supplied `T`. The runtime is just
+ * `s => s`; the value matters only for the call-site type.
  */
 export function defineSchema<T>(s: Schema<T>): Schema<T> {
   return s;

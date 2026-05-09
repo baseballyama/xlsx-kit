@@ -1,10 +1,9 @@
 // `docProps/core.xml` — Dublin Core / Office core document properties.
-// Per docs/plan/03-foundations.md §6.3.
 //
-// Each property lives in its own namespace (cp / dc / dcterms). The
-// dcterms timestamps carry an `xsi:type="dcterms:W3CDTF"` marker which
-// we reproduce as a fixed attr on those text elements via the schema
-// layer's `text` element kind.
+// Each property lives in its own namespace (cp / dc / dcterms). The dcterms
+// timestamps carry an `xsi:type="dcterms:W3CDTF"` marker which we reproduce as
+// a fixed attr on those text elements via the schema layer's `text` element
+// kind.
 
 import { defineSchema, type Schema } from '../schema/core';
 import { fromTree, toTree } from '../schema/serialize';
@@ -13,11 +12,11 @@ import { parseXml } from '../xml/parser';
 import { serializeXml } from '../xml/serializer';
 
 /**
- * Set of properties exposed under `docProps/core.xml`. All fields are
- * optional; the workbook only emits those that are set. Timestamps are
- * stored as ISO-8601 strings (the W3CDTF subset) — no Date conversion
- * happens at this layer; phase-3 saveWorkbook is responsible for
- * stamping `modified` to `now()` on each save.
+ * Set of properties exposed under `docProps/core.xml`. All fields are optional;
+ * the workbook only emits those that are set. Timestamps are stored as ISO-8601
+ * strings (the W3CDTF subset) — no Date conversion happens at this layer;
+ * phase-3 saveWorkbook is responsible for stamping `modified` to `now()` on
+ * each save.
  */
 export interface CoreProperties {
   category?: string;

@@ -1,14 +1,13 @@
-// Streaming write-only workbook. Per docs/plan/06-streaming.md §3.
+// Streaming write-only workbook.
 //
-// `createWriteOnlyWorkbook` lets callers append rows one at a time
-// without holding a full Workbook in memory. Each `appendRow` serialises
-// the row directly into a string buffer (no `Cell` objects, no
-// Worksheet rows Map) — when `close()` runs we glue the rows under a
-// `<sheetData>` envelope and hand the bytes to the streaming-deflate
-// ZIP writer. The buffer keeps ~30 bytes per cell of XML text instead
-// of the ~200-byte V8 footprint a Cell + Map entry costs, so the heap
-// budget at 3M cells drops roughly an order of magnitude vs. the
-// previous setCell-based path.
+// `createWriteOnlyWorkbook` lets callers append rows one at a time without
+// holding a full Workbook in memory. Each `appendRow` serialises the row
+// directly into a string buffer (no `Cell` objects, no Worksheet rows Map) —
+// when `close()` runs we glue the rows under a `<sheetData>` envelope and hand
+// the bytes to the streaming-deflate ZIP writer. The buffer keeps ~30 bytes per
+// cell of XML text instead of the ~200-byte V8 footprint a Cell + Map entry
+// costs, so the heap budget at 3M cells drops roughly an order of magnitude vs.
+// the previous setCell-based path.
 
 import type { Cell, CellValue } from '../cell/cell';
 import type { XlsxSink } from '../io/sink';
@@ -96,8 +95,8 @@ const validateTitle = (title: string, taken: Set<string>): void => {
 /** Allocate a CellXf id for a style spec. Mirrors cell-style.ts but works directly on the pool. */
 const allocateXfId = (ss: Stylesheet, style: WriteOnlyStyle): number => {
   // `xfId` is intentionally omitted: leaving it undefined skips the
-  // cellStyleXfs bounds check and matches what Excel emits when there
-  // is no parent style.
+  // cellStyleXfs bounds check and matches what Excel emits when there is no
+  // parent style.
   let xf: CellXf = { fontId: 0, fillId: 0, borderId: 0, numFmtId: 0 };
   if (style.font !== undefined) {
     xf = { ...xf, fontId: addFont(ss, style.font), applyFont: true };
@@ -137,26 +136,25 @@ interface WorkbookState {
 }
 
 /**
- * Flush threshold for the worksheet's pending-row text buffer. Smaller
- * values minimise heap; larger values amortise the TextEncoder + push
- * overhead. 64 KB is a sweet spot — heap stays low and per-row JS work
- * is dominated by the actual XML construction, not flushing.
+ * Flush threshold for the worksheet's pending-row text buffer. Smaller values
+ * minimise heap; larger values amortise the TextEncoder + push overhead. 64 KB
+ * is a sweet spot — heap stays low and per-row JS work is dominated by the
+ * actual XML construction, not flushing.
  */
 const FLUSH_THRESHOLD_BYTES = 64 * 1024;
 
 /**
- * Factory: build a {@link WriteOnlyWorksheet} that closes over the
- * shared {@link WorkbookState}. Per the project-wide "no classes" rule
- * (CLAUDE.md / docs/plan/01-architecture.md) the worksheet is a plain
- * object holding the row buffer + column-width map in closure state.
+ * Factory: build a {@link WriteOnlyWorksheet} that closes over the shared
+ * {@link WorkbookState}. Per the project-wide "no classes" rule (CLAUDE.md) the
+ * worksheet is a plain object holding the row buffer + column-width map in
+ * closure state.
  *
- * The worksheet streams its `<sheetData>` body chunk-by-chunk through
- * the ZIP writer's `addStreamingEntry` API, so the heap footprint
- * stays at one ~64 KB pending text buffer plus deflate scratch — no
- * Cell objects, no all-rows accumulation. The XML envelope (decl /
- * worksheet open / cols / sheetData open) flushes on the first
- * `appendRow` (or `close()` if the sheet is empty); column widths
- * staged via `setColumnWidth` *must* land before the first row.
+ * The worksheet streams its `<sheetData>` body chunk-by-chunk through the ZIP
+ * writer's `addStreamingEntry` API, so the heap footprint stays at one ~64 KB
+ * pending text buffer plus deflate scratch — no Cell objects, no all-rows
+ * accumulation. The XML envelope (decl / worksheet open / cols / sheetData
+ * open) flushes on the first `appendRow` (or `close()` if the sheet is empty);
+ * column widths staged via `setColumnWidth` *must* land before the first row.
  */
 const makeWriteOnlyWorksheet = (state: WorkbookState, title: string, sheetId: number): WriteOnlyWorksheet => {
   let nextRow = 1;
@@ -216,8 +214,8 @@ const makeWriteOnlyWorksheet = (state: WorkbookState, title: string, sheetId: nu
       }
       const styleId = style ? allocateXfId(state.styles, style) : 0;
       // Ephemeral cell-shaped object — discarded as soon as serializeCell
-      // returns its `<c .../>` string. Keeps the heap footprint at the
-      // size of the pending text buffer instead of a full Worksheet model.
+      // returns its `<c .../>` string. Keeps the heap footprint at the size of
+      // the pending text buffer instead of a full Worksheet model.
       const cell: Cell = { row: r, col, value, styleId };
       xml += serializeCell(cell, dummyCtx);
     }
@@ -254,20 +252,20 @@ const makeWriteOnlyWorksheet = (state: WorkbookState, title: string, sheetId: nu
 };
 
 /**
- * Factory: build a {@link WriteOnlyWorkbook} from a sink. State lives
- * in a closure rather than on a class instance per the project-wide
- * "no classes" rule (CLAUDE.md / docs/plan/01-architecture.md).
+ * Factory: build a {@link WriteOnlyWorkbook} from a sink. State lives in a
+ * closure rather than on a class instance per the project-wide "no classes"
+ * rule (CLAUDE.md).
  */
 const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
   const styles = makeStylesheet();
-  // Reserve cellXfs[0] for the default (no apply* flags). Unstyled cells
-  // point at this slot via styleId=0; user-styled cells start at index
-  // 1 so the writer emits an `s="N"` attribute for them.
+  // Reserve cellXfs[0] for the default (no apply* flags). Unstyled cells point
+  // at this slot via styleId=0; user-styled cells start at index 1 so the
+  // writer emits an `s="N"` attribute for them.
   addCellXf(styles, defaultCellXf());
-  // The ZIP writer is created up front: each addWorksheet opens a
-  // streaming entry on it and flushes row chunks through the deflate
-  // stream as they arrive. Sheets emit before styles / sst / workbook
-  // / rels / content-types so the writer can serialise them in order.
+  // The ZIP writer is created up front: each addWorksheet opens a streaming
+  // entry on it and flushes row chunks through the deflate stream as they
+  // arrive. Sheets emit before styles / sst / workbook / rels / content-types
+  // so the writer can serialise them in order.
   const state: WorkbookState = {
     styles,
     sst: makeSharedStrings(),
@@ -353,9 +351,9 @@ const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
 
     // 7. [Content_Types].xml.
     const manifest = makeManifest();
-    // Excel rejects packages whose [Content_Types].xml is missing the
-    // Default entries for `rels` / `xml` — without them the package
-    // relationships file can't be classified and Excel refuses to open.
+    // Excel rejects packages whose [Content_Types].xml is missing the Default
+    // entries for `rels` / `xml` — without them the package relationships file
+    // can't be classified and Excel refuses to open.
     addDefault(manifest, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
     addDefault(manifest, 'xml', 'application/xml');
     addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
@@ -396,10 +394,10 @@ export async function createWriteOnlyWorkbook(
   sink: XlsxSink,
   _opts: WriteOnlyOptions = {},
 ): Promise<WriteOnlyWorkbook> {
-  // The streaming-deflate ZIP writer is created lazily inside finalize()
-  // so the caller can compose multiple sheets without an early commit.
-  // Worksheet bytes accumulate in `state.sheets` until finalize streams
-  // them through fflate's `Zip` + `ZipDeflate` (see src/zip/writer.ts).
+  // The streaming-deflate ZIP writer is created lazily inside finalize() so the
+  // caller can compose multiple sheets without an early commit. Worksheet bytes
+  // accumulate in `state.sheets` until finalize streams them through fflate's
+  // `Zip` + `ZipDeflate` (see src/zip/writer.ts).
   return makeWriteOnlyWorkbook(sink);
 }
 

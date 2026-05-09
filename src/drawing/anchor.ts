@@ -1,16 +1,16 @@
-// DrawingML anchors. Per docs/plan/08-charts-drawings.md §3.
+// DrawingML anchors.
 //
-// An anchor positions a drawing (chart / image / shape) inside a
-// worksheet. ECMA-376 §20.5.2 defines three kinds:
+// An anchor positions a drawing (chart / image / shape) inside a worksheet.
+// ECMA-376 §20.5.2 defines three kinds:
 //
-//   absolute  — fixed (x, y) and (cx, cy) in EMU; ignores cell layout.
-//   oneCell   — pinned at `from` cell, fixed extent. Resizes with the
+// absolute — fixed (x, y) and (cx, cy) in EMU; ignores cell layout. oneCell —
+// pinned at `from` cell, fixed extent. Resizes with the
 //               cell only on its top-left corner.
-//   twoCell   — anchored to `from` and `to` cells. Resizes / moves with
+// twoCell — anchored to `from` and `to` cells. Resizes / moves with
 //               both corners depending on `editAs`.
 //
-// Coordinates are EMU (English Metric Units). 1 inch = 914400 EMU,
-// 1 cm = 360000 EMU, 1 px = 9525 EMU at 96 dpi.
+// Coordinates are EMU (English Metric Units). 1 inch = 914400 EMU, 1 cm =
+// 360000 EMU, 1 px = 9525 EMU at 96 dpi.
 
 import { columnIndexFromLetter } from '../utils/coordinate';
 import { OpenXmlSchemaError } from '../utils/exceptions';
@@ -30,9 +30,9 @@ export interface PositiveSize2D {
 }
 
 /**
- * `from` / `to` corners reference a cell by 0-based column + row index plus
- * an EMU offset within the cell. Excel's wire format is 0-based here even
- * though cell references in formulas / sheetData are 1-based.
+ * `from` / `to` corners reference a cell by 0-based column + row index plus an
+ * EMU offset within the cell. Excel's wire format is 0-based here even though
+ * cell references in formulas / sheetData are 1-based.
  */
 export interface AnchorMarker {
   col: number;
@@ -49,8 +49,8 @@ export type DrawingAnchor =
 const A1_RE = /^([A-Za-z]{1,3})([1-9][0-9]*)$/;
 
 /**
- * Convert a cell ref ("A1", "C5") to a 0-based AnchorMarker with
- * `colOff = rowOff = 0`. Throws on malformed refs.
+ * Convert a cell ref ("A1", "C5") to a 0-based AnchorMarker with `colOff =
+ * rowOff = 0`. Throws on malformed refs.
  */
 export function anchorMarkerFromCellRef(ref: string): AnchorMarker {
   const m = A1_RE.exec(ref);
@@ -82,8 +82,8 @@ export function makeOneCellAnchor(opts: {
 }
 
 /**
- * Build a two-cell anchor from cell-ref pairs (or pre-built markers).
- * Defaults to `editAs='twoCell'` — drag both corners with the cells.
+ * Build a two-cell anchor from cell-ref pairs (or pre-built markers). Defaults
+ * to `editAs='twoCell'` — drag both corners with the cells.
  */
 export function makeTwoCellAnchor(opts: {
   from: string | AnchorMarker;

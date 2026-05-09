@@ -1,7 +1,6 @@
-// Phase 7 §3.3 acceptance — real openpyxl pivot fixture round-trip.
-// Per docs/plan/09-pivot-vba.md §2: pivot は schema 化せず passthrough。
-// pivotCache / pivotTables 配下のすべてのバイトと _rels が round-trip する
-// ことだけを保証し、編集 API は提供しない。
+// Phase 7 §3.3 acceptance — real openpyxl pivot fixture round-trip. Pivot は
+// schema 化せず passthrough。 pivotCache / pivotTables 配下のすべてのバイトと _rels が
+// round-trip する ことだけを保証し、編集 API は提供しない。
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -91,8 +90,8 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     const pivotRId = pivotCacheMatch?.[1];
     expect(pivotRId).toBeDefined();
 
-    // …and the matching workbook-rels entry uses the same Id and points
-    // at the captured pivotCacheDefinition1.xml part.
+    // …and the matching workbook-rels entry uses the same Id and points at the
+    // captured pivotCacheDefinition1.xml part.
     const relPattern = new RegExp(
       `<Relationship[^/]*Id="${pivotRId}"[^/]*Type="[^"]*pivotCacheDefinition"[^/]*Target="pivotCache/pivotCacheDefinition1\\.xml"\\s*/>`,
     );
@@ -104,8 +103,8 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     const wb = await loadWorkbook(fromBuffer(original));
 
     // sheet1 ("ptsheet") originally points at xl/pivotTables/pivotTable1.xml
-    // through xl/worksheets/_rels/sheet1.xml.rels. Capture surfaces this
-    // on Worksheet.relsExtras.
+    // through xl/worksheets/_rels/sheet1.xml.rels. Capture surfaces this on
+    // Worksheet.relsExtras.
     const sheet1 = wb.sheets[0];
     expect(sheet1?.kind).toBe('worksheet');
     if (sheet1?.kind !== 'worksheet') return;
@@ -130,7 +129,8 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
 
     const sheet1Round = wb2.sheets[0];
     if (sheet1Round?.kind !== 'worksheet') throw new Error('expected worksheet');
-    // pageMargins now lands on the typed field (B6); extLst stays in bodyExtras.
+    // pageMargins now lands on the typed field (B6); extLst stays in
+    // bodyExtras.
     expect(sheet1Round.sheet.pageMargins).toBeDefined();
     const namesAfter = (sheet1Round.sheet.bodyExtras?.afterSheetData ?? []).map((n) =>
       n.name.replace(/^\{[^}]+\}/, ''),
@@ -142,8 +142,9 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     const original = readFileSync(FIXTURE);
     const wb = await loadWorkbook(fromBuffer(original));
 
-    // sheet1 has <pageMargins/> (now typed) and <extLst><ext><mx:PLV/></ext></extLst>
-    // (still captured into Worksheet.bodyExtras.afterSheetData).
+    // sheet1 has <pageMargins/> (now typed) and
+    // <extLst><ext><mx:PLV/></ext></extLst> (still captured into
+    // Worksheet.bodyExtras.afterSheetData).
     const sheet1 = wb.sheets[0];
     expect(sheet1?.kind).toBe('worksheet');
     if (sheet1?.kind !== 'worksheet') return;
@@ -171,8 +172,8 @@ describe('Phase 7 — genuine pivot round-trip (openpyxl pivot.xlsx)', () => {
     const entries = unzipSync(bytes);
     const wbXml = new TextDecoder().decode(entries['xl/workbook.xml']);
 
-    // The before-sheets and after-sheets extras both round-trip, so Excel
-    // sees the same workbook-level metadata it emitted.
+    // The before-sheets and after-sheets extras both round-trip, so Excel sees
+    // the same workbook-level metadata it emitted.
     expect(wbXml).toContain('<fileVersion');
     expect(wbXml).toContain('<workbookPr');
     expect(wbXml).toContain('<bookViews');

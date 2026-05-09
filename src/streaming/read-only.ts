@@ -1,10 +1,10 @@
-// Streaming read-only workbook. Per docs/plan/06-streaming.md §2.
+// Streaming read-only workbook.
 //
-// `loadWorkbookStream` opens the zip + parses workbook.xml /
-// sharedStrings.xml / styles.xml metadata up front (small even on
-// million-row archives), then exposes a lazy `openWorksheet(name)`
-// that SAX-iterates the sheet body via `iterParse`. The iterator
-// streams rows without materialising the full sheet in memory.
+// `loadWorkbookStream` opens the zip + parses workbook.xml / sharedStrings.xml
+// / styles.xml metadata up front (small even on million-row archives), then
+// exposes a lazy `openWorksheet(name)` that SAX-iterates the sheet body via
+// `iterParse`. The iterator streams rows without materialising the full sheet
+// in memory.
 
 import { type SharedStringsTable, parseSharedStringsXml } from '../workbook/shared-strings';
 import { ARC_CONTENT_TYPES, ARC_ROOT_RELS, ARC_SHARED_STRINGS, ARC_STYLE, REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
@@ -120,8 +120,8 @@ const decodeCellValue = (
 };
 
 /**
- * SAX-iterate `<sheetData>/<row>/<c>` events out of `sheetBytes`,
- * yielding one `ReadOnlyCell[]` per row that matches `opts`.
+ * SAX-iterate `<sheetData>/<row>/<c>` events out of `sheetBytes`, yielding one
+ * `ReadOnlyCell[]` per row that matches `opts`.
  */
 async function* iterSheetRows(
   sheetBytes: Uint8Array,
@@ -169,9 +169,9 @@ async function* iterSheetRows(
         }
         case 'c': {
           if (currentRow < 0) break;
-          // Skip cell-attr parsing entirely when the row is outside
-          // the requested band — saves the parseInt + coordinateToTuple
-          // hit on every cell of every excluded row.
+          // Skip cell-attr parsing entirely when the row is outside the
+          // requested band — saves the parseInt + coordinateToTuple hit on
+          // every cell of every excluded row.
           if (currentRow < minRow || currentRow > maxRow) break;
           cellOpen = true;
           cellType = e.attrs['t'] ?? 'n';
@@ -220,9 +220,9 @@ async function* iterSheetRows(
         if (currentRow >= minRow && currentRow <= maxRow && currentCells.length > 0) {
           yield currentCells;
         }
-        // Once we've crossed maxRow there are no more rows to yield —
-        // every subsequent <row> would just be parsed and dropped.
-        // Stop iterating early. ECMA-376 emits rows in ascending order.
+        // Once we've crossed maxRow there are no more rows to yield — every
+        // subsequent <row> would just be parsed and dropped. Stop iterating
+        // early. ECMA-376 emits rows in ascending order.
         if (currentRow > maxRow) {
           inSheetData = false;
           return;
@@ -259,12 +259,11 @@ async function* iterSheetRows(
 
 /**
  * Build a sorted `[rowNum, byteOffset]` index for every `<row r="N">`
- * occurrence in a worksheet's bytes. Pure byte-level scan (no SAX),
- * cheap relative to the per-cell SAX walk: ~50 ns per row on M-series
- * Node 22.
+ * occurrence in a worksheet's bytes. Pure byte-level scan (no SAX), cheap
+ * relative to the per-cell SAX walk: ~50 ns per row on M-series Node 22.
  *
- * `sheetDataEnd` is the byte offset of `</sheetData>` so callers can
- * clip the slice that gets handed to saxes.
+ * `sheetDataEnd` is the byte offset of `</sheetData>` so callers can clip the
+ * slice that gets handed to saxes.
  */
 const buildRowOffsetIndex = (
   bytes: Uint8Array,
@@ -335,8 +334,8 @@ const buildRowOffsetIndex = (
 };
 
 /**
- * Binary-search the row index for the first entry with `row >= target`.
- * Returns -1 when every recorded row is below the target.
+ * Binary-search the row index for the first entry with `row >= target`. Returns
+ * -1 when every recorded row is below the target.
  */
 const firstRowAtOrAfter = (
   index: ReadonlyArray<{ row: number; offset: number }>,
@@ -354,9 +353,9 @@ const firstRowAtOrAfter = (
 };
 
 /**
- * Slice a worksheet's bytes to start at the row at index `idxPos` of
- * the row-offset index, wrapping the result with a synthetic
- * `<sheetData>` envelope so saxes parses it in the right namespace.
+ * Slice a worksheet's bytes to start at the row at index `idxPos` of the
+ * row-offset index, wrapping the result with a synthetic `<sheetData>` envelope
+ * so saxes parses it in the right namespace.
  */
 const SHEET_DATA_OPEN = `<?xml version="1.0" encoding="UTF-8"?><sheetData xmlns="${SHEET_MAIN_NS}">`;
 const SHEET_DATA_CLOSE = `</sheetData>`;
@@ -376,16 +375,14 @@ const sliceFromRow = (
 };
 
 /**
- * Factory: build a {@link ReadOnlyWorksheet} bound to a single
- * worksheet part inside an opened archive. SAX iteration runs lazily
- * — `iterRows` re-reads the part bytes each time so the caller can
- * iterate the same sheet repeatedly without keeping a buffered
- * decoder around.
+ * Factory: build a {@link ReadOnlyWorksheet} bound to a single worksheet part
+ * inside an opened archive. SAX iteration runs lazily — `iterRows` re-reads the
+ * part bytes each time so the caller can iterate the same sheet repeatedly
+ * without keeping a buffered decoder around.
  *
- * For `iterRows({ minRow > 1 })`, a row-offset index is built lazily
- * on first use and cached; subsequent band queries jump straight to
- * the byte offset of the first matching row instead of SAX-walking
- * the entire `<sheetData>`.
+ * For `iterRows({ minRow > 1 })`, a row-offset index is built lazily on first
+ * use and cached; subsequent band queries jump straight to the byte offset of
+ * the first matching row instead of SAX-walking the entire `<sheetData>`.
  */
 const makeStreamingReadOnlyWorksheet = (
   title: string,
@@ -393,9 +390,9 @@ const makeStreamingReadOnlyWorksheet = (
   partPath: string,
   sst: ReadonlyArray<string>,
 ): ReadOnlyWorksheet => {
-  // Lazy + cached. The index is small (~16 B per row); for 1M rows
-  // that's 16 MB of working set, vs. the alternative of walking the
-  // sheet bytes through saxes on every band query.
+  // Lazy + cached. The index is small (~16 B per row); for 1M rows that's 16 MB
+  // of working set, vs. the alternative of walking the sheet bytes through
+  // saxes on every band query.
   let cached: ReturnType<typeof buildRowOffsetIndex> | undefined;
   const ensureIndex = (bytes: Uint8Array) => {
     if (!cached) cached = buildRowOffsetIndex(bytes);
@@ -430,10 +427,9 @@ const makeStreamingReadOnlyWorksheet = (
 };
 
 /**
- * Factory: build a {@link ReadOnlyWorkbook} from an opened archive +
- * pre-parsed sheet list / styles / shared strings. Per the project-
- * wide "no classes" rule (CLAUDE.md / docs/plan/01-architecture.md),
- * the workbook is a plain object closing over the archive handle.
+ * Factory: build a {@link ReadOnlyWorkbook} from an opened archive + pre-parsed
+ * sheet list / styles / shared strings. Per the project-wide "no classes" rule
+ * (CLAUDE.md), the workbook is a plain object closing over the archive handle.
  */
 const makeStreamingReadOnlyWorkbook = (
   sheetNames: string[],
@@ -462,8 +458,8 @@ export async function loadWorkbookStream(source: XlsxSource): Promise<ReadOnlyWo
   if (!archive.has(ARC_CONTENT_TYPES)) {
     throw new OpenXmlSchemaError(`loadWorkbookStream: missing "${ARC_CONTENT_TYPES}"`);
   }
-  // Manifest parse is intentionally cheap and discarded — we resolve
-  // sheets by walking workbook.xml.rels directly.
+  // Manifest parse is intentionally cheap and discarded — we resolve sheets by
+  // walking workbook.xml.rels directly.
   manifestFromBytes(archive.read(ARC_CONTENT_TYPES));
 
   if (!archive.has(ARC_ROOT_RELS)) {

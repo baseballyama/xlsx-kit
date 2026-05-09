@@ -1,4 +1,4 @@
-// `xl/chartsheets/sheetN.xml` reader / writer. Per docs/plan/08-charts-drawings.md §7.
+// `xl/chartsheets/sheetN.xml` reader / writer.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
@@ -104,8 +104,8 @@ const parseSheetProtection = (el: XmlNode): ChartsheetProtection => {
 
 /**
  * Parse a chartsheet part. Returns a Chartsheet with `title` set to the
- * provided fallback (Excel doesn't store the display name inside the
- * chartsheet part itself — it lives in workbook.xml's `<sheet name>`).
+ * provided fallback (Excel doesn't store the display name inside the chartsheet
+ * part itself — it lives in workbook.xml's `<sheet name>`).
  */
 export function parseChartsheetXml(bytes: Uint8Array | string, title: string): Chartsheet {
   const root = parseXml(bytes);
@@ -179,7 +179,8 @@ export function parseChartsheetXml(bytes: Uint8Array | string, title: string): C
     }
   }
 
-  // Drawing reference — the actual rId / drawing payload is resolved by the loader.
+  // Drawing reference — the actual rId / drawing payload is resolved by the
+  // loader.
   return cs;
 }
 
@@ -259,9 +260,9 @@ const parseDrawingHF = (el: XmlNode): ChartsheetDrawingHF | undefined => {
 };
 
 /**
- * Optional drawing rId injected by the writer. The chartsheet part
- * itself only references the drawing by relationship id; the writer
- * supplies the id once it has registered the drawing.
+ * Optional drawing rId injected by the writer. The chartsheet part itself only
+ * references the drawing by relationship id; the writer supplies the id once it
+ * has registered the drawing.
  */
 export interface ChartsheetSerializeOptions {
   drawingRId?: string;

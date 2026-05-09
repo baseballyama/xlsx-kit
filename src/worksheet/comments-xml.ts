@@ -1,4 +1,4 @@
-// xl/commentsN.xml read/write. Per docs/plan/07-rich-features.md §1.
+// xl/commentsN.xml read/write.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
@@ -66,9 +66,9 @@ export function parseCommentsXml(bytes: Uint8Array | string): LegacyComment[] {
 }
 
 /**
- * Serialise a LegacyComment array to a `xl/commentsN.xml` payload. Authors
- * are deduped: each unique `author` becomes one `<author>` entry, and
- * comments reference it by index.
+ * Serialise a LegacyComment array to a `xl/commentsN.xml` payload. Authors are
+ * deduped: each unique `author` becomes one `<author>` entry, and comments
+ * reference it by index.
  */
 export function commentsToBytes(comments: ReadonlyArray<LegacyComment>): Uint8Array {
   return new TextEncoder().encode(serializeComments(comments));
@@ -98,16 +98,16 @@ export function serializeComments(comments: ReadonlyArray<LegacyComment>): strin
 
 /**
  * Bare-bones VML drawing payload Excel tolerates as a comment-shape
- * placeholder. We don't preserve the original VML shapes (stage-1 trade-
- * off); this stub guarantees the worksheet rels stay consistent.
+ * placeholder. We don't preserve the original VML shapes (stage-1 trade-off);
+ * this stub guarantees the worksheet rels stay consistent.
  *
- * Excel won't open the file unless every legacy comment is paired with
- * a `<v:shape>` carrying `<x:ClientData ObjectType="Note">` plus the
- * cell anchor row/column — without those, Excel reports "removed
- * Records: Comment from /xl/comments1.xml" and silently drops them.
+ * Excel won't open the file unless every legacy comment is paired with a
+ * `<v:shape>` carrying `<x:ClientData ObjectType="Note">` plus the cell anchor
+ * row/column — without those, Excel reports "removed Records: Comment from
+ * /xl/comments1.xml" and silently drops them.
  *
- * The `<v:shapetype id="_x0000_t202">` / `<v:shape type="#_x0000_t202">`
- * pair mirrors what openpyxl's ShapeWriter emits.
+ * The `<v:shapetype id="_x0000_t202">` / `<v:shape type="#_x0000_t202">` pair
+ * mirrors what openpyxl's ShapeWriter emits.
  */
 export function placeholderVmlDrawing(comments: ReadonlyArray<LegacyComment> = []): Uint8Array {
   const parts: string[] = [

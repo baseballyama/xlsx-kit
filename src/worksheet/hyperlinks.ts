@@ -1,9 +1,9 @@
-// Worksheet hyperlinks. Per docs/plan/07-rich-features.md §2.
+// Worksheet hyperlinks.
 //
-// External URLs land in `xl/worksheets/_rels/sheetN.xml.rels` (one rel
-// per Hyperlink entry, type "...relationships/hyperlink",
-// TargetMode="External"). Internal jumps (`#'Sheet 2'!A1`) live entirely
-// in the `<hyperlink location="..."/>` attribute and don't need a rel.
+// External URLs land in `xl/worksheets/_rels/sheetN.xml.rels` (one rel per
+// Hyperlink entry, type "...relationships/hyperlink", TargetMode="External").
+// Internal jumps (`#'Sheet 2'!A1`) live entirely in the `<hyperlink
+// location="..."/>` attribute and don't need a rel.
 
 export interface Hyperlink {
   /** Cell or range the hyperlink covers — "A1" or "A1:B5". */
@@ -46,9 +46,9 @@ const replaceHyperlink = (ws: Worksheet, hl: Hyperlink): Hyperlink => {
 };
 
 /**
- * Add an external URL hyperlink to a cell or range. The URL goes into
- * the worksheet rels as a hyperlink relationship; the writer
- * generates an rId on save.
+ * Add an external URL hyperlink to a cell or range. The URL goes into the
+ * worksheet rels as a hyperlink relationship; the writer generates an rId on
+ * save.
  */
 export const addUrlHyperlink = (
   ws: Worksheet,
@@ -68,9 +68,9 @@ export const addUrlHyperlink = (
 };
 
 /**
- * Add an in-workbook jump hyperlink (e.g. to `'Sheet2'!A1` or a
- * defined-name). No rels entry is written — the location is inline
- * in the `<hyperlink location="…"/>` attribute.
+ * Add an in-workbook jump hyperlink (e.g. to `'Sheet2'!A1` or a defined-name).
+ * No rels entry is written — the location is inline in the `<hyperlink
+ * location="…"/>` attribute.
  */
 export const addInternalHyperlink = (
   ws: Worksheet,

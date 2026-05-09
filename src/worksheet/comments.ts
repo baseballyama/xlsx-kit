@@ -1,10 +1,10 @@
-// Legacy comments. Per docs/plan/07-rich-features.md §1.
+// Legacy comments.
 //
-// Legacy comments live in `xl/commentsN.xml` (typed comment list +
-// authors index) plus a VML drawing part for the popup balloon shape.
-// Stage-1 covers plain-text comments + author dedup; rich-text + VML
-// shape preservation are reserved for later iterations (we emit a
-// minimal placeholder VML so Excel can re-render).
+// Legacy comments live in `xl/commentsN.xml` (typed comment list + authors
+// index) plus a VML drawing part for the popup balloon shape. Stage-1 covers
+// plain-text comments + author dedup; rich-text + VML shape preservation are
+// reserved for later iterations (we emit a minimal placeholder VML so Excel can
+// re-render).
 
 export interface LegacyComment {
   /** Cell reference — typically a single cell ("A1") but Excel allows ranges. */

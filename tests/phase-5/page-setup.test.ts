@@ -1,5 +1,5 @@
-// Tests for the typed page-setup model. Per docs/plan/13-full-excel-coverage.md
-// §B6 (printOptions / pageMargins / pageSetup / headerFooter).
+// Tests for the typed page-setup model. (printOptions / pageMargins / pageSetup
+// / headerFooter).
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

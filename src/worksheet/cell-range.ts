@@ -1,10 +1,9 @@
-// Cell-range value object + set operations. Per
-// docs/plan/04-core-model.md §4.5.
+// Cell-range value object + set operations.
 //
-// The struct is the same `CellRangeBoundaries` we already use across
-// the coordinate parser; this module adds the worksheet-level
-// operations (containment, shift, union, intersection, iteration) and
-// a `MultiCellRange` lite wrapper for sqref-style attributes.
+// The struct is the same `CellRangeBoundaries` we already use across the
+// coordinate parser; this module adds the worksheet-level operations
+// (containment, shift, union, intersection, iteration) and a `MultiCellRange`
+// lite wrapper for sqref-style attributes.
 
 import type { Cell } from '../cell/cell';
 import {
@@ -56,14 +55,12 @@ export function rangeToString(r: CellRange): string {
 }
 
 /**
- * Compute the bounding A1-style range string for a list of cells.
- * Walks the input once to find min/max row+col. A single-cell input
- * returns a single-cell ref (`"A1"`); two or more cells (even
- * collinear) return the `"A1:B5"` form.
+ * Compute the bounding A1-style range string for a list of cells. Walks the
+ * input once to find min/max row+col. A single-cell input returns a single-cell
+ * ref (`"A1"`); two or more cells (even collinear) return the `"A1:B5"` form.
  *
- * Throws when the array is empty — there's no meaningful zero-cell
- * range, and silently returning `""` would defeat downstream
- * `parseRange` consumers.
+ * Throws when the array is empty — there's no meaningful zero-cell range, and
+ * silently returning `""` would defeat downstream `parseRange` consumers.
  */
 export function cellRangeFromCells(cells: ReadonlyArray<Pick<Cell, 'row' | 'col'>>): string {
   if (cells.length === 0) {
@@ -91,10 +88,9 @@ export function rangeContainsCell(r: CellRange, row: number, col: number): boole
 }
 
 /**
- * A1-string convenience for {@link rangeContainsCell}. Parses
- * `cellRef` (e.g. `"B3"`) and `rangeRef` (e.g. `"A1:C5"`) and
- * returns `true` iff the cell sits inside the range (boundary-
- * inclusive). Throws when either input is malformed.
+ * A1-string convenience for {@link rangeContainsCell}. Parses `cellRef` (e.g.
+ * `"B3"`) and `rangeRef` (e.g. `"A1:C5"`) and returns `true` iff the cell sits
+ * inside the range (boundary-inclusive). Throws when either input is malformed.
  */
 export function isCellInRange(cellRef: string, rangeRef: string): boolean {
   const { col, row } = coordinateToTuple(cellRef);
@@ -102,38 +98,38 @@ export function isCellInRange(cellRef: string, rangeRef: string): boolean {
 }
 
 /**
- * A1-string convenience for {@link rangeContainsRange}. Returns
- * `true` iff the `inner` range is wholly contained by `outer`
- * (boundary-inclusive). Single-cell refs are accepted on either
- * side via parseRange. Throws on malformed input.
+ * A1-string convenience for {@link rangeContainsRange}. Returns `true` iff the
+ * `inner` range is wholly contained by `outer` (boundary-inclusive).
+ * Single-cell refs are accepted on either side via parseRange. Throws on
+ * malformed input.
  */
 export function isRangeInRange(inner: string, outer: string): boolean {
   return rangeContainsRange(parseRange(outer), parseRange(inner));
 }
 
 /**
- * A1-string convenience for {@link rangesOverlap}. Returns `true`
- * iff the two ranges share at least one cell. Boundary-inclusive
- * (a 1-row gap = no overlap). Single-cell refs are accepted via
- * parseRange. Throws on malformed input.
+ * A1-string convenience for {@link rangesOverlap}. Returns `true` iff the two
+ * ranges share at least one cell. Boundary-inclusive (a 1-row gap = no
+ * overlap). Single-cell refs are accepted via parseRange. Throws on malformed
+ * input.
  */
 export function rangesOverlapStr(a: string, b: string): boolean {
   return rangesOverlap(parseRange(a), parseRange(b));
 }
 
 /**
- * A1-string convenience for {@link unionRange}. Returns the smallest
- * A1 range that contains both inputs (always non-null; ranges that
- * don't overlap still get a valid bounding box).
+ * A1-string convenience for {@link unionRange}. Returns the smallest A1 range
+ * that contains both inputs (always non-null; ranges that don't overlap still
+ * get a valid bounding box).
  */
 export function unionRangeStr(a: string, b: string): string {
   return rangeToString(unionRange(parseRange(a), parseRange(b)));
 }
 
 /**
- * A1-string convenience for {@link intersectionRange}. Returns the
- * shared rectangular sub-range as A1 string, or `undefined` when
- * the inputs are disjoint.
+ * A1-string convenience for {@link intersectionRange}. Returns the shared
+ * rectangular sub-range as A1 string, or `undefined` when the inputs are
+ * disjoint.
  */
 export function intersectionRangeStr(a: string, b: string): string | undefined {
   const r = intersectionRange(parseRange(a), parseRange(b));
@@ -141,28 +137,27 @@ export function intersectionRangeStr(a: string, b: string): string | undefined {
 }
 
 /**
- * A1-string convenience for {@link shiftRange}. Translates the range
- * by `(dr, dc)` integer offsets and re-serialises. Negative offsets
- * shift up/left. Throws when the resulting bounds fall outside the
- * OOXML grid (rows 1..1048576, cols 1..16384).
+ * A1-string convenience for {@link shiftRange}. Translates the range by `(dr,
+ * dc)` integer offsets and re-serialises. Negative offsets shift up/left.
+ * Throws when the resulting bounds fall outside the OOXML grid (rows
+ * 1..1048576, cols 1..16384).
  */
 export function shiftRangeStr(range: string, dr: number, dc: number): string {
   return rangeToString(shiftRange(parseRange(range), dr, dc));
 }
 
 /**
- * A1-string convenience for {@link rangeArea}. Returns the inclusive
- * cell count covered by the range (rows × cols). Single-cell refs
- * return 1.
+ * A1-string convenience for {@link rangeArea}. Returns the inclusive cell count
+ * covered by the range (rows × cols). Single-cell refs return 1.
  */
 export function rangeAreaStr(range: string): number {
   return rangeArea(parseRange(range));
 }
 
 /**
- * A1-string range dimensions: how many rows and columns the range
- * spans (inclusive). Distinct from {@link rangeAreaStr} which returns
- * the product. Single-cell refs return `{ rows: 1, cols: 1 }`.
+ * A1-string range dimensions: how many rows and columns the range spans
+ * (inclusive). Distinct from {@link rangeAreaStr} which returns the product.
+ * Single-cell refs return `{ rows: 1, cols: 1 }`.
  */
 export function rangeDimensionsStr(range: string): { rows: number; cols: number } {
   const r = parseRange(range);
@@ -170,13 +165,13 @@ export function rangeDimensionsStr(range: string): { rows: number; cols: number 
 }
 
 /**
- * Expand (or shrink) an A1 range by adding `deltaRows` to its bottom
- * edge and `deltaCols` to its right edge. The top-left corner is
- * preserved. Negative deltas shrink the range; the result must still
- * have at least 1 row and 1 column (otherwise throws).
+ * Expand (or shrink) an A1 range by adding `deltaRows` to its bottom edge and
+ * `deltaCols` to its right edge. The top-left corner is preserved. Negative
+ * deltas shrink the range; the result must still have at least 1 row and 1
+ * column (otherwise throws).
  *
- * Useful for "this is the data range — also reserve room for a totals
- * row" or "include one more column to the right" patterns.
+ * Useful for "this is the data range — also reserve room for a totals row" or
+ * "include one more column to the right" patterns.
  */
 export function expandRangeStr(range: string, deltaRows: number, deltaCols: number): string {
   if (!Number.isInteger(deltaRows) || !Number.isInteger(deltaCols)) {
@@ -197,9 +192,9 @@ export function rangeContainsRange(outer: CellRange, inner: CellRange): boolean 
 }
 
 /**
- * Shift a range by (dr, dc) integer offsets. The returned range is
- * clamped to the OOXML grid; callers that want hard bounds should
- * pass values that keep the result inside the spec.
+ * Shift a range by (dr, dc) integer offsets. The returned range is clamped to
+ * the OOXML grid; callers that want hard bounds should pass values that keep
+ * the result inside the spec.
  */
 export function shiftRange(r: CellRange, dr: number, dc: number): CellRange {
   if (!Number.isInteger(dr) || !Number.isInteger(dc)) {
@@ -250,8 +245,8 @@ export function* iterRangeCoordinates(r: CellRange): IterableIterator<{ row: num
 // ---- MultiCellRange --------------------------------------------------------
 
 /**
- * Excel's `sqref` attribute: a space-separated list of CellRanges.
- * Used by data validations, conditional formatting, hyperlinks etc.
+ * Excel's `sqref` attribute: a space-separated list of CellRanges. Used by data
+ * validations, conditional formatting, hyperlinks etc.
  */
 export interface MultiCellRange {
   ranges: CellRange[];

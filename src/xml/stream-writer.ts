@@ -1,15 +1,15 @@
-// Streaming XML emitter. Used by writers that need to compose larger
-// documents incrementally — chiefly the worksheet writer where the
-// `<sheetData>` block is emitted row-by-row to keep heap use bounded.
+// Streaming XML emitter. Used by writers that need to compose larger documents
+// incrementally — chiefly the worksheet writer where the `<sheetData>` block is
+// emitted row-by-row to keep heap use bounded.
 //
-// Phase 1 §5: buffered output only (a chunk array materialised on
-// `result()`). Streaming via `WritableStream<Uint8Array>` is added in
-// the phase-4 streaming worksheet writer; the structural API stays the
-// same so that change is mechanical.
+// Phase 1 §5: buffered output only (a chunk array materialised on `result()`).
+// Streaming via `WritableStream<Uint8Array>` is added in the phase-4 streaming
+// worksheet writer; the structural API stays the same so that change is
+// mechanical.
 //
-// Per docs/plan/01-architecture.md §7.2 the worksheet hot path emits
-// cells through templated strings, NOT through this writer's start /
-// end / writeNode methods. Use `writeRaw` to splice those in.
+// The worksheet hot path emits cells through templated strings, NOT through
+// this writer's start / end / writeNode methods. Use `writeRaw` to splice those
+// in.
 
 import { OpenXmlIoError } from '../utils/exceptions';
 import { DEFAULT_PREFIXES, parseQName, XML_NS } from './namespaces';
@@ -23,18 +23,18 @@ export interface XmlStreamWriterOptions {
   /** `standalone` attribute on the declaration. Defaults to 'yes'. */
   standalone?: 'yes' | 'no' | 'omit';
   /**
-   * Auto-flush threshold in bytes. Once the in-flight string buffer
-   * crosses this size it gets encoded into a chunk and parked. Larger
-   * values trade memory for fewer TextEncoder calls; smaller values
-   * lower peak memory at the cost of CPU.
+   * Auto-flush threshold in bytes. Once the in-flight string buffer crosses
+   * this size it gets encoded into a chunk and parked. Larger values trade
+   * memory for fewer TextEncoder calls; smaller values lower peak memory at the
+   * cost of CPU.
    */
   flushBytes?: number;
 }
 
 export interface XmlStreamWriter {
   /**
-   * Open an element. Names are in Clark notation (`{ns}local`); the
-   * writer prefixes them via the configured prefix map.
+   * Open an element. Names are in Clark notation (`{ns}local`); the writer
+   * prefixes them via the configured prefix map.
    */
   start(name: string, attrs?: Record<string, string>): void;
   /** Emit a text node inside the currently open element. */
@@ -48,8 +48,8 @@ export interface XmlStreamWriter {
   /** Force any buffered bytes into the chunk store immediately. */
   flush(): void;
   /**
-   * Materialise everything written so far. Throws if any element is
-   * still open. Idempotent.
+   * Materialise everything written so far. Throws if any element is still open.
+   * Idempotent.
    */
   result(): Uint8Array;
 }
@@ -126,7 +126,8 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
     buf += '?>\n';
   }
 
-  // ---- writeNode internals ---------------------------------------------------
+  // ---- writeNode internals
+  // ---------------------------------------------------
 
   const emitNodeInline = (n: XmlNode): void => {
     const tag = elementName(n.name);
@@ -147,7 +148,8 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
     buf += `</${tag}>`;
   };
 
-  // ---- public surface --------------------------------------------------------
+  // ---- public surface
+  // --------------------------------------------------------
 
   return {
     start(name, attrs) {

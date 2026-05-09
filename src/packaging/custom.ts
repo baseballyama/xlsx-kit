@@ -1,11 +1,10 @@
-// `docProps/custom.xml` — user-defined document properties. Each
-// <property> carries fmtid/pid/name attributes plus a single typed
-// value child from the vt: namespace (vt:lpwstr, vt:i4, vt:bool, …).
+// `docProps/custom.xml` — user-defined document properties. Each <property>
+// carries fmtid/pid/name attributes plus a single typed value child from the
+// vt: namespace (vt:lpwstr, vt:i4, vt:bool, …).
 //
-// Per docs/plan/03-foundations.md §6.3. The Schema layer drives the
-// <property> element attribute set; the typed-value child is stored as
-// a raw XmlNode and the `make*Value` / `read*Value` helpers below cover
-// the most common conversions.
+// The Schema layer drives the <property> element attribute set; the typed-value
+// child is stored as a raw XmlNode and the `make*Value` / `read*Value` helpers
+// below cover the most common conversions.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { CPROPS_FMTID, CUSTPROPS_NS, parseQName, VTYPES_NS } from '../xml/namespaces';
@@ -213,9 +212,8 @@ export const setCustomStringProperty = (wb: Workbook, name: string, value: strin
   replaceOrAppend(wb, name, makeStringValue(value));
 
 /**
- * Set (or replace) a custom numeric property. Integers (within Int32
- * range) are stored as `vt:i4`; non-integer / out-of-range numbers as
- * `vt:r8` doubles.
+ * Set (or replace) a custom numeric property. Integers (within Int32 range) are
+ * stored as `vt:i4`; non-integer / out-of-range numbers as `vt:r8` doubles.
  */
 export const setCustomNumberProperty = (wb: Workbook, name: string, value: number): CustomProperty => {
   if (!Number.isFinite(value)) {
@@ -231,8 +229,8 @@ export const setCustomBoolProperty = (wb: Workbook, name: string, value: boolean
   replaceOrAppend(wb, name, makeBoolValue(value));
 
 /**
- * Set (or replace) a custom date property. Accepts a `Date` (converted
- * to ISO via `toISOString()`) or a pre-formatted W3C-DTF string.
+ * Set (or replace) a custom date property. Accepts a `Date` (converted to ISO
+ * via `toISOString()`) or a pre-formatted W3C-DTF string.
  */
 export const setCustomDateProperty = (
   wb: Workbook,
@@ -244,10 +242,9 @@ export const setCustomDateProperty = (
 };
 
 /**
- * Read the typed value of a custom property by name. Tries each
- * decoder in turn — string, int, double, bool, filetime — and
- * returns the first hit. Returns `undefined` for unknown names or
- * unsupported types.
+ * Read the typed value of a custom property by name. Tries each decoder in turn
+ * — string, int, double, bool, filetime — and returns the first hit. Returns
+ * `undefined` for unknown names or unsupported types.
  */
 export const getCustomPropertyValue = (
   wb: Workbook,
@@ -270,8 +267,8 @@ export const getCustomPropertyValue = (
 };
 
 /**
- * Remove a custom property by name. Returns `true` when one was
- * removed, `false` when the name wasn't found.
+ * Remove a custom property by name. Returns `true` when one was removed,
+ * `false` when the name wasn't found.
  */
 export const removeCustomProperty = (wb: Workbook, name: string): boolean => {
   if (!wb.customProperties) return false;

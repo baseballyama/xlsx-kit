@@ -1,4 +1,4 @@
-// `xl/drawings/chartDrawingN.xml` reader/writer. Per docs/plan/08-charts-drawings.md §8.
+// `xl/drawings/chartDrawingN.xml` reader/writer.
 
 import {
   parseShapeProperties,

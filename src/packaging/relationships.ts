@@ -1,9 +1,8 @@
 // `*.rels` files — Open Packaging Conventions relationship lists.
-// Per docs/plan/03-foundations.md §6.2.
 //
 // Mirrors openpyxl/openpyxl/packaging/relationship.py. Relationship Ids
-// (`rId{N}`) auto-increment using the smallest unused integer so the
-// list stays deterministic even when callers mix in pre-assigned ids.
+// (`rId{N}`) auto-increment using the smallest unused integer so the list stays
+// deterministic even when callers mix in pre-assigned ids.
 
 import { defineSchema, type Schema } from '../schema/core';
 import { fromTree, toTree } from '../schema/serialize';
@@ -81,8 +80,8 @@ const allocateNextId = (rels: Relationships): string => {
 };
 
 /**
- * Append a relationship and return the resulting object. Auto-assigns
- * the next free `rId{N}` Id.
+ * Append a relationship and return the resulting object. Auto-assigns the next
+ * free `rId{N}` Id.
  */
 export function appendRel(rels: Relationships, type: string, target: string, targetMode?: 'External'): Relationship {
   const next: Relationship = { id: allocateNextId(rels), type, target };

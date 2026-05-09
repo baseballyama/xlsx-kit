@@ -1,5 +1,5 @@
-// Tests for the typed workbook-level <workbookProtection> model.
-// Per docs/plan/13-full-excel-coverage.md §B5 (workbook side).
+// Tests for the typed workbook-level <workbookProtection> model. (workbook
+// side).
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';

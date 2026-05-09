@@ -1,18 +1,17 @@
-// DrawingML geometry. Per docs/plan/08-charts-drawings.md §4.5.
+// DrawingML geometry.
 //
-// Geometry has two kinds: a preset shape pulled from the ECMA-376
-// gallery (one of the 187 `ST_PresetShapeType` names below) and a
-// custom path expressed as a sequence of move/line/arc/bezier/close
-// commands. openpyxl drops the path command list on read; the model
-// below preserves it so the "custGeom round-trip" acceptance criterion
-// can pass.
+// Geometry has two kinds: a preset shape pulled from the ECMA-376 gallery (one
+// of the 187 `ST_PresetShapeType` names below) and a custom path expressed as a
+// sequence of move/line/arc/bezier/close commands. openpyxl drops the path
+// command list on read; the model below preserves it so the "custGeom
+// round-trip" acceptance criterion can pass.
 
 import type { Point2D } from './shape-properties';
 
 /**
- * ECMA-376 §20.1.10.55 preset shape catalogue (`ST_PresetShapeType`,
- * 187 entries). Pulled from openpyxl's `PresetGeometry2D.prst` Set so
- * the test corpus stays directly comparable.
+ * ECMA-376 §20.1.10.55 preset shape catalogue (`ST_PresetShapeType`, 187
+ * entries). Pulled from openpyxl's `PresetGeometry2D.prst` Set so the test
+ * corpus stays directly comparable.
  */
 export const PRESET_SHAPE_NAMES: ReadonlyArray<string> = [
   'line',
@@ -216,9 +215,9 @@ export interface ShapeGuide {
 }
 
 /**
- * Adjust point. ECMA-376 calls these out as a Coordinate (a string that
- * may be a literal EMU number or a guide-name reference like `wd2`). We
- * keep them as strings so guide-references survive round-trip.
+ * Adjust point. ECMA-376 calls these out as a Coordinate (a string that may be
+ * a literal EMU number or a guide-name reference like `wd2`). We keep them as
+ * strings so guide-references survive round-trip.
  */
 export interface AdjPoint2D {
   x: string;

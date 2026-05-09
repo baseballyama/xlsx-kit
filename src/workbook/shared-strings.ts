@@ -1,15 +1,15 @@
-// Shared-strings table read/write. Per docs/plan/05-read-write.md §4.
+// Shared-strings table read/write.
 //
 // Excel pulls every plain-string cell out of the sheet bodies and into
-// `xl/sharedStrings.xml` so duplicates compress well. The format is a
-// flat list of `<si>` entries, each holding either a single `<t>`
-// (plain text) or a sequence of `<r><rPr/>?<t/></r>` runs (rich text).
+// `xl/sharedStrings.xml` so duplicates compress well. The format is a flat list
+// of `<si>` entries, each holding either a single `<t>` (plain text) or a
+// sequence of `<r><rPr/>?<t/></r>` runs (rich text).
 //
-// Rich-text entries are kept as their full `RichText` runs so per-run
-// fonts (bold / italic / colour / size / …) survive the round-trip.
-// Plain strings still dedup against literal text; rich text is kept
-// distinct per-cell (Excel's writer doesn't dedupe rich-text either —
-// formatting equality is rarely worth comparing).
+// Rich-text entries are kept as their full `RichText` runs so per-run fonts
+// (bold / italic / colour / size / …) survive the round-trip. Plain strings
+// still dedup against literal text; rich text is kept distinct per-cell
+// (Excel's writer doesn't dedupe rich-text either — formatting equality is
+// rarely worth comparing).
 
 import type { RichText } from '../cell/rich-text';
 import { type Color, colorToHex } from '../styles/colors';
@@ -28,9 +28,9 @@ const R_TAG = `{${SHEET_MAIN_NS}}r`;
 export type SharedStringEntry = string | { kind: 'rich-text'; runs: RichText };
 
 /**
- * Mutable shared-strings accumulator + lookup table. The same shape is
- * used during read (just populate `entries`) and write (call
- * `addSharedString` from the worksheet writer; emit to bytes at the end).
+ * Mutable shared-strings accumulator + lookup table. The same shape is used
+ * during read (just populate `entries`) and write (call `addSharedString` from
+ * the worksheet writer; emit to bytes at the end).
  */
 export interface SharedStringsTable {
   /** Insertion-ordered list of unique entries. */
@@ -44,9 +44,9 @@ export function makeSharedStrings(): SharedStringsTable {
 }
 
 /**
- * Insert a string and return its index. Idempotent: calling with the
- * same value twice gives the same index. Empty strings are deduped just
- * like everything else.
+ * Insert a string and return its index. Idempotent: calling with the same value
+ * twice gives the same index. Empty strings are deduped just like everything
+ * else.
  */
 export function addSharedString(table: SharedStringsTable, value: string): number {
   const cached = table.index.get(value);
@@ -58,9 +58,9 @@ export function addSharedString(table: SharedStringsTable, value: string): numbe
 }
 
 /**
- * Insert a rich-text entry and return its index. Rich-text values are
- * not deduped — formatting equality is expensive and rarely worth the
- * trade. Each call appends a new `<si>` slot.
+ * Insert a rich-text entry and return its index. Rich-text values are not
+ * deduped — formatting equality is expensive and rarely worth the trade. Each
+ * call appends a new `<si>` slot.
  */
 export function addSharedRichText(table: SharedStringsTable, runs: RichText): number {
   const id = table.entries.length;
@@ -75,9 +75,9 @@ export function getSharedStringIndex(table: SharedStringsTable, value: string): 
 
 /**
  * Read a shared-string by its 0-based index. Returns `undefined` for
- * out-of-range. Rich-text entries surface their concatenated plain text
- * so callers that want only the textual body don't need to know about
- * the discriminated union.
+ * out-of-range. Rich-text entries surface their concatenated plain text so
+ * callers that want only the textual body don't need to know about the
+ * discriminated union.
  */
 export function getSharedStringAt(table: SharedStringsTable, index: number): string | undefined {
   const entry = table.entries[index];
@@ -118,9 +118,9 @@ const collectText = (node: XmlNode): string => {
 };
 
 /**
- * Parse a `xl/sharedStrings.xml` payload. Returns the table directly
- * (rather than just the array) so the worksheet writer can keep
- * appending to it without rebuilding the index.
+ * Parse a `xl/sharedStrings.xml` payload. Returns the table directly (rather
+ * than just the array) so the worksheet writer can keep appending to it without
+ * rebuilding the index.
  *
  * Rich-text runs are preserved as their full per-run formatting so
  * round-tripping a file with rich text doesn't drop the styling.
@@ -133,8 +133,8 @@ export function parseSharedStringsXml(bytes: Uint8Array | string): SharedStrings
   const table = makeSharedStrings();
   for (const si of findChildren(root, SI_TAG)) {
     const entry = parseSi(si);
-    // Don't dedup — Excel preserves duplicate `<si>` entries by index, and
-    // the worksheet `t="s"` references depend on slot, not on text equality.
+    // Don't dedup — Excel preserves duplicate `<si>` entries by index, and the
+    // worksheet `t="s"` references depend on slot, not on text equality.
     const id = table.entries.length;
     table.entries.push(entry);
     if (typeof entry === 'string' && !table.index.has(entry)) table.index.set(entry, id);
@@ -221,11 +221,10 @@ const parseRunPr = (rPr: XmlNode): import('../cell/rich-text').InlineFont | unde
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
 /**
- * Serialise a SharedStringsTable to its OOXML bytes. The `count`
- * attribute tracks total references (we don't know that here so we
- * report the same as `uniqueCount` — readers tolerate the discrepancy
- * and Excel ignores `count` in practice). `uniqueCount` always matches
- * `entries.length`.
+ * Serialise a SharedStringsTable to its OOXML bytes. The `count` attribute
+ * tracks total references (we don't know that here so we report the same as
+ * `uniqueCount` — readers tolerate the discrepancy and Excel ignores `count` in
+ * practice). `uniqueCount` always matches `entries.length`.
  */
 export function sharedStringsToBytes(table: SharedStringsTable): Uint8Array {
   return new TextEncoder().encode(serializeSharedStrings(table));
@@ -261,8 +260,8 @@ const serializeSi = (value: SharedStringEntry): string => {
 };
 
 /**
- * Serialise a sequence of `<r>...<r>` runs — shared by the SST `<si>`
- * writer and the worksheet's inline-string (`t="inlineStr"`) cell writer.
+ * Serialise a sequence of `<r>...<r>` runs — shared by the SST `<si>` writer
+ * and the worksheet's inline-string (`t="inlineStr"`) cell writer.
  */
 export function serializeRichTextRuns(runs: import('../cell/rich-text').RichText): string {
   const parts: string[] = [];
@@ -280,8 +279,8 @@ export function serializeRichTextRuns(runs: import('../cell/rich-text').RichText
 
 const serializeInlineFont = (f: import('../cell/rich-text').InlineFont): string => {
   // Element order per ECMA-376 §17.4.4.10 (CT_RPrElt). Excel's parser is
-  // sensitive to ordering — out-of-order children make the run silently
-  // fall back to the cell's font.
+  // sensitive to ordering — out-of-order children make the run silently fall
+  // back to the cell's font.
   const parts: string[] = ['<rPr>'];
   if (f.name !== undefined) parts.push(`<rFont val="${escapeXmlAttr(f.name)}"/>`);
   if (f.charset !== undefined) parts.push(`<charset val="${f.charset}"/>`);
@@ -309,7 +308,8 @@ const serializeRunColor = (c: Color): string => {
   else if (c.indexed !== undefined) attrs.push(`indexed="${c.indexed}"`);
   else if (c.auto !== undefined) attrs.push(`auto="${c.auto ? '1' : '0'}"`);
   if (c.tint !== undefined) attrs.push(`tint="${c.tint}"`);
-  // Fallback to colorToHex if nothing was set above (shouldn't happen, but safe).
+  // Fallback to colorToHex if nothing was set above (shouldn't happen, but
+  // safe).
   if (attrs.length === 0) {
     const hex = colorToHex(c);
     if (hex !== undefined) attrs.push(`rgb="${hex}"`);

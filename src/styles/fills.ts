@@ -5,10 +5,10 @@
 //   * <patternFill patternType="…">[<fgColor>, <bgColor>]</patternFill>
 //   * <gradientFill type="linear|path" …>[<stop>, …]</gradientFill>
 //
-// The TS port models the inner variants as a discriminated union via
-// a `kind` tag; the wrapper is reconstructed during XML round-trip
-// (see fills.schema.ts). All values are plain readonly + frozen per
-// docs/plan/04-core-model.md §3.1 so the Stylesheet pool can dedupe.
+// The TS port models the inner variants as a discriminated union via a `kind`
+// tag; the wrapper is reconstructed during XML round-trip (see
+// fills.schema.ts). All values are plain readonly + frozen so the Stylesheet
+// pool can dedupe.
 
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type Color, colorToHex, makeColor } from './colors';
@@ -137,9 +137,9 @@ export function makeGradientFill(opts: Partial<Omit<GradientFill, 'kind'>> = {})
 export type Fill = PatternFill | GradientFill;
 
 /**
- * Single-arg constructor that defers to the variant-specific maker
- * based on `kind`. Useful when the caller has a plain object in hand
- * and wants the freeze invariant applied uniformly.
+ * Single-arg constructor that defers to the variant-specific maker based on
+ * `kind`. Useful when the caller has a plain object in hand and wants the
+ * freeze invariant applied uniformly.
  */
 export function makeFill(opts: Partial<PatternFill> | Partial<GradientFill>): Fill {
   if (opts.kind === 'gradient') return makeGradientFill(opts as Partial<Omit<GradientFill, 'kind'>>);
@@ -162,15 +162,14 @@ const argbToCssHex = (color: Color | undefined): string | undefined => {
 };
 
 /**
- * Translate a {@link Fill} to a CSS-property record suitable for HTML
- * preview. `'solid'` PatternFill renders as `background-color`, other
- * pattern types collapse to bgColor (CSS has no built-in equivalent of
- * Excel hatch patterns). GradientFill emits a CSS `background-image`
- * with `linear-gradient(<angle>, …)` for `type='linear'` or
- * `radial-gradient(circle, …)` for `type='path'`.
+ * Translate a {@link Fill} to a CSS-property record suitable for HTML preview.
+ * `'solid'` PatternFill renders as `background-color`, other pattern types
+ * collapse to bgColor (CSS has no built-in equivalent of Excel hatch patterns).
+ * GradientFill emits a CSS `background-image` with `linear-gradient(<angle>,
+ * …)` for `type='linear'` or `radial-gradient(circle, …)` for `type='path'`.
  *
- * theme/auto colours and unresolvable inputs are skipped (returns `{}`)
- * so callers can spread without overwriting upstream defaults.
+ * theme/auto colours and unresolvable inputs are skipped (returns `{}`) so
+ * callers can spread without overwriting upstream defaults.
  */
 export function fillToCss(fill: Fill | undefined): Record<string, string> {
   const css: Record<string, string> = {};

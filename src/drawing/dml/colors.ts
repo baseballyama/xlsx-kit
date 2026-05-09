@@ -1,12 +1,12 @@
-// DrawingML colors. Per docs/plan/08-charts-drawings.md §4.1.
+// DrawingML colors.
 //
 // ECMA-376 spreads "color" across six element kinds (`<a:srgbClr>`,
-// `<a:sysClr>`, `<a:schemeClr>`, `<a:prstClr>`, `<a:hslClr>`,
-// `<a:scrgbClr>`) plus a long modifier list (`<a:lumMod>`, `<a:tint>`,
-// etc.) that may follow the base color. The model splits the two: a
-// `DmlColor` discriminated union for the base, and a `ColorMod[]` carrying
-// the ordered modifier list. Wrapping them in `DmlColorWithMods` keeps
-// the modifier order — Excel re-applies them in the same sequence.
+// `<a:sysClr>`, `<a:schemeClr>`, `<a:prstClr>`, `<a:hslClr>`, `<a:scrgbClr>`)
+// plus a long modifier list (`<a:lumMod>`, `<a:tint>`, etc.) that may follow
+// the base color. The model splits the two: a `DmlColor` discriminated union
+// for the base, and a `ColorMod[]` carrying the ordered modifier list. Wrapping
+// them in `DmlColorWithMods` keeps the modifier order — Excel re-applies them
+// in the same sequence.
 
 /** ECMA-376 scheme-color names (`<a:schemeClr val="...">`). */
 export type SchemeColorName =

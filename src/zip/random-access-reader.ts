@@ -1,21 +1,19 @@
-// Random-access ZIP reader. Per docs/plan/03-foundations.md §2.1 / §2.3
-// streaming-read residual.
+// Random-access ZIP reader. / §2.3 streaming-read residual.
 //
-// The previous reader handed every entry to `fflate.unzipSync` up front,
-// which materialises *every* uncompressed payload into memory at once.
-// For a 100 MB xlsx with ~500 MB of decompressed sheet data the resident
-// set spikes accordingly. The random-access path keeps only the
-// compressed archive bytes resident, parses the central directory once
-// (cheap — ~46 B per entry plus filename), and inflates each entry
-// lazily on `read(path)`.
+// The previous reader handed every entry to `fflate.unzipSync` up front, which
+// materialises *every* uncompressed payload into memory at once. For a 100 MB
+// xlsx with ~500 MB of decompressed sheet data the resident set spikes
+// accordingly. The random-access path keeps only the compressed archive bytes
+// resident, parses the central directory once (cheap — ~46 B per entry plus
+// filename), and inflates each entry lazily on `read(path)`.
 //
 // Limitations:
 // - ZIP64 reads only when the standard ZIP32 fields fit. EOCD with
-//   sentinel values (0xFFFF / 0xFFFFFFFF) falls back to fflate's
-//   `unzipSync` so external ZIP64 archives still load (the writer side
-//   has its own ZIP32 cap guard).
+// sentinel values (0xFFFF / 0xFFFFFFFF) falls back to fflate's `unzipSync` so
+// external ZIP64 archives still load (the writer side has its own ZIP32 cap
+// guard).
 // - Compression methods: STORE (0) and DEFLATE (8). Anything else
-//   throws OpenXmlIoError.
+// throws OpenXmlIoError.
 
 import { inflateSync, unzipSync } from 'fflate';
 import { OpenXmlIoError } from '../utils/exceptions';
@@ -72,9 +70,9 @@ function parseCentralDirectory(b: Uint8Array, cdOffset: number, expectedCount: n
     const commentLen = u16(b, p + 32);
     const lfhOffset = u32(b, p + 42);
     const nameBytes = b.subarray(p + 46, p + 46 + nameLen);
-    // Bit 11 (0x0800) signals UTF-8 filename. xlsx archives are almost
-    // always UTF-8 already; treat bit-0 as UTF-8 too since CP437 ⊃ ASCII
-    // and xlsx uses ASCII paths.
+    // Bit 11 (0x0800) signals UTF-8 filename. xlsx archives are almost always
+    // UTF-8 already; treat bit-0 as UTF-8 too since CP437 ⊃ ASCII and xlsx uses
+    // ASCII paths.
     const path = new TextDecoder('utf-8').decode(nameBytes);
     entries.push({ path, lfhOffset, compMethod, compSize, uncompSize, gpFlag });
     p += 46 + nameLen + extraLen + commentLen;
@@ -94,13 +92,13 @@ function readCompressedBytes(b: Uint8Array, entry: CdEntry): Uint8Array {
 }
 
 /**
- * Open a buffered xlsx archive in random-access mode. The archive
- * bytes stay resident; entries inflate on demand inside `read(path)`.
+ * Open a buffered xlsx archive in random-access mode. The archive bytes stay
+ * resident; entries inflate on demand inside `read(path)`.
  *
- * Falls back to `fflate.unzipSync` when the central directory uses
- * ZIP64 sentinel values (entry count == 0xFFFF or any size field ==
- * 0xFFFFFFFF) so external ZIP64 archives still load. xlsx files in
- * the wild fit comfortably in ZIP32; the fallback exists for safety.
+ * Falls back to `fflate.unzipSync` when the central directory uses ZIP64
+ * sentinel values (entry count == 0xFFFF or any size field == 0xFFFFFFFF) so
+ * external ZIP64 archives still load. xlsx files in the wild fit comfortably in
+ * ZIP32; the fallback exists for safety.
  */
 export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
   // Quick sanity on min archive size.
@@ -135,9 +133,9 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
   const byPath = new Map<string, CdEntry>();
   for (const e of entries) byPath.set(e.path, e);
 
-  // Per-entry inflate cache so repeated reads of the same path don't
-  // re-inflate — `read(path)` is documented as cheap on the second
-  // call (loadWorkbook touches several files multiple times).
+  // Per-entry inflate cache so repeated reads of the same path don't re-inflate
+  // — `read(path)` is documented as cheap on the second call (loadWorkbook
+  // touches several files multiple times).
   const inflateCache = new Map<string, Uint8Array>();
   let live = true;
   let archiveBytes: Uint8Array | undefined = bytes;
@@ -160,8 +158,8 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     const compressed = readCompressedBytes(buf, entry);
     let out: Uint8Array;
     if (entry.compMethod === COMP_STORE) {
-      // Copy so callers can safely mutate the returned bytes without
-      // perturbing the underlying archive view.
+      // Copy so callers can safely mutate the returned bytes without perturbing
+      // the underlying archive view.
       out = compressed.slice();
     } else if (entry.compMethod === COMP_DEFLATE) {
       try {

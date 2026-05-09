@@ -1,10 +1,10 @@
-// Chartsheet model. Per docs/plan/08-charts-drawings.md §7.
+// Chartsheet model.
 //
-// A chartsheet is a workbook child that holds a single chart instead
-// of cells. It still gets a row in `<sheets>` (with the same r:id +
-// sheetId machinery as a worksheet), but its part lives under
-// `xl/chartsheets/sheetN.xml` and references a drawing via
-// `<drawing r:id="..."/>` carrying an absoluteAnchor with the chart.
+// A chartsheet is a workbook child that holds a single chart instead of cells.
+// It still gets a row in `<sheets>` (with the same r:id + sheetId machinery as
+// a worksheet), but its part lives under `xl/chartsheets/sheetN.xml` and
+// references a drawing via `<drawing r:id="..."/>` carrying an absoluteAnchor
+// with the chart.
 
 import type { Drawing } from '../drawing/drawing';
 import type { HeaderFooter, PageMargins, PageSetup } from '../worksheet/page-setup';
@@ -46,8 +46,8 @@ export interface Chartsheet {
   protection?: ChartsheetProtection;
   /**
    * Drawing payload — typically a single absoluteAnchor with a chart
-   * graphicFrame. Mirrors Worksheet.drawing so the existing drawing-XML
-   * helpers can be reused.
+   * graphicFrame. Mirrors Worksheet.drawing so the existing drawing-XML helpers
+   * can be reused.
    */
   drawing?: Drawing;
   /** `<pageMargins>` — six required margins in inches. */
@@ -62,10 +62,10 @@ export interface Chartsheet {
   legacyDrawingHFRId?: string;
   /**
    * `<drawingHF r:id="…" lho="N" cho="N" lhe="N" che="N" lhf="N" chf="N"
-   * rho="N" cho2="N" rhe="N" che2="N" rhf="N" chf2="N" lfo="N" cfo="N"
-   * lfe="N" cfe="N" lff="N" cff="N" rfo="N" cfo2="N" rfe="N" cfe2="N"
-   * rff="N" cff2="N"/>` — drawing slot + per-section image indices for
-   * header/footer print backgrounds (DrawingML rather than VML).
+   * rho="N" cho2="N" rhe="N" che2="N" rhf="N" chf2="N" lfo="N" cfo="N" lfe="N"
+   * cfe="N" lff="N" cff="N" rfo="N" cfo2="N" rfe="N" cfe2="N" rff="N"
+   * cff2="N"/>` — drawing slot + per-section image indices for header/footer
+   * print backgrounds (DrawingML rather than VML).
    */
   drawingHF?: ChartsheetDrawingHF;
   /** `<picture r:id="…"/>` — chartsheet background image. */
@@ -73,9 +73,9 @@ export interface Chartsheet {
   /** `<webPublishItems>` — Excel 2007 "Publish to web" entries (rare on chartsheets). */
   webPublishItems: WebPublishItem[];
   /**
-   * `<customSheetViews>` — saved per-user view presets for this
-   * chartsheet (Shared Workbook era). Each entry can carry its own
-   * page margins / setup / header-footer.
+   * `<customSheetViews>` — saved per-user view presets for this chartsheet
+   * (Shared Workbook era). Each entry can carry its own page margins / setup /
+   * header-footer.
    */
   customSheetViews: ChartsheetCustomSheetView[];
 }
@@ -104,9 +104,9 @@ export const makeChartsheetCustomSheetView = (
 });
 
 /**
- * `<drawingHF>` — per-section image-index map for the header/footer
- * drawing reference. Each `*o` / `*e` / `*f` attr is a 1-based image
- * number into the referenced drawing part. All optional.
+ * `<drawingHF>` — per-section image-index map for the header/footer drawing
+ * reference. Each `*o` / `*e` / `*f` attr is a 1-based image number into the
+ * referenced drawing part. All optional.
  */
 export interface ChartsheetDrawingHF {
   /** Required rels link to xl/drawings/drawingN.xml carrying the actual image refs. */

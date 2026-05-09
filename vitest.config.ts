@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitest/config';
 
-// Node-hosted suite. Browser-target tests will live under tests/browser/
-// and run via @vitest/browser in a later bootstrap commit.
+// Node-hosted suite. Browser-target tests will live under tests/browser/ and
+// run via @vitest/browser in a later bootstrap commit.
 //
-// Per docs/plan/10-testing.md §1, vitest is the unified runner for both
-// unit and integration suites; coverage is V8.
+// Vitest is the unified runner for both unit and integration suites; coverage
+// is V8.
 
 export default defineConfig({
   test: {

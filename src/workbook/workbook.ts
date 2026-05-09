@@ -1,7 +1,6 @@
-// Workbook root model. Per docs/plan/04-core-model.md §4.1 / §4.2 /
-// docs/plan/01-architecture.md §5 the Workbook is a plain mutable
-// object the user composes via free functions. The Stylesheet pool
-// is held inline so styling operations don't need a side channel.
+// Workbook root model. / §4.2 / the Workbook is a plain mutable object the user
+// composes via free functions. The Stylesheet pool is held inline so styling
+// operations don't need a side channel.
 
 import type { Chartsheet } from '../chartsheet/chartsheet';
 import { makeChartsheet } from '../chartsheet/chartsheet';
@@ -46,10 +45,10 @@ import {
 export type SheetState = 'visible' | 'hidden' | 'veryHidden';
 
 /**
- * Discriminated union over the two kinds of sheet a workbook can host.
- * Both variants share `title` (via `sheet.title`) plus the OOXML
- * `sheetId` and `state` attributes; consumers narrow on `kind` to reach
- * the worksheet- vs chartsheet-specific data.
+ * Discriminated union over the two kinds of sheet a workbook can host. Both
+ * variants share `title` (via `sheet.title`) plus the OOXML `sheetId` and
+ * `state` attributes; consumers narrow on `kind` to reach the worksheet- vs
+ * chartsheet-specific data.
  */
 export type SheetRef =
   | { kind: 'worksheet'; sheet: Worksheet; sheetId: number; state: SheetState; rId?: string }
@@ -72,62 +71,60 @@ export interface Workbook {
   /** Workbook + sheet-scope defined names (named ranges, print areas etc). */
   definedNames: import('./defined-names').DefinedName[];
   /**
-   * Raw `xl/theme/theme1.xml` payload kept verbatim across read → write.
-   * The theme XML is large and seldom edited by writers; we just shuttle it.
+   * Raw `xl/theme/theme1.xml` payload kept verbatim across read → write. The
+   * theme XML is large and seldom edited by writers; we just shuttle it.
    */
   themeXml?: Uint8Array;
   /**
    * `xl/vbaProject.bin` payload (macro-enabled workbooks). Round-tripped
-   * byte-identical when present; the writer also promotes the workbook
-   * Override to `vnd.ms-excel.sheet.macroEnabled.main+xml`.
+   * byte-identical when present; the writer also promotes the workbook Override
+   * to `vnd.ms-excel.sheet.macroEnabled.main+xml`.
    */
   vbaProject?: Uint8Array;
   /** `xl/vbaProjectSignature.bin` payload, when the macros are signed. */
   vbaSignature?: Uint8Array;
   /**
    * Pass-through bytes for parts we don't model (pivot tables, ActiveX
-   * controls, OLE embeddings, customUI ribbons, customXml items …).
-   * Keys are archive-relative paths; values are the raw bytes the loader
-   * pulled out of the zip and the writer pushes back in unchanged.
+   * controls, OLE embeddings, customUI ribbons, customXml items …). Keys are
+   * archive-relative paths; values are the raw bytes the loader pulled out of
+   * the zip and the writer pushes back in unchanged.
    */
   passthrough?: Map<string, Uint8Array>;
   /**
    * Override content type per pass-through path. Excel uses these in
    * `[Content_Types].xml` so manifest validation stays intact across
-   * round-trips. Paths without an explicit override fall back to the
-   * archive Default extension.
+   * round-trips. Paths without an explicit override fall back to the archive
+   * Default extension.
    */
   passthroughContentTypes?: Map<string, string>;
   /**
-   * Top-level `<workbook>` children that aren't `<sheets>` or
-   * `<definedNames>` (e.g. `<fileVersion>`, `<workbookPr>`,
-   * `<bookViews>`, `<calcPr>`, `<pivotCaches>`, `<extLst>`). Captured
-   * verbatim so re-saving keeps Excel-rendering fidelity for things we
-   * don't model. Split into the two halves the writer needs: anything
-   * before `<sheets>` is emitted ahead of the `<sheets>` element, the
-   * rest after `<definedNames>`.
+   * Top-level `<workbook>` children that aren't `<sheets>` or `<definedNames>`
+   * (e.g. `<fileVersion>`, `<workbookPr>`, `<bookViews>`, `<calcPr>`,
+   * `<pivotCaches>`, `<extLst>`). Captured verbatim so re-saving keeps
+   * Excel-rendering fidelity for things we don't model. Split into the two
+   * halves the writer needs: anything before `<sheets>` is emitted ahead of the
+   * `<sheets>` element, the rest after `<definedNames>`.
    */
   workbookXmlExtras?: {
     beforeSheets: import('../xml/tree').XmlNode[];
     afterSheets: import('../xml/tree').XmlNode[];
   };
   /**
-   * `<workbookProtection>` — locks structure / window / revision
-   * tracking with the modern hash quad or the legacy 16-bit hash.
-   * Round-tripped verbatim; password hashing helpers come later.
+   * `<workbookProtection>` — locks structure / window / revision tracking with
+   * the modern hash quad or the legacy 16-bit hash. Round-tripped verbatim;
+   * password hashing helpers come later.
    */
   workbookProtection?: import('./protection').WorkbookProtection;
   /**
-   * `<bookViews>` — the workbook's window/tab-strip presets. Most
-   * workbooks have a single entry whose `firstSheet` / `activeTab`
-   * drive the tab the user sees first. Stored as an array because
-   * Excel allows multiple views (rare).
+   * `<bookViews>` — the workbook's window/tab-strip presets. Most workbooks
+   * have a single entry whose `firstSheet` / `activeTab` drive the tab the user
+   * sees first. Stored as an array because Excel allows multiple views (rare).
    */
   bookViews?: import('./views').WorkbookView[];
   /**
    * `<customWorkbookViews>` — saved per-user view presets used by the
-   * deprecated "Shared Workbook" feature. Each entry carries its own
-   * window position, active sheet, and visibility toggles.
+   * deprecated "Shared Workbook" feature. Each entry carries its own window
+   * position, active sheet, and visibility toggles.
    */
   customWorkbookViews?: import('./views').CustomWorkbookView[];
   /** `<calcPr>` — calculation engine settings (calcMode / iterate / fullPrecision etc.). */
@@ -144,17 +141,17 @@ export interface Workbook {
   /** `<fileRecoveryPr>` — autoRecover-style flags Excel writes after a recovery save. */
   fileRecoveryPr?: import('./file-recovery').FileRecoveryProperties;
   /**
-   * `<pivotCaches>` — links from workbook root to xl/pivotCache parts.
-   * The underlying parts survive via the passthrough archive; this
-   * typed array preserves the cacheId ↔ rId mapping for consumers that
-   * want to introspect the pivot links.
+   * `<pivotCaches>` — links from workbook root to xl/pivotCache parts. The
+   * underlying parts survive via the passthrough archive; this typed array
+   * preserves the cacheId ↔ rId mapping for consumers that want to introspect
+   * the pivot links.
    */
   pivotCaches?: ReadonlyArray<{ cacheId: number; rId: string }>;
   /**
    * `<externalReferences>` — links from workbook root to xl/externalLinks
-   * parts. The numeric token in cross-workbook formulas like `[1]Sheet!A1`
-   * is the 1-based index into this array. Underlying parts continue
-   * via passthrough archive.
+   * parts. The numeric token in cross-workbook formulas like `[1]Sheet!A1` is
+   * the 1-based index into this array. Underlying parts continue via
+   * passthrough archive.
    */
   externalReferences?: ReadonlyArray<{ rId: string }>;
   /** `<smartTagPr>` — Excel 2003 smart-tag persistence flags. */
@@ -164,20 +161,20 @@ export interface Workbook {
   /** `<functionGroups>` — built-in + user-defined XLL function groups. */
   functionGroups?: import('./function-groups').FunctionGroups;
   /**
-   * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update
-   * prompt mode, etc. `date1904` is mirrored here for completeness but
-   * the canonical source remains `wb.date1904`.
+   * `<workbookPr>` — VBA codeName, defaultThemeVersion, link-update prompt
+   * mode, etc. `date1904` is mirrored here for completeness but the canonical
+   * source remains `wb.date1904`.
    */
   workbookProperties?: import('./workbook-properties').WorkbookProperties;
   /**
-   * Workbook-level rels that don't match a modeled type. Re-emitted with
-   * their original Id so captured `<pivotCaches r:id="…"/>` etc. still
-   * resolve after a round-trip.
+   * Workbook-level rels that don't match a modeled type. Re-emitted with their
+   * original Id so captured `<pivotCaches r:id="…"/>` etc. still resolve after
+   * a round-trip.
    */
   workbookRelsExtras?: ReadonlyArray<{ id: string; type: string; target: string }>;
   /**
-   * Original rIds for the modeled non-sheet workbook rels so a captured
-   * extras XML referencing one of them still resolves after re-save.
+   * Original rIds for the modeled non-sheet workbook rels so a captured extras
+   * XML referencing one of them still resolves after re-save.
    */
   workbookRelOriginalIds?: {
     sharedStrings?: string;
@@ -200,19 +197,19 @@ export function createWorkbook(opts?: { date1904?: boolean }): Workbook {
 }
 
 /**
- * Validate a sheet title against Excel's character + length rules.
- * Returns the reason string when the title is rejected; `undefined`
- * when valid. The same rules apply to worksheets and chartsheets.
+ * Validate a sheet title against Excel's character + length rules. Returns the
+ * reason string when the title is rejected; `undefined` when valid. The same
+ * rules apply to worksheets and chartsheets.
  *
  * Rules:
  *  - Type must be `string`; non-empty; length ≤ 31.
  *  - May not contain any of `:`, `\`, `/`, `?`, `*`, `[`, `]`.
  *  - May not start or end with an apostrophe `'`.
  *  - May not be the literal `"History"` (case-insensitive — Excel
- *    reserves that name for the change-tracking sheet).
+ * reserves that name for the change-tracking sheet).
  *
- * Uniqueness is **not** checked here; pass through `addWorksheet`
- * / `renameSheet` for the workbook-aware duplicate check.
+ * Uniqueness is **not** checked here; pass through `addWorksheet` /
+ * `renameSheet` for the workbook-aware duplicate check.
  */
 export function validateSheetTitle(title: unknown): string | undefined {
   if (typeof title !== 'string') return 'must be a string';
@@ -228,14 +225,14 @@ export function validateSheetTitle(title: unknown): string | undefined {
 export const isValidSheetTitle = (title: unknown): title is string => validateSheetTitle(title) === undefined;
 
 /**
- * Pick a unique sheet title based on `base`. If `base` itself is
- * available, it's returned verbatim. Otherwise the helper appends
- * ` (2)`, ` (3)`, … until it finds a free slot. The returned title
- * always satisfies {@link validateSheetTitle} — if the base+suffix
- * would exceed 31 chars, the base is truncated to fit.
+ * Pick a unique sheet title based on `base`. If `base` itself is available,
+ * it's returned verbatim. Otherwise the helper appends ` (2)`, ` (3)`, … until
+ * it finds a free slot. The returned title always satisfies {@link
+ * validateSheetTitle} — if the base+suffix would exceed 31 chars, the base is
+ * truncated to fit.
  *
- * Useful for "duplicate sheet" / "import" flows where you want
- * Excel-like automatic uniqueification ("Sheet1 (2)").
+ * Useful for "duplicate sheet" / "import" flows where you want Excel-like
+ * automatic uniqueification ("Sheet1 (2)").
  */
 export function pickUniqueSheetTitle(wb: Workbook, base: string): string {
   const reason = validateSheetTitle(base);
@@ -298,11 +295,10 @@ export function addWorksheet(wb: Workbook, title: string, opts?: { index?: numbe
 }
 
 /**
- * 0-based tab-strip index of the sheet (worksheet *or* chartsheet)
- * with the given title, or `-1` when not present. Useful when the
- * caller wants to act on the index for `setActiveSheet` /
- * `swapSheets` / similar operations without manually scanning
- * `wb.sheets`.
+ * 0-based tab-strip index of the sheet (worksheet *or* chartsheet) with the
+ * given title, or `-1` when not present. Useful when the caller wants to act on
+ * the index for `setActiveSheet` / `swapSheets` / similar operations without
+ * manually scanning `wb.sheets`.
  */
 export function getSheetIndex(wb: Workbook, title: string): number {
   for (let i = 0; i < wb.sheets.length; i++) {
@@ -313,17 +309,17 @@ export function getSheetIndex(wb: Workbook, title: string): number {
 }
 
 /**
- * True iff the workbook has a sheet (worksheet *or* chartsheet) with
- * the given title. Thin shortcut over {@link getSheetIndex}.
+ * True iff the workbook has a sheet (worksheet *or* chartsheet) with the given
+ * title. Thin shortcut over {@link getSheetIndex}.
  */
 export function hasSheet(wb: Workbook, title: string): boolean {
   return getSheetIndex(wb, title) >= 0;
 }
 
 /**
- * Count sheets in the workbook, with optional kind/state filters.
- * Mirrors the filter shape of {@link getSheetTitles} but skips the
- * array allocation when the caller only needs the count.
+ * Count sheets in the workbook, with optional kind/state filters. Mirrors the
+ * filter shape of {@link getSheetTitles} but skips the array allocation when
+ * the caller only needs the count.
  */
 export function countSheets(
   wb: Workbook,
@@ -339,10 +335,10 @@ export function countSheets(
 }
 
 /**
- * Sheet titles in tab-strip order. By default returns titles for
- * every sheet (worksheets + chartsheets). Optional filters narrow
- * to one kind (`'worksheet'` / `'chartsheet'`) or one state
- * (`'visible' | 'hidden' | 'veryHidden'`).
+ * Sheet titles in tab-strip order. By default returns titles for every sheet
+ * (worksheets + chartsheets). Optional filters narrow to one kind
+ * (`'worksheet'` / `'chartsheet'`) or one state (`'visible' | 'hidden' |
+ * 'veryHidden'`).
  */
 export function getSheetTitles(
   wb: Workbook,
@@ -358,19 +354,19 @@ export function getSheetTitles(
 }
 
 /**
- * True iff the workbook has a **worksheet** (not a chartsheet) with
- * the given title. Distinct from {@link hasSheet} (matches either
- * kind) and {@link hasChartsheet} (chartsheets only).
+ * True iff the workbook has a **worksheet** (not a chartsheet) with the given
+ * title. Distinct from {@link hasSheet} (matches either kind) and {@link
+ * hasChartsheet} (chartsheets only).
  */
 export function hasWorksheet(wb: Workbook, title: string): boolean {
   return getSheet(wb, title) !== undefined;
 }
 
 /**
- * True iff the workbook has a **chartsheet** (not a worksheet) with
- * the given title. Distinct from {@link hasSheet}, which matches
- * either kind. Use this when the caller needs to discriminate before
- * calling chartsheet-only operations.
+ * True iff the workbook has a **chartsheet** (not a worksheet) with the given
+ * title. Distinct from {@link hasSheet}, which matches either kind. Use this
+ * when the caller needs to discriminate before calling chartsheet-only
+ * operations.
  */
 export function hasChartsheet(wb: Workbook, title: string): boolean {
   for (const ref of wb.sheets) {
@@ -459,9 +455,9 @@ export function setActiveSheet(wb: Workbook, title: string): void {
 }
 
 /**
- * Rename a sheet from `oldTitle` to `newTitle`. Throws if no sheet
- * matches `oldTitle`, or if `newTitle` collides with an existing
- * sheet (Excel requires sheet names to be unique within a workbook).
+ * Rename a sheet from `oldTitle` to `newTitle`. Throws if no sheet matches
+ * `oldTitle`, or if `newTitle` collides with an existing sheet (Excel requires
+ * sheet names to be unique within a workbook).
  */
 export function renameSheet(wb: Workbook, oldTitle: string, newTitle: string): void {
   if (typeof newTitle !== 'string' || newTitle.length === 0) {
@@ -478,10 +474,10 @@ export function renameSheet(wb: Workbook, oldTitle: string, newTitle: string): v
 }
 
 /**
- * Set the visibility state on a sheet by title. Throws on unknown
- * title. Note: Excel forbids hiding the active sheet when it's the
- * only visible one — this helper does NOT check that constraint;
- * callers should ensure at least one sheet stays visible.
+ * Set the visibility state on a sheet by title. Throws on unknown title. Note:
+ * Excel forbids hiding the active sheet when it's the only visible one — this
+ * helper does NOT check that constraint; callers should ensure at least one
+ * sheet stays visible.
  */
 export function setSheetState(wb: Workbook, title: string, state: SheetState): void {
   const ref = wb.sheets.find((s) => s.sheet.title === title);
@@ -497,16 +493,16 @@ export function getSheetState(wb: Workbook, title: string): SheetState {
 }
 
 /**
- * Hide a sheet (`state: 'hidden'`). Equivalent to right-click → Hide
- * in Excel — the user can re-show it via the Unhide dialog.
+ * Hide a sheet (`state: 'hidden'`). Equivalent to right-click → Hide in Excel —
+ * the user can re-show it via the Unhide dialog.
  */
 export function hideSheet(wb: Workbook, title: string): void {
   setSheetState(wb, title, 'hidden');
 }
 
 /**
- * Mark a sheet as very-hidden (`state: 'veryHidden'`). Excel won't
- * surface it in the Unhide dialog — only reachable via VBA / API.
+ * Mark a sheet as very-hidden (`state: 'veryHidden'`). Excel won't surface it
+ * in the Unhide dialog — only reachable via VBA / API.
  */
 export function veryHideSheet(wb: Workbook, title: string): void {
   setSheetState(wb, title, 'veryHidden');
@@ -518,9 +514,9 @@ export function showSheet(wb: Workbook, title: string): void {
 }
 
 /**
- * Bulk-update visibility state for many sheets in one call. `entries`
- * is a `Record<title, state>` map; missing titles throw via the
- * underlying `setSheetState`.
+ * Bulk-update visibility state for many sheets in one call. `entries` is a
+ * `Record<title, state>` map; missing titles throw via the underlying
+ * `setSheetState`.
  */
 export function setSheetStates(wb: Workbook, entries: Record<string, SheetState>): void {
   for (const [title, state] of Object.entries(entries)) {
@@ -529,8 +525,8 @@ export function setSheetStates(wb: Workbook, entries: Record<string, SheetState>
 }
 
 /**
- * Show every hidden / veryHidden worksheet. Returns the count
- * unhidden. Useful for spreadsheet-wide auditing.
+ * Show every hidden / veryHidden worksheet. Returns the count unhidden. Useful
+ * for spreadsheet-wide auditing.
  */
 export function showAllSheets(wb: Workbook): number {
   let n = 0;
@@ -544,9 +540,9 @@ export function showAllSheets(wb: Workbook): number {
 }
 
 /**
- * Move a sheet to a new tab-strip position. `toIndex` is clamped to
- * `[0, sheets.length - 1]`. Adjusts `activeSheetIndex` so the same
- * sheet stays active across the move.
+ * Move a sheet to a new tab-strip position. `toIndex` is clamped to `[0,
+ * sheets.length - 1]`. Adjusts `activeSheetIndex` so the same sheet stays
+ * active across the move.
  */
 export function moveSheet(wb: Workbook, title: string, toIndex: number): void {
   const from = wb.sheets.findIndex((s) => s.sheet.title === title);
@@ -571,9 +567,9 @@ export function moveSheet(wb: Workbook, title: string, toIndex: number): void {
 }
 
 /**
- * Swap the tab-strip positions of two sheets by title. Both titles
- * must exist; throws otherwise. `activeSheetIndex` follows the
- * moved sheet so the same sheet stays active across the swap.
+ * Swap the tab-strip positions of two sheets by title. Both titles must exist;
+ * throws otherwise. `activeSheetIndex` follows the moved sheet so the same
+ * sheet stays active across the swap.
  */
 export function swapSheets(wb: Workbook, titleA: string, titleB: string): void {
   const i = wb.sheets.findIndex((s) => s.sheet.title === titleA);
@@ -591,17 +587,17 @@ export function swapSheets(wb: Workbook, titleA: string, titleB: string): void {
 }
 
 /**
- * Duplicate a worksheet end-to-end and append it as `newTitle`. Mirrors
- * Excel's "Move or Copy → Create a copy" command. Cells, dimensions,
- * styles (via shared cellXf ids), comments, hyperlinks, conditional
- * formatting, page setup, etc. all carry over verbatim — only fields
- * that must stay workbook-unique get rewritten:
+ * Duplicate a worksheet end-to-end and append it as `newTitle`. Mirrors Excel's
+ * "Move or Copy → Create a copy" command. Cells, dimensions, styles (via shared
+ * cellXf ids), comments, hyperlinks, conditional formatting, page setup, etc.
+ * all carry over verbatim — only fields that must stay workbook-unique get
+ * rewritten:
  *
  *  - sheet `title` → `newTitle`
  *  - sheet `sheetId` → freshly allocated
  *  - each table's `id` → max(workbook table ids) + 1
  *  - each table's `displayName` → suffixed with `opts.tableSuffix`
- *    (default `"_2"`) so it doesn't collide with the original
+ * (default `"_2"`) so it doesn't collide with the original
  *
  * The new sheet is inserted at the optional `index` (default: appended).
  */
@@ -619,8 +615,8 @@ export function duplicateSheet(
   const cloned = structuredClone(sourceRef.sheet);
   cloned.title = newTitle;
 
-  // Table id + displayName must stay workbook-unique. Walk every other
-  // sheet to find the next free id and renumber/rename in place.
+  // Table id + displayName must stay workbook-unique. Walk every other sheet to
+  // find the next free id and renumber/rename in place.
   const suffix = opts.tableSuffix ?? '_2';
   let nextTableId = 0;
   const usedDisplayNames = new Set<string>();
@@ -663,10 +659,10 @@ export function duplicateSheet(
 }
 
 /**
- * Aggregate counts about a workbook's content. Useful for quick QA
- * after large mutations or for surfacing a "what's in this file"
- * banner. All counts walk the typed model — they do **not** save
- * the workbook to bytes — so the cost is O(workbook content).
+ * Aggregate counts about a workbook's content. Useful for quick QA after large
+ * mutations or for surfacing a "what's in this file" banner. All counts walk
+ * the typed model — they do **not** save the workbook to bytes — so the cost is
+ * O(workbook content).
  */
 export interface WorkbookStats {
   /** Total worksheets (excludes chartsheets). */
@@ -733,10 +729,9 @@ export function getWorkbookStats(wb: Workbook): WorkbookStats {
 }
 
 /**
- * Workbook-wide value-kind histogram. Sums {@link countCellsByKind}
- * across every Worksheet (chartsheets contribute no cells). Buckets
- * have the same shape as the per-worksheet result; an empty workbook
- * returns all-zero counts.
+ * Workbook-wide value-kind histogram. Sums {@link countCellsByKind} across
+ * every Worksheet (chartsheets contribute no cells). Buckets have the same
+ * shape as the per-worksheet result; an empty workbook returns all-zero counts.
  */
 export function getWorkbookCellsByKind(wb: Workbook): CellsByKindCounts {
   const out: CellsByKindCounts = {
@@ -767,8 +762,8 @@ export function getWorkbookCellsByKind(wb: Workbook): CellsByKindCounts {
 
 /**
  * Resolve a sheet-qualified A1 address (`'Sheet1!A1'`) to its Cell, or
- * `undefined` when the cell isn't materialised. Throws on malformed
- * addresses, missing sheets, or range inputs.
+ * `undefined` when the cell isn't materialised. Throws on malformed addresses,
+ * missing sheets, or range inputs.
  */
 export function getCellAtAddress(wb: Workbook, address: string): import('../cell/cell').Cell | undefined {
   const { sheet: sheetTitle, range } = parseSheetRange(address);
@@ -808,10 +803,9 @@ export function setCellAtAddress(
 }
 
 /**
- * True iff every Worksheet in the workbook is empty (per
- * {@link isWorksheetEmpty}). Chartsheets carry no cells so they
- * never affect the result. A workbook with zero worksheets is also
- * empty by this definition.
+ * True iff every Worksheet in the workbook is empty (per {@link
+ * isWorksheetEmpty}). Chartsheets carry no cells so they never affect the
+ * result. A workbook with zero worksheets is also empty by this definition.
  *
  * Short-circuits on the first non-empty worksheet.
  */
@@ -823,9 +817,9 @@ export function isWorkbookEmpty(wb: Workbook): boolean {
 }
 
 /**
- * Per-sheet entry inside {@link WorkbookOverview}. Holds enough metadata
- * to make a "what's in this workbook" panel useful without forcing
- * the caller to walk every worksheet themselves.
+ * Per-sheet entry inside {@link WorkbookOverview}. Holds enough metadata to
+ * make a "what's in this workbook" panel useful without forcing the caller to
+ * walk every worksheet themselves.
  */
 export interface WorkbookSheetOverview {
   title: string;
@@ -842,11 +836,10 @@ export interface WorkbookSheetOverview {
 }
 
 /**
- * High-level "what's in this workbook" snapshot. Combines the
- * aggregate counts from {@link getWorkbookStats} and value-kind
- * histogram from {@link getWorkbookCellsByKind} with per-sheet
- * metadata. JSON-serialisable; suitable for a UI banner / debug
- * dump.
+ * High-level "what's in this workbook" snapshot. Combines the aggregate counts
+ * from {@link getWorkbookStats} and value-kind histogram from {@link
+ * getWorkbookCellsByKind} with per-sheet metadata. JSON-serialisable; suitable
+ * for a UI banner / debug dump.
  */
 export interface WorkbookOverview {
   worksheetCount: number;
@@ -901,18 +894,18 @@ export function describeWorkbook(wb: Workbook): WorkbookOverview {
 }
 
 /**
- * Debug-friendly snapshot of everything resolved for a single cell:
- * its value, the full style chain (font / fill / border / alignment /
- * protection / numberFormat), the applied hyperlink + comment, the
- * merged range it sits inside (if any), and the names of any tables /
- * the count of CF / DV blocks that target it.
+ * Debug-friendly snapshot of everything resolved for a single cell: its value,
+ * the full style chain (font / fill / border / alignment / protection /
+ * numberFormat), the applied hyperlink + comment, the merged range it sits
+ * inside (if any), and the names of any tables / the count of CF / DV blocks
+ * that target it.
  *
- * Designed for `console.log`-style introspection — JSON-serialisable
- * and stable in shape regardless of which axes are populated.
+ * Designed for `console.log`-style introspection — JSON-serialisable and stable
+ * in shape regardless of which axes are populated.
  *
- * Throws when `sheetTitle` doesn't resolve. When `ref` is a valid A1
- * coordinate but no cell exists there, `exists` is `false` and the
- * style chain reflects the workbook defaults.
+ * Throws when `sheetTitle` doesn't resolve. When `ref` is a valid A1 coordinate
+ * but no cell exists there, `exists` is `false` and the style chain reflects
+ * the workbook defaults.
  */
 export interface CellSummary {
   ref: string;
@@ -939,8 +932,8 @@ export function getCellSummary(wb: Workbook, sheetTitle: string, ref: string): C
   if (!ws) throw new OpenXmlSchemaError(`getCellSummary: sheet "${sheetTitle}" not found`);
   const { col, row } = coordinateToTuple(ref);
   const cell = getCell(ws, row, col);
-  // Synthesize a placeholder cell so getCell* helpers can resolve defaults
-  // even for unmaterialised coordinates.
+  // Synthesize a placeholder cell so getCell* helpers can resolve defaults even
+  // for unmaterialised coordinates.
   const probe = cell ?? { row, col, value: null, styleId: 0 };
   const merged = getMergedRangeAt(ws, row, col);
   const inTables: string[] = [];
@@ -977,8 +970,8 @@ export function getCellSummary(wb: Workbook, sheetTitle: string, ref: string): C
 }
 
 /**
- * Iterate over every Worksheet in the workbook (skips chartsheets).
- * Yields each worksheet in tab-strip order.
+ * Iterate over every Worksheet in the workbook (skips chartsheets). Yields each
+ * worksheet in tab-strip order.
  */
 export function* iterWorksheets(wb: Workbook): IterableIterator<Worksheet> {
   for (const ref of wb.sheets) {
@@ -987,9 +980,9 @@ export function* iterWorksheets(wb: Workbook): IterableIterator<Worksheet> {
 }
 
 /**
- * Iterate only over Worksheets whose tab-strip state is `'visible'`.
- * Hidden / veryHidden sheets are skipped. Useful for reports that
- * should ignore back-office sheets the author has hidden.
+ * Iterate only over Worksheets whose tab-strip state is `'visible'`. Hidden /
+ * veryHidden sheets are skipped. Useful for reports that should ignore
+ * back-office sheets the author has hidden.
  */
 export function* iterVisibleWorksheets(wb: Workbook): IterableIterator<Worksheet> {
   for (const ref of wb.sheets) {
@@ -998,9 +991,9 @@ export function* iterVisibleWorksheets(wb: Workbook): IterableIterator<Worksheet
 }
 
 /**
- * Iterate Worksheets matching the supplied state. Pass `'hidden'`
- * to skim back-office sheets, `'veryHidden'` to find sheets only
- * accessible via VBA, etc.
+ * Iterate Worksheets matching the supplied state. Pass `'hidden'` to skim
+ * back-office sheets, `'veryHidden'` to find sheets only accessible via VBA,
+ * etc.
  */
 export function* iterWorksheetsByState(
   wb: Workbook,
@@ -1012,10 +1005,9 @@ export function* iterWorksheetsByState(
 }
 
 /**
- * Iterate every cell across every worksheet in the workbook. Yields
- * `{ sheet, cell }` pairs in tab-strip order, then row-then-column
- * within each sheet. Useful for workbook-wide audits / find-and-
- * replace passes.
+ * Iterate every cell across every worksheet in the workbook. Yields `{ sheet,
+ * cell }` pairs in tab-strip order, then row-then-column within each sheet.
+ * Useful for workbook-wide audits / find-and-replace passes.
  */
 export function* iterAllCells(
   wb: Workbook,
@@ -1035,10 +1027,10 @@ export function* iterAllCells(
 }
 
 /**
- * Collect every merged range across every worksheet. Each entry
- * carries the merge bounds plus a back-reference to the owning
- * sheet, in tab-strip order. Equivalent to walking
- * `iterWorksheets` and concatenating each sheet's `mergedCells`.
+ * Collect every merged range across every worksheet. Each entry carries the
+ * merge bounds plus a back-reference to the owning sheet, in tab-strip order.
+ * Equivalent to walking `iterWorksheets` and concatenating each sheet's
+ * `mergedCells`.
  */
 export function getAllMergedRanges(
   wb: Workbook,
@@ -1051,9 +1043,8 @@ export function getAllMergedRanges(
 }
 
 /**
- * Collect every hyperlink across every worksheet. Each entry pairs
- * the hyperlink with a back-reference to the owning sheet, in
- * tab-strip order.
+ * Collect every hyperlink across every worksheet. Each entry pairs the
+ * hyperlink with a back-reference to the owning sheet, in tab-strip order.
  */
 export function getAllHyperlinks(
   wb: Workbook,
@@ -1066,9 +1057,8 @@ export function getAllHyperlinks(
 }
 
 /**
- * Collect every legacy comment across every worksheet. Each entry
- * pairs the comment with a back-reference to the owning sheet, in
- * tab-strip order.
+ * Collect every legacy comment across every worksheet. Each entry pairs the
+ * comment with a back-reference to the owning sheet, in tab-strip order.
  */
 export function getAllComments(
   wb: Workbook,
@@ -1081,9 +1071,9 @@ export function getAllComments(
 }
 
 /**
- * Collect every Excel table across every worksheet. Each entry pairs
- * the TableDefinition with a back-reference to the owning sheet, in
- * tab-strip order.
+ * Collect every Excel table across every worksheet. Each entry pairs the
+ * TableDefinition with a back-reference to the owning sheet, in tab-strip
+ * order.
  */
 export function getAllTables(
   wb: Workbook,
@@ -1096,10 +1086,9 @@ export function getAllTables(
 }
 
 /**
- * Locate an Excel table by `displayName` across the whole workbook.
- * Excel enforces uniqueness at the workbook level, so the first
- * match wins. Returns the owning sheet + the table itself, or
- * `undefined` when nothing matches.
+ * Locate an Excel table by `displayName` across the whole workbook. Excel
+ * enforces uniqueness at the workbook level, so the first match wins. Returns
+ * the owning sheet + the table itself, or `undefined` when nothing matches.
  */
 export function findTable(
   wb: Workbook,
@@ -1114,11 +1103,10 @@ export function findTable(
 }
 
 /**
- * First cell across the workbook satisfying `predicate`. Walks
- * every worksheet in tab-strip order, then row-then-column within
- * each sheet (same order as {@link iterAllCells}). Returns
- * `{ sheet, cell }` for the match, or `undefined` when nothing
- * matches.
+ * First cell across the workbook satisfying `predicate`. Walks every worksheet
+ * in tab-strip order, then row-then-column within each sheet (same order as
+ * {@link iterAllCells}). Returns `{ sheet, cell }` for the match, or
+ * `undefined` when nothing matches.
  */
 export function findCellInWorkbook(
   wb: Workbook,
@@ -1131,9 +1119,8 @@ export function findCellInWorkbook(
 }
 
 /**
- * Every cell across the workbook satisfying `predicate`. Same
- * iteration order as {@link iterAllCells}. Returns an array of
- * `{ sheet, cell }` matches.
+ * Every cell across the workbook satisfying `predicate`. Same iteration order
+ * as {@link iterAllCells}. Returns an array of `{ sheet, cell }` matches.
  */
 export function findCellsInWorkbook(
   wb: Workbook,
@@ -1147,12 +1134,11 @@ export function findCellsInWorkbook(
 }
 
 /**
- * Workbook-wide find-and-replace. Same matching rule as
- * `replaceCellValues` but walks every worksheet via
- * {@link iterAllCells}. `search` is either an exact-string match
- * (string-valued cells only) or a predicate `(value, cell, sheet)
- * → boolean`. `replacement` is the new `CellValue`. Returns the
- * count of cells changed across all sheets.
+ * Workbook-wide find-and-replace. Same matching rule as `replaceCellValues` but
+ * walks every worksheet via {@link iterAllCells}. `search` is either an
+ * exact-string match (string-valued cells only) or a predicate `(value, cell,
+ * sheet) → boolean`. `replacement` is the new `CellValue`. Returns the count of
+ * cells changed across all sheets.
  */
 export function replaceCellValuesInWorkbook(
   wb: Workbook,
@@ -1176,9 +1162,8 @@ export function replaceCellValuesInWorkbook(
 }
 
 /**
- * Collect every data-validation block across every worksheet. Each
- * entry pairs the validation with a back-reference to the owning
- * sheet, in tab-strip order.
+ * Collect every data-validation block across every worksheet. Each entry pairs
+ * the validation with a back-reference to the owning sheet, in tab-strip order.
  */
 export function getAllDataValidations(
   wb: Workbook,
@@ -1194,8 +1179,8 @@ export function getAllDataValidations(
 }
 
 /**
- * Collect every image (picture) DrawingItem across every worksheet,
- * each paired with its owning sheet in tab-strip order.
+ * Collect every image (picture) DrawingItem across every worksheet, each paired
+ * with its owning sheet in tab-strip order.
  */
 export function getAllImages(
   wb: Workbook,
@@ -1211,8 +1196,8 @@ export function getAllImages(
 }
 
 /**
- * Collect every chart DrawingItem across every worksheet, each
- * paired with its owning sheet in tab-strip order.
+ * Collect every chart DrawingItem across every worksheet, each paired with its
+ * owning sheet in tab-strip order.
  */
 export function getAllCharts(
   wb: Workbook,
@@ -1228,9 +1213,9 @@ export function getAllCharts(
 }
 
 /**
- * Collect every conditional-formatting block across every worksheet.
- * Each entry pairs the CF block with a back-reference to the owning
- * sheet, in tab-strip order.
+ * Collect every conditional-formatting block across every worksheet. Each entry
+ * pairs the CF block with a back-reference to the owning sheet, in tab-strip
+ * order.
  */
 export function getAllConditionalFormatting(
   wb: Workbook,
@@ -1249,8 +1234,8 @@ export function getAllConditionalFormatting(
 }
 
 /**
- * Iterate over every Chartsheet in the workbook. Yields in tab-strip
- * order, skipping regular worksheets.
+ * Iterate over every Chartsheet in the workbook. Yields in tab-strip order,
+ * skipping regular worksheets.
  */
 export function* iterChartsheets(wb: Workbook): IterableIterator<Chartsheet> {
   for (const ref of wb.sheets) {
@@ -1275,21 +1260,21 @@ export function getActiveSheet(wb: Workbook): Worksheet | undefined {
 }
 
 /**
- * Title of whichever sheet (worksheet *or* chartsheet) is currently
- * marked active via `wb.activeSheetIndex`. Returns `undefined` for
- * an empty workbook or an out-of-range index.
+ * Title of whichever sheet (worksheet *or* chartsheet) is currently marked
+ * active via `wb.activeSheetIndex`. Returns `undefined` for an empty workbook
+ * or an out-of-range index.
  *
- * Distinct from {@link getActiveSheet} (which only returns worksheets
- * and yields `undefined` when the active slot is a chartsheet) — this
- * matches `wb.activeSheetIndex` regardless of kind.
+ * Distinct from {@link getActiveSheet} (which only returns worksheets and
+ * yields `undefined` when the active slot is a chartsheet) — this matches
+ * `wb.activeSheetIndex` regardless of kind.
  */
 export function getActiveSheetTitle(wb: Workbook): string | undefined {
   return wb.sheets[wb.activeSheetIndex]?.sheet.title;
 }
 
 /**
- * True iff `title` matches the workbook's currently active sheet
- * (any kind). Empty workbook returns `false` (no active sheet).
+ * True iff `title` matches the workbook's currently active sheet (any kind).
+ * Empty workbook returns `false` (no active sheet).
  */
 export function isActiveSheet(wb: Workbook, title: string): boolean {
   return getActiveSheetTitle(wb) === title;
@@ -1306,10 +1291,10 @@ export function listCustomXmlParts(wb: Workbook): Array<{ path: string; content:
 }
 
 /**
- * JSON.stringify replacer that drops the Stylesheet's internal dedup
- * Maps. Use as `JSON.stringify(workbook, jsonReplacer)` when the
- * workbook needs to round-trip through plain JSON (tests, debug
- * dumps). The dedup maps are reconstructed lazily on first add.
+ * JSON.stringify replacer that drops the Stylesheet's internal dedup Maps. Use
+ * as `JSON.stringify(workbook, jsonReplacer)` when the workbook needs to
+ * round-trip through plain JSON (tests, debug dumps). The dedup maps are
+ * reconstructed lazily on first add.
  */
 export function jsonReplacer(_key: string, value: unknown): unknown {
   if (value instanceof Map) {

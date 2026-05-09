@@ -1,9 +1,9 @@
-// DrawingML effects. Per docs/plan/08-charts-drawings.md §4.4.
+// DrawingML effects.
 //
-// Effects come in two containers: `<a:effectLst>` (a sequential list of
-// effect elements) and `<a:effectDag>` (a tree of effect-containers, each
-// composing children with type=`tree` or `sib`). The Effect union covers
-// the eight ECMA-376 §20.1.8 effect leaf kinds.
+// Effects come in two containers: `<a:effectLst>` (a sequential list of effect
+// elements) and `<a:effectDag>` (a tree of effect-containers, each composing
+// children with type=`tree` or `sib`). The Effect union covers the eight
+// ECMA-376 §20.1.8 effect leaf kinds.
 
 import type { DmlColorWithMods } from './colors';
 import type { Fill } from './fill';
@@ -102,9 +102,8 @@ export interface EffectList {
 }
 
 /**
- * Inner `<a:cont type="tree|sib">` node. Lives inside `<a:effectDag>` or
- * inside another `<a:cont>`. Children may be effect leaves or further
- * containers.
+ * Inner `<a:cont type="tree|sib">` node. Lives inside `<a:effectDag>` or inside
+ * another `<a:cont>`. Children may be effect leaves or further containers.
  */
 export interface EffectContainer {
   /** Compose children sequentially (`sib`) or as a tree (`tree`). */
@@ -115,10 +114,9 @@ export interface EffectContainer {
 }
 
 /**
- * Either `<a:effectLst>` or `<a:effectDag>`. The dag root has no
- * `type` attribute in ECMA-376; only its `<a:cont>` children do, hence
- * we model the dag as a flat list of children rather than a single
- * EffectContainer.
+ * Either `<a:effectLst>` or `<a:effectDag>`. The dag root has no `type`
+ * attribute in ECMA-376; only its `<a:cont>` children do, hence we model the
+ * dag as a flat list of children rather than a single EffectContainer.
  */
 export type EffectsRef = { kind: 'lst'; list: EffectList } | { kind: 'dag'; children: Array<Effect | EffectContainer> };
 

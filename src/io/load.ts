@@ -1,14 +1,14 @@
-// Public `loadWorkbook` entry point. Per docs/plan/05-read-write.md §1.1.
+// Public `loadWorkbook` entry point.
 //
-// **This is the minimum-skeleton stage**: open zip → parse manifest →
-// resolve workbook part path → parse the `<sheets>` list → for each
-// sheet, allocate an empty Worksheet (title + sheetId + state). Reading
-// the actual cell content / styles / sharedStrings / theme / docProps
-// happens in the next iterations of the loop.
+// **This is the minimum-skeleton stage**: open zip → parse manifest → resolve
+// workbook part path → parse the `<sheets>` list → for each sheet, allocate an
+// empty Worksheet (title + sheetId + state). Reading the actual cell content /
+// styles / sharedStrings / theme / docProps happens in the next iterations of
+// the loop.
 //
-// The skeleton is enough to round-trip through openpyxl's
-// `genuine/empty.xlsx` fixture (3 empty sheets) and to give the rest of
-// phase 3 a stable scaffolding to layer onto.
+// The skeleton is enough to round-trip through openpyxl's `genuine/empty.xlsx`
+// fixture (3 empty sheets) and to give the rest of phase 3 a stable scaffolding
+// to layer onto.
 
 import { findUserShapesRId, parseChartXml } from '../chart/chart-xml';
 import { isChartExBytes, parseChartExXml } from '../chart/cx/chartex-xml';
@@ -164,9 +164,9 @@ const FUNCTION_GROUP_TAG = `{${SHEET_MAIN_NS}}functionGroup`;
 
 /**
  * Parse the `<workbookPr date1904>` flag. Mac-origin workbooks set
- * `date1904="true"`; everything else uses the Windows 1900 epoch. The
- * value drives Date / Duration cell serial conversion in
- * worksheet/writer.ts and reader.ts.
+ * `date1904="true"`; everything else uses the Windows 1900 epoch. The value
+ * drives Date / Duration cell serial conversion in worksheet/writer.ts and
+ * reader.ts.
  */
 function parseDate1904(workbookRoot: XmlNode): boolean {
   const pr = findChild(workbookRoot, WORKBOOK_PR_TAG);
@@ -202,10 +202,9 @@ export function parseSheetEntries(workbookRoot: XmlNode): SheetEntry[] {
 }
 
 /**
- * Load a workbook from any {@link XlsxSource}. Currently produces a
- * scaffold Workbook: each Worksheet is empty (no cells / styles /
- * shared strings / theme yet). The next phase-3 iterations layer those
- * in atop the same skeleton.
+ * Load a workbook from any {@link XlsxSource}. Currently produces a scaffold
+ * Workbook: each Worksheet is empty (no cells / styles / shared strings / theme
+ * yet). The next phase-3 iterations layer those in atop the same skeleton.
  */
 export async function loadWorkbook(source: XlsxSource, _opts: LoadOptions = {}): Promise<Workbook> {
   const archive = await openZip(source);
@@ -235,8 +234,8 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   }
   const workbookPath = resolveRelTarget('', officeRel.target);
   if (workbookPath !== ARC_WORKBOOK) {
-    // Most xlsx files put the workbook at xl/workbook.xml. We accept any
-    // path the rels point at as long as the archive holds it.
+    // Most xlsx files put the workbook at xl/workbook.xml. We accept any path
+    // the rels point at as long as the archive holds it.
     if (!archive.has(workbookPath)) {
       throw new OpenXmlSchemaError(`loadWorkbook: workbook part "${workbookPath}" not found in archive`);
     }
@@ -279,8 +278,8 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   // The worksheet reader takes plain strings; rich-text SST entries are
   // flattened to their concatenated text body so cell values stay simple.
   // (Rich-text fidelity round-trip on read needs a sst entry → cell-value
-  // bridge that produces a rich-text cell; for now Excel re-write still
-  // works because we only flatten on read, not on write.)
+  // bridge that produces a rich-text cell; for now Excel re-write still works
+  // because we only flatten on read, not on write.)
   const sst: ReadonlyArray<string> = (sharedStrings?.entries ?? []).map((e) =>
     typeof e === 'string' ? e : e.runs.map((r) => r.text).join(''),
   );
@@ -300,9 +299,9 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   }
 
   // 4d. docProps/{core,app,custom}.xml — package-level metadata. Each part is
-  // optional; absent ones leave the matching Workbook field undefined. We
-  // walk both the canonical path and the root rels so non-default layouts
-  // (rare but legal) still resolve.
+  // optional; absent ones leave the matching Workbook field undefined. We walk
+  // both the canonical path and the root rels so non-default layouts (rare but
+  // legal) still resolve.
   const properties = archive.has(ARC_CORE) ? corePropsFromBytes(archive.read(ARC_CORE)) : undefined;
   const appProperties = archive.has(ARC_APP) ? extendedPropsFromBytes(archive.read(ARC_APP)) : undefined;
   const customProperties = archive.has(ARC_CUSTOM) ? customPropsFromBytes(archive.read(ARC_CUSTOM)) : undefined;
@@ -386,8 +385,8 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
                     item.content.chart.cxSpace = parseChartExXml(chartBytes);
                   } else {
                     const space = parseChartXml(chartBytes);
-                    // Resolve <c:userShapes r:id="..."> via the chart's
-                    // own rels file (xl/charts/_rels/chartN.xml.rels).
+                    // Resolve <c:userShapes r:id="..."> via the chart's own
+                    // rels file (xl/charts/_rels/chartN.xml.rels).
                     const userShapesRId = findUserShapesRId(chartBytes);
                     if (userShapesRId) {
                       const chartRelsPath = relsPathFor(chartPath);
@@ -400,9 +399,9 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
                             try {
                               space.userShapes = parseUserShapesXml(archive.read(usPath));
                             } catch {
-                              // Tolerate parse failures (Excel sometimes
-                              // emits chartDrawing parts with namespaces /
-                              // shapes outside our model).
+                              // Tolerate parse failures (Excel sometimes emits
+                              // chartDrawing parts with namespaces / shapes
+                              // outside our model).
                             }
                           }
                         }
@@ -421,8 +420,9 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
                   try {
                     item.content.picture.image = loadImage(archive.read(imgPath));
                   } catch {
-                    // Unknown / unsupported format — leave bytes-less; callers can read
-                    // via the rId + archive directly if they need the raw payload.
+                    // Unknown / unsupported format — leave bytes-less; callers
+                    // can read via the rId + archive directly if they need the
+                    // raw payload.
                   }
                 }
               }
@@ -479,8 +479,8 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
   captureWorkbookXmlExtras(wbRoot, wb);
   captureWorkbookRelsExtras(wbRels, wb);
 
-  // Pass-through: capture parts we don't model (VBA / pivot / activeX /
-  // OLE / customUI / customXml / etc.) so re-saving doesn't drop them.
+  // Pass-through: capture parts we don't model (VBA / pivot / activeX / OLE /
+  // customUI / customXml / etc.) so re-saving doesn't drop them.
   capturePassthrough(archive, manifest, wb);
   return wb;
 }
@@ -494,9 +494,9 @@ const SHEET_MODELED_REL_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Capture per-sheet rels entries that don't match a modeled type. The
- * writer re-emits these verbatim alongside the freshly allocated modeled
- * rels so captured passthrough parts (pivotTable / queryTable / slicer /
+ * Capture per-sheet rels entries that don't match a modeled type. The writer
+ * re-emits these verbatim alongside the freshly allocated modeled rels so
+ * captured passthrough parts (pivotTable / queryTable / slicer /
  * printerSettings / oleObject / customProperty / threadedComment) remain
  * reachable from the worksheet after a round-trip.
  */
@@ -514,9 +514,9 @@ function captureSheetRelsExtras(
 /**
  * Walk top-level children of `<workbook>` and split anything that isn't
  * `<sheets>` or `<definedNames>` into the before/after halves the writer
- * inserts around the modeled elements. Order is preserved within each
- * half so things like `<fileVersion>`, `<workbookPr>`, `<bookViews>`,
- * `<calcPr>`, `<pivotCaches>`, `<extLst>` round-trip in document order.
+ * inserts around the modeled elements. Order is preserved within each half so
+ * things like `<fileVersion>`, `<workbookPr>`, `<bookViews>`, `<calcPr>`,
+ * `<pivotCaches>`, `<extLst>` round-trip in document order.
  */
 function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
   const beforeSheets: XmlNode[] = [];
@@ -528,15 +528,15 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       continue;
     }
     if (child.name === DEFINED_NAMES_TAG) continue;
-    // Lift <workbookProtection> into the typed workbook field instead
-    // of stashing it as a passthrough XmlNode (B5 partial).
+    // Lift <workbookProtection> into the typed workbook field instead of
+    // stashing it as a passthrough XmlNode (B5 partial).
     if (child.name === WORKBOOK_PROTECTION_TAG) {
       wb.workbookProtection = parseWorkbookProtection(child);
       continue;
     }
-    // Lift <workbookPr> into the typed workbook field. The date1904
-    // attribute is already mirrored onto wb.date1904; everything else
-    // stops leaking into bodyExtras.
+    // Lift <workbookPr> into the typed workbook field. The date1904 attribute
+    // is already mirrored onto wb.date1904; everything else stops leaking into
+    // bodyExtras.
     if (child.name === WORKBOOK_PR_TAG) {
       const wp = parseWorkbookProperties(child);
       if (wp) wb.workbookProperties = wp;
@@ -628,7 +628,8 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       if (tags.length > 0) wb.smartTagTypes = tags;
       continue;
     }
-    // Lift <functionGroups builtInGroupCount=…><functionGroup name=…/></functionGroups>.
+    // Lift <functionGroups builtInGroupCount=…><functionGroup
+    // name=…/></functionGroups>.
     if (child.name === FUNCTION_GROUPS_TAG) {
       const fg: import('../workbook/function-groups').FunctionGroups = { groups: [] };
       const bicgRaw = child.attrs['builtInGroupCount'];
@@ -643,7 +644,8 @@ function captureWorkbookXmlExtras(wbRoot: XmlNode, wb: Workbook): void {
       if (fg.groups.length > 0 || fg.builtInGroupCount !== undefined) wb.functionGroups = fg;
       continue;
     }
-    // Lift <externalReferences><externalReference r:id=…/></externalReferences>.
+    // Lift <externalReferences><externalReference
+    // r:id=…/></externalReferences>.
     if (child.name === EXTERNAL_REFERENCES_TAG) {
       const refs: Array<{ rId: string }> = [];
       for (const er of findChildren(child, EXTERNAL_REFERENCE_TAG)) {
@@ -985,12 +987,12 @@ const parseWorkbookProtection = (node: XmlNode): import('../workbook/protection'
 };
 
 /**
- * Capture workbook-rels entries that don't match a modeled type so the
- * writer can re-emit them with their original Id (and any captured
- * `<pivotCaches r:id="…"/>` etc. still resolves after a round-trip).
- * Modeled non-sheet rels (sst / styles / theme / vbaProject) keep their
- * original Id via `wb.workbookRelOriginalIds` so the writer can prefer
- * those over freshly allocated ones.
+ * Capture workbook-rels entries that don't match a modeled type so the writer
+ * can re-emit them with their original Id (and any captured `<pivotCaches
+ * r:id="…"/>` etc. still resolves after a round-trip). Modeled non-sheet rels
+ * (sst / styles / theme / vbaProject) keep their original Id via
+ * `wb.workbookRelOriginalIds` so the writer can prefer those over freshly
+ * allocated ones.
  */
 function captureWorkbookRelsExtras(
   wbRels: import('../packaging/relationships').Relationships,
@@ -1048,16 +1050,16 @@ const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
 
 /**
  * Excel emits both form-control VMLs and comment VMLs at
- * `xl/drawings/vmlDrawingN.vml`. Filename alone can't tell them
- * apart, but ECMA-376 §17.18.51 requires comment shapes to carry
- * `<x:ClientData ObjectType="Note">`, so a byte-search for that
- * marker decides which path the file belongs on:
+ * `xl/drawings/vmlDrawingN.vml`. Filename alone can't tell them apart, but
+ * ECMA-376 §17.18.51 requires comment shapes to carry `<x:ClientData
+ * ObjectType="Note">`, so a byte-search for that marker decides which path the
+ * file belongs on:
  *
  *  - With marker → comment VML; the comments writer regenerates
- *    these from `Worksheet.legacyComments`, so we must not capture
- *    them as passthrough (would duplicate the entry on save).
+ * these from `Worksheet.legacyComments`, so we must not capture them as
+ * passthrough (would duplicate the entry on save).
  *  - Without marker → control / OLE / shape VML; capture as
- *    passthrough so form controls survive load → save → load.
+ * passthrough so form controls survive load → save → load.
  */
 const COMMENT_VML_MARKER: ReadonlyArray<number> = (() => {
   const marker = new TextEncoder().encode('ObjectType="Note"');
@@ -1083,15 +1085,15 @@ const containsCommentMarker = (bytes: Uint8Array): boolean => {
 };
 
 /**
- * Top-level xl/*.xml files that aren't modeled but Excel relies on
- * (or harmlessly preserves). Captured by exact path; their content
- * types come through the manifest Override map.
+ * Top-level xl/*.xml files that aren't modeled but Excel relies on (or
+ * harmlessly preserves). Captured by exact path; their content types come
+ * through the manifest Override map.
  *
  * - `xl/calcChain.xml`     — calculation order hint (Excel rebuilds
- *   it on first open if missing, but losing it forces a full recalc).
+ * it on first open if missing, but losing it forces a full recalc).
  * - `xl/connections.xml`   — external data connection metadata.
  * - `xl/persons/`          — threaded-comment author registry
- *   (Excel 365). Captured under the prefix list below.
+ * (Excel 365). Captured under the prefix list below.
  * - `xl/metadata.xml`      — Excel 365 dynamic-array cell metadata.
  * - `xl/SheetMetadata.xml` — variant casing of the same.
  */
@@ -1100,8 +1102,8 @@ const PASSTHROUGH_EXACT_PATHS: ReadonlySet<string> = new Set([
   'xl/connections.xml',
   'xl/metadata.xml',
   'xl/SheetMetadata.xml',
-  // docProps/thumbnail.jpeg — workbook preview image Excel renders in
-  // the OS file browser. JPEG by default; some files use PNG.
+  // docProps/thumbnail.jpeg — workbook preview image Excel renders in the OS
+  // file browser. JPEG by default; some files use PNG.
   'docProps/thumbnail.jpeg',
   'docProps/thumbnail.jpg',
   'docProps/thumbnail.png',
@@ -1120,10 +1122,9 @@ const isPassthroughPath = (path: string, bytes?: Uint8Array): boolean => {
 };
 
 /**
- * Walk the archive after the modeled parts are loaded and capture any
- * remaining content into `wb.passthrough`. The dedicated VBA project
- * binaries land on their own slots so the writer can promote the
- * workbook content type to xlsm.
+ * Walk the archive after the modeled parts are loaded and capture any remaining
+ * content into `wb.passthrough`. The dedicated VBA project binaries land on
+ * their own slots so the writer can promote the workbook content type to xlsm.
  */
 function capturePassthrough(
   archive: ZipArchive,
@@ -1144,9 +1145,9 @@ function capturePassthrough(
       wb.vbaSignature = archive.read(path);
       continue;
     }
-    // VML drawings need a content peek to distinguish comment-VML
-    // (regenerated from ws.legacyComments) from form-control / shape
-    // VML (passthrough). Read once and reuse for the actual capture.
+    // VML drawings need a content peek to distinguish comment-VML (regenerated
+    // from ws.legacyComments) from form-control / shape VML (passthrough). Read
+    // once and reuse for the actual capture.
     let cached: Uint8Array | undefined;
     if (isVmlDrawing(path)) cached = archive.read(path);
     if (!isPassthroughPath(path, cached)) continue;

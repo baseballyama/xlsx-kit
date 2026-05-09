@@ -1,10 +1,9 @@
-// DrawingML / SpreadsheetDrawing length unit conversions. EMUs (English
-// Metric Units) are OOXML's universal length type — 1 inch = 914400
-// EMU, 1 cm = 360000 EMU, 1 px @ 96 DPI = 9525 EMU.
+// DrawingML / SpreadsheetDrawing length unit conversions. EMUs (English Metric
+// Units) are OOXML's universal length type — 1 inch = 914400 EMU, 1 cm = 360000
+// EMU, 1 px @ 96 DPI = 9525 EMU.
 //
-// Mirrors openpyxl/openpyxl/utils/units.py. Per
-// docs/plan/03-foundations.md §7.3 + docs/plan/01-architecture.md §7.4
-// these helpers are on the hot path for the drawing / chart writers.
+// Mirrors openpyxl/openpyxl/utils/units.py. These helpers are on the hot path
+// for the drawing / chart writers.
 
 export const EMU_PER_INCH = 914_400;
 export const EMU_PER_CM = 360_000;

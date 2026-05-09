@@ -1,6 +1,5 @@
-// Phase 7 acceptance: VBA / pivot / activeX / customXml passthrough.
-// Per docs/plan/09-pivot-vba.md §1, the goal is "openpyxl が壊さない xlsx
-// は xlsx-kit も壊さない" — these tests pin that contract.
+// Phase 7 acceptance: VBA / pivot / activeX / customXml passthrough. The goal
+// is "openpyxl が壊さない xlsx は xlsx-kit も壊さない" — these tests pin that contract.
 
 import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
@@ -18,8 +17,8 @@ const td = new TextDecoder();
 
 describe('Encrypted xlsx detection', () => {
   it('throws OpenXmlNotImplementedError for a CFB compound document', async () => {
-    // Synthesise the OLE/CFB magic bytes — Excel's encrypted-document
-    // wrapper starts with this 8-byte signature.
+    // Synthesise the OLE/CFB magic bytes — Excel's encrypted-document wrapper
+    // starts with this 8-byte signature.
     const cfb = new Uint8Array(512);
     cfb.set([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1], 0);
     await expect(openZip(fromBuffer(cfb))).rejects.toThrowError(OpenXmlNotImplementedError);
@@ -31,8 +30,8 @@ describe('VBA project round-trip', () => {
   it('preserves vbaProject.bin byte-identical and promotes to xlsm content type', async () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'Sheet1');
-    // Synthetic vbaProject bytes — the real file would be a CFB
-    // compound document; what we care about is byte preservation.
+    // Synthetic vbaProject bytes — the real file would be a CFB compound
+    // document; what we care about is byte preservation.
     wb.vbaProject = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0x00, 0x01, 0x02]);
 
     const bytes = await workbookToBytes(wb);
@@ -165,8 +164,8 @@ describe('Pivot table pass-through', () => {
 
 describe('Comment VML is not captured as pass-through', () => {
   it('leaves xl/drawings/vmlDrawingN.vml outside the passthrough bucket', async () => {
-    // Build a workbook with no comments / passthrough — round-trip
-    // should produce no passthrough entries.
+    // Build a workbook with no comments / passthrough — round-trip should
+    // produce no passthrough entries.
     const wb = createWorkbook();
     addWorksheet(wb, 'Sheet1');
     const bytes = await workbookToBytes(wb);
