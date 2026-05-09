@@ -113,15 +113,6 @@
     border-left: 1px solid var(--border);
   }
 
-  .eyebrow {
-    color: var(--accent);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 13px;
-    margin: 0 0 0.4rem;
-  }
-
   h1 {
     margin: 0 0 0.4rem;
   }

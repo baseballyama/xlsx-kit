@@ -10,6 +10,7 @@
 </svelte:head>
 
 <div class="content">
+  <p class="eyebrow">Reference</p>
   <h1>API reference</h1>
   <p class="lede">
     Every public export of <code>xlsx-kit</code>, <code>xlsx-kit/streaming</code>, and
@@ -18,8 +19,9 @@
   </p>
 
   <div class="grid">
-    {#each data.sections as section (section.id)}
+    {#each data.sections as section, i (section.id)}
       <a href="{base}/api/{section.id}" class="card">
+        <span class="card-num">{String(i + 1).padStart(2, '0')}</span>
         <div class="card-head">
           <h3>{section.title}</h3>
           <span class="count">{section.itemCount}</span>
@@ -32,8 +34,8 @@
 
 <style>
   .content {
-    max-width: 1100px;
-    padding: 2rem 1.5rem 5rem;
+    max-width: var(--max-wide);
+    padding: 2.25rem 1.5rem 5rem;
   }
 
   h1 {
@@ -43,37 +45,51 @@
   .lede {
     color: var(--fg-soft);
     font-size: 1.05rem;
-    margin: 0 0 2rem;
+    margin: 0 0 2.25rem;
     max-width: 720px;
   }
 
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
   }
 
   .card {
+    position: relative;
     display: block;
-    padding: 1.1rem 1.2rem;
+    padding: 1.15rem 1.25rem 1.25rem;
     background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     color: var(--fg);
-    transition:
-      border-color 120ms,
-      transform 120ms;
+    transition: background 140ms ease;
   }
 
   .card:hover {
-    border-color: var(--accent);
     text-decoration: none;
-    transform: translateY(-1px);
+    background: var(--bg-soft);
+  }
+
+  .card:hover h3 {
+    color: var(--accent);
+  }
+
+  .card-num {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
   }
 
   .card-head {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.4rem;
@@ -81,24 +97,31 @@
 
   .card h3 {
     margin: 0;
-    font-size: 1rem;
-    line-height: 1.3;
+    font-family: var(--display);
+    font-size: 1.12rem;
+    font-weight: 540;
+    line-height: 1.2;
+    color: var(--fg);
+    transition: color 140ms ease;
+    font-variation-settings: 'opsz' 32, 'SOFT' 25;
   }
 
   .card p {
     margin: 0;
     color: var(--fg-soft);
-    font-size: 0.9rem;
-    line-height: 1.45;
+    font-size: 0.92rem;
+    line-height: 1.5;
   }
 
   .count {
-    font-size: 13px;
+    font-family: var(--mono);
+    font-size: 11px;
     color: var(--fg-muted);
-    background: var(--bg-soft);
+    padding: 0.05em 0.4em;
+    background: var(--bg-paper);
     border: 1px solid var(--border);
-    padding: 0.1em 0.55em;
-    border-radius: 999px;
+    border-radius: 3px;
     font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
   }
 </style>

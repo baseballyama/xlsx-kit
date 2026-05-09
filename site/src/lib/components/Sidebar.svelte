@@ -6,17 +6,19 @@
 
 <aside class="sidebar">
   <nav>
-    {#each docSections as section (section.title)}
+    {#each docSections as section, sIdx (section.title)}
       <section>
-        <h4>{section.title}</h4>
+        <h4>
+          <span class="hash">§{sIdx + 1}</span>
+          {section.title}
+        </h4>
         <ul>
-          {#each section.links as link (link.href)}
+          {#each section.links as link, lIdx (link.href)}
+            {@const active = page.url.pathname === `${base}${link.href}`}
             <li>
-              <a
-                href="{base}{link.href}"
-                class:active={page.url.pathname === `${base}${link.href}`}
-              >
-                {link.title}
+              <a href="{base}{link.href}" class:active>
+                <span class="row-num">{String(lIdx + 1).padStart(2, '0')}</span>
+                <span class="row-title">{link.title}</span>
               </a>
             </li>
           {/each}
@@ -30,7 +32,7 @@
   .sidebar {
     width: var(--sidebar-w);
     flex: 0 0 var(--sidebar-w);
-    padding: 1.5rem 0.5rem 4rem 1.25rem;
+    padding: 2rem 0.75rem 4rem 1.5rem;
     border-right: 1px solid var(--border);
     height: calc(100vh - var(--header-h));
     position: sticky;
@@ -39,15 +41,30 @@
   }
 
   section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
   }
 
   h4 {
-    font-size: 13px;
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--fg-muted);
-    margin: 0 0 0.5rem 0.5rem;
+    letter-spacing: 0.14em;
+    color: var(--fg-soft);
+    margin: 0 0 0.6rem 0.5rem;
+    border: none;
+    padding: 0;
+    font-variation-settings: normal;
+  }
+
+  .hash {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.04em;
   }
 
   ul {
@@ -57,23 +74,46 @@
   }
 
   li a {
-    display: block;
-    padding: 0.35rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.38rem 0.55rem 0.38rem 0.5rem;
     color: var(--fg-soft);
-    border-radius: 6px;
-    font-size: 0.93rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    line-height: 1.35;
+    border-left: 2px solid transparent;
   }
 
   li a:hover {
-    background: var(--bg-soft);
     color: var(--fg);
     text-decoration: none;
+    background: var(--bg-soft);
   }
 
   li a.active {
     background: var(--accent-soft);
     color: var(--fg);
-    font-weight: 600;
+    border-left-color: var(--accent);
+  }
+
+  li a.active .row-num {
+    color: var(--accent);
+  }
+
+  .row-num {
+    flex: none;
+    width: 2.2ch;
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--fg-muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .row-title {
+    flex: 1;
   }
 
   @media (max-width: 800px) {

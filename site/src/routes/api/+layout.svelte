@@ -39,14 +39,14 @@
   .layout {
     display: flex;
     align-items: stretch;
-    max-width: 1500px;
+    max-width: var(--max-wide);
     margin: 0 auto;
   }
 
   .sidebar {
-    width: 280px;
-    flex: 0 0 280px;
-    padding: 1.5rem 0.5rem 4rem 1.25rem;
+    width: 268px;
+    flex: 0 0 268px;
+    padding: 2rem 0.75rem 4rem 1.5rem;
     border-right: 1px solid var(--border);
     height: calc(100vh - var(--header-h));
     position: sticky;
@@ -55,11 +55,16 @@
   }
 
   h4 {
-    font-size: 13px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--fg-muted);
-    margin: 0 0 0.5rem 0.5rem;
+    letter-spacing: 0.14em;
+    color: var(--fg-soft);
+    margin: 0 0 0.6rem 0.5rem;
+    border: none;
+    padding: 0;
+    font-variation-settings: normal;
   }
 
   ul {
@@ -73,11 +78,12 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding: 0.4rem 0.7rem;
+    padding: 0.4rem 0.6rem;
     color: var(--fg-soft);
-    border-radius: 6px;
-    font-size: 0.9rem;
-    line-height: 1.3;
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    line-height: 1.35;
+    border-left: 2px solid transparent;
   }
 
   li a:hover {
@@ -89,7 +95,7 @@
   li a.active {
     background: var(--accent-soft);
     color: var(--fg);
-    font-weight: 600;
+    border-left-color: var(--accent);
   }
 
   .title {
@@ -98,13 +104,15 @@
   }
 
   .count {
-    font-size: 13px;
+    font-family: var(--mono);
+    font-size: 11px;
     color: var(--fg-muted);
-    background: var(--bg-soft);
+    background: var(--bg-paper);
     border: 1px solid var(--border);
-    padding: 0.05em 0.45em;
-    border-radius: 999px;
+    padding: 0.05em 0.4em;
+    border-radius: 3px;
     font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
   }
 
   .main {

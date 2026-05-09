@@ -23,6 +23,7 @@
     </article>
     {#if knownDoc}
       <div class="md-link">
+        <span class="md-coord">md</span>
         <a href={mdHref}>View raw Markdown</a>
         <span class="muted">
           (LLMs and tools can fetch this URL or
@@ -37,7 +38,7 @@
   .layout {
     display: flex;
     align-items: stretch;
-    max-width: 1300px;
+    max-width: var(--max-wide);
     margin: 0 auto;
   }
 
@@ -49,7 +50,7 @@
 
   .doc-content {
     max-width: var(--max-content);
-    padding: 2rem 1.5rem 3rem;
+    padding: 2.25rem 1.5rem 3rem;
   }
 
   .doc-content :global(h2) {
@@ -60,13 +61,34 @@
     max-width: var(--max-content);
     padding: 1.5rem 1.5rem 3rem;
     border-top: 1px solid var(--border);
-    margin-top: 2rem;
-    font-size: 0.92rem;
+    margin: 2rem 1.5rem 0;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--fg-soft);
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .md-coord {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.1em 0.45em;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-soft);
+    border-radius: 3px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .md-link a {
     font-weight: 600;
-    margin-right: 0.5rem;
+    color: var(--accent);
   }
 
   .muted {

@@ -18,15 +18,31 @@
 
 <footer>
   <div class="footer-inner">
-    <p>
-      <a href="https://github.com/baseballyama/xlsx-kit">xlsx-kit</a> · MIT licensed · A
-      TypeScript port of <a href="https://openpyxl.readthedocs.io/">openpyxl</a>.
-    </p>
-    <p class="muted">
-      Looking for an LLM-friendly index? See <a href="{base}/llms.txt">/llms.txt</a> or
-      <a href="{base}/llms-full.txt">/llms-full.txt</a>. Append <code>.md</code> to any
-      docs URL for the raw Markdown source.
-    </p>
+    <div class="footer-grid">
+      <div class="cell">
+        <span class="label">Project</span>
+        <a href="https://github.com/baseballyama/xlsx-kit">xlsx-kit</a>
+      </div>
+      <div class="cell">
+        <span class="label">License</span>
+        <span>MIT</span>
+      </div>
+      <div class="cell">
+        <span class="label">Runtime</span>
+        <span>Node 22+ · browsers</span>
+      </div>
+      <div class="cell">
+        <span class="label">Native deps</span>
+        <span>0</span>
+      </div>
+    </div>
+    <div class="footer-llms">
+      <span class="muted">For LLMs:</span>
+      <a href="{base}/llms.txt">/llms.txt</a>
+      <span class="dot">·</span>
+      <a href="{base}/llms-full.txt">/llms-full.txt</a>
+      <span class="muted">— or append <code>.md</code> to any docs URL.</span>
+    </div>
   </div>
 </footer>
 
@@ -37,22 +53,97 @@
 
   footer {
     border-top: 1px solid var(--border);
-    padding: 2rem 1.25rem;
+    padding: 2.25rem 1.5rem 3rem;
     background: var(--bg-elev);
   }
 
   .footer-inner {
-    max-width: 1200px;
+    max-width: var(--max-wide);
     margin: 0 auto;
   }
 
-  footer p {
-    margin: 0.25rem 0;
-    color: var(--fg-soft);
-    font-size: 0.9rem;
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg);
   }
 
-  footer .muted {
+  .cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.95rem 1.1rem;
+    border-right: 1px solid var(--border);
+    font-size: 0.92rem;
+    color: var(--fg);
+  }
+
+  .cell:last-child {
+    border-right: none;
+  }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: var(--fg-muted);
+  }
+
+  .cell a {
+    font-family: var(--display);
+    font-weight: 540;
+    font-size: 1.05rem;
+    color: var(--fg);
+    font-variation-settings: 'opsz' 64, 'SOFT' 30;
+  }
+
+  .cell a:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .footer-llms {
+    margin-top: 1.25rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--fg-soft);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .footer-llms .muted {
+    color: var(--fg-muted);
+  }
+
+  .footer-llms .dot {
+    color: var(--fg-faint);
+  }
+
+  .footer-llms a {
+    color: var(--accent);
+  }
+
+  .footer-llms code {
+    font-size: 11px;
+    padding: 0.05em 0.3em;
+  }
+
+  @media (max-width: 600px) {
+    .cell {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cell:last-child {
+      border-bottom: none;
+    }
   }
 </style>

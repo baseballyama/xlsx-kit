@@ -9,7 +9,7 @@ export const prerender = true;
 
 const HEADER = `# xlsx-kit
 
-> A TypeScript port of openpyxl — read and write Excel \`.xlsx\` workbooks from Node 18+ and modern browsers, with no Python or native runtime dependencies. Includes a streaming writer (10M rows in fixed memory) and a SAX-based row iterator for huge sheets.
+> Read and write Excel \`.xlsx\` workbooks from Node 22+ and modern browsers, with no Python or native runtime dependencies. Includes a streaming writer (10M rows in fixed memory) and a SAX-based row iterator for huge sheets.
 
 This index points at the canonical documentation for the library. Every linked URL is also available as raw Markdown by appending \`.md\` (e.g. \`/docs/install.md\`). Append \`/llms-full.txt\` to this site to get every page concatenated into a single document.
 `;

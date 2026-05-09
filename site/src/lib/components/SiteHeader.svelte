@@ -22,12 +22,24 @@
 <header class="site-header">
   <div class="inner">
     <a href="{base}/" class="brand">
-      <span class="brand-mark">×</span>
+      <span class="brand-mark">
+        <span class="mark-glyph">×</span>
+      </span>
       <span class="brand-name">xlsx-kit</span>
+      <span class="brand-tag">spec</span>
     </a>
     <nav>
-      {#each links as link (link.path)}
-        <a href={resolve(link)} class="nav-link" class:active={isActive(link)}>{link.label}</a>
+      {#each links as link, i (link.path)}
+        <a
+          href={resolve(link)}
+          class="nav-link"
+          class:active={isActive(link)}
+          class:external={link.external}
+        >
+          <span class="nav-num">{String(i + 1).padStart(2, '0')}</span>
+          <span class="nav-label">{link.label}</span>
+          {#if link.external}<span class="nav-arrow">↗</span>{/if}
+        </a>
       {/each}
     </nav>
   </div>
@@ -38,8 +50,9 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background: color-mix(in oklab, var(--bg) 90%, transparent);
-    backdrop-filter: blur(8px);
+    background: color-mix(in oklab, var(--bg) 85%, transparent);
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
     border-bottom: 1px solid var(--border);
     height: var(--header-h);
     display: flex;
@@ -48,9 +61,9 @@
 
   .inner {
     width: 100%;
-    max-width: 1200px;
+    max-width: var(--max-wide);
     margin: 0 auto;
-    padding: 0 1.25rem;
+    padding: 0 1.5rem;
     display: flex;
     align-items: center;
     gap: 2rem;
@@ -59,11 +72,13 @@
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
     color: var(--fg);
-    font-weight: 700;
-    font-size: 1.05rem;
-    letter-spacing: -0.01em;
+    font-family: var(--display);
+    font-weight: 540;
+    font-size: 1.18rem;
+    letter-spacing: -0.02em;
+    font-variation-settings: 'opsz' 96, 'SOFT' 30;
   }
 
   .brand:hover {
@@ -71,37 +86,116 @@
   }
 
   .brand-mark {
+    position: relative;
     display: inline-grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     background: var(--accent);
-    color: white;
-    border-radius: 6px;
-    font-size: 1.1rem;
-    font-weight: 800;
+    color: var(--bg);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 700;
     line-height: 1;
+    box-shadow: 0 0 0 1px var(--accent), 0 8px 24px -10px var(--accent-glow);
+  }
+
+  .brand-mark::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 1px solid var(--accent-soft);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  .mark-glyph {
+    transform: translateY(-1px);
+  }
+
+  .brand-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    line-height: 1;
+    transform: translateY(1px);
   }
 
   nav {
     display: flex;
-    gap: 1.25rem;
+    gap: 0.25rem;
     align-items: center;
     margin-left: auto;
   }
 
   .nav-link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.4rem 0.7rem;
     color: var(--fg-soft);
-    font-size: 0.93rem;
+    font-family: var(--mono);
+    font-size: 12px;
     font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: var(--radius-sm);
+    transition:
+      color 120ms ease,
+      background 120ms ease;
   }
 
   .nav-link:hover {
     color: var(--fg);
+    background: var(--bg-soft);
     text-decoration: none;
   }
 
   .nav-link.active {
     color: var(--fg);
+    background: var(--bg-soft);
+  }
+
+  .nav-link.active .nav-num {
+    color: var(--accent);
+  }
+
+  .nav-num {
+    color: var(--fg-muted);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .nav-arrow {
+    color: var(--fg-muted);
+    font-size: 11px;
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 640px) {
+    .nav-num {
+      display: none;
+    }
+
+    .nav-link {
+      padding: 0.4rem 0.5rem;
+    }
+
+    .brand-tag {
+      display: none;
+    }
+
+    .inner {
+      gap: 1rem;
+      padding: 0 1rem;
+    }
   }
 </style>

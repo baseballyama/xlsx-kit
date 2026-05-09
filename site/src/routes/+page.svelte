@@ -4,83 +4,158 @@
   import type { PageProps } from './$types';
 
   const { data }: PageProps = $props();
+
+  const features: Array<{ num: string; title: string; body: string }> = [
+    {
+      num: '01',
+      title: 'Round-trips real workbooks',
+      body: "Pivot tables, macro-enabled .xlsm, threaded comments, Power Query metadata, custom XML — anything we don't model is preserved byte-identical so Excel 365 still renders it.",
+    },
+    {
+      num: '02',
+      title: 'Streaming, both directions',
+      body: 'createWriteOnlyWorkbook deflates rows as they arrive. loadWorkbookStream walks a file once and yields each row. Browser-safe via xlsx-kit/streaming.',
+    },
+    {
+      num: '03',
+      title: 'Charts & drawings, modeled',
+      body: '16 legacy c: chart kinds plus 8 cx: chartex kinds (Sunburst, Treemap, Waterfall, Histogram, Pareto, Funnel, BoxWhisker, RegionMap). Images auto-detect format and dimensions.',
+    },
+    {
+      num: '04',
+      title: 'Tiny & tree-shakeable',
+      body: 'xlsx-kit ≤ 120 KB brotli (currently ~78 KB). xlsx-kit/streaming ≤ 80 KB brotli (~47 KB). Every export is side-effect-free.',
+    },
+  ];
+
+  const stats = [
+    { label: 'rows', value: '10,000,000', sub: 'streamed under 100 MB heap' },
+    { label: 'bundle', value: '~78 KB', sub: 'brotli, tree-shakeable' },
+    { label: 'deps', value: '0', sub: 'native modules' },
+    { label: 'targets', value: 'Node + browser', sub: 'no Python, no Excel' },
+  ];
 </script>
 
 <svelte:head>
-  <title>xlsx-kit — TypeScript port of openpyxl</title>
+  <title>xlsx-kit — Read and write Excel .xlsx in Node and the browser</title>
 </svelte:head>
 
 <section class="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-glow"></div>
+  </div>
+
   <div class="hero-inner">
-    <p class="eyebrow">A TypeScript port of openpyxl</p>
-    <h1>Read and write Excel <code class="hero-code">.xlsx</code> from Node and the browser.</h1>
+    <div class="hero-meta">
+      <span class="meta-dot"></span>
+      <span class="meta-tag">v0 · MIT · stable</span>
+      <span class="meta-sep">/</span>
+      <span class="meta-tag">Node 22+ · browsers</span>
+      <span class="meta-sep">/</span>
+      <span class="meta-tag">0 native deps</span>
+    </div>
+
+    <h1 class="display">
+      <span class="line">
+        Read &amp; write
+        <em>Excel</em>
+        <span class="dot-sep" aria-hidden="true"></span>
+        <code class="filetype">.xlsx</code>
+      </span>
+      <span class="line muted-line">
+        from
+        <span class="hl">Node</span>
+        and
+        <span class="hl">the browser</span>.
+      </span>
+    </h1>
+
     <p class="lede">
       Full workbook model — values, formulas, styles, charts, drawings, pivots, VBA — plus a
-      streaming writer that pushes 10M rows under a 100&nbsp;MB heap. No Python, no Excel, no
-      runtime native modules.
+      streaming writer that pushes <strong>10M rows under a 100&nbsp;MB heap</strong>. No
+      Python. No Excel. No runtime native modules.
     </p>
+
     <div class="cta">
-      <a href="{base}/docs/getting-started" class="btn primary">Get started →</a>
-      <a href="{base}/docs/recipes" class="btn">Recipes</a>
-      <a href="{base}/api" class="btn">API reference</a>
-      <a href="https://github.com/baseballyama/xlsx-kit" class="btn">GitHub</a>
+      <a href="{base}/docs/getting-started" class="btn primary">
+        <span>Get started</span>
+        <span class="arrow">→</span>
+      </a>
+      <a href="{base}/docs/recipes" class="btn ghost">Recipes</a>
+      <a href="{base}/api" class="btn ghost">API reference</a>
+      <a href="https://github.com/baseballyama/xlsx-kit" class="btn ghost">
+        GitHub <span class="ext">↗</span>
+      </a>
     </div>
-    <p class="install"><code>pnpm add xlsx-kit</code></p>
+
+    <div class="install" role="group" aria-label="Install command">
+      <span class="install-coord">$</span>
+      <code class="install-cmd">pnpm add xlsx-kit</code>
+      <span class="install-alt">
+        <span class="alt-sep">/</span>
+        <code>npm i xlsx-kit</code>
+      </span>
+    </div>
+
+    <div class="stats" aria-label="Project stats">
+      {#each stats as stat, i (stat.label)}
+        <div class="stat" style="--i: {i}">
+          <span class="stat-label">{stat.label}</span>
+          <span class="stat-value">{stat.value}</span>
+          <span class="stat-sub">{stat.sub}</span>
+        </div>
+      {/each}
+    </div>
   </div>
 </section>
 
 <section class="features">
   <div class="features-inner">
-    <article>
-      <h3>Round-trips real workbooks</h3>
-      <p>
-        Pivot tables, macro-enabled <code>.xlsm</code>, threaded comments, Power Query metadata,
-        custom XML — anything we don't model is preserved byte-identical so Excel 365 still
-        renders it.
-      </p>
-    </article>
-    <article>
-      <h3>Streaming, both ways</h3>
-      <p>
-        <code>createWriteOnlyWorkbook</code> deflates rows as they arrive.
-        <code>loadWorkbookStream</code> walks a file once and yields each row. Browser-safe via
-        <code>xlsx-kit/streaming</code>.
-      </p>
-    </article>
-    <article>
-      <h3>Charts &amp; drawings, modeled</h3>
-      <p>
-        16 legacy <code>c:</code> chart kinds plus 8 <code>cx:</code> chartex kinds (Sunburst,
-        Treemap, Waterfall, Histogram, Pareto, Funnel, BoxWhisker, RegionMap). Images
-        auto-detect format and dimensions.
-      </p>
-    </article>
-    <article>
-      <h3>Tiny &amp; tree-shakeable</h3>
-      <p>
-        <code>xlsx-kit</code> ≤ 120&nbsp;KB brotli (currently ~78&nbsp;KB).
-        <code>xlsx-kit/streaming</code> ≤ 80&nbsp;KB brotli (~47&nbsp;KB). All exports are
-        side-effect-free.
-      </p>
-    </article>
+    <header class="section-head">
+      <h2>What it does well</h2>
+      <span class="row-count">04 / 04</span>
+    </header>
+
+    <div class="features-grid">
+      {#each features as f (f.num)}
+        <article class="feature">
+          <span class="feature-num">{f.num}</span>
+          <h3>{f.title}</h3>
+          <p>{f.body}</p>
+        </article>
+      {/each}
+    </div>
   </div>
 </section>
 
 <section class="examples">
   <div class="examples-inner">
-    <h2>Two snippets to get the shape</h2>
-    <p class="lede">
+    <header class="section-head">
+      <h2>Two snippets to get the shape</h2>
+      <span class="row-count">live · type-checked</span>
+    </header>
+
+    <p class="lede examples-lede">
       Both files below live under <code>site/src/lib/examples/</code> and are type-checked by
       <code>svelte-check</code> against the real library on every build — if an API renames,
       the docs build fails.
     </p>
-    {#each data.hero as ex (ex.key)}
-      <h3>{ex.title}</h3>
-      <p>{ex.description}</p>
-      <CodeBlock html={ex.html} title={ex.path} />
+
+    {#each data.hero as ex, i (ex.key)}
+      <div class="example">
+        <header class="example-head">
+          <span class="example-num">{String(i + 1).padStart(2, '0')}</span>
+          <div class="example-text">
+            <h3>{ex.title}</h3>
+            <p>{ex.description}</p>
+          </div>
+        </header>
+        <CodeBlock html={ex.html} title={ex.path} />
+      </div>
     {/each}
+
     <p class="more">
-      More examples in <a href="{base}/docs/getting-started">Getting started</a> and
+      More in <a href="{base}/docs/getting-started">Getting started</a> &amp;
       <a href="{base}/docs/streaming">Streaming</a>.
     </p>
   </div>
@@ -88,53 +163,155 @@
 
 <style>
   .hero {
-    padding: 4rem 1.25rem 3rem;
+    position: relative;
+    padding: 3.5rem 1.5rem 4.5rem;
     border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     background:
-      radial-gradient(circle at 25% 0%, rgba(255, 62, 0, 0.16), transparent 50%),
-      radial-gradient(circle at 80% 30%, rgba(80, 90, 220, 0.12), transparent 60%);
+      radial-gradient(circle at 18% -10%, var(--accent-glow), transparent 45%),
+      radial-gradient(circle at 100% 30%, var(--brass-soft), transparent 50%);
+  }
+
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent 0,
+        transparent calc(100% / 12 - 1px),
+        var(--rule) calc(100% / 12 - 1px),
+        var(--rule) calc(100% / 12),
+        transparent calc(100% / 12)
+      );
+    background-size: calc(100% / 12) 100%;
+    opacity: 0.6;
+    mask-image: radial-gradient(circle at 30% 40%, black 0%, transparent 65%);
   }
 
   .hero-inner {
-    max-width: 880px;
+    position: relative;
+    max-width: var(--max-wide);
     margin: 0 auto;
-    text-align: center;
   }
 
-  .eyebrow {
+  .hero-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 1.5rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--fg);
+    letter-spacing: 0.04em;
+    flex-wrap: wrap;
+  }
+
+  .meta-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .meta-sep {
+    color: var(--fg-faint);
+  }
+
+  .meta-tag {
+    color: var(--fg-soft);
+  }
+
+  .display {
+    font-family: var(--display);
+    font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+    font-weight: 460;
+    line-height: 1;
+    letter-spacing: -0.035em;
+    margin: 0 0 1.5rem;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+    color: var(--fg);
+    max-width: 14ch;
+  }
+
+  .display .line {
+    display: block;
+  }
+
+  .display em {
+    font-style: italic;
+    font-weight: 400;
     color: var(--accent);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 13px;
-    margin: 0 0 0.6rem;
+    font-variation-settings: 'opsz' 144, 'SOFT' 70;
+    margin: 0 0.05em;
   }
 
-  .hero h1 {
-    font-size: clamp(2rem, 4.5vw, 3.25rem);
-    margin: 0 0 1rem;
-    line-height: 1.15;
-  }
-
-  .hero-code {
-    background: var(--bg-soft);
+  .display .filetype {
+    display: inline-block;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.55em;
+    color: var(--fg);
+    background: var(--bg-paper);
     border: 1px solid var(--border);
-    padding: 0.05em 0.3em;
-    font-size: 0.85em;
-    color: var(--accent);
+    padding: 0.05em 0.4em;
+    border-radius: var(--radius-sm);
+    transform: translateY(-0.18em);
+    letter-spacing: 0;
+  }
+
+  .display .dot-sep {
+    display: inline-block;
+    width: 0.18em;
+    height: 0.18em;
+    background: var(--brass);
+    border-radius: 50%;
+    transform: translateY(-0.4em);
+    margin: 0 0.18em;
+  }
+
+  .display .muted-line {
+    color: var(--fg-soft);
+    font-size: 0.78em;
+    font-weight: 380;
+    margin-top: 0.15em;
+  }
+
+  .display .hl {
+    position: relative;
+    color: var(--fg);
+    font-style: italic;
+    font-variation-settings: 'opsz' 144, 'SOFT' 70;
+    font-weight: 400;
+    background-image: linear-gradient(0deg, var(--brass-soft) 0%, var(--brass-soft) 18%, transparent 18%);
+    background-position: 0 88%;
+    background-repeat: no-repeat;
+    padding: 0 0.05em;
   }
 
   .lede {
     color: var(--fg-soft);
-    font-size: 1.075rem;
-    max-width: 680px;
-    margin: 0 auto 1.5rem;
+    font-size: 1.08rem;
+    line-height: 1.55;
+    max-width: 56ch;
+    margin: 0 0 1.75rem;
+  }
+
+  .lede strong {
+    color: var(--fg);
+    font-weight: 650;
   }
 
   .cta {
     display: flex;
-    gap: 0.75rem;
-    justify-content: center;
+    gap: 0.5rem;
     flex-wrap: wrap;
     margin-bottom: 1.5rem;
   }
@@ -142,77 +319,275 @@
   .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.65rem 1.1rem;
-    border-radius: 999px;
-    background: var(--bg-elev);
+    gap: 0.5rem;
+    padding: 0.7rem 1.05rem;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border);
+    background: var(--bg-elev);
     color: var(--fg);
-    font-weight: 500;
-    font-size: 0.95rem;
+    font-family: var(--sans);
+    font-size: 0.94rem;
+    font-weight: 540;
+    letter-spacing: -0.005em;
+    transition:
+      transform 120ms ease,
+      background 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
   }
 
   .btn:hover {
-    background: var(--bg-soft);
     text-decoration: none;
+    background: var(--bg-soft);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
   }
 
   .btn.primary {
     background: var(--accent);
     border-color: var(--accent);
-    color: white;
+    color: var(--bg);
+    font-weight: 580;
+    box-shadow: 0 8px 30px -12px var(--accent-glow);
   }
 
   .btn.primary:hover {
-    filter: brightness(1.1);
+    background: var(--accent-hot);
+    border-color: var(--accent-hot);
+  }
+
+  .btn .arrow {
+    transition: transform 160ms ease;
+  }
+
+  .btn.primary:hover .arrow {
+    transform: translateX(3px);
+  }
+
+  .btn .ext {
+    color: var(--fg-muted);
+    font-size: 0.85em;
   }
 
   .install {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--code-bg);
     font-family: var(--mono);
+    font-size: 0.88rem;
+    color: var(--fg);
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+  }
+
+  .install-coord {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .install-cmd {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--fg);
+  }
+
+  .install-alt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     color: var(--fg-muted);
-    font-size: 0.95rem;
   }
 
-  .install code {
-    background: var(--bg-soft);
-    padding: 0.4em 0.8em;
-    font-size: 0.95em;
+  .install-alt .alt-sep {
+    color: var(--fg-faint);
   }
 
+  .install-alt code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--fg-soft);
+  }
+
+  /* Stats strip — like a spreadsheet status bar. */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-paper);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 1rem 1.1rem;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+
+  .stat:last-child {
+    border-right: none;
+  }
+
+  .stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 28px;
+    height: 1px;
+    background: var(--accent);
+    opacity: calc(1 - var(--i) * 0.18);
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+
+  .stat-value {
+    font-family: var(--display);
+    font-size: 1.55rem;
+    font-weight: 480;
+    color: var(--fg);
+    line-height: 1.1;
+    margin-top: 0.15rem;
+    font-variation-settings: 'opsz' 96, 'SOFT' 30, 'wght' 480;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+    margin-top: 0.25rem;
+  }
+
+  /* Section heads — used by features + examples + future sections. */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.85rem;
+    margin: 0 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.85rem;
+  }
+
+  .section-head h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    flex: 1;
+  }
+
+  .section-head .row-count {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* Features. */
   .features {
-    padding: 4rem 1.25rem;
-    background: var(--bg-elev);
+    padding: 4.5rem 1.5rem;
     border-bottom: 1px solid var(--border);
   }
 
   .features-inner {
-    max-width: 1100px;
+    max-width: var(--max-wide);
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
   }
 
-  .features article {
-    padding: 1.25rem;
-    background: var(--bg-soft);
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg);
   }
 
-  .features h3 {
-    margin-top: 0;
-    font-size: 1.05rem;
+  .feature {
+    position: relative;
+    padding: 1.35rem 1.4rem 1.5rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elev);
+    transition: background 160ms ease;
   }
 
-  .features p {
+  .feature:hover {
+    background: var(--bg-soft);
+  }
+
+  .feature:nth-last-child(-n + 2) {
+    border-bottom: none;
+  }
+
+  .feature:last-child,
+  .feature:nth-child(2n) {
+    border-right: none;
+  }
+
+  /* Re-add right border for cases when grid wraps to single column. */
+  @media (max-width: 580px) {
+    .feature {
+      border-right: none;
+    }
+
+    .feature:nth-last-child(-n + 2) {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .feature-num {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+  }
+
+  .feature h3 {
+    font-family: var(--display);
+    font-size: 1.18rem;
+    font-weight: 540;
+    margin: 0 0 0.45rem;
+    line-height: 1.2;
+    color: var(--fg);
+    font-variation-settings: 'opsz' 32, 'SOFT' 30;
+  }
+
+  .feature p {
     color: var(--fg-soft);
-    font-size: 0.93rem;
-    margin: 0.4rem 0 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin: 0;
   }
 
+  /* Examples. */
   .examples {
-    padding: 4rem 1.25rem 6rem;
+    padding: 4.5rem 1.5rem 6rem;
   }
 
   .examples-inner {
@@ -220,18 +595,60 @@
     margin: 0 auto;
   }
 
-  .examples h2 {
-    border-bottom: none;
-    padding-bottom: 0;
-    margin-top: 0;
+  .examples-lede {
+    margin-bottom: 2rem;
   }
 
-  .examples h3 {
-    margin-top: 2.5rem;
+  .example {
+    margin: 0 0 2.5rem;
+  }
+
+  .example-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    margin: 0 0 0.65rem;
+  }
+
+  .example-num {
+    flex: none;
+    margin-top: 0.55rem;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+
+  .example-text {
+    flex: 1;
+  }
+
+  .example-head h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1.32rem;
+    font-family: var(--display);
+    font-weight: 540;
+    font-variation-settings: 'opsz' 32, 'SOFT' 25;
+  }
+
+  .example-head p {
+    color: var(--fg-soft);
+    margin: 0;
+    font-size: 0.95rem;
   }
 
   .more {
     margin-top: 2rem;
     color: var(--fg-soft);
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 720px) {
+    .display {
+      max-width: none;
+    }
   }
 </style>
