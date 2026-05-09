@@ -47,22 +47,24 @@ jobs:
 
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
+      # Use Node 24 here, not 22. `changeset publish` shells out to
+      # `npm publish`, and OIDC Trusted Publishers require npm CLI >= 11.5.1.
+      # Node 22 ships with npm 10.x, and `npm install -g npm@latest` on top
+      # of npm 10.x trips a self-upgrade bug (MODULE_NOT_FOUND: promise-retry).
+      # Node 24 ships with npm 11.x, so the OIDC publish path works out of
+      # the box without a separate npm install step. CI keeps testing the
+      # full Node 22/24/26 matrix; only the publish job needs a newer npm.
+      #
       # Note: do NOT set `registry-url` here — it would have setup-node write
       # `_authToken=${NODE_AUTH_TOKEN}` into .npmrc, which forces token auth
       # and blocks the OIDC code path used by Trusted Publishers.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       # ECMA-376 conformance tests shell out to xmllint (libxml2-utils).
       - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
-
-      # `changeset publish` shells out to `npm publish`, and OIDC Trusted
-      # Publishers require npm CLI >= 11.5.1. Node 22 ships with npm 10.x,
-      # which only knows token auth and fails with ENEEDAUTH against the
-      # trusted-publisher flow.
-      - run: npm install -g npm@latest
 
       - run: pnpm install --frozen-lockfile
 
