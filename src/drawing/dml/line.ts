@@ -15,12 +15,12 @@ export type PresetDash =
   | 'sysDashDot'
   | 'sysDashDotDot';
 
-export type LineDash = { kind: 'preset'; val: PresetDash } | { kind: 'custDash'; pattern: number[] };
+type LineDash = { kind: 'preset'; val: PresetDash } | { kind: 'custDash'; pattern: number[] };
 
 export type LineCap = 'rnd' | 'sq' | 'flat';
 export type LineCompound = 'sng' | 'dbl' | 'thickThin' | 'thinThick' | 'tri';
-export type LineAlign = 'ctr' | 'in';
-export type LineJoin = { kind: 'round' } | { kind: 'bevel' } | { kind: 'miter'; lim?: number };
+type LineAlign = 'ctr' | 'in';
+type LineJoin = { kind: 'round' } | { kind: 'bevel' } | { kind: 'miter'; lim?: number };
 
 export type LineEndType = 'none' | 'triangle' | 'stealth' | 'diamond' | 'oval' | 'arrow';
 export type LineEndSize = 'sm' | 'med' | 'lg';

@@ -11,7 +11,7 @@ export const EMU_PER_PIXEL = 9_525;
 export const EMU_PER_POINT = 12_700;
 
 /** DPI assumed by Excel when converting between pixels and other units. */
-export const DEFAULT_PIXEL_DPI = 96;
+const DEFAULT_PIXEL_DPI = 96;
 
 // ---- pixel <-> EMU ---------------------------------------------------------
 

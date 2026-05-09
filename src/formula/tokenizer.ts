@@ -28,7 +28,7 @@ export const OP_IN = 'OPERATOR-INFIX';
 export const OP_POST = 'OPERATOR-POSTFIX';
 export const WSPACE = 'WHITE-SPACE';
 
-export type TokenType =
+type TokenType =
   | typeof LITERAL
   | typeof OPERAND
   | typeof FUNC
@@ -50,7 +50,7 @@ export const CLOSE = 'CLOSE';
 export const ARG = 'ARG';
 export const ROW = 'ROW';
 
-export type TokenSubtype =
+type TokenSubtype =
   | ''
   | typeof TEXT
   | typeof NUMBER
@@ -116,7 +116,7 @@ export function makeSubexp(value: string, func = false): Token {
 }
 
 /** Returns a CLOSE token that matches the given OPEN subexpression. */
-export function getCloser(open: Token): Token {
+function getCloser(open: Token): Token {
   if (open.type !== FUNC && open.type !== ARRAY && open.type !== PAREN) {
     throw new TokenizerError(`getCloser: expected FUNC/ARRAY/PAREN OPEN; got ${open.type}`);
   }

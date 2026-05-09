@@ -148,10 +148,6 @@ export function makeTranslator(formula: string, origin: string): Translator {
   return { formula, origin, row, col, tokens: tokenize(formula) };
 }
 
-export function translatorFormula(t: Translator, opts: TranslateOptions = {}): string {
-  return translateFormula(t.formula, t.origin, opts);
-}
-
 /** Render the translator's tokens back to the source string (sanity check). */
 export function translatorRender(t: Translator): string {
   return renderTokens(t.tokens);

@@ -1540,7 +1540,7 @@ export function chartToBytes(space: ChartSpace, opts: ChartSerializeOptions = {}
   return new TextEncoder().encode(serializeChartSpace(space, opts));
 }
 
-export function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptions = {}): string {
+function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptions = {}): string {
   const parts: string[] = [
     XML_HEADER,
     `<c:chartSpace xmlns:c="${CHART_NS}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL_NS}">`,

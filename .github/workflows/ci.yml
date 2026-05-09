@@ -32,6 +32,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
+      - run: pnpm knip
       - run: pnpm build
       # Bundle-size gate: xlsx-kit/streaming ≤80KB, full lib ≤120KB
       # (docs/plan/06-streaming.md §3.4 acceptance).

@@ -13,7 +13,7 @@ import { type Fill, type GradientFill, type GradientStop, PATTERN_TYPES, type Pa
 
 const PATTERN_TYPE_VALUES: readonly string[] = PATTERN_TYPES;
 
-export const StopSchema: Schema<GradientStop> = defineSchema<GradientStop>({
+const StopSchema: Schema<GradientStop> = defineSchema<GradientStop>({
   tagname: 'stop',
   xmlNs: SHEET_MAIN_NS,
   attrs: {
@@ -22,7 +22,7 @@ export const StopSchema: Schema<GradientStop> = defineSchema<GradientStop>({
   elements: [{ kind: 'object', key: 'color', schema: () => ColorSchema }],
 });
 
-export const PatternFillSchema: Schema<PatternFill> = defineSchema<PatternFill>({
+const PatternFillSchema: Schema<PatternFill> = defineSchema<PatternFill>({
   tagname: 'patternFill',
   xmlNs: SHEET_MAIN_NS,
   // `kind` is internal-only and never emitted; postParse re-adds it on read.
@@ -36,7 +36,7 @@ export const PatternFillSchema: Schema<PatternFill> = defineSchema<PatternFill>(
   postParse: (v) => ({ ...v, kind: 'pattern' }),
 });
 
-export const GradientFillSchema: Schema<GradientFill> = defineSchema<GradientFill>({
+const GradientFillSchema: Schema<GradientFill> = defineSchema<GradientFill>({
   tagname: 'gradientFill',
   xmlNs: SHEET_MAIN_NS,
   attrs: {

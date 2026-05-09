@@ -120,7 +120,7 @@ const DEFINED_NAME_TAG = `{${SHEET_MAIN_NS}}definedName`;
 const RID_ATTR = `{${REL_NS}}id`;
 
 /** Extract the `<definedNames>/<definedName>` entries from a parsed `xl/workbook.xml`. */
-export function parseDefinedNames(workbookRoot: XmlNode): DefinedName[] {
+function parseDefinedNames(workbookRoot: XmlNode): DefinedName[] {
   const wrapper = findChild(workbookRoot, DEFINED_NAMES_TAG);
   if (!wrapper) return [];
   const out: DefinedName[] = [];

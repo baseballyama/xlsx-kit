@@ -57,17 +57,6 @@ export function addSharedString(table: SharedStringsTable, value: string): numbe
   return id;
 }
 
-/**
- * Insert a rich-text entry and return its index. Rich-text values are not
- * deduped — formatting equality is expensive and rarely worth the trade. Each
- * call appends a new `<si>` slot.
- */
-export function addSharedRichText(table: SharedStringsTable, runs: RichText): number {
-  const id = table.entries.length;
-  table.entries.push({ kind: 'rich-text', runs });
-  return id;
-}
-
 /** Look up a shared-string index by its literal text. Returns `undefined` for unknown values. */
 export function getSharedStringIndex(table: SharedStringsTable, value: string): number | undefined {
   return table.index.get(value);
@@ -84,11 +73,6 @@ export function getSharedStringAt(table: SharedStringsTable, index: number): str
   if (entry === undefined) return undefined;
   if (typeof entry === 'string') return entry;
   return entry.runs.map((r) => r.text).join('');
-}
-
-/** Raw entry access — preserves the rich-text shape when present. */
-export function getSharedEntryAt(table: SharedStringsTable, index: number): SharedStringEntry | undefined {
-  return table.entries[index];
 }
 
 /** Number of unique entries in the SST. */

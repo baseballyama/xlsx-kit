@@ -290,7 +290,7 @@ export function drawingToBytes(drawing: Drawing): Uint8Array {
   return new TextEncoder().encode(serializeDrawing(drawing));
 }
 
-export function serializeDrawing(drawing: Drawing): string {
+function serializeDrawing(drawing: Drawing): string {
   const parts: string[] = [
     XML_HEADER,
     `<xdr:wsDr xmlns:xdr="${SHEET_DRAWING_NS}" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">`,

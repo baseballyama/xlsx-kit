@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "tests/**/*.{test,spec,bench}.ts",
+        "typedoc.json",
+        ".size-limit.json"
+      ],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
+    },
+    "site": {
+      "entry": ["src/**/*.{ts,svelte}"],
+      "project": ["src/**/*.{ts,svelte}"],
+      "ignoreDependencies": ["xlsx-kit"]
+    }
+  }
+}

@@ -143,7 +143,7 @@ export function tableToBytes(table: TableDefinition): Uint8Array {
   return new TextEncoder().encode(serializeTable(table));
 }
 
-export function serializeTable(table: TableDefinition): string {
+function serializeTable(table: TableDefinition): string {
   let attrs = ` id="${table.id}"`;
   if (table.name !== undefined) attrs += ` name="${escapeAttr(table.name)}"`;
   attrs += ` displayName="${escapeAttr(table.displayName)}"`;

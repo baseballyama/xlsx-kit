@@ -80,7 +80,6 @@ export type Fill =
 
 export const makeNoFill = (): Fill => ({ kind: 'noFill' });
 export const makeSolidFill = (color: DmlColorWithMods): Fill => ({ kind: 'solidFill', color });
-export const makeGroupFill = (): Fill => ({ kind: 'grpFill' });
 
 export const makeGradientFill = (opts: {
   stops: GradientStop[];

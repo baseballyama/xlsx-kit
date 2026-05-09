@@ -921,7 +921,7 @@ const parseBoolFlag = (raw: string | undefined): boolean | undefined => {
   return undefined;
 };
 
-export const parsePrintOptions = (node: XmlNode): PrintOptions | undefined => {
+const parsePrintOptions = (node: XmlNode): PrintOptions | undefined => {
   const out: PrintOptions = {};
   const hc = parseBoolFlag(node.attrs['horizontalCentered']);
   if (hc !== undefined) out.horizontalCentered = hc;

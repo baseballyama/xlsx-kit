@@ -1,6 +1,5 @@
 // DrawingML primitive parse / serialize.
 
-import { OpenXmlSchemaError } from '../../utils/exceptions';
 import { DRAWING_NS, REL_NS } from '../../xml/namespaces';
 import { findChild, findChildren, type XmlNode } from '../../xml/tree';
 import {
@@ -1864,7 +1863,7 @@ const parseExt = (el: XmlNode): PositiveSize2D => ({
   cy: intAttr(el, 'cy') ?? 0,
 });
 
-export const parseTransform2D = (el: XmlNode): Transform2D => {
+const parseTransform2D = (el: XmlNode): Transform2D => {
   const out: Transform2D = {};
   const off = findChild(el, A('off'));
   const ext = findChild(el, A('ext'));
@@ -1933,8 +1932,3 @@ export const serializeShapeProperties = (sp: ShapeProperties, wrapperTag = 'c:sp
   return parts.join('');
 };
 
-/** Sanity helper: parse + serialize a ShapeProperties from a raw `<a:spPr>` style XML string. */
-export function _ensureShapeProperties(node: XmlNode): ShapeProperties {
-  if (!node) throw new OpenXmlSchemaError('parseShapeProperties: node is undefined');
-  return parseShapeProperties(node);
-}

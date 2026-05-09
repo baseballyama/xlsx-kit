@@ -94,7 +94,7 @@ export function worksheetToBytes(ws: Worksheet, ctx: WorksheetWriteContext): Uin
   return new TextEncoder().encode(serializeWorksheet(ws, ctx));
 }
 
-export function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): string {
+function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): string {
   const parts: string[] = [
     XML_HEADER,
     `<worksheet xmlns="${SHEET_MAIN_NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`,
@@ -597,7 +597,7 @@ const serializeDataValidation = (dv: DataValidation): string => {
 const boolAttr = (v: boolean | undefined, name: string): string =>
   v === undefined ? '' : ` ${name}="${v ? '1' : '0'}"`;
 
-export const serializePrintOptions = (po: PrintOptions): string | undefined => {
+const serializePrintOptions = (po: PrintOptions): string | undefined => {
   let attrs = '';
   attrs += boolAttr(po.horizontalCentered, 'horizontalCentered');
   attrs += boolAttr(po.verticalCentered, 'verticalCentered');
