@@ -58,6 +58,12 @@ jobs:
       # ECMA-376 conformance tests shell out to xmllint (libxml2-utils).
       - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
 
+      # `changeset publish` shells out to `npm publish`, and OIDC Trusted
+      # Publishers require npm CLI >= 11.5.1. Node 22 ships with npm 10.x,
+      # which only knows token auth and fails with ENEEDAUTH against the
+      # trusted-publisher flow.
+      - run: npm install -g npm@latest
+
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm typecheck
