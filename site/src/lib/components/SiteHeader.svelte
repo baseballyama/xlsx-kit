@@ -22,9 +22,7 @@
 <header class="site-header">
   <div class="inner">
     <a href="{base}/" class="brand">
-      <span class="brand-mark">
-        <span class="mark-glyph">×</span>
-      </span>
+      <img src="{base}/logo.png" alt="" class="brand-mark" width="32" height="32" />
       <span class="brand-name">xlsx-kit</span>
       <span class="brand-tag">spec</span>
     </a>
@@ -86,32 +84,11 @@
   }
 
   .brand-mark {
-    position: relative;
-    display: inline-grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    background: var(--accent);
-    color: var(--bg);
-    border-radius: 4px;
-    font-family: var(--mono);
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 1;
-    box-shadow: 0 0 0 1px var(--accent), 0 8px 24px -10px var(--accent-glow);
-  }
-
-  .brand-mark::after {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border: 1px solid var(--accent-soft);
-    border-radius: 6px;
-    pointer-events: none;
-  }
-
-  .mark-glyph {
-    transform: translateY(-1px);
+    display: block;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex: none;
   }
 
   .brand-tag {
