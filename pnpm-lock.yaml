@@ -61,13 +61,13 @@ importers:
   site:
     devDependencies:
       '@sveltejs/adapter-static':
-        specifier: ^3.0.8
+        specifier: ^3.0.10
         version: 3.0.10(@sveltejs/kit@2.59.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.55.5)(vite@6.4.2(@types/node@22.19.18)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.8.4)))(svelte@5.55.5)(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.18)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.8.4)))
       '@sveltejs/kit':
-        specifier: ^2.20.0
+        specifier: ^2.59.1
         version: 2.59.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.55.5)(vite@6.4.2(@types/node@22.19.18)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.8.4)))(svelte@5.55.5)(typescript@5.9.3)(vite@6.4.2(@types/node@22.19.18)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.8.4))
       '@sveltejs/vite-plugin-svelte':
-        specifier: ^5.0.3
+        specifier: ^5.1.1
         version: 5.1.1(svelte@5.55.5)(vite@6.4.2(@types/node@22.19.18)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.8.4))
       '@types/node':
         specifier: ^22.19.18
@@ -79,16 +79,16 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2
       svelte:
-        specifier: ^5.16.0
+        specifier: ^5.55.5
         version: 5.55.5
       svelte-check:
-        specifier: ^4.1.4
+        specifier: ^4.4.8
         version: 4.4.8(picomatch@4.0.4)(svelte@5.55.5)(typescript@5.9.3)
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
       vite:
-        specifier: ^6.0.7
+        specifier: ^6.4.2
         version: 6.4.2(@types/node@22.19.18)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.8.4)
 
 packages:
