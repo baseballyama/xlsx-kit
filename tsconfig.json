@@ -11,8 +11,6 @@
     "noPropertyAccessFromIndexSignature": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": false,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "useDefineForClassFields": true,
