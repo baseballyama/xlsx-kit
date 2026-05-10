@@ -1,5 +1,6 @@
-# Claude Code session state (never commit)
-.claude/
+# Claude Code session state (never commit) — but track shared skills
+.claude/*
+!.claude/skills/
 
 # macOS
 .DS_Store
