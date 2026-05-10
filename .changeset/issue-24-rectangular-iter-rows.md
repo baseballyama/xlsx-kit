@@ -1,5 +1,5 @@
 ---
-'xlsx-kit': major
+'xlsx-kit': minor
 ---
 
 **Breaking**: `iterRows` / `iterValues` (in `xlsx-kit/worksheet`) now
