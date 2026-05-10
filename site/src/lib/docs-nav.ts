@@ -35,6 +35,12 @@ export const docSections: DocSection[] = [
         description:
           'Working code for the most common tasks — open / build / style / chart / validate / stream / export.',
       },
+      {
+        href: '/docs/cheatsheet',
+        title: 'Cheatsheet',
+        description:
+          'One-page lookup of task → exact functions to import + call. The shortest path from "I want to do X" to working code.',
+      },
     ],
   },
   {

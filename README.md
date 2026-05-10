@@ -152,6 +152,11 @@ Bundle budgets (min + brotli):
 
 ## Quick examples
 
+For a one-page lookup of task → exact functions to import and call, see
+the [Cheatsheet](https://baseballyama.github.io/xlsx-kit/docs/cheatsheet).
+For prose-style worked examples (styling, charts, validation, streaming),
+see the [Recipes](https://baseballyama.github.io/xlsx-kit/docs/recipes).
+
 ### Read + edit + write
 
 ```ts

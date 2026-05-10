@@ -1,0 +1,388 @@
+<script lang="ts">
+  import { base } from '$app/paths';
+</script>
+
+# Cheatsheet
+
+The shortest path from "I want to do X" to working code. Each row names the
+exact functions you import. The snippets below the index expand the most
+common patterns. For prose context see <a href="{base}/docs/recipes">Recipes</a>;
+for every export see <a href="{base}/api">API reference</a>.
+
+> Each function lives in exactly one subpath — `xlsx-kit/io`, `/node`,
+> `/streaming`, `/workbook`, `/worksheet`, `/cell`, `/styles`, `/chart`,
+> `/drawing`. Function name → subpath is unique, so once you know the
+> name you know where to import from.
+
+## Index
+
+### Read
+
+| Task | Functions |
+|------|-----------|
+| Read xlsx file (Node) → Workbook | `loadWorkbook` + `fromFile` |
+| Read xlsx Buffer (Node) → Workbook | `loadWorkbook` + `fromBuffer` |
+| Read xlsx from `fetch` (browser) → Workbook | `loadWorkbook` + `fromResponse` |
+| Read xlsx from `<input type="file">` (browser) → Workbook | `loadWorkbook` + `fromBlob` |
+| Iterate every cell of a worksheet → 2D array | `iterRows` (or `iterValues`) |
+| Find the populated extents of a worksheet | `getMaxRow` + `getMaxCol` |
+
+### Stream-read (huge sheets)
+
+| Task | Functions |
+|------|-----------|
+| Iterate a huge sheet without loading it | `loadWorkbookStream` + `openWorksheet` + `iterRows` |
+| Iterate only rows N..M of a huge sheet | `loadWorkbookStream` + `iterRows({ minRow, maxRow })` |
+
+### Write
+
+| Task | Functions |
+|------|-----------|
+| Build a small workbook in memory → `Uint8Array` | `createWorkbook` + `addWorksheet` + `setCell` + `workbookToBytes` |
+| Build a small workbook → save to file (Node) | `createWorkbook` + `addWorksheet` + `setCell` + `saveWorkbook` + `toFile` |
+| Build a small workbook → `Buffer` (Node) | `createWorkbook` + `addWorksheet` + `setCell` + `workbookToBuffer` |
+| Edit one cell of an existing file (Node) | `loadWorkbook` + `fromFile` + `setCell` + `saveWorkbook` + `toFile` |
+| Append rows to a worksheet | `appendRow` (or `appendRows`) |
+
+### Stream-write (huge sheets)
+
+| Task | Functions |
+|------|-----------|
+| Stream millions of rows to a file | `createWriteOnlyWorkbook` + `addWorksheet` + `appendRow` + `ws.close` + `wb.finalize` |
+
+### Cells, formulas, links
+
+| Task | Functions |
+|------|-----------|
+| Bold + font size + fill on a header cell | `setBold` + `setFontSize` + `setCellBackgroundColor` |
+| Number format: currency / percent | `setCellAsCurrency` + `setCellAsPercent` |
+| Number format: date | `setCellNumberFormat` + `FORMAT_DATE_DATETIME` |
+| Add a formula (with cached value) | `setCell` + `setFormula` |
+| Make a cell clickable | `setHyperlink` |
+| Merge cells + freeze the header row | `mergeCells` + `makeFreezePane` + `makeSheetView` |
+
+### Worksheet structure
+
+| Task | Functions |
+|------|-----------|
+| Multiple sheets + a defined name | `addWorksheet` + `addDefinedName` |
+| Promote a range to an Excel Table | `addExcelTable` |
+| AutoFilter on a header row (no table styling) | `addAutoFilter` |
+| Dropdown data validation | `makeDataValidation` + `addDataValidation` |
+| Heat-map (3-color scale) | `makeCfRule` + `addConditionalFormatting` |
+
+### Drawings
+
+| Task | Functions |
+|------|-----------|
+| Insert an image at a cell | `loadImage` + `addImageAt` |
+| Add a clustered column chart | `makeBarChart` + `makeBarSeries` + `makeChartSpace` + `addChartAt` |
+
+## Snippets
+
+Each snippet below corresponds to one row above. Imports are explicit so
+you can copy-paste a single block into your file.
+
+### Read xlsx file (Node) → Workbook
+
+```ts
+import { loadWorkbook } from 'xlsx-kit/io';
+import { fromFile } from 'xlsx-kit/node';
+
+const wb = await loadWorkbook(fromFile('in.xlsx'));
+```
+
+### Read xlsx Buffer (Node) → Workbook
+
+```ts
+import { loadWorkbook } from 'xlsx-kit/io';
+import { fromBuffer } from 'xlsx-kit/node';
+
+const wb = await loadWorkbook(fromBuffer(buf));
+```
+
+### Read xlsx from `fetch` (browser) → Workbook
+
+```ts
+import { fromResponse, loadWorkbook } from 'xlsx-kit/io';
+
+const wb = await loadWorkbook(fromResponse(await fetch('/sheet.xlsx')));
+```
+
+### Read xlsx from `<input type="file">` (browser) → Workbook
+
+```ts
+import { fromBlob, loadWorkbook } from 'xlsx-kit/io';
+
+const wb = await loadWorkbook(fromBlob(file));
+```
+
+### Iterate every cell of a worksheet → 2D array
+
+```ts
+import { iterValues } from 'xlsx-kit/worksheet';
+
+const rows = [...iterValues(ws)]; // CellValue[][]
+```
+
+### Find the populated extents of a worksheet
+
+```ts
+import { getMaxRow, getMaxCol } from 'xlsx-kit/worksheet';
+
+const lastRow = getMaxRow(ws);
+const lastCol = getMaxCol(ws);
+```
+
+### Stream-read: iterate a huge sheet without loading it
+
+```ts
+import { fromFile } from 'xlsx-kit/node';
+import { loadWorkbookStream } from 'xlsx-kit/streaming';
+
+const wb = await loadWorkbookStream(fromFile('big.xlsx'));
+const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');
+for await (const row of sheet.iterRows()) {
+  console.log(row.map((c) => c.value));
+}
+await wb.close();
+```
+
+### Stream-read: only rows N..M of a huge sheet
+
+```ts
+import { fromFile } from 'xlsx-kit/node';
+import { loadWorkbookStream } from 'xlsx-kit/streaming';
+
+const wb = await loadWorkbookStream(fromFile('big.xlsx'));
+const sheet = wb.openWorksheet(wb.sheetNames[0] ?? '');
+for await (const row of sheet.iterRows({ minRow: 1_000_000, maxRow: 1_000_100 })) {
+  // …
+}
+await wb.close();
+```
+
+### Build a small workbook in memory → `Uint8Array`
+
+```ts
+import { workbookToBytes } from 'xlsx-kit/io';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { setCell } from 'xlsx-kit/worksheet';
+
+const wb = createWorkbook();
+const ws = addWorksheet(wb, 'Sheet1');
+setCell(ws, 1, 1, 'Hello');
+const bytes = await workbookToBytes(wb);
+```
+
+### Build a small workbook → save to file (Node)
+
+```ts
+import { saveWorkbook } from 'xlsx-kit/io';
+import { toFile } from 'xlsx-kit/node';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { setCell } from 'xlsx-kit/worksheet';
+
+const wb = createWorkbook();
+const ws = addWorksheet(wb, 'Sheet1');
+setCell(ws, 1, 1, 'Hello');
+await saveWorkbook(wb, toFile('out.xlsx'));
+```
+
+### Build a small workbook → `Buffer` (Node)
+
+```ts
+import { workbookToBuffer } from 'xlsx-kit/node';
+import { addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+import { setCell } from 'xlsx-kit/worksheet';
+
+const wb = createWorkbook();
+const ws = addWorksheet(wb, 'Sheet1');
+setCell(ws, 1, 1, 'Hello');
+const buf = await workbookToBuffer(wb); // Buffer
+```
+
+### Edit one cell of an existing file (Node)
+
+```ts
+import { loadWorkbook, saveWorkbook } from 'xlsx-kit/io';
+import { fromFile, toFile } from 'xlsx-kit/node';
+import { setCell } from 'xlsx-kit/worksheet';
+
+const wb = await loadWorkbook(fromFile('in.xlsx'));
+const sheet = wb.sheets[0];
+if (sheet?.kind === 'worksheet') {
+  setCell(sheet.sheet, 1, 1, 'updated');
+}
+await saveWorkbook(wb, toFile('out.xlsx'));
+```
+
+### Append rows to a worksheet
+
+```ts
+import { appendRows } from 'xlsx-kit/worksheet';
+
+appendRows(ws, [
+  ['name', 'qty'],
+  ['apple', 3],
+  ['pear', 7],
+]);
+```
+
+### Stream-write millions of rows to a file
+
+```ts
+import { toFile } from 'xlsx-kit/node';
+import { createWriteOnlyWorkbook } from 'xlsx-kit/streaming';
+
+const wb = await createWriteOnlyWorkbook(toFile('big.xlsx'));
+const ws = await wb.addWorksheet('Data');
+ws.setColumnWidth(1, 24); // must precede the first appendRow
+
+for (let r = 0; r < 10_000_000; r++) {
+  await ws.appendRow([r, `row-${r}`, r * Math.PI]);
+}
+await ws.close();
+await wb.finalize();
+```
+
+### Bold + font size + fill on a header cell
+
+```ts
+import { setBold, setCellBackgroundColor, setFontSize } from 'xlsx-kit/styles';
+import { setCell } from 'xlsx-kit/worksheet';
+
+const c = setCell(ws, 1, 1, 'Header');
+setBold(wb, c);
+setFontSize(wb, c, 14);
+setCellBackgroundColor(wb, c, 'FFEFEFEF');
+```
+
+### Number format: currency / percent
+
+```ts
+import { setCellAsCurrency, setCellAsPercent } from 'xlsx-kit/styles';
+import { setCell } from 'xlsx-kit/worksheet';
+
+setCellAsCurrency(wb, setCell(ws, 1, 1, 1234.5));
+setCellAsPercent(wb, setCell(ws, 1, 2, 0.125));
+```
+
+### Number format: date
+
+```ts
+import { FORMAT_DATE_DATETIME, setCellNumberFormat } from 'xlsx-kit/styles';
+import { setCell } from 'xlsx-kit/worksheet';
+
+setCellNumberFormat(wb, setCell(ws, 1, 1, new Date()), FORMAT_DATE_DATETIME);
+```
+
+### Add a formula (with cached value)
+
+```ts
+import { setFormula } from 'xlsx-kit/cell';
+import { setCell } from 'xlsx-kit/worksheet';
+
+const c = setCell(ws, 3, 1, null);
+setFormula(c, 'SUM(A1:A2)', { cachedValue: 42 });
+```
+
+### Make a cell clickable
+
+```ts
+import { setHyperlink } from 'xlsx-kit/worksheet';
+
+setHyperlink(ws, 'A1', { target: 'https://example.com', display: 'Open' });
+```
+
+### Merge cells + freeze the header row
+
+```ts
+import { makeFreezePane, makeSheetView, mergeCells } from 'xlsx-kit/worksheet';
+
+mergeCells(ws, 'A1:C1');
+ws.views.push(makeSheetView({ pane: makeFreezePane('A2') }));
+```
+
+### Multiple sheets + a defined name
+
+```ts
+import { addDefinedName, addWorksheet, createWorkbook } from 'xlsx-kit/workbook';
+
+const wb = createWorkbook();
+addWorksheet(wb, 'Q1');
+addWorksheet(wb, 'Q2');
+addDefinedName(wb, { name: 'Totals', value: 'Q1!$A$1:$A$10,Q2!$A$1:$A$10' });
+```
+
+### Promote a range to an Excel Table
+
+```ts
+import { addExcelTable } from 'xlsx-kit/worksheet';
+
+addExcelTable(wb, ws, {
+  name: 'Items',
+  ref: 'A1:C4',
+  columns: ['SKU', 'Name', 'Price'],
+  style: 'TableStyleMedium2',
+});
+```
+
+### AutoFilter on a header row (no table styling)
+
+```ts
+import { addAutoFilter } from 'xlsx-kit/worksheet';
+
+addAutoFilter(ws, 'A1:C1');
+```
+
+### Dropdown data validation
+
+```ts
+import { addDataValidation, makeDataValidation } from 'xlsx-kit/worksheet';
+
+addDataValidation(
+  ws,
+  makeDataValidation({
+    type: 'list',
+    sqref: 'B2:B100',
+    formula1: '"red,green,blue"',
+  }),
+);
+```
+
+### Insert an image at a cell
+
+```ts
+import { addImageAt, loadImage } from 'xlsx-kit/drawing';
+
+const img = loadImage(bytes); // bytes: Uint8Array
+addImageAt(ws, 'B2', img, { widthPx: 200, heightPx: 80 });
+```
+
+### Add a clustered column chart
+
+```ts
+import { makeBarChart, makeBarSeries, makeChartSpace } from 'xlsx-kit/chart';
+import { addChartAt } from 'xlsx-kit/drawing';
+
+const chart = makeBarChart({
+  barDir: 'col',
+  grouping: 'clustered',
+  series: [
+    makeBarSeries({
+      idx: 0,
+      tx: { kind: 'literal', value: 'Revenue' },
+      cat: { ref: 'Sales!$A$2:$A$4' },
+      val: { ref: 'Sales!$B$2:$B$4' },
+    }),
+  ],
+});
+
+const space = makeChartSpace({
+  plotArea: { chart },
+  title: 'Revenue by region',
+  legend: { position: 'r' },
+});
+addChartAt(ws, 'D2', { space }, { widthPx: 480, heightPx: 320 });
+```
