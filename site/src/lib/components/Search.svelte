@@ -67,10 +67,19 @@
     if (q !== query) return; // a newer keystroke landed; drop stale results
     const top = await Promise.all(search.results.slice(0, 10).map((r) => r.data()));
     hits = top.map((d) => ({
-      url: d.url,
+      url: normalizeRouteUrl(d.url),
       title: d.meta.title ?? d.url,
       excerpt: d.excerpt,
     }));
+  }
+
+  // Pagefind records the on-disk file path it indexed (e.g.
+  // `/docs/streaming.html`), but SvelteKit's dev/preview servers only
+  // resolve the canonical route (`/docs/streaming`). Strip the `.html`
+  // suffix so result links work in dev and on the deployed static host
+  // alike.
+  function normalizeRouteUrl(url: string): string {
+    return url.replace(/\/index\.html(?=$|\?|#)/, '/').replace(/\.html(?=$|\?|#)/, '');
   }
 
   $effect(() => {
