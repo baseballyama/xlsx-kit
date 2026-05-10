@@ -76,7 +76,7 @@ importers:
         specifier: ^0.12.7
         version: 0.12.7(svelte@5.55.5)
       pagefind:
-        specifier: ^1.4.0
+        specifier: ^1.5.2
         version: 1.5.2
       shiki:
         specifier: ^4.0.2
