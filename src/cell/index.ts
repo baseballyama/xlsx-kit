@@ -4,6 +4,7 @@
 export type {
   Cell,
   CellValue,
+  CellValueAsStringOptions,
   DataTableFormulaOpts,
   ExcelErrorCode,
   FormulaKind,
@@ -15,6 +16,7 @@ export {
   cellValueAsBoolean,
   cellValueAsDate,
   cellValueAsNumber,
+  cellValueAsPrimitive,
   cellValueAsString,
   getCachedFormulaValue,
   getCoordinate,

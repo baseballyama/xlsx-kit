@@ -319,18 +319,30 @@ export function isDurationValue(v: CellValue): v is { kind: 'duration'; ms: numb
   return typeof v === 'object' && v !== null && (v as { kind?: string }).kind === 'duration';
 }
 
+export interface CellValueAsStringOptions {
+  /** Renderer for `Date` cells. Defaults to `d => d.toISOString()`. */
+  dateFormat?: (value: Date) => string;
+  /** Replacement for the `null` cell value. Defaults to `''`. */
+  emptyText?: string;
+}
+
 /**
  * Coerce a CellValue to its plain-string display form. Numbers / booleans
  * convert via `String`; rich text concatenates run text; formulas yield the
  * cached value (or empty string when uncached); errors yield their Excel token;
  * durations yield `"<ms> ms"` with no formatting; Dates yield
  * `Date.toISOString()`; `null` yields `""`.
+ *
+ * Pass `opts.dateFormat` to override the Date renderer (e.g. a locale-specific
+ * format) and `opts.emptyText` to substitute a different placeholder for
+ * `null` cells.
  */
-export function cellValueAsString(v: CellValue): string {
-  if (v === null) return '';
+export function cellValueAsString(v: CellValue, opts?: CellValueAsStringOptions): string {
+  const emptyText = opts?.emptyText ?? '';
+  if (v === null) return emptyText;
   if (typeof v === 'string') return v;
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  if (v instanceof Date) return v.toISOString();
+  if (v instanceof Date) return opts?.dateFormat ? opts.dateFormat(v) : v.toISOString();
   if (isRichTextValue(v)) return richTextToString(v.runs);
   if (isFormulaValue(v)) {
     if (v.cachedValue === undefined) return '';
@@ -403,4 +415,30 @@ export function cellValueAsNumber(v: CellValue): number | undefined {
   }
   if (isFormulaValue(v) && typeof v.cachedValue === 'number') return v.cachedValue;
   return undefined;
+}
+
+/**
+ * Map a CellValue to the most natural JS primitive for display / export.
+ * Unlike `cellValueAsString`/`cellValueAsNumber`/etc., which each force a
+ * single target type and return `undefined` when the value can't be coerced,
+ * this returns whatever primitive best represents the union variant:
+ *
+ * - `null` → `null`
+ * - `string` / `number` / `boolean` / `Date` → passthrough
+ * - rich text → joined run text (`string`)
+ * - formula → recursive on `cachedValue` (`null` when uncached)
+ * - error → error code (`string`)
+ * - duration → `ms` (`number`)
+ */
+export function cellValueAsPrimitive(v: CellValue): string | number | boolean | Date | null {
+  if (v === null) return null;
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
+  if (v instanceof Date) return v;
+  if (isRichTextValue(v)) return richTextToString(v.runs);
+  if (isFormulaValue(v)) {
+    return v.cachedValue === undefined ? null : v.cachedValue;
+  }
+  if (isErrorValue(v)) return v.code;
+  if (isDurationValue(v)) return v.ms;
+  return null;
 }
