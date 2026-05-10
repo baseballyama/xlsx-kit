@@ -98,6 +98,7 @@ const collectCells = (ws: Worksheet): Array<{ row: number; col: number; value: u
   const out: Array<{ row: number; col: number; value: unknown; styleId: number }> = [];
   for (const cells of iterRows(ws)) {
     for (const c of cells) {
+      if (c === undefined) continue;
       out.push({ row: c.row, col: c.col, value: c.value, styleId: c.styleId });
     }
   }

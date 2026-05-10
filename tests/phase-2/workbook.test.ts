@@ -193,17 +193,22 @@ describe('appendRow', () => {
 });
 
 describe('iterRows / iterValues', () => {
-  it('iterates rows in ascending order, skipping empty rows', () => {
+  it('iterates rows rectangularly, including empty rows', () => {
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'S');
     setCell(ws, 1, 1, 'a');
     setCell(ws, 3, 1, 'b'); // gap on row 2
     setCell(ws, 3, 2, 'c');
-    const rows = [...iterRows(ws)].map((row) => row.map((c) => c.value));
-    expect(rows).toEqual([['a'], ['b', 'c']]);
+    // Default extent = rows 1..3, cols 1..2 (populated bounding box).
+    const rows = [...iterRows(ws)].map((row) => row.map((c) => c?.value ?? null));
+    expect(rows).toEqual([
+      ['a', null], // row 1: only col 1 populated
+      [null, null], // row 2: empty
+      ['b', 'c'], // row 3: both populated
+    ]);
   });
 
-  it('honours minRow / maxRow / minCol / maxCol filters', () => {
+  it('honours minRow / maxRow / minCol / maxCol filters and pads rectangularly', () => {
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'S');
     setCell(ws, 1, 1, 'a');
@@ -211,13 +216,16 @@ describe('iterRows / iterValues', () => {
     setCell(ws, 2, 3, 'c');
     setCell(ws, 5, 5, 'd');
     const rows = [...iterRows(ws, { minRow: 1, maxRow: 2, minCol: 1, maxCol: 4 })].map((row) =>
-      row.map((c) => c.value),
+      row.map((c) => c?.value ?? null),
     );
-    // row1 col1 only; row2 col3 only; row5 filtered out.
-    expect(rows).toEqual([['a'], ['c']]);
+    // 4-wide rectangle, rows 1 and 2.
+    expect(rows).toEqual([
+      ['a', null, null, null],
+      [null, null, 'c', null],
+    ]);
   });
 
-  it('iterValues yields the cell values directly', () => {
+  it('iterValues fills gaps with null', () => {
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'S');
     appendRow(ws, [1, 2, 3]);
@@ -226,6 +234,14 @@ describe('iterRows / iterValues', () => {
       [1, 2, 3],
       [4, 5, 6],
     ]);
+  });
+
+  it('iterValues yields null for missing cells in a sparse row', () => {
+    const wb = createWorkbook();
+    const ws = addWorksheet(wb, 'S');
+    setCell(ws, 1, 1, 'a');
+    setCell(ws, 1, 3, 'c');
+    expect([...iterValues(ws)]).toEqual([['a', null, 'c']]);
   });
 });
 

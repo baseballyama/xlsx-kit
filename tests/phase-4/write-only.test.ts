@@ -40,11 +40,13 @@ describe('createWriteOnlyWorkbook — basic round-trip', () => {
     const ws2 = wb2.sheets[0];
     if (!ws2 || ws2.kind !== 'worksheet') throw new Error('expected worksheet');
     const rows: unknown[][] = [];
-    for (const cells of iterRows(ws2.sheet)) rows.push(cells.map((c) => c.value));
+    for (const cells of iterRows(ws2.sheet)) rows.push(cells.map((c) => c?.value ?? null));
     expect(rows).toEqual([
       [1, 2, 3],
       ['a', 'b', 'c'],
-      [true, false],
+      // Row 3 col 3 is null and write-only skips emitting null cells, so the
+      // rectangular iter pads it with null to match the bounding-box width.
+      [true, false, null],
     ]);
   });
 
@@ -125,7 +127,7 @@ describe('createWriteOnlyWorkbook — styles + sharedStrings', () => {
     if (!ws || ws.kind !== 'worksheet') throw new Error('expected worksheet');
     const rows: { value: unknown; styleId: number }[][] = [];
     for (const cells of iterRows(ws.sheet)) {
-      rows.push(cells.map((c) => ({ value: c.value, styleId: c.styleId })));
+      rows.push(cells.map((c) => (c === undefined ? { value: null, styleId: 0 } : { value: c.value, styleId: c.styleId })));
     }
     // Two cells share the same styleId; the unstyled cell uses 0.
     const styled1 = rows[0]?.[0];
