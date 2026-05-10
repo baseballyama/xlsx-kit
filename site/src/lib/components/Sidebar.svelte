@@ -4,7 +4,7 @@
   import { docSections } from '$lib/docs-nav';
 </script>
 
-<aside class="sidebar">
+<aside class="sidebar" data-pagefind-ignore>
   <nav>
     {#each docSections as section, sIdx (section.title)}
       <section>

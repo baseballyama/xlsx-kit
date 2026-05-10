@@ -1,6 +1,7 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import { page } from '$app/state';
+  import Search from './Search.svelte';
 
   const links: Array<{ path: string; label: string; external?: boolean }> = [
     { path: '/docs/getting-started', label: 'Docs' },
@@ -19,7 +20,7 @@
   }
 </script>
 
-<header class="site-header">
+<header class="site-header" data-pagefind-ignore>
   <div class="inner">
     <a href="{base}/" class="brand">
       <img src="{base}/logo.png" alt="" class="brand-mark" width="32" height="32" />
@@ -39,6 +40,7 @@
           {#if link.external}<span class="nav-arrow">↗</span>{/if}
         </a>
       {/each}
+      <Search />
     </nav>
   </div>
 </header>

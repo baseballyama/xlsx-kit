@@ -20,7 +20,7 @@
     </p>
   </header>
 
-  <nav class="toc" aria-label="On this page">
+  <nav class="toc" aria-label="On this page" data-pagefind-ignore>
     <h4>On this page</h4>
     {#each data.subgroups as group (group.id)}
       <div class="toc-group">
