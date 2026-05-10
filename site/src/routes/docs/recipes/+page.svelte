@@ -27,7 +27,7 @@
     </p>
   </header>
 
-  <nav class="toc" aria-label="Recipes index">
+  <nav class="toc" aria-label="Recipes index" data-pagefind-ignore>
     <h4>Recipes</h4>
     {#each data.groups as group (group.title)}
       <div class="toc-group">
