@@ -22,8 +22,9 @@
     </p>
     <p class="meta">
       {data.groups.flatMap((g) => g.recipes).length} recipes across {data.groups.length}
-      categories. Looking up a specific function? Jump to the
-      <a href="{base}/api">API reference</a>.
+      categories. Just need the import line for one task? See the
+      <a href="{base}/docs/cheatsheet">Cheatsheet</a>. Looking up a specific function?
+      Jump to the <a href="{base}/api">API reference</a>.
     </p>
   </header>
 
