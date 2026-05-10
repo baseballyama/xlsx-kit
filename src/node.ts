@@ -3,3 +3,4 @@
 
 export { fromBuffer, toBuffer } from './io/node';
 export { fromFile, fromFileSync, fromReadable, toFile, toWritable } from './io/node-fs';
+export { workbookToBuffer } from './io/node-save';
