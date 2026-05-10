@@ -35,15 +35,21 @@
     if (status === 'unavailable') return null;
     status = 'loading';
     try {
-      // Pagefind generates this file at build time; in `vite dev` it doesn't
-      // exist, so the dynamic import fails and we surface "unavailable".
-      const url = `${base}/pagefind/pagefind.js`;
-      const mod = (await import(/* @vite-ignore */ url)) as PagefindModule;
-      await mod.options?.({ baseUrl: `${base}/` });
+      // SvelteKit's `paths.relative: true` means `base` is relative to the
+      // current page (e.g. `..`/`../..`). A bare dynamic import would resolve
+      // that against the JS chunk's URL, not the page's — so we anchor to
+      // `document.baseURI` to land at the site-root pagefind directory.
+      // Pagefind generates these files at build time; in `vite dev` they
+      // don't exist, so the import fails and we surface "unavailable".
+      const pagefindUrl = new URL(`${base}/pagefind/pagefind.js`, document.baseURI);
+      const siteRoot = new URL(`${base}/`, document.baseURI);
+      const mod = (await import(/* @vite-ignore */ pagefindUrl.href)) as PagefindModule;
+      await mod.options?.({ baseUrl: siteRoot.pathname });
       pagefind = mod;
       status = 'ready';
       return mod;
-    } catch {
+    } catch (err) {
+      console.error('[xlsx-kit search] failed to load pagefind index', err);
       status = 'unavailable';
       return null;
     }
