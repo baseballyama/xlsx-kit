@@ -430,46 +430,64 @@ export interface IterRowsOptions {
   maxRow?: number;
   minCol?: number;
   maxCol?: number;
-  /** Yield cell values instead of Cell objects. */
-  valuesOnly?: boolean;
 }
 
 /**
- * Iterate the populated cells row-by-row in ascending order. Empty rows are
- * skipped (no `[]` yielded). Within a row, cells are sorted by column index
- * ascending.
+ * Iterate the worksheet rows rectangularly. Yields one row per row in
+ * `[minRow, maxRow]` — including entirely empty rows — and each yielded row
+ * has length `maxCol - minCol + 1`. Missing cell positions are `undefined`
+ * (no placeholder Cell allocations).
+ *
+ * Defaults: `minRow=1`, `maxRow=getMaxRow(ws)`, `minCol=1`,
+ * `maxCol=getMaxCol(ws)`. The default extent is the populated bounding box,
+ * not the 1M × 16K sheet limit, so the rectangular default doesn't iterate
+ * the whole grid for a small sheet.
+ *
+ * To iterate populated rows only, filter:
+ * `[...iterRows(ws)].filter(row => row.some((c) => c !== undefined))`. To
+ * iterate populated cells without row boundaries, use {@link iterCells}.
  */
-export function* iterRows(ws: Worksheet, opts: IterRowsOptions = {}): IterableIterator<Cell[]> {
-  const { minRow = 1, maxRow = MAX_ROW, minCol = 1, maxCol = MAX_COL } = opts;
-  const rowKeys = [...ws.rows.keys()].filter((r) => r >= minRow && r <= maxRow).sort((a, b) => a - b);
-  for (const r of rowKeys) {
+export function* iterRows(ws: Worksheet, opts: IterRowsOptions = {}): IterableIterator<(Cell | undefined)[]> {
+  const { minRow = 1, maxRow = getMaxRow(ws), minCol = 1, maxCol = getMaxCol(ws) } = opts;
+  if (maxRow < minRow || maxCol < minCol) return;
+  const width = maxCol - minCol + 1;
+  for (let r = minRow; r <= maxRow; r++) {
     const rowMap = ws.rows.get(r);
-    if (rowMap === undefined) continue;
-    const cols = [...rowMap.keys()].filter((c) => c >= minCol && c <= maxCol).sort((a, b) => a - b);
-    if (cols.length === 0) continue;
-    const out: Cell[] = [];
-    for (const c of cols) {
-      const cell = rowMap.get(c);
-      if (cell !== undefined) out.push(cell);
+    // Fill explicitly so the array isn't sparse — `.map` callbacks would skip
+    // empty slots and surprise the caller.
+    const out: (Cell | undefined)[] = new Array(width).fill(undefined);
+    if (rowMap !== undefined) {
+      for (let c = minCol; c <= maxCol; c++) {
+        const cell = rowMap.get(c);
+        if (cell !== undefined) out[c - minCol] = cell;
+      }
     }
     yield out;
   }
 }
 
-/** Same as `iterRows` but yields each cell's `.value`. */
+/**
+ * Same rectangular iteration as {@link iterRows}, but yields each cell's
+ * `.value`. Missing cell positions become `null` — already the canonical empty
+ * marker in `CellValue`.
+ */
 export function* iterValues(ws: Worksheet, opts: IterRowsOptions = {}): IterableIterator<CellValue[]> {
-  for (const row of iterRows(ws, opts)) yield row.map((c) => c.value);
+  for (const row of iterRows(ws, opts)) {
+    yield row.map((c) => (c === undefined ? null : c.value));
+  }
 }
 
 /**
  * Yield every populated cell in the worksheet as a flat stream (row-major,
- * columns ascending). Distinct from {@link iterRows} which yields one Cell[]
- * per populated row — use this when the caller doesn't care about row
- * boundaries.
+ * columns ascending). Distinct from {@link iterRows} which yields one row
+ * per row in the bounding box — use this when the caller wants only the
+ * populated cells without row boundaries or rectangular padding.
  */
 export function* iterCells(ws: Worksheet, opts: IterRowsOptions = {}): IterableIterator<Cell> {
   for (const row of iterRows(ws, opts)) {
-    for (const cell of row) yield cell;
+    for (const cell of row) {
+      if (cell !== undefined) yield cell;
+    }
   }
 }
 
