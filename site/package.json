@@ -16,7 +16,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@types/node": "^22.19.18",
     "mdsvex": "^0.12.7",
-    "pagefind": "^1.4.0",
+    "pagefind": "^1.5.2",
     "shiki": "^4.0.2",
     "svelte": "^5.55.5",
     "svelte-check": "^4.4.8",
