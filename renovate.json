@@ -43,9 +43,14 @@
       "pinDigests": true
     },
     {
-      "description": "Keep Node engine bumps separate so we can review CI matrix impact",
+      "description": "Pin Node engine: support all active LTS lines, no auto-bumps",
       "matchDepNames": ["node"],
-      "groupName": "node engine"
+      "enabled": false
+    },
+    {
+      "description": "Pin @types/node to the lowest supported Node major; no auto-bumps",
+      "matchPackageNames": ["@types/node"],
+      "enabled": false
     }
   ],
   "vulnerabilityAlerts": {
