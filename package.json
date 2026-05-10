@@ -1,6 +1,6 @@
 {
   "name": "xlsx-kit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "TypeScript library for reading and writing Excel xlsx files in Node and the browser.",
   "type": "module",
   "license": "MIT",
