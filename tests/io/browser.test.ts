@@ -190,3 +190,31 @@ describe('toArrayBuffer', () => {
     expect(out.byteLength).toBe(1);
   });
 });
+
+describe('workbookToBytes (browser-safe)', () => {
+  it('produces a Uint8Array without touching Buffer (works under bundlers with no Buffer polyfill)', async () => {
+    const { addWorksheet, createWorkbook } = await import('../../../src/workbook/workbook');
+    const { setCell } = await import('../../../src/worksheet/worksheet');
+    const { workbookToBytes } = await import('../../../src/io/save');
+
+    // Browsers do not expose the Node `Buffer` global. Simulate that by
+    // shadowing the global for the duration of the save path; if any code
+    // along `workbookToBytes` -> `saveWorkbook` -> ZIP writer reaches for
+    // `Buffer.from` / `Buffer.alloc`, the test fails with a ReferenceError.
+    const original = (globalThis as { Buffer?: unknown }).Buffer;
+    (globalThis as { Buffer?: unknown }).Buffer = undefined;
+    try {
+      const wb = createWorkbook();
+      const ws = addWorksheet(wb, 'Sheet1');
+      setCell(ws, 1, 1, 'hello');
+      const bytes = await workbookToBytes(wb);
+      expect(bytes).toBeInstanceOf(Uint8Array);
+      expect(bytes.byteLength).toBeGreaterThan(100);
+      // Minimum ZIP magic check — file starts with `PK\x03\x04`.
+      expect(bytes[0]).toBe(0x50);
+      expect(bytes[1]).toBe(0x4b);
+    } finally {
+      (globalThis as { Buffer?: unknown }).Buffer = original;
+    }
+  });
+});

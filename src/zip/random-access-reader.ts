@@ -15,9 +15,24 @@
 // - Compression methods: STORE (0) and DEFLATE (8). Anything else
 // throws OpenXmlIoError.
 
-import { inflateSync, unzipSync } from 'fflate';
+import { Inflate, inflateSync, unzipSync } from 'fflate';
 import { OpenXmlIoError } from '../utils/exceptions';
 import type { ZipArchive } from './reader';
+
+/**
+ * Chunk size used when feeding compressed bytes into fflate's `Inflate` for
+ * streaming reads. 64 KB matches the saxes/SAX consumer's typical batch and
+ * keeps peak transient memory bounded.
+ */
+const INFLATE_CHUNK_BYTES = 64 * 1024;
+
+const singleChunkStream = (bytes: Uint8Array): ReadableStream<Uint8Array> =>
+  new ReadableStream<Uint8Array>({
+    start(controller) {
+      if (bytes.byteLength > 0) controller.enqueue(bytes);
+      controller.close();
+    },
+  });
 
 const SIG_EOCD = 0x06054b50;
 const SIG_CD = 0x02014b50;
@@ -174,6 +189,53 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     return out;
   };
 
+  const readEntryStream = (path: string): ReadableStream<Uint8Array> => {
+    const buf = ensureLive();
+    const cached = inflateCache.get(path);
+    if (cached) return singleChunkStream(cached);
+    const entry = byPath.get(path);
+    if (!entry) {
+      throw new OpenXmlIoError(`openZip: no entry at "${path}"`);
+    }
+    const compressed = readCompressedBytes(buf, entry);
+    if (entry.compMethod === COMP_STORE) {
+      // STORE means the bytes on disk are the bytes the caller wants; no need
+      // to involve the inflate state machine. Hand them out as a single chunk
+      // — copy because callers may mutate the returned bytes.
+      return singleChunkStream(compressed.slice());
+    }
+    if (entry.compMethod !== COMP_DEFLATE) {
+      throw new OpenXmlIoError(`openZip: unsupported compression method ${entry.compMethod} for "${path}"`);
+    }
+    // DEFLATE: feed the compressed bytes into fflate's `Inflate` in fixed-size
+    // chunks and forward each inflated chunk to the stream consumer. Peak
+    // memory stays at the chunk size + the inflate state, never the full
+    // uncompressed payload.
+    return new ReadableStream<Uint8Array>({
+      start(controller) {
+        let errored = false;
+        const inflater = new Inflate((chunk, final) => {
+          if (errored) return;
+          if (chunk.byteLength > 0) controller.enqueue(chunk);
+          if (final) controller.close();
+        });
+        try {
+          let off = 0;
+          while (off < compressed.byteLength) {
+            const end = Math.min(off + INFLATE_CHUNK_BYTES, compressed.byteLength);
+            const slice = compressed.subarray(off, end);
+            const isLast = end >= compressed.byteLength;
+            inflater.push(slice, isLast);
+            off = end;
+          }
+        } catch (cause) {
+          errored = true;
+          controller.error(new OpenXmlIoError(`openZip: failed to inflate "${path}"`, { cause }));
+        }
+      },
+    });
+  };
+
   return {
     list(): string[] {
       ensureLive();
@@ -188,6 +250,9 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     },
     async readAsync(path: string): Promise<Uint8Array> {
       return readEntry(path);
+    },
+    readStream(path: string): ReadableStream<Uint8Array> {
+      return readEntryStream(path);
     },
     close(): void {
       live = false;
@@ -224,6 +289,14 @@ function openViaUnzipSync(bytes: Uint8Array): ZipArchive {
     },
     async readAsync(path: string): Promise<Uint8Array> {
       return this.read(path);
+    },
+    readStream(path: string): ReadableStream<Uint8Array> {
+      // The unzipSync fallback path already has the entry fully inflated
+      // (that's the price of dropping back from random-access). Hand it out as
+      // a single-chunk stream so callers using the streaming reader don't have
+      // to branch on the implementation.
+      const inflated = this.read(path);
+      return singleChunkStream(inflated);
     },
     close(): void {
       live = false;

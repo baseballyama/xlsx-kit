@@ -210,11 +210,14 @@ await ws.close();
 await wb.finalize();
 ```
 
-The streaming writer pushes each row through deflate as it arrives — a
-10M-cell archive runs in well under 100 MB heap, the deflate output streams
-to disk chunk-by-chunk.
+The streaming writer pushes each row through deflate as it arrives, and
+`toFile` forwards each deflated chunk to disk (honouring write-stream
+backpressure) — peak memory stays at one pending-row buffer plus deflate
+scratch, regardless of total archive size. The same is true of `toWritable`;
+buffered sinks (`toBuffer` / `toBlob` / `toArrayBuffer`) instead keep the
+full archive resident so `result()` can hand it back in one piece.
 
-### Streaming read — iterate huge sheets without loading them
+### Streaming read — iterate row-by-row without materialising the sheet
 
 ```ts
 import { loadWorkbookStream } from 'xlsx-kit/streaming';
@@ -227,6 +230,16 @@ for await (const row of sheet.iterRows({ minRow: 1, maxRow: 100 })) {
 }
 await wb.close();
 ```
+
+The whole-sheet iteration path (default / `minRow <= 1`) inflates the
+worksheet entry chunk-by-chunk straight into the SAX parser, so the inflated
+worksheet body is never fully resident. Note: ZIP requires random access to
+its central directory, so the **compressed archive bytes are loaded up
+front**. A 200 MB compressed xlsx therefore needs ~200 MB resident, plus the
+inflate window + SAX state per active iterator — not the multi-GB inflated
+worksheet payload. Band queries (`minRow > 1`) build a row-offset index once
+per sheet, which does materialise that sheet's inflated bytes; subsequent
+band queries reuse the cached index.
 
 ## What's supported
 
