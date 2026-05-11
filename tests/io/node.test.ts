@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { fromBuffer, toBuffer } from '../../../src/io/node';
-import { OpenXmlIoError } from '../../../src/utils/exceptions';
+import { fromBuffer, toBuffer } from '../../src/io/node';
+import { OpenXmlIoError } from '../../src/utils/exceptions';
 
 describe('fromBuffer', () => {
   it('exposes a Uint8Array source from a Node Buffer', async () => {

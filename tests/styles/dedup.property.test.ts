@@ -5,7 +5,7 @@
 // yield the same id.
 //
 // This complements the example-based dedup tests in
-// `tests/phase-2/styles/stylesheet.test.ts`.
+// `tests/styles/stylesheet.test.ts`.
 
 import fc from 'fast-check';
 import { describe, it } from 'vitest';

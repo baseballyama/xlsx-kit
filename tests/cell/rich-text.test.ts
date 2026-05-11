@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { makeRichText, makeTextRun, richTextToString } from '../../../src/cell/rich-text';
-import { makeColor } from '../../../src/styles/colors';
+import { makeRichText, makeTextRun, richTextToString } from '../../src/cell/rich-text';
+import { makeColor } from '../../src/styles/colors';
 
 describe('makeTextRun', () => {
   it('builds a frozen run with text-only', () => {

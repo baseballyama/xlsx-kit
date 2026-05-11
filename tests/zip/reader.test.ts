@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { fromBuffer } from '../../../src/io/node';
-import { OpenXmlIoError } from '../../../src/utils/exceptions';
-import { openZip } from '../../../src/zip/reader';
+import { fromBuffer } from '../../src/io/node';
+import { OpenXmlIoError } from '../../src/utils/exceptions';
+import { openZip } from '../../src/zip/reader';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const FIXTURES = resolve(here, '../../../reference/openpyxl/openpyxl/tests/data/genuine');
+const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');
 const EMPTY_XLSX = resolve(FIXTURES, 'empty.xlsx');
 
 // Sizes verified against `unzip -l` on the openpyxl fixture (turn 7 plan).

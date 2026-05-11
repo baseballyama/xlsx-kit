@@ -1,7 +1,7 @@
 // Tests for cellStyleToCss — styled cell → aggregated CSS-property record.
 
 import { describe, expect, it } from 'vitest';
-import { makeAlignment } from '../../../src/styles/alignment';
+import { makeAlignment } from '../../src/styles/alignment';
 import {
   cellStyleToCss,
   formatAsHeader,
@@ -9,10 +9,10 @@ import {
   setCellAlignment,
   setCellBackgroundColor,
   setCellFont,
-} from '../../../src/styles/cell-style';
-import { makeFont } from '../../../src/styles/fonts';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
-import { setCell } from '../../../src/worksheet/worksheet';
+} from '../../src/styles/cell-style';
+import { makeFont } from '../../src/styles/fonts';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setCell } from '../../src/worksheet/worksheet';
 
 const cellAt = (ws: ReturnType<typeof addWorksheet>, row: number, col: number) => {
   const c = ws.rows.get(row)?.get(col);

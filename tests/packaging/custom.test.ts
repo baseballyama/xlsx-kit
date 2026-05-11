@@ -15,9 +15,9 @@ import {
   readFiletimeValue,
   readIntValue,
   readStringValue,
-} from '../../../src/packaging/custom';
-import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
-import { CPROPS_FMTID, CUSTPROPS_NS, VTYPES_NS } from '../../../src/xml/namespaces';
+} from '../../src/packaging/custom';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
+import { CPROPS_FMTID, CUSTPROPS_NS, VTYPES_NS } from '../../src/xml/namespaces';
 
 describe('customProperties — typed-value helpers', () => {
   it('makeStringValue / readStringValue', () => {

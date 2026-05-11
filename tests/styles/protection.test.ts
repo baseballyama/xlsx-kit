@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { fromTree, toTree } from '../../../src/schema/serialize';
-import { DEFAULT_PROTECTION, makeProtection } from '../../../src/styles/protection';
-import { ProtectionSchema } from '../../../src/styles/protection.schema';
-import { parseXml } from '../../../src/xml/parser';
-import { serializeXml } from '../../../src/xml/serializer';
+import { fromTree, toTree } from '../../src/schema/serialize';
+import { DEFAULT_PROTECTION, makeProtection } from '../../src/styles/protection';
+import { ProtectionSchema } from '../../src/styles/protection.schema';
+import { parseXml } from '../../src/xml/parser';
+import { serializeXml } from '../../src/xml/serializer';
 
 describe('Protection', () => {
   it('makeProtection freezes the result', () => {

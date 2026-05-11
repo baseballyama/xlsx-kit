@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { fromBuffer } from '../../../src/io/node';
-import { extendedPropsFromBytes, extendedPropsToBytes, makeExtendedProperties } from '../../../src/packaging/extended';
-import { openZip } from '../../../src/zip/reader';
+import { fromBuffer } from '../../src/io/node';
+import { extendedPropsFromBytes, extendedPropsToBytes, makeExtendedProperties } from '../../src/packaging/extended';
+import { openZip } from '../../src/zip/reader';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const FIXTURES = resolve(here, '../../../reference/openpyxl/openpyxl/tests/data/genuine');
+const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');
 
 describe('extendedProperties — basic', () => {
   it('makeExtendedProperties yields an empty object', () => {

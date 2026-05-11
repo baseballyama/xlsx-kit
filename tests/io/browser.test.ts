@@ -6,8 +6,8 @@ import {
   fromStream,
   toArrayBuffer,
   toBlob,
-} from '../../../src/io/browser';
-import { OpenXmlIoError } from '../../../src/utils/exceptions';
+} from '../../src/io/browser';
+import { OpenXmlIoError } from '../../src/utils/exceptions';
 
 describe('fromBlob', () => {
   it('reads bytes via toBytes()', async () => {

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { fromBuffer } from '../../../src/io/node';
+import { fromBuffer } from '../../src/io/node';
 import {
   addDefault,
   addOverride,
@@ -11,11 +11,11 @@ import {
   makeManifest,
   manifestFromBytes,
   manifestToBytes,
-} from '../../../src/packaging/manifest';
-import { openZip } from '../../../src/zip/reader';
+} from '../../src/packaging/manifest';
+import { openZip } from '../../src/zip/reader';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const FIXTURES = resolve(here, '../../../reference/openpyxl/openpyxl/tests/data/genuine');
+const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');
 
 describe('manifest — basic operations', () => {
   it('makeManifest yields an empty manifest', () => {

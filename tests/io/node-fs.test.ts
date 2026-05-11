@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { fromFile, fromFileSync, fromReadable, toFile, toWritable } from '../../../src/io/node-fs';
-import { OpenXmlIoError } from '../../../src/utils/exceptions';
+import { fromFile, fromFileSync, fromReadable, toFile, toWritable } from '../../src/io/node-fs';
+import { OpenXmlIoError } from '../../src/utils/exceptions';
 
 let scratch: string;
 beforeAll(() => {

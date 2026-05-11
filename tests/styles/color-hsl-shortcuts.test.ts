@@ -6,7 +6,7 @@ import {
   adjustSaturation,
   hexToHsl,
   rotateHue,
-} from '../../../src/styles/colors';
+} from '../../src/styles/colors';
 
 describe('rotateHue', () => {
   it('rotating red by 120° → green', () => {

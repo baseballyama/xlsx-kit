@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SHEET_MAIN_NS } from '../../../src/xml/namespaces';
-import { appendChild, el, elNs, findChild, findChildren, type XmlNode } from '../../../src/xml/tree';
+import { SHEET_MAIN_NS } from '../../src/xml/namespaces';
+import { appendChild, el, elNs, findChild, findChildren, type XmlNode } from '../../src/xml/tree';
 
 describe('el()', () => {
   it('creates a node with the given Clark name and empty attrs/children when nothing else is supplied', () => {

@@ -1,7 +1,7 @@
 // Tests for lighten / darken / mixColors.
 
 import { describe, expect, it } from 'vitest';
-import { darken, lighten, mixColors } from '../../../src/styles/colors';
+import { darken, lighten, mixColors } from '../../src/styles/colors';
 
 describe('lighten', () => {
   it('amount=0 returns the input unchanged', () => {

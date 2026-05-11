@@ -18,7 +18,7 @@ import {
   XLSM_TYPE,
   XLSX_TYPE,
   XML_NS,
-} from '../../../src/xml/namespaces';
+} from '../../src/xml/namespaces';
 
 describe('OOXML namespace constants', () => {
   it('match the openpyxl reference values byte-for-byte', () => {

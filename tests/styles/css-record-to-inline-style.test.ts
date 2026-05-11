@@ -1,7 +1,7 @@
 // Tests for cssRecordToInlineStyle — Record<string,string> → "k: v; …".
 
 import { describe, expect, it } from 'vitest';
-import { cssRecordToInlineStyle } from '../../../src/utils/css';
+import { cssRecordToInlineStyle } from '../../src/utils/css';
 
 describe('cssRecordToInlineStyle', () => {
   it('returns empty string for {} / undefined', () => {

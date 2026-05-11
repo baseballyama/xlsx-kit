@@ -13,9 +13,9 @@ import {
   setCellValue,
   setFormula,
   setSharedFormula,
-} from '../../../src/cell/cell';
-import { makeRichText, makeTextRun } from '../../../src/cell/rich-text';
-import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
+} from '../../src/cell/cell';
+import { makeRichText, makeTextRun } from '../../src/cell/rich-text';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
 
 describe('makeCell / getCoordinate', () => {
   it('builds a Cell with default styleId 0 and null value', () => {

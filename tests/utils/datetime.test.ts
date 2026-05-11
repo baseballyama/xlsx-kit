@@ -8,8 +8,8 @@ import {
   MAC_EPOCH_MS,
   toIso8601,
   WINDOWS_EPOCH_MS,
-} from '../../../src/utils/datetime';
-import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
+} from '../../src/utils/datetime';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
 
 const utcDate = (y: number, m: number, d: number, h = 0, min = 0, s = 0): Date =>
   new Date(Date.UTC(y, m - 1, d, h, min, s));

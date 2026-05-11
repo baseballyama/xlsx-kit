@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ERROR_CODES, inferCellType } from '../../../src/utils/inference';
+import { ERROR_CODES, inferCellType } from '../../src/utils/inference';
 
 describe('inferCellType', () => {
   it('booleans → "b"', () => {

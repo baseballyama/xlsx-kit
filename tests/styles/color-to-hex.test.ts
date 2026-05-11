@@ -1,7 +1,7 @@
 // Tests for colorToHex — Color value-object → ARGB hex readback.
 
 import { describe, expect, it } from 'vitest';
-import { colorToHex, makeColor } from '../../../src/styles/colors';
+import { colorToHex, makeColor } from '../../src/styles/colors';
 
 describe('colorToHex', () => {
   it('returns the normalised ARGB hex when rgb is set', () => {

@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { makeAlignment } from '../../../src/styles/alignment';
-import { DEFAULT_BORDER, makeBorder, makeSide } from '../../../src/styles/borders';
-import { makeColor } from '../../../src/styles/colors';
-import { DEFAULT_EMPTY_FILL, makePatternFill } from '../../../src/styles/fills';
-import { DEFAULT_FONT, makeFont } from '../../../src/styles/fonts';
+import { makeAlignment } from '../../src/styles/alignment';
+import { DEFAULT_BORDER, makeBorder, makeSide } from '../../src/styles/borders';
+import { makeColor } from '../../src/styles/colors';
+import { DEFAULT_EMPTY_FILL, makePatternFill } from '../../src/styles/fills';
+import { DEFAULT_FONT, makeFont } from '../../src/styles/fonts';
 import {
   addNamedStyle,
   BUILTIN_NAMED_STYLES,
   ensureBuiltinStyle,
   type NamedStyle,
-} from '../../../src/styles/named-styles';
-import { makeProtection } from '../../../src/styles/protection';
-import { makeStylesheet } from '../../../src/styles/stylesheet';
-import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
+} from '../../src/styles/named-styles';
+import { makeProtection } from '../../src/styles/protection';
+import { makeStylesheet } from '../../src/styles/stylesheet';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
 
 describe('addNamedStyle', () => {
   it('registers font / fill / border / numFmt and a cellStyleXf', () => {

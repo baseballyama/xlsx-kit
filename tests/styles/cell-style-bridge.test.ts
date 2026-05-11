@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { makeCell } from '../../../src/cell/cell';
-import { makeBorder, makeSide } from '../../../src/styles/borders';
+import { makeCell } from '../../src/cell/cell';
+import { makeBorder, makeSide } from '../../src/styles/borders';
 import {
   getCellAlignment,
   getCellBorder,
@@ -14,10 +14,10 @@ import {
   setCellFont,
   setCellNumberFormat,
   setCellProtection,
-} from '../../../src/styles/cell-style';
-import { makePatternFill } from '../../../src/styles/fills';
-import { DEFAULT_FONT, makeFont } from '../../../src/styles/fonts';
-import { createWorkbook } from '../../../src/workbook/workbook';
+} from '../../src/styles/cell-style';
+import { makePatternFill } from '../../src/styles/fills';
+import { DEFAULT_FONT, makeFont } from '../../src/styles/fonts';
+import { createWorkbook } from '../../src/workbook/workbook';
 
 describe('cell ↔ stylesheet bridge — read defaults', () => {
   it('returns DEFAULT_FONT / DEFAULT_EMPTY_FILL / DEFAULT_BORDER when styleId is the empty default', () => {

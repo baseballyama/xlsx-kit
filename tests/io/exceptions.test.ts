@@ -5,7 +5,7 @@ import {
   OpenXmlIoError,
   OpenXmlNotImplementedError,
   OpenXmlSchemaError,
-} from '../../../src/utils/exceptions';
+} from '../../src/utils/exceptions';
 
 describe('OpenXmlError hierarchy', () => {
   it('OpenXmlError extends Error and carries its name', () => {

@@ -4,9 +4,9 @@
 // byte-identical payloads.
 
 import { describe, expect, it } from 'vitest';
-import { fromBuffer, toBuffer } from '../../../src/io/node';
-import { openZip } from '../../../src/zip/reader';
-import { createZipWriter } from '../../../src/zip/writer';
+import { fromBuffer, toBuffer } from '../../src/io/node';
+import { openZip } from '../../src/zip/reader';
+import { createZipWriter } from '../../src/zip/writer';
 
 const buildArchive = async (
   entries: ReadonlyArray<{ path: string; bytes: Uint8Array; compress?: boolean }>,

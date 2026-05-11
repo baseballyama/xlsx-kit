@@ -1,21 +1,21 @@
 // Tests for listFonts / listFills / listBorders / listCellXfs / listCellStyleXfs.
 
 import { describe, expect, it } from 'vitest';
-import { setCellBorder, setCellFill, setCellFont } from '../../../src/styles/cell-style';
-import { makeColor } from '../../../src/styles/colors';
-import { makeBorder, makeSide } from '../../../src/styles/borders';
-import { makeFill, makePatternFill } from '../../../src/styles/fills';
-import { makeFont } from '../../../src/styles/fonts';
+import { setCellBorder, setCellFill, setCellFont } from '../../src/styles/cell-style';
+import { makeColor } from '../../src/styles/colors';
+import { makeBorder, makeSide } from '../../src/styles/borders';
+import { makeFill, makePatternFill } from '../../src/styles/fills';
+import { makeFont } from '../../src/styles/fonts';
 import {
   listBorders,
   listCellStyleXfs,
   listCellXfs,
   listFills,
   listFonts,
-} from '../../../src/styles/stylesheet';
-import { addNamedStyle } from '../../../src/styles/named-styles';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
-import { setCell } from '../../../src/worksheet/worksheet';
+} from '../../src/styles/stylesheet';
+import { addNamedStyle } from '../../src/styles/named-styles';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { setCell } from '../../src/worksheet/worksheet';
 
 describe('stylesheet pool listings', () => {
   it('listFonts starts at 1 (DEFAULT_FONT) and grows with adds', () => {

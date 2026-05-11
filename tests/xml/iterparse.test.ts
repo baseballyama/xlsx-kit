@@ -2,14 +2,14 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { fromBuffer } from '../../../src/io/node';
-import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
-import { iterParse, type SaxEvent } from '../../../src/xml/iterparse';
-import { REL_NS, SHEET_MAIN_NS } from '../../../src/xml/namespaces';
-import { openZip } from '../../../src/zip/reader';
+import { fromBuffer } from '../../src/io/node';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
+import { iterParse, type SaxEvent } from '../../src/xml/iterparse';
+import { REL_NS, SHEET_MAIN_NS } from '../../src/xml/namespaces';
+import { openZip } from '../../src/zip/reader';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const FIXTURES = resolve(here, '../../../reference/openpyxl/openpyxl/tests/data/genuine');
+const FIXTURES = resolve(here, '../../reference/openpyxl/openpyxl/tests/data/genuine');
 
 const collect = async (input: Parameters<typeof iterParse>[0]): Promise<SaxEvent[]> => {
   const events: SaxEvent[] = [];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromTree, toTree } from '../../../src/schema/serialize';
+import { fromTree, toTree } from '../../src/schema/serialize';
 import {
   BUILTIN_FORMATS,
   BUILTIN_FORMATS_MAX_SIZE,
@@ -15,11 +15,11 @@ import {
   isDateFormat,
   isTimedeltaFormat,
   makeNumberFormat,
-} from '../../../src/styles/numbers';
-import { NumberFormatSchema } from '../../../src/styles/numbers.schema';
-import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
-import { parseXml } from '../../../src/xml/parser';
-import { serializeXml } from '../../../src/xml/serializer';
+} from '../../src/styles/numbers';
+import { NumberFormatSchema } from '../../src/styles/numbers.schema';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
+import { parseXml } from '../../src/xml/parser';
+import { serializeXml } from '../../src/xml/serializer';
 
 describe('BUILTIN_FORMATS catalogue', () => {
   // Cross-checked against openpyxl/openpyxl/styles/numbers.py: the

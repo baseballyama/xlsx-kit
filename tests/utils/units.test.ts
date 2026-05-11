@@ -14,7 +14,7 @@ import {
   pointFromEmu,
   pointToPixel,
   pxFromEmu,
-} from '../../../src/utils/units';
+} from '../../src/utils/units';
 
 describe('EMU constants match the OOXML / openpyxl reference', () => {
   it('1 inch = 914400 EMU', () => expect(EMU_PER_INCH).toBe(914_400));

@@ -6,9 +6,9 @@
 // to fflate's `unzipSync` for ZIP64-aware central-directory parsing.
 
 import { describe, expect, it } from 'vitest';
-import { fromBuffer, toBuffer } from '../../../src/io/node';
-import { openZip } from '../../../src/zip/reader';
-import { createZipWriter } from '../../../src/zip/writer';
+import { fromBuffer, toBuffer } from '../../src/io/node';
+import { openZip } from '../../src/zip/reader';
+import { createZipWriter } from '../../src/zip/writer';
 
 describe('ZIP32 / ZIP64 entry-count limit', () => {
   it('round-trips 60_000 entries (well under the 65535 cap)', async () => {

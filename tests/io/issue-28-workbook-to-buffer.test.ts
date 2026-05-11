@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { fromBuffer } from '../../../src/io/node';
-import { workbookToBuffer } from '../../../src/io/node-save';
-import { loadWorkbook } from '../../../src/io/load';
-import { workbookToBytes } from '../../../src/io/save';
-import { addWorksheet, createWorkbook } from '../../../src/workbook/workbook';
-import { getCell, setCell } from '../../../src/worksheet/worksheet';
+import { fromBuffer } from '../../src/io/node';
+import { workbookToBuffer } from '../../src/io/node-save';
+import { loadWorkbook } from '../../src/io/load';
+import { workbookToBytes } from '../../src/io/save';
+import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { getCell, setCell } from '../../src/worksheet/worksheet';
 
 describe('workbookToBuffer (#28)', () => {
   it('returns a Node Buffer', async () => {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { fromTree, toTree } from '../../../src/schema/serialize';
-import { DEFAULT_BORDER, EMPTY_SIDE, makeBorder, makeSide, SIDE_STYLES } from '../../../src/styles/borders';
-import { BorderSchema, SideSchema } from '../../../src/styles/borders.schema';
-import { makeColor } from '../../../src/styles/colors';
-import { OpenXmlSchemaError } from '../../../src/utils/exceptions';
-import { parseXml } from '../../../src/xml/parser';
-import { serializeXml } from '../../../src/xml/serializer';
+import { fromTree, toTree } from '../../src/schema/serialize';
+import { DEFAULT_BORDER, EMPTY_SIDE, makeBorder, makeSide, SIDE_STYLES } from '../../src/styles/borders';
+import { BorderSchema, SideSchema } from '../../src/styles/borders.schema';
+import { makeColor } from '../../src/styles/colors';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
+import { parseXml } from '../../src/xml/parser';
+import { serializeXml } from '../../src/xml/serializer';
 
 describe('Side', () => {
   it('makeSide returns a frozen object', () => {

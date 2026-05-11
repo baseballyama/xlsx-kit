@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stableStringify } from '../../../src/utils/stable-stringify';
+import { stableStringify } from '../../src/utils/stable-stringify';
 
 describe('stableStringify', () => {
   it('matches JSON.stringify for primitives', () => {
