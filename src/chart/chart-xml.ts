@@ -738,11 +738,15 @@ const parseSeries = (serEl: XmlNode): BarSeries | undefined => {
   if (cat) opts.cat = cat;
   const base = makeBarSeries(opts);
   const spPr = parseSpPrSlot(serEl);
+  const invertIfNegative = boolVal(findChild(serEl, INVERT_IF_NEGATIVE_TAG));
+  const explosion = intVal(findChild(serEl, EXPLOSION_TAG));
   const dPt = parseDataPointList(serEl);
   const deco = parseSeriesDecorations(serEl);
   return {
     ...base,
     ...(spPr ? { spPr } : {}),
+    ...(invertIfNegative !== undefined ? { invertIfNegative } : {}),
+    ...(explosion !== undefined ? { explosion } : {}),
     ...(dPt ? { dPt } : {}),
     ...deco,
   };
@@ -910,11 +914,13 @@ const parseBubbleSeries = (serEl: XmlNode): BubbleSeries | undefined => {
   if (bubble3D !== undefined) opts.bubble3D = bubble3D;
   const base = makeBubbleSeries(opts);
   const spPr = parseSpPrSlot(serEl);
+  const invertIfNegative = boolVal(findChild(serEl, INVERT_IF_NEGATIVE_TAG));
   const dPt = parseDataPointList(serEl);
   const deco = parseSeriesDecorations(serEl);
   return {
     ...base,
     ...(spPr ? { spPr } : {}),
+    ...(invertIfNegative !== undefined ? { invertIfNegative } : {}),
     ...(dPt ? { dPt } : {}),
     ...deco,
   };
@@ -1376,8 +1382,16 @@ const serializeSeries = (s: BarSeries, marker?: Marker): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
-  // <c:marker> follows <c:spPr> per ECMA-376 series content sequence.
+  // ECMA-376 places per-chart-kind elements after <c:spPr> and before <c:dPt>.
+  // Each chart kind only sets the relevant one of marker / invertIfNegative /
+  // explosion, so the merged order below produces a schema-valid sequence for
+  // every kind that shares this helper (bar / line / area / pie / doughnut /
+  // radar / stock / surface).
   if (marker) parts.push(serializeMarker(marker));
+  if (s.invertIfNegative !== undefined) {
+    parts.push(`<c:invertIfNegative val="${s.invertIfNegative ? '1' : '0'}"/>`);
+  }
+  if (s.explosion !== undefined) parts.push(`<c:explosion val="${s.explosion}"/>`);
   if (s.dPt) for (const p of s.dPt) parts.push(serializeDataPoint(p));
   if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
   if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
@@ -1516,6 +1530,9 @@ const serializeBubbleSeries = (s: BubbleSeries): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
+  if (s.invertIfNegative !== undefined) {
+    parts.push(`<c:invertIfNegative val="${s.invertIfNegative ? '1' : '0'}"/>`);
+  }
   if (s.dPt) for (const p of s.dPt) parts.push(serializeDataPoint(p));
   if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
   if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));

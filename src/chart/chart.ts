@@ -184,6 +184,13 @@ export interface BarSeries {
   tx?: { kind: 'literal'; value: string } | { kind: 'ref'; ref: string };
   /** Per-series shape properties (fill / line / effects). */
   spPr?: ShapeProperties;
+  /** Invert fill on negative values (bar / line / area series). */
+  invertIfNegative?: boolean;
+  /**
+   * Slice explosion in % (pie / doughnut series only; 0..400). Bar / line / area writers
+   * ignore the field — leave it unset for those series.
+   */
+  explosion?: number;
   /** Per-point overrides. Empty / omitted means every point inherits the series defaults. */
   dPt?: DataPoint[];
   /** Series-wide data labels. */
@@ -302,6 +309,7 @@ export interface BubbleSeries {
   order: number;
   tx?: BarSeries['tx'];
   spPr?: ShapeProperties;
+  invertIfNegative?: boolean;
   dPt?: DataPoint[];
   dLbls?: DataLabelList;
   trendline?: Trendline[];
