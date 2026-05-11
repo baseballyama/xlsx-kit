@@ -506,10 +506,23 @@ interface AxisShared {
   crosses?: AxisCrosses;
   /** `<c:crossesAt val="..."/>`. Numeric cross point on the partner axis. */
   crossesAt?: number;
-  /** Whether to draw major gridlines. */
-  majorGridlines?: boolean;
-  /** Whether to draw minor gridlines. */
-  minorGridlines?: boolean;
+  /**
+   * Major gridlines. `true` keeps Excel's default rendering; pass
+   * `{ spPr }` to override the line colour / width / dash. `false` /
+   * `undefined` omit the element entirely.
+   */
+  majorGridlines?: boolean | Gridlines;
+  /** Minor gridlines. Same shape as {@link AxisShared.majorGridlines}. */
+  minorGridlines?: boolean | Gridlines;
+}
+
+/**
+ * Rich `<c:majorGridlines>` / `<c:minorGridlines>` form. Wraps a
+ * `ShapeProperties` so the gridline line can be styled (e.g. corporate-style
+ * light-grey `D9D9D9`).
+ */
+export interface Gridlines {
+  spPr?: ShapeProperties;
 }
 
 export interface CategoryAxis extends AxisShared {
