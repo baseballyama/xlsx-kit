@@ -30,6 +30,8 @@ export type {
   Line3DChart,
   LineChart,
   LineSeries,
+  Marker,
+  MarkerSymbol,
   NumericRef,
   OfPieChart,
   OfPieType,

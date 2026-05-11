@@ -46,6 +46,8 @@ import {
   type Line3DChart,
   type LineChart,
   type LineSeries,
+  type Marker,
+  type MarkerSymbol,
   makeArea3DChart,
   makeAreaChart,
   makeBar3DChart,
@@ -124,6 +126,9 @@ const DOUGHNUT_CHART_TAG = `{${CHART_NS}}doughnutChart`;
 const SCATTER_CHART_TAG = `{${CHART_NS}}scatterChart`;
 const RADAR_CHART_TAG = `{${CHART_NS}}radarChart`;
 const SMOOTH_TAG = `{${CHART_NS}}smooth`;
+const MARKER_TAG = `{${CHART_NS}}marker`;
+const SYMBOL_TAG = `{${CHART_NS}}symbol`;
+const SIZE_TAG = `{${CHART_NS}}size`;
 const HOLE_SIZE_TAG = `{${CHART_NS}}holeSize`;
 const FIRST_SLICE_ANG_TAG = `{${CHART_NS}}firstSliceAng`;
 const SCATTER_STYLE_TAG = `{${CHART_NS}}scatterStyle`;
@@ -414,6 +419,41 @@ const serializeDataLabelList = (d: DataLabelList): string => {
   return parts.join('');
 };
 
+const VALID_MARKER_SYMBOLS: ReadonlyArray<string> = [
+  'auto',
+  'circle',
+  'dash',
+  'diamond',
+  'dot',
+  'none',
+  'picture',
+  'plus',
+  'square',
+  'star',
+  'triangle',
+  'x',
+];
+
+const parseMarker = (el: XmlNode): Marker | undefined => {
+  const symbolRaw = valAttr(findChild(el, SYMBOL_TAG));
+  const size = intVal(findChild(el, SIZE_TAG));
+  const spPr = parseSpPrSlot(el);
+  const out: Marker = {};
+  if (symbolRaw && VALID_MARKER_SYMBOLS.includes(symbolRaw)) out.symbol = symbolRaw as MarkerSymbol;
+  if (size !== undefined) out.size = size;
+  if (spPr) out.spPr = spPr;
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const serializeMarker = (m: Marker): string => {
+  const parts: string[] = ['<c:marker>'];
+  if (m.symbol !== undefined) parts.push(`<c:symbol val="${m.symbol}"/>`);
+  if (m.size !== undefined) parts.push(`<c:size val="${m.size}"/>`);
+  if (m.spPr) parts.push(serializeShapeProperties(m.spPr));
+  parts.push('</c:marker>');
+  return parts.join('');
+};
+
 const VALID_TRENDLINE_TYPES: ReadonlyArray<string> = ['exp', 'linear', 'log', 'movingAvg', 'poly', 'power'];
 
 const parseTrendline = (el: XmlNode): Trendline | undefined => {
@@ -670,7 +710,13 @@ const parseLineSeries = (serEl: XmlNode): LineSeries | undefined => {
   const base = parseSeries(serEl);
   if (!base) return undefined;
   const smooth = boolVal(findChild(serEl, SMOOTH_TAG));
-  return smooth !== undefined ? { ...base, smooth } : base;
+  const markerEl = findChild(serEl, MARKER_TAG);
+  const marker = markerEl ? parseMarker(markerEl) : undefined;
+  return {
+    ...base,
+    ...(smooth !== undefined ? { smooth } : {}),
+    ...(marker ? { marker } : {}),
+  };
 };
 
 const parseLineChart = (lineEl: XmlNode): LineChart => {
@@ -734,6 +780,9 @@ const parseScatterSeries = (serEl: XmlNode): ScatterSeries | undefined => {
   if (order !== undefined) opts.order = order;
   if (xVal) opts.xVal = xVal;
   if (smooth !== undefined) opts.smooth = smooth;
+  const markerEl = findChild(serEl, MARKER_TAG);
+  const marker = markerEl ? parseMarker(markerEl) : undefined;
+  if (marker) opts.marker = marker;
   const base = makeScatterSeries(opts);
   const spPr = parseSpPrSlot(serEl);
   const deco = parseSeriesDecorations(serEl);
@@ -1112,7 +1161,7 @@ const serializeCategoryRef = (cat: CategoryRef): string => {
   return `<c:cat><c:numRef><c:f>${escapeText(cat.ref)}</c:f>${inner}</c:numRef></c:cat>`;
 };
 
-const serializeSeries = (s: BarSeries): string => {
+const serializeSeries = (s: BarSeries, marker?: Marker): string => {
   const parts: string[] = ['<c:ser>', `<c:idx val="${s.idx}"/>`, `<c:order val="${s.order}"/>`];
   if (s.tx) {
     if (s.tx.kind === 'literal') {
@@ -1122,6 +1171,8 @@ const serializeSeries = (s: BarSeries): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
+  // <c:marker> follows <c:spPr> per ECMA-376 series content sequence.
+  if (marker) parts.push(serializeMarker(marker));
   if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
   if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
   if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));
@@ -1152,7 +1203,7 @@ const serializeBarChart = (chart: BarChart): string => {
 };
 
 const serializeLineSeries = (s: LineSeries): string => {
-  const base = serializeSeries(s);
+  const base = serializeSeries(s, s.marker);
   if (s.smooth === undefined) return base;
   // Inject smooth before </c:ser> (cheap inline patch).
   return base.replace('</c:ser>', `<c:smooth val="${s.smooth ? '1' : '0'}"/></c:ser>`);
@@ -1211,6 +1262,7 @@ const serializeScatterSeries = (s: ScatterSeries): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
+  if (s.marker) parts.push(serializeMarker(s.marker));
   if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
   if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
   if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));

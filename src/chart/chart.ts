@@ -92,6 +92,28 @@ export interface DataLabelList {
   showLeaderLines?: boolean;
 }
 
+export type MarkerSymbol =
+  | 'auto'
+  | 'circle'
+  | 'dash'
+  | 'diamond'
+  | 'dot'
+  | 'none'
+  | 'picture'
+  | 'plus'
+  | 'square'
+  | 'star'
+  | 'triangle'
+  | 'x';
+
+/** Data-point marker on line / scatter / radar series (`<c:marker>` child of `<c:ser>`). */
+export interface Marker {
+  symbol?: MarkerSymbol;
+  /** Marker size in points (2..72). */
+  size?: number;
+  spPr?: ShapeProperties;
+}
+
 export type TrendlineType = 'exp' | 'linear' | 'log' | 'movingAvg' | 'poly' | 'power';
 
 export interface Trendline {
@@ -178,6 +200,8 @@ export interface BarChart {
 export interface LineSeries extends BarSeries {
   /** Per-series smoothing toggle. */
   smooth?: boolean;
+  /** Data-point marker (`<c:marker>` child of `<c:ser>`). */
+  marker?: Marker;
 }
 
 export interface LineChart {
@@ -226,6 +250,8 @@ export interface ScatterSeries {
   trendline?: Trendline[];
   /** Up to 2 entries (one per direction). */
   errBars?: ErrorBars[];
+  /** Data-point marker. */
+  marker?: Marker;
   xVal?: NumericRef;
   yVal: NumericRef;
   smooth?: boolean;
@@ -600,6 +626,7 @@ export function makeScatterSeries(opts: {
   xVal?: NumericRef;
   yVal: NumericRef;
   smooth?: boolean;
+  marker?: Marker;
 }): ScatterSeries {
   return {
     idx: opts.idx,
@@ -608,6 +635,7 @@ export function makeScatterSeries(opts: {
     ...(opts.tx ? { tx: opts.tx } : {}),
     ...(opts.xVal ? { xVal: opts.xVal } : {}),
     ...(opts.smooth !== undefined ? { smooth: opts.smooth } : {}),
+    ...(opts.marker ? { marker: opts.marker } : {}),
   };
 }
 
