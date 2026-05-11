@@ -109,6 +109,41 @@ describe('createWriteOnlyWorkbook — sequencing constraints', () => {
     await a.close();
     await expect(wb.addWorksheet('Same')).rejects.toThrowError(/already in use/);
   });
+
+  it('rejects duplicate worksheet titles case-insensitively', async () => {
+    const sink = toBuffer();
+    const wb = await createWriteOnlyWorkbook(sink);
+    const a = await wb.addWorksheet('Data');
+    await a.close();
+    await expect(wb.addWorksheet('data')).rejects.toThrowError(/already in use/);
+    await expect(wb.addWorksheet('DATA')).rejects.toThrowError(/already in use/);
+  });
+
+  it('rejects forbidden characters in the title', async () => {
+    const sink = toBuffer();
+    const wb = await createWriteOnlyWorkbook(sink);
+    await expect(wb.addWorksheet('Bad/Name')).rejects.toThrowError(/must not contain/);
+    await expect(wb.addWorksheet('Bad\\Name')).rejects.toThrowError(/must not contain/);
+    await expect(wb.addWorksheet('Bad:Name')).rejects.toThrowError(/must not contain/);
+    await expect(wb.addWorksheet('Bad?Name')).rejects.toThrowError(/must not contain/);
+    await expect(wb.addWorksheet('Bad*Name')).rejects.toThrowError(/must not contain/);
+    await expect(wb.addWorksheet('Bad[1]')).rejects.toThrowError(/must not contain/);
+  });
+
+  it('rejects leading or trailing apostrophe in the title', async () => {
+    const sink = toBuffer();
+    const wb = await createWriteOnlyWorkbook(sink);
+    await expect(wb.addWorksheet("'Leading")).rejects.toThrowError(/apostrophe/);
+    await expect(wb.addWorksheet("Trailing'")).rejects.toThrowError(/apostrophe/);
+  });
+
+  it('rejects the reserved name "History" case-insensitively', async () => {
+    const sink = toBuffer();
+    const wb = await createWriteOnlyWorkbook(sink);
+    await expect(wb.addWorksheet('History')).rejects.toThrowError(/reserved/);
+    await expect(wb.addWorksheet('history')).rejects.toThrowError(/reserved/);
+    await expect(wb.addWorksheet('HISTORY')).rejects.toThrowError(/reserved/);
+  });
 });
 
 describe('createWriteOnlyWorkbook — styles + sharedStrings', () => {
