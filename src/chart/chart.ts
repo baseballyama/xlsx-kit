@@ -165,6 +165,12 @@ export interface BarChart {
   series: BarSeries[];
   /** Bar gap width in % of bar width (Excel default 150). */
   gapWidth?: number;
+  /**
+   * Bar overlap in -100..100 % of bar width. Positive values overlap clustered bars; negative values
+   * space them apart. For stacked / percentStacked grouping, omit and the serializer emits the
+   * standard Excel default of 100 (flush stacking).
+   */
+  overlap?: number;
   /** Internal axis ids. The category and value axes carry the same numbers. */
   axIds: [number, number];
 }
@@ -458,6 +464,7 @@ export function makeBarChart(opts: {
   axIds?: [number, number];
   varyColors?: boolean;
   gapWidth?: number;
+  overlap?: number;
 }): BarChart {
   return {
     kind: 'bar',
@@ -467,6 +474,7 @@ export function makeBarChart(opts: {
     axIds: opts.axIds ?? [1, 2],
     ...(opts.varyColors !== undefined ? { varyColors: opts.varyColors } : {}),
     ...(opts.gapWidth !== undefined ? { gapWidth: opts.gapWidth } : {}),
+    ...(opts.overlap !== undefined ? { overlap: opts.overlap } : {}),
   };
 }
 

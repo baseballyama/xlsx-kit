@@ -113,6 +113,7 @@ const BAR_DIR_TAG = `{${CHART_NS}}barDir`;
 const GROUPING_TAG = `{${CHART_NS}}grouping`;
 const VARY_COLORS_TAG = `{${CHART_NS}}varyColors`;
 const GAP_WIDTH_TAG = `{${CHART_NS}}gapWidth`;
+const OVERLAP_TAG = `{${CHART_NS}}overlap`;
 const AX_ID_TAG = `{${CHART_NS}}axId`;
 const DELETE_TAG = `{${CHART_NS}}delete`;
 const LINE_CHART_TAG = `{${CHART_NS}}lineChart`;
@@ -652,6 +653,7 @@ const parseBarChart = (barEl: XmlNode): BarChart => {
   const grouping = (valAttr(findChild(barEl, GROUPING_TAG)) ?? 'clustered') as GroupingType;
   const varyColors = boolVal(findChild(barEl, VARY_COLORS_TAG));
   const gapWidth = intVal(findChild(barEl, GAP_WIDTH_TAG));
+  const overlap = intVal(findChild(barEl, OVERLAP_TAG));
   return makeBarChart({
     barDir,
     grouping,
@@ -659,6 +661,7 @@ const parseBarChart = (barEl: XmlNode): BarChart => {
     axIds: parseAxIds(barEl),
     ...(varyColors !== undefined ? { varyColors } : {}),
     ...(gapWidth !== undefined ? { gapWidth } : {}),
+    ...(overlap !== undefined ? { overlap } : {}),
   });
 };
 
@@ -1134,7 +1137,9 @@ const serializeBarChart = (chart: BarChart): string => {
   ];
   for (const s of chart.series) parts.push(serializeSeries(s));
   parts.push(`<c:gapWidth val="${chart.gapWidth ?? 150}"/>`);
-  if (chart.grouping === 'stacked' || chart.grouping === 'percentStacked') {
+  if (chart.overlap !== undefined) {
+    parts.push(`<c:overlap val="${chart.overlap}"/>`);
+  } else if (chart.grouping === 'stacked' || chart.grouping === 'percentStacked') {
     parts.push('<c:overlap val="100"/>');
   }
   parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
