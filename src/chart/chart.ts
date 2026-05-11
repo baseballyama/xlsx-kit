@@ -544,13 +544,37 @@ export interface PlotArea {
   dateAx?: DateAxis;
   /** Series axis (used by `surface3DChart` / `surfaceChart`). */
   serAx?: SeriesAxis;
+  /** Manual layout for the plot area inside the chart. */
+  layout?: Layout;
   /** Plot-area shape properties (background fill, border line). */
   spPr?: ShapeProperties;
+}
+
+export type LayoutMode = 'edge' | 'factor';
+export type LayoutTarget = 'inner' | 'outer';
+
+/** `<c:manualLayout>` child of `<c:layout>`. All values are fractions of the chart space (0..1). */
+export interface ManualLayout {
+  layoutTarget?: LayoutTarget;
+  xMode?: LayoutMode;
+  yMode?: LayoutMode;
+  wMode?: LayoutMode;
+  hMode?: LayoutMode;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+}
+
+/** `<c:layout>` wrapper. Currently only `manualLayout` is exposed; the lone `<layoutId>` form is for chartex. */
+export interface Layout {
+  manualLayout?: ManualLayout;
 }
 
 export interface Legend {
   position: LegendPosition;
   overlay?: boolean;
+  layout?: Layout;
   spPr?: ShapeProperties;
   txPr?: TextBody;
 }
@@ -566,6 +590,7 @@ export interface ChartTitle {
   /** Rich text body — overrides `text` when both are present. */
   tx?: TextBody;
   overlay?: boolean;
+  layout?: Layout;
   spPr?: ShapeProperties;
   txPr?: TextBody;
 }

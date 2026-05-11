@@ -57,6 +57,10 @@ import {
   type Marker,
   type MarkerSymbol,
   type DataPoint,
+  type Layout,
+  type LayoutMode,
+  type LayoutTarget,
+  type ManualLayout,
   makeArea3DChart,
   makeAreaChart,
   makeBar3DChart,
@@ -210,6 +214,17 @@ const FLOOR_TAG = `{${CHART_NS}}floor`;
 const SIDE_WALL_TAG = `{${CHART_NS}}sideWall`;
 const BACK_WALL_TAG = `{${CHART_NS}}backWall`;
 const THICKNESS_TAG = `{${CHART_NS}}thickness`;
+const LAYOUT_TAG = `{${CHART_NS}}layout`;
+const MANUAL_LAYOUT_TAG = `{${CHART_NS}}manualLayout`;
+const LAYOUT_TARGET_TAG = `{${CHART_NS}}layoutTarget`;
+const X_MODE_TAG = `{${CHART_NS}}xMode`;
+const Y_MODE_TAG = `{${CHART_NS}}yMode`;
+const W_MODE_TAG = `{${CHART_NS}}wMode`;
+const H_MODE_TAG = `{${CHART_NS}}hMode`;
+const X_TAG = `{${CHART_NS}}x`;
+const Y_TAG = `{${CHART_NS}}y`;
+const W_TAG = `{${CHART_NS}}w`;
+const H_TAG = `{${CHART_NS}}h`;
 const LEGEND_TAG = `{${CHART_NS}}legend`;
 const LEGEND_POS_TAG = `{${CHART_NS}}legendPos`;
 const PLOT_VIS_ONLY_TAG = `{${CHART_NS}}plotVisOnly`;
@@ -299,6 +314,11 @@ const parseChartTitle = (titleEl: XmlNode): ChartTitle => {
   }
   const overlay = boolVal(findChild(titleEl, OVERLAY_TAG));
   if (overlay !== undefined) out.overlay = overlay;
+  const layoutEl = findChild(titleEl, LAYOUT_TAG);
+  if (layoutEl) {
+    const layout = parseLayout(layoutEl);
+    if (layout) out.layout = layout;
+  }
   const spPrEl = findChild(titleEl, SP_PR_TAG);
   if (spPrEl) out.spPr = parseShapeProperties(spPrEl);
   const txPrEl = findChild(titleEl, TX_PR_TAG);
@@ -1137,6 +1157,54 @@ const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
   throw new OpenXmlSchemaError('parseChartXml: no supported chart kind found inside <plotArea>');
 };
 
+const VALID_LAYOUT_MODES: ReadonlyArray<string> = ['edge', 'factor'];
+const VALID_LAYOUT_TARGETS: ReadonlyArray<string> = ['inner', 'outer'];
+
+const parseLayout = (el: XmlNode): Layout | undefined => {
+  const manualEl = findChild(el, MANUAL_LAYOUT_TAG);
+  if (!manualEl) return undefined;
+  const targetRaw = valAttr(findChild(manualEl, LAYOUT_TARGET_TAG));
+  const layoutTarget = targetRaw && VALID_LAYOUT_TARGETS.includes(targetRaw)
+    ? (targetRaw as LayoutTarget)
+    : undefined;
+  const xMode = valAttr(findChild(manualEl, X_MODE_TAG));
+  const yMode = valAttr(findChild(manualEl, Y_MODE_TAG));
+  const wMode = valAttr(findChild(manualEl, W_MODE_TAG));
+  const hMode = valAttr(findChild(manualEl, H_MODE_TAG));
+  const x = numberVal(findChild(manualEl, X_TAG));
+  const y = numberVal(findChild(manualEl, Y_TAG));
+  const w = numberVal(findChild(manualEl, W_TAG));
+  const h = numberVal(findChild(manualEl, H_TAG));
+  const ml: ManualLayout = {};
+  if (layoutTarget) ml.layoutTarget = layoutTarget;
+  if (xMode && VALID_LAYOUT_MODES.includes(xMode)) ml.xMode = xMode as LayoutMode;
+  if (yMode && VALID_LAYOUT_MODES.includes(yMode)) ml.yMode = yMode as LayoutMode;
+  if (wMode && VALID_LAYOUT_MODES.includes(wMode)) ml.wMode = wMode as LayoutMode;
+  if (hMode && VALID_LAYOUT_MODES.includes(hMode)) ml.hMode = hMode as LayoutMode;
+  if (x !== undefined) ml.x = x;
+  if (y !== undefined) ml.y = y;
+  if (w !== undefined) ml.w = w;
+  if (h !== undefined) ml.h = h;
+  return Object.keys(ml).length > 0 ? { manualLayout: ml } : undefined;
+};
+
+const serializeLayout = (layout: Layout | undefined): string => {
+  const ml = layout?.manualLayout;
+  if (!ml || Object.keys(ml).length === 0) return '<c:layout/>';
+  const parts: string[] = ['<c:layout><c:manualLayout>'];
+  if (ml.layoutTarget) parts.push(`<c:layoutTarget val="${ml.layoutTarget}"/>`);
+  if (ml.xMode) parts.push(`<c:xMode val="${ml.xMode}"/>`);
+  if (ml.yMode) parts.push(`<c:yMode val="${ml.yMode}"/>`);
+  if (ml.wMode) parts.push(`<c:wMode val="${ml.wMode}"/>`);
+  if (ml.hMode) parts.push(`<c:hMode val="${ml.hMode}"/>`);
+  if (ml.x !== undefined) parts.push(`<c:x val="${ml.x}"/>`);
+  if (ml.y !== undefined) parts.push(`<c:y val="${ml.y}"/>`);
+  if (ml.w !== undefined) parts.push(`<c:w val="${ml.w}"/>`);
+  if (ml.h !== undefined) parts.push(`<c:h val="${ml.h}"/>`);
+  parts.push('</c:manualLayout></c:layout>');
+  return parts.join('');
+};
+
 const parseView3D = (el: XmlNode): View3D | undefined => {
   const rotX = intVal(findChild(el, ROT_X_TAG));
   const rotY = intVal(findChild(el, ROT_Y_TAG));
@@ -1411,12 +1479,17 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
     chart,
     ...(catAxEl ? { catAx: parseCategoryAxis(catAxEl) } : {}),
     ...(valAxEl ? { valAx: parseValueAxis(valAxEl) } : {}),
-    ...((): { dateAx?: DateAxis; serAx?: SeriesAxis } => {
-      const out: { dateAx?: DateAxis; serAx?: SeriesAxis } = {};
+    ...((): { dateAx?: DateAxis; serAx?: SeriesAxis; layout?: Layout } => {
+      const out: { dateAx?: DateAxis; serAx?: SeriesAxis; layout?: Layout } = {};
       const dateAxEl = findChild(plotAreaEl, DATE_AX_TAG);
       if (dateAxEl) out.dateAx = parseDateAxis(dateAxEl);
       const serAxEl = findChild(plotAreaEl, SER_AX_TAG);
       if (serAxEl) out.serAx = parseSeriesAxis(serAxEl);
+      const layoutEl = findChild(plotAreaEl, LAYOUT_TAG);
+      if (layoutEl) {
+        const layout = parseLayout(layoutEl);
+        if (layout) out.layout = layout;
+      }
       return out;
     })(),
     ...(plotAreaSpPr ? { spPr: plotAreaSpPr } : {}),
@@ -1430,9 +1503,12 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
     const overlay = boolVal(findChild(legendEl, OVERLAY_TAG));
     const legendSpPr = parseSpPrSlot(legendEl);
     const legendTxPr = parseTxPrSlot(legendEl);
+    const legendLayoutEl = findChild(legendEl, LAYOUT_TAG);
+    const legendLayout = legendLayoutEl ? parseLayout(legendLayoutEl) : undefined;
     legend = {
       position: posRaw ?? 'r',
       ...(overlay !== undefined ? { overlay } : {}),
+      ...(legendLayout ? { layout: legendLayout } : {}),
       ...(legendSpPr ? { spPr: legendSpPr } : {}),
       ...(legendTxPr ? { txPr: legendTxPr } : {}),
     };
@@ -1886,7 +1962,7 @@ const serializeChartTitle = (title: ChartTitle): string => {
     );
   }
   // <c:layout/> + <c:overlay> match the order Excel emits.
-  parts.push('<c:layout/>');
+  parts.push(serializeLayout(title.layout));
   if (title.overlay !== undefined) {
     parts.push(`<c:overlay val="${title.overlay ? '1' : '0'}"/>`);
   } else {
@@ -1936,7 +2012,7 @@ const serializeChartKind = (chart: ChartKind): string => {
 };
 
 const serializePlotArea = (plotArea: PlotArea): string => {
-  const parts: string[] = ['<c:plotArea>', '<c:layout/>'];
+  const parts: string[] = ['<c:plotArea>', serializeLayout(plotArea.layout)];
   parts.push(serializeChartKind(plotArea.chart));
   // Excel rejects charts that reference axIds in a chart-kind element but don't
   // define matching catAx/valAx siblings under plotArea. Fill in sensible
@@ -1966,7 +2042,10 @@ const inferAxesForChart = (plotArea: PlotArea): string[] => {
 };
 
 const serializeLegend = (legend: Legend): string => {
+  // ECMA-376 sequence inside <c:legend>: legendPos, legendEntry*, layout?,
+  // overlay?, spPr?, txPr?.
   const parts: string[] = ['<c:legend>', `<c:legendPos val="${legend.position}"/>`];
+  if (legend.layout) parts.push(serializeLayout(legend.layout));
   if (legend.overlay !== undefined) parts.push(`<c:overlay val="${legend.overlay ? '1' : '0'}"/>`);
   if (legend.spPr) parts.push(serializeShapeProperties(legend.spPr));
   if (legend.txPr) parts.push(serializeTextBody(legend.txPr, 'c:txPr'));
