@@ -83,7 +83,7 @@ import {
   makeStockChart,
   makeSurface3DChart,
   makeSurfaceChart,
-  type NumberFormat,
+  type ChartNumberFormat,
   type NumericRef,
   type OfPieChart,
   type OfPieType,
@@ -342,7 +342,7 @@ const parseTxPrSlot = (parent: XmlNode): TextBody | undefined => {
 
 const VALID_D_LBL_POS: ReadonlyArray<string> = ['bestFit', 'b', 'ctr', 'inBase', 'inEnd', 'l', 'outEnd', 'r', 't'];
 
-const parseNumberFormat = (el: XmlNode | undefined): NumberFormat | undefined => {
+const parseNumberFormat = (el: XmlNode | undefined): ChartNumberFormat | undefined => {
   if (!el) return undefined;
   const formatCode = el.attrs['formatCode'];
   if (formatCode === undefined) return undefined;
@@ -356,14 +356,14 @@ const parseNumberFormat = (el: XmlNode | undefined): NumberFormat | undefined =>
   return { formatCode, ...(sourceLinked !== undefined ? { sourceLinked } : {}) };
 };
 
-const serializeNumberFormat = (n: NumberFormat): string => {
+const serializeNumberFormat = (n: ChartNumberFormat): string => {
   const sl = n.sourceLinked !== undefined ? ` sourceLinked="${n.sourceLinked ? '1' : '0'}"` : '';
   return `<c:numFmt formatCode="${escapeText(n.formatCode)}"${sl}/>`;
 };
 
 interface DataLabelCommon {
   delete?: boolean;
-  numFmt?: NumberFormat;
+  numFmt?: ChartNumberFormat;
   spPr?: ShapeProperties;
   txPr?: TextBody;
   dLblPos?: DataLabelPosition;
@@ -1333,7 +1333,7 @@ const parseAxisCommon = (
   spPr?: ShapeProperties;
   txPr?: TextBody;
   title?: ChartTitle;
-  numFmt?: NumberFormat;
+  numFmt?: ChartNumberFormat;
   majorTickMark?: TickMark;
   minorTickMark?: TickMark;
   tickLblPos?: TickLabelPosition;
