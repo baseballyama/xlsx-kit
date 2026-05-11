@@ -230,8 +230,17 @@ export function openRandomAccessArchive(
     const compressed = readCompressedBytes(buf, entry);
     if (entry.compMethod === COMP_STORE) {
       // STORE means the bytes on disk are the bytes the caller wants; no need
-      // to involve the inflate state machine. Hand them out as a single chunk
-      // — copy because callers may mutate the returned bytes.
+      // to involve the inflate state machine. Run the same caps the sync
+      // `read()` STORE branch applies — otherwise an uncompressed bomb entry
+      // reached via `readStream()` would bypass the per-entry / archive-total
+      // accounting. Ratio is fixed at 1, so only the absolute bounds apply.
+      if (budget) {
+        if (compressed.byteLength > budget.limits.maxEntryUncompressedBytes) {
+          throw entryOverflowError(path, budget.limits.maxEntryUncompressedBytes);
+        }
+        recordInflated(budget, path, compressed.byteLength);
+      }
+      // Copy because callers may mutate the returned bytes.
       return singleChunkStream(compressed.slice());
     }
     if (entry.compMethod !== COMP_DEFLATE) {

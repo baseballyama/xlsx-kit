@@ -15,7 +15,7 @@
 // (e.g. a backend that only ever loads xlsx it generated itself) can pass
 // `false` to disable the guard.
 
-import { OpenXmlDecompressionBombError } from '../utils/exceptions';
+import { OpenXmlDecompressionBombError, OpenXmlError } from '../utils/exceptions';
 
 /** Per-archive limits enforced during {@link openZip}. */
 export interface DecompressionLimits {
@@ -65,13 +65,25 @@ const RATIO_CHECK_MIN_COMPRESSED_BYTES = 64;
  */
 export type DecompressionLimitsInput = DecompressionLimits | false | undefined;
 
+// Each limit must be a positive finite number to be meaningful; NaN / Infinity
+// / 0 / negatives silently turn `emitted > cap` and `totalInflated > cap` into
+// no-ops and disable the guard. Reject those at the boundary so the only way
+// the guard is off is the explicit `false` sentinel.
+const requirePositiveFinite = (field: string, value: number): void => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new OpenXmlError(
+      `resolveDecompressionLimits: ${field} must be a positive finite number; got ${String(value)}`,
+    );
+  }
+};
+
 /** Returns null when the guard is disabled. */
 export function resolveDecompressionLimits(
   input: DecompressionLimitsInput,
 ): ResolvedDecompressionLimits | null {
   if (input === false) return null;
   if (!input) return DEFAULT_DECOMPRESSION_LIMITS;
-  return {
+  const resolved: ResolvedDecompressionLimits = {
     maxEntryUncompressedBytes:
       input.maxEntryUncompressedBytes ?? DEFAULT_DECOMPRESSION_LIMITS.maxEntryUncompressedBytes,
     maxTotalUncompressedBytes:
@@ -79,6 +91,10 @@ export function resolveDecompressionLimits(
     maxCompressionRatio:
       input.maxCompressionRatio ?? DEFAULT_DECOMPRESSION_LIMITS.maxCompressionRatio,
   };
+  requirePositiveFinite('maxEntryUncompressedBytes', resolved.maxEntryUncompressedBytes);
+  requirePositiveFinite('maxTotalUncompressedBytes', resolved.maxTotalUncompressedBytes);
+  requirePositiveFinite('maxCompressionRatio', resolved.maxCompressionRatio);
+  return resolved;
 }
 
 /**

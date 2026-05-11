@@ -58,9 +58,13 @@ export interface OpenZipOptions {
 }
 
 /**
- * Open a zip archive from any {@link XlsxSource}. Memory-bounded: the source is
- * fully materialised, then handed to fflate.unzipSync to produce a path → bytes
- * map.
+ * Open a zip archive from any {@link XlsxSource}. The source is fully
+ * materialised in memory, the central directory is parsed once, and each
+ * entry is inflated on demand by {@link openRandomAccessArchive} — peak memory
+ * stays at compressed-archive size plus per-entry inflate scratch rather than
+ * holding every uncompressed entry resident. The fflate `unzipSync` fallback
+ * is preserved internally for ZIP64 / non-standard archives the random-access
+ * reader rejects.
  */
 export async function openZip(source: XlsxSource, opts: OpenZipOptions = {}): Promise<ZipArchive> {
   let bytes: Uint8Array;

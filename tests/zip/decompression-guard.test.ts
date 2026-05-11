@@ -29,11 +29,9 @@ const zeros = (n: number): Uint8Array => new Uint8Array(n);
 
 describe('decompression-bomb guard — defaults', () => {
   it('admits legitimately compressible data well below the cap', async () => {
-    // 1 MiB of zeros deflates to ~1 KiB → ratio ~1024 but tiny absolute size.
-    // The default 1000× ceiling means a 1 KiB compressed entry can reach
-    // ~1 MiB uncompressed, which this just barely sits on; the 64 B
-    // `RATIO_CHECK_MIN_COMPRESSED_BYTES` floor isn't reached here, but the
-    // entry / total bounds give it room.
+    // ~12 KiB of "hello world " repeated — a realistic xml-like payload that
+    // deflates to well under 1 KiB but stays under the default per-entry /
+    // total / ratio bounds in every direction. Round-trips byte-for-byte.
     const payload = new TextEncoder().encode('hello world '.repeat(1000));
     const bytes = await buildArchive([{ path: 'a.txt', bytes: payload }]);
     const archive = await openZip(fromBuffer(bytes));
@@ -49,10 +47,11 @@ describe('decompression-bomb guard — defaults', () => {
   });
 
   it('rejects an entry whose central-directory uncompressed size exceeds the per-entry cap', async () => {
-    // Forge an archive that lies in the CD: declare a uncompSize beyond the
-    // limit. We can't easily produce a >512 MiB legitimate compressed entry in
-    // a test, so simulate via a custom limit instead — the actual default cap
-    // is exercised here by the smaller `maxEntryUncompressedBytes` override.
+    // Exercise the declared-size pre-check via a tighter `maxEntryUncompressedBytes`
+    // override rather than building a >512 MiB fixture: a legitimately-built
+    // 2 MiB archive whose honest CD declares 2 MiB trips a 1 KiB cap. This
+    // covers the pre-flight path — separate tests below cover the runtime
+    // abort when the CD itself lies.
     const bytes = await buildArchive([{ path: 'big.bin', bytes: zeros(2 * 1024 * 1024) }]);
     await expect(
       openZip(fromBuffer(bytes), { decompressionLimits: { maxEntryUncompressedBytes: 1024 } }),
@@ -178,5 +177,40 @@ describe('decompression-bomb guard — streaming reads', () => {
     });
     expect(() => archive.read('big.bin')).toThrowError(/decompression-bomb/);
     archive.close();
+  });
+
+  // STORE entries (compression method 0) bypass the inflate state machine
+  // entirely, so the per-entry cap has to be applied explicitly in both
+  // `read()` and `readStream()` — otherwise an uncompressed bomb hidden by a
+  // CD-lie walks past the guard.
+  it('aborts a STORE readStream when the actual stored size exceeds the per-entry cap despite an honest-looking CD', async () => {
+    // Build a 256 KiB STORE entry, then patch the CD/LFH to claim 1 KiB. The
+    // pre-check accepts the (lying) declared size; the runtime STORE branch
+    // must catch the real 256 KiB payload.
+    const honest = await buildArchive([
+      { path: 'big.bin', bytes: zeros(256 * 1024), compress: false },
+    ]);
+    const lying = patchSingleEntryUncompSize(honest, 1024);
+    const archive = await openZip(fromBuffer(lying), {
+      decompressionLimits: { maxEntryUncompressedBytes: 64 * 1024 },
+    });
+    expect(() => archive.readStream('big.bin')).toThrowError(/decompression-bomb/);
+    archive.close();
+  });
+});
+
+describe('decompression-bomb guard — input validation', () => {
+  it('rejects non-finite or non-positive limits at resolve time', async () => {
+    const bytes = await buildArchive([{ path: 'a.txt', bytes: new Uint8Array([1, 2, 3]) }]);
+    for (const limits of [
+      { maxEntryUncompressedBytes: 0 },
+      { maxTotalUncompressedBytes: -1 },
+      { maxCompressionRatio: Number.POSITIVE_INFINITY },
+      { maxEntryUncompressedBytes: Number.NaN },
+    ] as const) {
+      await expect(openZip(fromBuffer(bytes), { decompressionLimits: limits })).rejects.toThrowError(
+        /positive finite number/,
+      );
+    }
   });
 });
