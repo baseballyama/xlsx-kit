@@ -730,7 +730,7 @@ const parseWorkbookProperties = (
     return Number.isInteger(n) ? n : undefined;
   };
 
-  const bools: ReadonlyArray<keyof import('../workbook/workbook-properties').WorkbookProperties> = [
+  const bools = [
     'date1904',
     'dateCompatibility',
     'showBorderUnselectedTables',
@@ -746,10 +746,10 @@ const parseWorkbookProperties = (
     'checkCompatibility',
     'autoCompressPictures',
     'refreshAllConnections',
-  ];
+  ] as const satisfies ReadonlyArray<keyof import('../workbook/workbook-properties').WorkbookProperties>;
   for (const k of bools) {
     const v = flag(a[k]);
-    if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v;
+    if (v !== undefined) out[k] = v;
   }
 
   const showObjects = a['showObjects'];
@@ -882,15 +882,20 @@ const parseCustomWorkbookView = (
     'showSheetTabs',
     'showFormulaBar',
     'showStatusbar',
-  ] as const;
+  ] as const satisfies ReadonlyArray<keyof import('../workbook/views').CustomWorkbookView>;
   for (const k of boolKeys) {
     const v = flag(a[k]);
-    if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v;
+    if (v !== undefined) out[k] = v;
   }
-  const intKeys = ['mergeInterval', 'xWindow', 'yWindow', 'tabRatio'] as const;
+  const intKeys = [
+    'mergeInterval',
+    'xWindow',
+    'yWindow',
+    'tabRatio',
+  ] as const satisfies ReadonlyArray<keyof import('../workbook/views').CustomWorkbookView>;
   for (const k of intKeys) {
     const v = intAttr(k);
-    if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v;
+    if (v !== undefined) out[k] = v;
   }
 
   const sc = a['showComments'];

@@ -272,7 +272,7 @@ export const setPrintTitles = (
   if (opts.cols !== undefined) parts.push(`'${opts.sheetName}'!${opts.cols}`);
   if (opts.rows !== undefined) parts.push(`'${opts.sheetName}'!${opts.rows}`);
   if (parts.length === 0) {
-    throw new Error('setPrintTitles: at least one of rows or cols must be set');
+    throw new OpenXmlSchemaError('setPrintTitles: at least one of rows or cols must be set');
   }
   return addDefinedName(wb, {
     name: '_xlnm.Print_Titles',
