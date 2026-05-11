@@ -28,6 +28,16 @@ export interface ZipArchive {
   read(path: string): Uint8Array;
   /** Promise variant for symmetry with the future streaming reader. */
   readAsync(path: string): Promise<Uint8Array>;
+  /**
+   * Streaming read: returns the entry's inflated bytes as a Web
+   * `ReadableStream<Uint8Array>` chunk-by-chunk. Lets callers (the streaming
+   * worksheet iterator, in particular) push the inflated payload through a SAX
+   * parser without first materialising it in full — peak memory for a sheet
+   * walk drops to the inflate window + SAX state instead of the entire
+   * uncompressed worksheet body. Throws OpenXmlIoError when the path is
+   * unknown.
+   */
+  readStream(path: string): ReadableStream<Uint8Array>;
   /** Whether the archive holds an entry at the given path. */
   has(path: string): boolean;
   /** Release the in-memory entry table. Subsequent reads throw. */

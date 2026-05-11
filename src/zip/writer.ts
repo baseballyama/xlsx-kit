@@ -21,9 +21,12 @@ const ZIP32_MAX_ENTRIES = 0xffff;
 
 export interface ZipWriter {
   /**
-   * Stage an entry. Buffered: bytes are held until {@link finalize}. Streams
-   * (ReadableStream) will be accepted once the streaming writer lands; passing
-   * one today throws.
+   * Stage an entry. Bytes are pushed through fflate's `ZipDeflate` /
+   * `ZipPassThrough` stream synchronously, so the deflated chunks land on the
+   * sink as the call runs (no per-entry buffering — see the streaming-behaviour
+   * test in `tests/phase-1/zip/writer.test.ts`). Streams (`ReadableStream`)
+   * are not accepted today; pass an already-materialised entry, or use
+   * {@link addStreamingEntry} for chunked writes.
    *
    * `compress` defaults to `true`. Pass `false` for already-compressed payloads
    * (PNG/JPEG/zip-as-binary content like vbaProject.bin) so we don't pay
@@ -63,10 +66,17 @@ export interface StreamingEntryWriter {
  * through `ZipDeflate` / `ZipPassThrough` streams as they arrive, so peak
  * memory stays at the size of the in-flight entry plus the output buffer rather
  * than the full archive.
+ *
+ * The sink contract is `toBytes()`, but that name is historical: the sink is
+ * driven by a chunked `write(chunk)` API that fans bytes out as they arrive.
+ * The buffered Node/browser sinks (`toBuffer`, `toBlob`, `toArrayBuffer`)
+ * concatenate the chunks for a single-shot result; streaming sinks
+ * (`toFile`, `toWritable`) forward each chunk to disk / the wrapped writable
+ * without ever holding the full archive resident. Either kind plugs in here.
  */
 export function createZipWriter(sink: XlsxSink): ZipWriter {
   if (!sink.toBytes) {
-    throw new OpenXmlIoError('createZipWriter: sink does not expose a buffered toBytes() factory');
+    throw new OpenXmlIoError('createZipWriter: sink does not expose a chunked toBytes() writer');
   }
   const writer = sink.toBytes();
   let finalised: Promise<Uint8Array> | undefined;

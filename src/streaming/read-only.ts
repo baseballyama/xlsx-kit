@@ -120,11 +120,12 @@ const decodeCellValue = (
 };
 
 /**
- * SAX-iterate `<sheetData>/<row>/<c>` events out of `sheetBytes`, yielding one
- * `ReadOnlyCell[]` per row that matches `opts`.
+ * SAX-iterate `<sheetData>/<row>/<c>` events out of the worksheet bytes (or a
+ * stream that yields them), yielding one `ReadOnlyCell[]` per row that matches
+ * `opts`.
  */
 async function* iterSheetRows(
-  sheetBytes: Uint8Array,
+  sheetInput: SaxInput,
   sst: ReadonlyArray<string>,
   opts: IterRowsOptions,
 ): AsyncIterableIterator<ReadOnlyCell[]> {
@@ -150,8 +151,7 @@ async function* iterSheetRows(
   let inIsT = false;
   let isText = '';
 
-  const stream: SaxInput = sheetBytes;
-  for await (const ev of iterParse(stream)) {
+  for await (const ev of iterParse(sheetInput)) {
     const e = ev as SaxEvent;
     if (e.kind === 'start') {
       const local = localName(e.name);
@@ -400,12 +400,18 @@ const makeStreamingReadOnlyWorksheet = (
   };
 
   const iterRows = (opts: IterRowsOptions = {}): AsyncIterableIterator<ReadOnlyCell[]> => {
-    const bytes = archive.read(partPath);
     const minRow = opts.minRow ?? 1;
     if (minRow <= 1) {
-      // Whole-sheet (or no-min) iter — skip the index entirely.
-      return iterSheetRows(bytes, sst, opts);
+      // Whole-sheet (or no-min) iter — feed the SAX parser directly off the
+      // archive's streaming inflate path so the worksheet's inflated payload
+      // is never fully resident. Peak memory for the walk drops to the
+      // inflate window + SAX state instead of the entire `<sheetData>` body.
+      return iterSheetRows(archive.readStream(partPath), sst, opts);
     }
+    // Band query (minRow > 1): the row-offset index needs the full inflated
+    // bytes so we can binary-search to the byte offset of the first matching
+    // row. Materialise once and reuse via `ensureIndex`.
+    const bytes = archive.read(partPath);
     const { index, sheetDataEnd } = ensureIndex(bytes);
     if (index.length === 0) return iterSheetRows(bytes, sst, opts);
     const pos = firstRowAtOrAfter(index, minRow);

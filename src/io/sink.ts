@@ -6,14 +6,28 @@
 export interface BufferedSinkWriter {
   /** Append a chunk. Must not throw under normal use; errors surface in {@link finish}. */
   write(chunk: Uint8Array): void;
-  /** Resolve all written bytes as a single Uint8Array. */
+  /**
+   * Signal that no more chunks are coming. For in-memory sinks (`toBuffer` /
+   * `toBlob` / `toArrayBuffer`) the resolved `Uint8Array` is the full payload;
+   * for streaming sinks (`toFile` / `toWritable`) the resolved value is an
+   * empty `Uint8Array(0)` once the underlying writable has flushed — the bytes
+   * have already been forwarded to disk / the wrapped Writable and are
+   * deliberately not buffered for re-emission here. Read the destination via
+   * the sink's own `result()` instead.
+   */
   finish(): Promise<Uint8Array>;
 }
 
 export interface XlsxSink {
   /**
-   * Buffered mode: returns an object that accumulates chunks in memory and
-   * yields the full payload from {@link BufferedSinkWriter.finish}.
+   * Chunked-write API. Returns a writer with `write(chunk)` + `finish()`.
+   *
+   * The name is historical: this is the only entry the ZIP writer drives, and
+   * the underlying object can either accumulate chunks in memory (buffered
+   * sinks) or forward them to disk / a Writable as they arrive (streaming
+   * sinks). The ZIP writer never holds the full archive itself, so the choice
+   * of sink decides whether peak memory is "compressed archive size" or
+   * "single chunk + deflate scratch".
    */
   toBytes?(): BufferedSinkWriter;
 
