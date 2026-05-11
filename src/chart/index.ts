@@ -33,6 +33,7 @@ export type {
   ErrorBars,
   ErrorBarType,
   ErrorValType,
+  Gridlines,
   GroupingType,
   HiLowLines,
   Layout,

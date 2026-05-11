@@ -48,6 +48,7 @@ import {
   type ErrorBars,
   type ErrorBarType,
   type ErrorValType,
+  type Gridlines,
   type GroupingType,
   type Legend,
   type LegendPosition,
@@ -1328,8 +1329,8 @@ const parseAxisCommon = (
   crossAx: number;
   position?: 'b' | 't' | 'l' | 'r';
   delete?: boolean;
-  majorGridlines?: boolean;
-  minorGridlines?: boolean;
+  majorGridlines?: boolean | Gridlines;
+  minorGridlines?: boolean | Gridlines;
   spPr?: ShapeProperties;
   txPr?: TextBody;
   title?: ChartTitle;
@@ -1346,8 +1347,8 @@ const parseAxisCommon = (
   const positionRaw = valAttr(findChild(axEl, AX_POS_TAG));
   const validPos = positionRaw === 'b' || positionRaw === 't' || positionRaw === 'l' || positionRaw === 'r';
   const del = boolVal(findChild(axEl, DELETE_TAG));
-  const majorGridlines = findChild(axEl, MAJOR_GRIDLINES_TAG) !== undefined ? true : undefined;
-  const minorGridlines = findChild(axEl, MINOR_GRIDLINES_TAG) !== undefined ? true : undefined;
+  const majorGridlines = parseGridlines(axEl, MAJOR_GRIDLINES_TAG);
+  const minorGridlines = parseGridlines(axEl, MINOR_GRIDLINES_TAG);
   const spPr = parseSpPrSlot(axEl);
   const txPr = parseTxPrSlot(axEl);
   const titleEl = findChild(axEl, TITLE_TAG);
@@ -1922,6 +1923,20 @@ const serializeSurface3DChart = (chart: Surface3DChart): string => {
 type AxisTag = 'catAx' | 'valAx' | 'dateAx' | 'serAx';
 type AxisLike = CategoryAxis | ValueAxis | DateAxis | SeriesAxis;
 
+const serializeGridlines = (tag: 'c:majorGridlines' | 'c:minorGridlines', g: boolean | Gridlines): string => {
+  // `true` -> self-closing element (Excel default rendering).
+  // Object form with `spPr` -> wrapped element so the line can be styled.
+  if (g === true || g === false || !g.spPr) return `<${tag}/>`;
+  return `<${tag}>${serializeShapeProperties(g.spPr)}</${tag}>`;
+};
+
+const parseGridlines = (parent: XmlNode, tagName: string): boolean | Gridlines | undefined => {
+  const el = findChild(parent, tagName);
+  if (!el) return undefined;
+  const spPr = parseSpPrSlot(el);
+  return spPr ? { spPr } : true;
+};
+
 const serializeAxis = (tag: AxisTag, ax: AxisLike): string => {
   // ECMA-376 sequence inside <c:catAx>/<c:valAx>:
   //   axId, scaling, delete, axPos, majorGridlines?, minorGridlines?, title?,
@@ -1936,8 +1951,8 @@ const serializeAxis = (tag: AxisTag, ax: AxisLike): string => {
     `<c:delete val="${ax.delete ? '1' : '0'}"/>`,
     `<c:axPos val="${ax.position ?? (tag === 'catAx' ? 'b' : 'l')}"/>`,
   ];
-  if (ax.majorGridlines) parts.push('<c:majorGridlines/>');
-  if (ax.minorGridlines) parts.push('<c:minorGridlines/>');
+  if (ax.majorGridlines) parts.push(serializeGridlines('c:majorGridlines', ax.majorGridlines));
+  if (ax.minorGridlines) parts.push(serializeGridlines('c:minorGridlines', ax.minorGridlines));
   if (ax.title) parts.push(serializeChartTitle(ax.title));
   parts.push(
     ax.numFmt
