@@ -20,6 +20,7 @@ export type {
   CategoryLabelAlignment,
   CategoryRef,
   ChartKind,
+  ChartNumberFormat,
   ChartSpace,
   ChartTitle,
   DateAxis,

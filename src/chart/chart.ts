@@ -45,7 +45,15 @@ export interface CategoryRef {
 
 // ---- Series decorations: data labels, trendlines, error bars --------------
 
-export interface NumberFormat {
+/**
+ * Number-format payload for chart axes / data labels (`<c:numFmt formatCode="…"
+ * sourceLinked="0|1"/>`).
+ *
+ * Named `ChartNumberFormat` to avoid colliding with the cell-stylesheet
+ * `NumberFormat` exported from `xlsx-kit/styles`, which is a different shape
+ * (`{ numFmtId, formatCode }`).
+ */
+export interface ChartNumberFormat {
   formatCode: string;
   sourceLinked?: boolean;
 }
@@ -59,7 +67,7 @@ export interface DataLabel {
   delete?: boolean;
   /** Inline rich text or a cell reference. Mutually exclusive. */
   tx?: { kind: 'rich'; body: TextBody } | { kind: 'strRef'; ref: string };
-  numFmt?: NumberFormat;
+  numFmt?: ChartNumberFormat;
   spPr?: ShapeProperties;
   txPr?: TextBody;
   dLblPos?: DataLabelPosition;
@@ -78,7 +86,7 @@ export interface DataLabelList {
   delete?: boolean;
   /** Per-point overrides. */
   dLbl?: DataLabel[];
-  numFmt?: NumberFormat;
+  numFmt?: ChartNumberFormat;
   spPr?: ShapeProperties;
   txPr?: TextBody;
   dLblPos?: DataLabelPosition;
@@ -493,7 +501,7 @@ interface AxisShared {
   /** Axis title (`<c:title>`). Reuses the chart-title structure. */
   title?: ChartTitle;
   /** Tick-label number format. Default emitted is `General` / `sourceLinked=1`. */
-  numFmt?: NumberFormat;
+  numFmt?: ChartNumberFormat;
   /** Major tick mark style. Default emitted is `out`. */
   majorTickMark?: TickMark;
   /** Minor tick mark style. Default emitted is `none`. */
