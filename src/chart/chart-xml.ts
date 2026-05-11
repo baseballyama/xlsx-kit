@@ -33,6 +33,9 @@ import {
   type AxisScaling,
   type CategoryAxis,
   type CategoryLabelAlignment,
+  type DateAxis,
+  type SeriesAxis,
+  type TimeUnit,
   type CategoryRef,
   type ChartKind,
   type ChartSpace,
@@ -108,6 +111,8 @@ const PLOT_AREA_TAG = `{${CHART_NS}}plotArea`;
 const BAR_CHART_TAG = `{${CHART_NS}}barChart`;
 const CAT_AX_TAG = `{${CHART_NS}}catAx`;
 const VAL_AX_TAG = `{${CHART_NS}}valAx`;
+const DATE_AX_TAG = `{${CHART_NS}}dateAx`;
+const SER_AX_TAG = `{${CHART_NS}}serAx`;
 const SER_TAG = `{${CHART_NS}}ser`;
 const IDX_TAG = `{${CHART_NS}}idx`;
 const ORDER_TAG = `{${CHART_NS}}order`;
@@ -1321,6 +1326,57 @@ const parseCategoryAxis = (axEl: XmlNode): CategoryAxis => {
   };
 };
 
+const VALID_TIME_UNITS: ReadonlyArray<string> = ['days', 'months', 'years'];
+
+const BASE_TIME_UNIT_TAG = `{${CHART_NS}}baseTimeUnit`;
+const MAJOR_TIME_UNIT_TAG = `{${CHART_NS}}majorTimeUnit`;
+const MINOR_TIME_UNIT_TAG = `{${CHART_NS}}minorTimeUnit`;
+const TICK_LBL_SKIP_TAG = `{${CHART_NS}}tickLblSkip`;
+const TICK_MARK_SKIP_TAG = `{${CHART_NS}}tickMarkSkip`;
+
+const parseDateAxis = (axEl: XmlNode): DateAxis => {
+  const base = parseAxisCommon(axEl);
+  const auto = boolVal(findChild(axEl, AUTO_TAG));
+  const userAuto = auto === false ? false : undefined;
+  const lblOffsetRaw = intVal(findChild(axEl, LBL_OFFSET_TAG));
+  const lblOffset = lblOffsetRaw !== undefined && lblOffsetRaw !== 100 ? lblOffsetRaw : undefined;
+  const baseTimeUnitRaw = valAttr(findChild(axEl, BASE_TIME_UNIT_TAG));
+  const baseTimeUnit = baseTimeUnitRaw && VALID_TIME_UNITS.includes(baseTimeUnitRaw)
+    ? (baseTimeUnitRaw as TimeUnit)
+    : undefined;
+  const majorUnit = numberVal(findChild(axEl, MAJOR_UNIT_TAG));
+  const majorTimeUnitRaw = valAttr(findChild(axEl, MAJOR_TIME_UNIT_TAG));
+  const majorTimeUnit = majorTimeUnitRaw && VALID_TIME_UNITS.includes(majorTimeUnitRaw)
+    ? (majorTimeUnitRaw as TimeUnit)
+    : undefined;
+  const minorUnit = numberVal(findChild(axEl, MINOR_UNIT_TAG));
+  const minorTimeUnitRaw = valAttr(findChild(axEl, MINOR_TIME_UNIT_TAG));
+  const minorTimeUnit = minorTimeUnitRaw && VALID_TIME_UNITS.includes(minorTimeUnitRaw)
+    ? (minorTimeUnitRaw as TimeUnit)
+    : undefined;
+  return {
+    ...base,
+    ...(userAuto !== undefined ? { auto: userAuto } : {}),
+    ...(lblOffset !== undefined ? { lblOffset } : {}),
+    ...(baseTimeUnit ? { baseTimeUnit } : {}),
+    ...(majorUnit !== undefined ? { majorUnit } : {}),
+    ...(majorTimeUnit ? { majorTimeUnit } : {}),
+    ...(minorUnit !== undefined ? { minorUnit } : {}),
+    ...(minorTimeUnit ? { minorTimeUnit } : {}),
+  };
+};
+
+const parseSeriesAxis = (axEl: XmlNode): SeriesAxis => {
+  const base = parseAxisCommon(axEl);
+  const tickLblSkip = intVal(findChild(axEl, TICK_LBL_SKIP_TAG));
+  const tickMarkSkip = intVal(findChild(axEl, TICK_MARK_SKIP_TAG));
+  return {
+    ...base,
+    ...(tickLblSkip !== undefined ? { tickLblSkip } : {}),
+    ...(tickMarkSkip !== undefined ? { tickMarkSkip } : {}),
+  };
+};
+
 const parseValueAxis = (axEl: XmlNode): ValueAxis => {
   const base = parseAxisCommon(axEl);
   const crossBetweenRaw = valAttr(findChild(axEl, CROSS_BETWEEN_TAG));
@@ -1355,6 +1411,14 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
     chart,
     ...(catAxEl ? { catAx: parseCategoryAxis(catAxEl) } : {}),
     ...(valAxEl ? { valAx: parseValueAxis(valAxEl) } : {}),
+    ...((): { dateAx?: DateAxis; serAx?: SeriesAxis } => {
+      const out: { dateAx?: DateAxis; serAx?: SeriesAxis } = {};
+      const dateAxEl = findChild(plotAreaEl, DATE_AX_TAG);
+      if (dateAxEl) out.dateAx = parseDateAxis(dateAxEl);
+      const serAxEl = findChild(plotAreaEl, SER_AX_TAG);
+      if (serAxEl) out.serAx = parseSeriesAxis(serAxEl);
+      return out;
+    })(),
     ...(plotAreaSpPr ? { spPr: plotAreaSpPr } : {}),
   };
   const titleEl = findChild(chartEl, TITLE_TAG);
@@ -1731,7 +1795,10 @@ const serializeSurface3DChart = (chart: Surface3DChart): string => {
   return parts.join('');
 };
 
-const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): string => {
+type AxisTag = 'catAx' | 'valAx' | 'dateAx' | 'serAx';
+type AxisLike = CategoryAxis | ValueAxis | DateAxis | SeriesAxis;
+
+const serializeAxis = (tag: AxisTag, ax: AxisLike): string => {
   // ECMA-376 sequence inside <c:catAx>/<c:valAx>:
   //   axId, scaling, delete, axPos, majorGridlines?, minorGridlines?, title?,
   //   numFmt, majorTickMark, minorTickMark, tickLblPos, spPr?, txPr?, crossAx,
@@ -1772,11 +1839,24 @@ const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): st
     parts.push(`<c:lblAlgn val="${cat.lblAlgn ?? 'ctr'}"/>`);
     parts.push(`<c:lblOffset val="${cat.lblOffset ?? 100}"/>`);
     parts.push(`<c:noMultiLvlLbl val="${cat.noMultiLvlLbl ? '1' : '0'}"/>`);
-  } else {
+  } else if (tag === 'valAx') {
     const val = ax as ValueAxis;
     parts.push(`<c:crossBetween val="${val.crossBetween ?? 'between'}"/>`);
     if (val.majorUnit !== undefined) parts.push(`<c:majorUnit val="${val.majorUnit}"/>`);
     if (val.minorUnit !== undefined) parts.push(`<c:minorUnit val="${val.minorUnit}"/>`);
+  } else if (tag === 'dateAx') {
+    const date = ax as DateAxis;
+    parts.push(`<c:auto val="${date.auto === false ? '0' : '1'}"/>`);
+    if (date.lblOffset !== undefined) parts.push(`<c:lblOffset val="${date.lblOffset}"/>`);
+    if (date.baseTimeUnit !== undefined) parts.push(`<c:baseTimeUnit val="${date.baseTimeUnit}"/>`);
+    if (date.majorUnit !== undefined) parts.push(`<c:majorUnit val="${date.majorUnit}"/>`);
+    if (date.majorTimeUnit !== undefined) parts.push(`<c:majorTimeUnit val="${date.majorTimeUnit}"/>`);
+    if (date.minorUnit !== undefined) parts.push(`<c:minorUnit val="${date.minorUnit}"/>`);
+    if (date.minorTimeUnit !== undefined) parts.push(`<c:minorTimeUnit val="${date.minorTimeUnit}"/>`);
+  } else {
+    const ser = ax as SeriesAxis;
+    if (ser.tickLblSkip !== undefined) parts.push(`<c:tickLblSkip val="${ser.tickLblSkip}"/>`);
+    if (ser.tickMarkSkip !== undefined) parts.push(`<c:tickMarkSkip val="${ser.tickMarkSkip}"/>`);
   }
   parts.push(`</c:${tag}>`);
   return parts.join('');
@@ -1863,6 +1943,8 @@ const serializePlotArea = (plotArea: PlotArea): string => {
   // defaults when callers omit them.
   const axes = inferAxesForChart(plotArea);
   for (const ax of axes) parts.push(ax);
+  if (plotArea.dateAx) parts.push(serializeAxis('dateAx', plotArea.dateAx));
+  if (plotArea.serAx) parts.push(serializeAxis('serAx', plotArea.serAx));
   if (plotArea.spPr) parts.push(serializeShapeProperties(plotArea.spPr));
   parts.push('</c:plotArea>');
   return parts.join('');

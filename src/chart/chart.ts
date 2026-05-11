@@ -512,10 +512,38 @@ export interface ValueAxis extends AxisShared {
   minorUnit?: number;
 }
 
+export type TimeUnit = 'days' | 'months' | 'years';
+
+export interface DateAxis extends AxisShared {
+  /** `<c:auto>` — auto-select axis type. */
+  auto?: boolean;
+  /** Tick-label offset 0..1000. Default emitted is `100`. */
+  lblOffset?: number;
+  /** Smallest interval the axis represents. */
+  baseTimeUnit?: TimeUnit;
+  /** Major unit spacing on the date axis (count of `majorTimeUnit`s). */
+  majorUnit?: number;
+  majorTimeUnit?: TimeUnit;
+  /** Minor unit spacing on the date axis. */
+  minorUnit?: number;
+  minorTimeUnit?: TimeUnit;
+}
+
+export interface SeriesAxis extends AxisShared {
+  /** Skip every Nth tick label (1 = every label). */
+  tickLblSkip?: number;
+  /** Skip every Nth tick mark. */
+  tickMarkSkip?: number;
+}
+
 export interface PlotArea {
   chart: ChartKind;
   catAx?: CategoryAxis;
   valAx?: ValueAxis;
+  /** Date / time axis. Replaces `catAx` when the categories are dates. */
+  dateAx?: DateAxis;
+  /** Series axis (used by `surface3DChart` / `surfaceChart`). */
+  serAx?: SeriesAxis;
   /** Plot-area shape properties (background fill, border line). */
   spPr?: ShapeProperties;
 }
