@@ -1,5 +1,14 @@
 # xlsx-kit
 
+## 0.7.1
+
+### Patch Changes
+
+- [#76](https://github.com/baseballyama/xlsx-kit/pull/76) [`e646e1c`](https://github.com/baseballyama/xlsx-kit/commit/e646e1c7217ce07a1d6357b5327f006002d86c21) Thanks [@baseballyama](https://github.com/baseballyama)! - `addAutoFilterColumn`, `makeHyperlink`, and `setPrintTitles` now throw
+  `OpenXmlSchemaError` instead of the generic `Error` when their preconditions
+  are violated. Existing catch blocks that check `err instanceof OpenXmlError`
+  now match these errors uniformly with the rest of the library.
+
 ## 0.7.0
 
 ### Minor Changes
