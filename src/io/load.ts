@@ -49,19 +49,13 @@ import { parseXml } from '../xml/parser';
 import { findChild, findChildren, type XmlNode } from '../xml/tree';
 import { openZip, type ZipArchive } from '../zip/reader';
 
-/** Options for {@link loadWorkbook}. The full surface lands in later iterations. */
-export interface LoadOptions {
-  /** Reserved — not yet implemented. */
-  readOnly?: boolean;
-  /** Reserved — not yet implemented. */
-  keepLinks?: boolean;
-  /** Reserved — not yet implemented. */
-  keepVba?: boolean;
-  /** Reserved — not yet implemented. */
-  dataOnly?: boolean;
-  /** Reserved — not yet implemented. */
-  richText?: boolean;
-}
+/**
+ * Options for {@link loadWorkbook}. Currently empty — earlier drafts exposed
+ * `readOnly` / `keepLinks` / `keepVba` / `dataOnly` / `richText` placeholders
+ * that the loader silently ignored. They were removed to keep the surface
+ * honest; future toggles will land here once their behavior is implemented.
+ */
+export type LoadOptions = Record<string, never>;
 
 /** Office Document relationship type — the package-root pointer to `xl/workbook.xml`. */
 const OFFICE_DOC_REL_TYPE = `${REL_NS}/officeDocument`;
