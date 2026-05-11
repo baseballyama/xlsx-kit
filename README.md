@@ -242,6 +242,26 @@ worksheet payload. Band queries (`minRow > 1`) build a row-offset index once
 per sheet, which does materialise that sheet's inflated bytes; subsequent
 band queries reuse the cached index.
 
+### Migrating from openpyxl
+
+xlsx-kit is shaped after openpyxl, but a few defaults differ. The most
+common surprise for direct ports:
+
+- **`createWorkbook()` returns an empty workbook with no sheets.**
+  `openpyxl.Workbook()` creates a default sheet named `Sheet` that
+  callers usually remove with `wb.remove(wb.active)`. xlsx-kit skips
+  that step — call `addWorksheet(wb, 'Data')` directly. Translating a
+  `remove(active)` call literally produces a no-op (or, worse, a guard
+  that hides a real bug elsewhere).
+- **`setCell(ws, row, col, value)`** is the xlsx-kit equivalent of
+  openpyxl's `ws.cell(row=r, column=c, value=v)`. Coordinates are
+  1-based on both sides.
+- **`makeBorder({ left: makeSide({ style: 'thin' }) })`** is the
+  xlsx-kit equivalent of openpyxl's
+  `Border(left=Side(style='thin'))`. Same with `makeFill`, `makeFont`,
+  etc. — every style primitive has a `make*` constructor under
+  `xlsx-kit/styles`.
+
 ## What's supported
 
 - ✅ Cell values: number, string (sharedStrings), boolean, error, formulas
