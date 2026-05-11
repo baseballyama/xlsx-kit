@@ -1,5 +1,52 @@
 # xlsx-kit
 
+## 0.5.0
+
+### Minor Changes
+
+- [#66](https://github.com/baseballyama/xlsx-kit/pull/66) [`afecdc3`](https://github.com/baseballyama/xlsx-kit/commit/afecdc3b0b822f4d3ab3ecd16458c7a76a847f3e) Thanks [@baseballyama](https://github.com/baseballyama)! - Remove the silently-ignored `readOnly` / `keepLinks` / `keepVba` / `dataOnly` / `richText` placeholders from `LoadOptions`. They were declared on the public surface but the loader (`src/io/load.ts`) accepted them via `_opts` and dropped them on the floor, so production callers expecting `dataOnly: true` to suppress formulas — or `readOnly: true` to enable a special path — got the default behaviour instead. `LoadOptions` is now an empty type until the underlying behaviour ships; future toggles will land here once they actually do something. The `loadWorkbook(source, opts)` signature is unchanged.
+
+### Patch Changes
+
+- [#64](https://github.com/baseballyama/xlsx-kit/pull/64) [`b613607`](https://github.com/baseballyama/xlsx-kit/commit/b61360774e4f3b1423985ee5cf924093a991e32d) Thanks [@baseballyama](https://github.com/baseballyama)! - Treat sheet names as case-insensitive for uniqueness, matching Excel. Previously `addWorksheet(wb, 'Data')` followed by `addWorksheet(wb, 'data')` succeeded locally but produced a workbook Excel and LibreOffice refuse to open. `addWorksheet`, `addChartsheet`, `duplicateSheet`, `renameSheet`, and `pickUniqueSheetTitle` now compare titles case-insensitively. A case-only rename of the same sheet (`renameSheet(wb, 'Data', 'data')`) is allowed.
+
+- [#51](https://github.com/baseballyama/xlsx-kit/pull/51) [`1cf8d0c`](https://github.com/baseballyama/xlsx-kit/commit/1cf8d0cc1f896366608c5d60aa40b4efc682bed9) Thanks [@baseballyama](https://github.com/baseballyama)! - Tighten the streaming I/O surface so the README's "fixed-memory" claims hold up
+  in practice.
+
+  - `toFile().toBytes().finish()` no longer re-reads the just-written file. The
+    previous code called `fs.readFile(path)` from `finish()` and returned the
+    full archive bytes, defeating the chunk-streamed write — a 10M-row workbook
+    ended its save by reloading the entire output into memory. `finish()` now
+    resolves with an empty `Uint8Array` once the underlying write stream has
+    flushed; callers that need the bytes should `fs.readFile()` the path
+    themselves.
+  - `toFile` and `toWritable` honour write-stream backpressure: when `write()`
+    returns `false`, subsequent chunks chain off a `drain` event before
+    proceeding, so peak memory tracks the writable's `highWaterMark` rather
+    than the producer's pace.
+  - `workbookToBytes` no longer depends on `Buffer`. Browser bundles that omit
+    the Node `Buffer` polyfill previously broke at `toBuffer().result()`
+    because the in-memory sink ended its result with `Buffer.from(...)`. The
+    helper now uses a `Uint8Array`-only sink; a regression test
+    (`tests/phase-1/io/browser.test.ts`) saves a workbook with `globalThis.Buffer`
+    shadowed to `undefined`.
+  - The streaming read path inflates worksheet entries chunk-by-chunk. A new
+    `ZipArchive.readStream(path)` returns a `ReadableStream<Uint8Array>` that
+    drives fflate's `Inflate` incrementally, and `loadWorkbookStream`'s
+    whole-sheet `iterRows()` feeds the SAX parser directly off that stream so
+    the inflated worksheet body is never fully resident. Band queries
+    (`minRow > 1`) still materialise the inflated sheet to build the row-offset
+    index — that trade-off is unchanged.
+  - Documentation: the `XlsxSink` / `BufferedSinkWriter` JSDoc no longer
+    describes `toBytes()` as the "buffered mode" — that name was historical;
+    the underlying object can either accumulate (buffered sinks) or forward
+    chunks as they arrive (streaming sinks). The README also clarifies that
+    the streaming reader still loads the compressed archive up front (ZIP
+    needs random access to the central directory) — the win is that the
+    inflated worksheet payload is never fully resident.
+
+- [#63](https://github.com/baseballyama/xlsx-kit/pull/63) [`fa73fc5`](https://github.com/baseballyama/xlsx-kit/commit/fa73fc5a7e4c03a69eecc36acfb3a3f6482e525d) Thanks [@baseballyama](https://github.com/baseballyama)! - Tighten sheet-title validation on the streaming write path. The `createWriteOnlyWorkbook` `addWorksheet` call now applies the same rules as the buffered `addWorksheet` (no `: \ / ? * [ ]`, no leading / trailing apostrophe, not the reserved name `History`) and rejects duplicate titles case-insensitively so the streaming path can't produce a workbook Excel refuses to open.
+
 ## 0.4.0
 
 ### Minor Changes
