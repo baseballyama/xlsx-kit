@@ -8,9 +8,16 @@
 // ZIP64 (entry count > 65535): fflate's `Zip` emits a plain ZIP32 EOCD in all
 // cases, so on finalize we splice in a ZIP64 EOCD record + locator when needed
 // via `applyZip64EntryCountPatch`. That keeps the per-entry LFH/CDH layout
-// fflate produces (correct as long as no individual size or offset overflows 32
-// bits) and only rewrites the trailing records — enough for xlsx, which never
-// approaches single-entry 4 GiB limits.
+// fflate produces and only rewrites the trailing records.
+//
+// Scope: this covers the entry-count-overflow case (the limit xlsx archives
+// realistically hit — `tens of millions of cells` → tens of thousands of
+// worksheet entries via the streaming writer). Per-entry compressed/uncompressed
+// sizes and the central-directory offset must still fit in 32 bits (≤ 4 GiB
+// each); a single >4 GiB entry would need full ZIP64 size support and
+// `applyZip64EntryCountPatch` throws `OpenXmlNotImplementedError` if we ever
+// detect that. xlsx workbooks don't approach that limit in practice, but the
+// constraint is real — surface it in your own size estimates.
 
 import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import type { XlsxSink } from '../io/sink';
