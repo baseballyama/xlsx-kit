@@ -44,6 +44,22 @@ describe('renameSheet', () => {
     renameSheet(wb, 'A', 'A');
     expect(sheetNames(wb)).toEqual(['A']);
   });
+
+  it('rejects duplicate target case-insensitively', () => {
+    const wb = createWorkbook();
+    addWorksheet(wb, 'Alpha');
+    addWorksheet(wb, 'Beta');
+    expect(() => renameSheet(wb, 'Alpha', 'BETA')).toThrow(/already in use/);
+    expect(() => renameSheet(wb, 'Alpha', 'beta')).toThrow(/already in use/);
+  });
+
+  it('allows a case-only rename of the same sheet', () => {
+    const wb = createWorkbook();
+    addWorksheet(wb, 'Data');
+    addWorksheet(wb, 'Other');
+    renameSheet(wb, 'Data', 'DATA');
+    expect(sheetNames(wb)).toEqual(['DATA', 'Other']);
+  });
 });
 
 describe('moveSheet', () => {
