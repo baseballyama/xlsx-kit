@@ -28,5 +28,21 @@
     "path": "dist/styles.mjs",
     "import": "*",
     "limit": "60 KB"
+  },
+  {
+    "name": "xlsx-kit/streaming (minified parse size, transitive)",
+    "path": "dist/streaming.mjs",
+    "import": "*",
+    "limit": "220 KB",
+    "brotli": false,
+    "gzip": false
+  },
+  {
+    "name": "xlsx-kit/io (minified parse size, transitive)",
+    "path": "dist/io.mjs",
+    "import": "*",
+    "limit": "420 KB",
+    "brotli": false,
+    "gzip": false
   }
 ]

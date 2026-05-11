@@ -11,6 +11,7 @@ import { ARC_CONTENT_TYPES, ARC_ROOT_RELS, ARC_SHARED_STRINGS, ARC_STYLE, REL_NS
 import { findById, relsFromBytes } from '../packaging/relationships';
 import { manifestFromBytes } from '../packaging/manifest';
 import { OpenXmlSchemaError } from '../utils/exceptions';
+import type { DecompressionLimits } from '../zip/decompression-guard';
 import { type ZipArchive, openZip } from '../zip/reader';
 import type { CellValue, ExcelErrorCode } from '../cell/cell';
 import { ERROR_CODES } from '../utils/inference';
@@ -458,9 +459,25 @@ const makeStreamingReadOnlyWorkbook = (
   },
 });
 
+/** Options for {@link loadWorkbookStream}. */
+export interface LoadWorkbookStreamOptions {
+  /**
+   * Decompression-bomb safeguards applied while inflating zip entries.
+   * Defaults to limits that fit any legitimate xlsx; pass `false` to disable
+   * (only safe for fully trusted sources).
+   */
+  decompressionLimits?: DecompressionLimits | false;
+}
+
 /** Open an xlsx for read-only streaming access. */
-export async function loadWorkbookStream(source: XlsxSource): Promise<ReadOnlyWorkbook> {
-  const archive = await openZip(source);
+export async function loadWorkbookStream(
+  source: XlsxSource,
+  opts: LoadWorkbookStreamOptions = {},
+): Promise<ReadOnlyWorkbook> {
+  const archive = await openZip(
+    source,
+    opts.decompressionLimits === undefined ? {} : { decompressionLimits: opts.decompressionLimits },
+  );
   if (!archive.has(ARC_CONTENT_TYPES)) {
     throw new OpenXmlSchemaError(`loadWorkbookStream: missing "${ARC_CONTENT_TYPES}"`);
   }

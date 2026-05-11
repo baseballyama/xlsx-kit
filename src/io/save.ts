@@ -22,7 +22,7 @@ import type { Drawing, DrawingItem } from '../drawing/drawing';
 import { drawingToBytes } from '../drawing/drawing-xml';
 import { IMAGE_FORMAT_EXTENSION, IMAGE_FORMAT_MIME, type XlsxImageFormat } from '../drawing/image';
 import type { XlsxSink } from '../io/sink';
-import { OpenXmlIoError } from '../utils/exceptions';
+import { OpenXmlIoError, OpenXmlSchemaError } from '../utils/exceptions';
 import { corePropsToBytes } from '../packaging/core';
 import { customPropsToBytes } from '../packaging/custom';
 import { extendedPropsToBytes } from '../packaging/extended';
@@ -30,7 +30,7 @@ import { addDefault, addOverride, makeManifest, manifestToBytes } from '../packa
 import { makeRelationships, type Relationships, relsToBytes } from '../packaging/relationships';
 import { stylesheetToBytes } from '../styles/stylesheet-writer';
 import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-strings';
-import type { Workbook } from '../workbook/workbook';
+import { type Workbook, validateSheetTitle } from '../workbook/workbook';
 import type { LegacyComment } from '../worksheet/comments';
 import { commentsToBytes, placeholderVmlDrawing } from '../worksheet/comments-xml';
 import type { TableDefinition } from '../worksheet/table';
@@ -139,8 +139,41 @@ const toUint8ArraySink = (): XlsxSink & { result(): Uint8Array } => {
   };
 };
 
+/**
+ * Validate every sheet title against Excel's character + length rules and
+ * confirm titles are unique within the workbook. Catches bad state introduced
+ * via direct mutation (`ws.title = ...`) that bypassed the public mutators.
+ *
+ * Without this gate, a workbook with an invalid sheet name would round-trip to
+ * an xlsx Excel rejects with a generic "file is corrupt" dialog on open —
+ * making it hard to diagnose. Raising at save time keeps the bad state
+ * recoverable: callers can `renameSheet` and retry.
+ */
+const validateSheetTitles = (wb: Workbook): void => {
+  const seen = new Map<string, number>();
+  for (let i = 0; i < wb.sheets.length; i++) {
+    const ref = wb.sheets[i];
+    if (!ref) continue;
+    const title = ref.sheet.title;
+    const reason = validateSheetTitle(title);
+    if (reason) {
+      throw new OpenXmlSchemaError(`saveWorkbook: sheet[${i}] title "${title}": ${reason}`);
+    }
+    const lower = title.toLowerCase();
+    const prior = seen.get(lower);
+    if (prior !== undefined) {
+      throw new OpenXmlSchemaError(
+        `saveWorkbook: sheet[${i}] title "${title}" collides with sheet[${prior}]` +
+          ` (Excel treats sheet names case-insensitively for uniqueness).`,
+      );
+    }
+    seen.set(lower, i);
+  }
+};
+
 /** Save a workbook through the given sink. Returns once `finalize()` resolves. */
 export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOptions = {}): Promise<void> {
+  validateSheetTitles(wb);
   const writer = createZipWriter(sink);
 
   // ---- 1. assemble the per-sheet rels + serialise each worksheet ----------
