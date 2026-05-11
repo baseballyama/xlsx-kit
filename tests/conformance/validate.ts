@@ -532,24 +532,55 @@ function checkWorkbook(
   relsByPath: Map<string, Relationships>,
   issues: ValidationIssue[],
 ): void {
-  const sheetRe = /<sheet\b[^>]*\bsheetId="(\d+)"[^>]*\br:id="([^"]+)"/g;
-  const altSheetRe = /<sheet\b[^>]*\br:id="([^"]+)"[^>]*\bsheetId="(\d+)"/g;
+  // Walk every `<sheet …/>` opening tag and pick out name / sheetId / r:id from
+  // the attribute soup. Attribute order in OOXML is not fixed, so we can't rely
+  // on positional regexes; instead match the tag boundary once and parse attrs
+  // with a separate scan.
+  const sheetTagRe = /<sheet\b([^>]*)\/?>/g;
+  const attrRe = /\b(name|sheetId|r:id)="([^"]*)"/g;
   const seenSheetIds = new Set<number>();
   const referencedRids = new Set<string>();
-  let m: RegExpExecArray | null;
-  while ((m = sheetRe.exec(xml))) {
-    const sid = Number(m[1]);
-    if (seenSheetIds.has(sid)) {
-      issues.push({ tier: 'semantic', part: path, message: `duplicate sheetId=${sid}` });
+  // Excel treats sheet names as case-insensitive for uniqueness, so a workbook
+  // with both `Data` and `data` is broken even if the XSD accepts it. Track
+  // lower-cased names too.
+  const seenNamesLower = new Map<string, string>();
+  let tag: RegExpExecArray | null;
+  while ((tag = sheetTagRe.exec(xml))) {
+    const attrs = tag[1] ?? '';
+    let name: string | undefined;
+    let sheetIdAttr: string | undefined;
+    let rId: string | undefined;
+    attrRe.lastIndex = 0;
+    let a: RegExpExecArray | null;
+    while ((a = attrRe.exec(attrs))) {
+      if (a[1] === 'name') name = a[2];
+      else if (a[1] === 'sheetId') sheetIdAttr = a[2];
+      else if (a[1] === 'r:id') rId = a[2];
     }
-    seenSheetIds.add(sid);
-    if (m[2]) referencedRids.add(m[2]);
-  }
-  while ((m = altSheetRe.exec(xml))) {
-    const sid = Number(m[2]);
-    if (seenSheetIds.has(sid)) continue; // already counted by primary regex
-    seenSheetIds.add(sid);
-    if (m[1]) referencedRids.add(m[1]);
+    if (sheetIdAttr !== undefined) {
+      const sid = Number(sheetIdAttr);
+      if (seenSheetIds.has(sid)) {
+        issues.push({ tier: 'semantic', part: path, message: `duplicate sheetId=${sid}` });
+      }
+      seenSheetIds.add(sid);
+    }
+    if (rId !== undefined) referencedRids.add(rId);
+    if (name !== undefined) {
+      const lower = name.toLowerCase();
+      const prior = seenNamesLower.get(lower);
+      if (prior !== undefined) {
+        issues.push({
+          tier: 'semantic',
+          part: path,
+          message:
+            prior === name
+              ? `duplicate <sheet name="${name}">`
+              : `duplicate <sheet name="${name}"> (case-insensitive collision with "${prior}")`,
+        });
+      } else {
+        seenNamesLower.set(lower, name);
+      }
+    }
   }
 
   const wbRelsPath = path.replace(/([^/]+)$/, '_rels/$1.rels');

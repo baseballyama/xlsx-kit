@@ -118,4 +118,29 @@ describe('conformance: validator detects deliberately broken xlsx', () => {
     expect(result.ok).toBe(false);
     expect(result.issues.some((i) => i.tier === 'xsd')).toBe(true);
   });
+
+  it('rejects two <sheet> elements that differ only in case', async () => {
+    // Hand-craft the broken workbook bytes instead of going through
+    // addWorksheet, since the typed API now rejects this case-insensitively at
+    // the source. The validator must catch the same break in already-written
+    // bytes (e.g. files produced before that fix landed, or by other tools).
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    const wb = createWorkbook();
+    addWorksheet(wb, 'Data');
+    addWorksheet(wb, 'Other');
+    const original = await workbookToBytes(wb);
+    const entries = unzipSync(original);
+    const workbookXml = decoder.decode(entries['xl/workbook.xml']);
+    const broken = workbookXml.replace(/name="Other"/, 'name="data"');
+    entries['xl/workbook.xml'] = encoder.encode(broken);
+    const bytes = zipSync(entries);
+    const result = await validateXlsx(bytes, { skipXsd: true });
+    expect(result.ok).toBe(false);
+    expect(
+      result.issues.some(
+        (i) => i.tier === 'semantic' && /case-insensitive collision/.test(i.message),
+      ),
+    ).toBe(true);
+  });
 });
