@@ -57,10 +57,12 @@ import {
   type Marker,
   type MarkerSymbol,
   type DataPoint,
+  type HiLowLines,
   type Layout,
   type LayoutMode,
   type LayoutTarget,
   type ManualLayout,
+  type UpDownBars,
   makeArea3DChart,
   makeAreaChart,
   makeBar3DChart,
@@ -988,11 +990,33 @@ const parseBubbleChart = (bubbleEl: XmlNode): BubbleChart => {
   });
 };
 
+const UP_BARS_TAG = `{${CHART_NS}}upBars`;
+const DOWN_BARS_TAG = `{${CHART_NS}}downBars`;
+
+const parseHiLowLines = (el: XmlNode): boolean | HiLowLines => {
+  const spPr = parseSpPrSlot(el);
+  return spPr ? { spPr } : true;
+};
+
+const parseUpDownBars = (el: XmlNode): boolean | UpDownBars => {
+  const gapWidth = intVal(findChild(el, GAP_WIDTH_TAG));
+  const upBarsEl = findChild(el, UP_BARS_TAG);
+  const downBarsEl = findChild(el, DOWN_BARS_TAG);
+  const upBarsSpPr = upBarsEl ? parseSpPrSlot(upBarsEl) : undefined;
+  const downBarsSpPr = downBarsEl ? parseSpPrSlot(downBarsEl) : undefined;
+  const out: UpDownBars = {};
+  // Treat the default gapWidth = 150 as "unset" to keep round-trip output minimal.
+  if (gapWidth !== undefined && gapWidth !== 150) out.gapWidth = gapWidth;
+  if (upBarsEl) out.upBars = upBarsSpPr ? { spPr: upBarsSpPr } : {};
+  if (downBarsEl) out.downBars = downBarsSpPr ? { spPr: downBarsSpPr } : {};
+  return Object.keys(out).length > 0 ? out : true;
+};
+
 const parseStockChart = (stockEl: XmlNode): StockChart => {
-  // hiLowLines / upDownBars are presence flags — Excel emits them with no
-  // attributes. We treat the element's existence as the signal.
-  const hiLowLines = findChild(stockEl, HI_LOW_LINES_TAG) !== undefined ? true : undefined;
-  const upDownBars = findChild(stockEl, UP_DOWN_BARS_TAG) !== undefined ? true : undefined;
+  const hiLowLinesEl = findChild(stockEl, HI_LOW_LINES_TAG);
+  const hiLowLines = hiLowLinesEl ? parseHiLowLines(hiLowLinesEl) : undefined;
+  const upDownBarsEl = findChild(stockEl, UP_DOWN_BARS_TAG);
+  const upDownBars = upDownBarsEl ? parseUpDownBars(upDownBarsEl) : undefined;
   return makeStockChart({
     series: parseBarSeriesList(stockEl),
     axIds: parseAxIds(stockEl),
@@ -1771,11 +1795,35 @@ const serializeBubbleChart = (chart: BubbleChart): string => {
   return parts.join('');
 };
 
+const serializeHiLowLines = (h: boolean | HiLowLines): string => {
+  if (h === true) return '<c:hiLowLines/>';
+  if (h === false) return '';
+  if (!h.spPr) return '<c:hiLowLines/>';
+  return `<c:hiLowLines>${serializeShapeProperties(h.spPr)}</c:hiLowLines>`;
+};
+
+const serializeUpDownBars = (u: boolean | UpDownBars): string => {
+  if (u === true) return '<c:upDownBars><c:gapWidth val="150"/></c:upDownBars>';
+  if (u === false) return '';
+  const parts: string[] = ['<c:upDownBars>'];
+  parts.push(`<c:gapWidth val="${u.gapWidth ?? 150}"/>`);
+  if (u.upBars) {
+    parts.push(u.upBars.spPr ? `<c:upBars>${serializeShapeProperties(u.upBars.spPr)}</c:upBars>` : '<c:upBars/>');
+  }
+  if (u.downBars) {
+    parts.push(
+      u.downBars.spPr ? `<c:downBars>${serializeShapeProperties(u.downBars.spPr)}</c:downBars>` : '<c:downBars/>',
+    );
+  }
+  parts.push('</c:upDownBars>');
+  return parts.join('');
+};
+
 const serializeStockChart = (chart: StockChart): string => {
   const parts: string[] = ['<c:stockChart>'];
   for (const s of chart.series) parts.push(serializeSeries(s));
-  if (chart.hiLowLines) parts.push('<c:hiLowLines/>');
-  if (chart.upDownBars) parts.push('<c:upDownBars><c:gapWidth val="150"/></c:upDownBars>');
+  if (chart.hiLowLines !== undefined) parts.push(serializeHiLowLines(chart.hiLowLines));
+  if (chart.upDownBars !== undefined) parts.push(serializeUpDownBars(chart.upDownBars));
   parts.push(`<c:axId val="${chart.axIds[0]}"/>`);
   parts.push(`<c:axId val="${chart.axIds[1]}"/>`);
   parts.push('</c:stockChart>');

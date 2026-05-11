@@ -7,6 +7,7 @@ export type {
   Bar3DChart,
   BarChart,
   BarDirection,
+  BarFrame,
   BarSeries,
   BubbleChart,
   BubbleSeries,
@@ -32,6 +33,7 @@ export type {
   ErrorBarType,
   ErrorValType,
   GroupingType,
+  HiLowLines,
   Layout,
   LayoutMode,
   LayoutTarget,
@@ -65,6 +67,7 @@ export type {
   TimeUnit,
   Trendline,
   TrendlineType,
+  UpDownBars,
   ValueAxis,
   View3D,
 } from './chart';

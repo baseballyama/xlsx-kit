@@ -337,12 +337,32 @@ export interface BubbleChart {
   axIds: [number, number];
 }
 
+/** `<c:hiLowLines>` child of stock charts. */
+export interface HiLowLines {
+  spPr?: ShapeProperties;
+}
+
+/** `<c:upBars>` / `<c:downBars>` child frame styling. */
+export interface BarFrame {
+  spPr?: ShapeProperties;
+}
+
+/** `<c:upDownBars>` child of stock charts. */
+export interface UpDownBars {
+  /** Gap width 0..500 between up/down bars. Excel default is 150. */
+  gapWidth?: number;
+  upBars?: BarFrame;
+  downBars?: BarFrame;
+}
+
 export interface StockChart {
   kind: 'stock';
   /** Up to 4 series — typically open / high / low / close. */
   series: BarSeries[];
-  hiLowLines?: boolean;
-  upDownBars?: boolean;
+  /** Boolean flag for the simple `<c:hiLowLines/>` form, or an object with `spPr` for custom line styling. */
+  hiLowLines?: boolean | HiLowLines;
+  /** Boolean for the simple form, or an object with gapWidth / upBars / downBars detail. */
+  upDownBars?: boolean | UpDownBars;
   axIds: [number, number];
 }
 
@@ -866,8 +886,8 @@ export function makeBubbleSeries(opts: {
 export function makeStockChart(opts: {
   series?: BarSeries[];
   axIds?: [number, number];
-  hiLowLines?: boolean;
-  upDownBars?: boolean;
+  hiLowLines?: boolean | HiLowLines;
+  upDownBars?: boolean | UpDownBars;
 }): StockChart {
   return {
     kind: 'stock',
