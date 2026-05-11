@@ -437,7 +437,22 @@ export type ChartKind =
   | Area3DChart
   | Surface3DChart;
 
-export interface CategoryAxis {
+export type TickMark = 'cross' | 'in' | 'none' | 'out';
+export type TickLabelPosition = 'high' | 'low' | 'nextTo' | 'none';
+export type AxisCrosses = 'autoZero' | 'max' | 'min';
+export type AxisOrientation = 'maxMin' | 'minMax';
+export type AxisCrossBetween = 'between' | 'midCat';
+export type CategoryLabelAlignment = 'ctr' | 'l' | 'r';
+
+/** `<c:scaling>` child of axes. */
+export interface AxisScaling {
+  orientation?: AxisOrientation;
+  min?: number;
+  max?: number;
+  logBase?: number;
+}
+
+interface AxisShared {
   axId: number;
   /** Crosses partner axis id. */
   crossAx: number;
@@ -445,18 +460,48 @@ export interface CategoryAxis {
   delete?: boolean;
   /** Axis-line / tick formatting. */
   spPr?: ShapeProperties;
-  /** Tick-label text formatting (default text run + paragraph properties). */
+  /** Tick-label text formatting. */
   txPr?: TextBody;
+  /** Axis title (`<c:title>`). Reuses the chart-title structure. */
+  title?: ChartTitle;
+  /** Tick-label number format. Default emitted is `General` / `sourceLinked=1`. */
+  numFmt?: NumberFormat;
+  /** Major tick mark style. Default emitted is `out`. */
+  majorTickMark?: TickMark;
+  /** Minor tick mark style. Default emitted is `none`. */
+  minorTickMark?: TickMark;
+  /** Tick-label position. Default emitted is `nextTo`. */
+  tickLblPos?: TickLabelPosition;
+  /** Axis scaling (`<c:scaling>`). Default emitted is `orientation: 'minMax'`. */
+  scaling?: AxisScaling;
+  /** `<c:crosses>`. Default emitted is `autoZero`. Mutually exclusive with `crossesAt`. */
+  crosses?: AxisCrosses;
+  /** `<c:crossesAt val="..."/>`. Numeric cross point on the partner axis. */
+  crossesAt?: number;
+  /** Whether to draw major gridlines. */
+  majorGridlines?: boolean;
+  /** Whether to draw minor gridlines. */
+  minorGridlines?: boolean;
 }
 
-export interface ValueAxis {
-  axId: number;
-  crossAx: number;
-  position?: 'b' | 't' | 'l' | 'r';
-  delete?: boolean;
-  majorGridlines?: boolean;
-  spPr?: ShapeProperties;
-  txPr?: TextBody;
+export interface CategoryAxis extends AxisShared {
+  /** `<c:auto>` — whether Excel auto-selects the axis type from the data. */
+  auto?: boolean;
+  /** Tick-label alignment. Default emitted is `ctr`. */
+  lblAlgn?: CategoryLabelAlignment;
+  /** Tick-label offset 0..1000. Default emitted is `100`. */
+  lblOffset?: number;
+  /** Suppress multi-level labels for hierarchical categories. */
+  noMultiLvlLbl?: boolean;
+}
+
+export interface ValueAxis extends AxisShared {
+  /** Tick-axis crossing rule. Default emitted is `between`. */
+  crossBetween?: AxisCrossBetween;
+  /** Major unit spacing on the value axis. */
+  majorUnit?: number;
+  /** Minor unit spacing on the value axis. */
+  minorUnit?: number;
 }
 
 export interface PlotArea {

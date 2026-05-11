@@ -27,7 +27,12 @@ import {
   type BubbleChart,
   type BubbleSeries,
   type BubbleSizeRepresents,
+  type AxisCrossBetween,
+  type AxisCrosses,
+  type AxisOrientation,
+  type AxisScaling,
   type CategoryAxis,
+  type CategoryLabelAlignment,
   type CategoryRef,
   type ChartKind,
   type ChartSpace,
@@ -85,6 +90,8 @@ import {
   type StockChart,
   type Surface3DChart,
   type SurfaceChart,
+  type TickLabelPosition,
+  type TickMark,
   type Trendline,
   type TrendlineType,
   type ValueAxis,
@@ -167,6 +174,24 @@ const SHAPE_TAG = `{${CHART_NS}}shape`;
 const AX_POS_TAG = `{${CHART_NS}}axPos`;
 const CROSS_AX_TAG = `{${CHART_NS}}crossAx`;
 const MAJOR_GRIDLINES_TAG = `{${CHART_NS}}majorGridlines`;
+const MINOR_GRIDLINES_TAG = `{${CHART_NS}}minorGridlines`;
+const SCALING_TAG = `{${CHART_NS}}scaling`;
+const ORIENTATION_TAG = `{${CHART_NS}}orientation`;
+const MIN_TAG = `{${CHART_NS}}min`;
+const MAX_TAG = `{${CHART_NS}}max`;
+const LOG_BASE_TAG = `{${CHART_NS}}logBase`;
+const CROSSES_TAG = `{${CHART_NS}}crosses`;
+const CROSSES_AT_TAG = `{${CHART_NS}}crossesAt`;
+const CROSS_BETWEEN_TAG = `{${CHART_NS}}crossBetween`;
+const MAJOR_UNIT_TAG = `{${CHART_NS}}majorUnit`;
+const MINOR_UNIT_TAG = `{${CHART_NS}}minorUnit`;
+const MAJOR_TICK_MARK_TAG = `{${CHART_NS}}majorTickMark`;
+const MINOR_TICK_MARK_TAG = `{${CHART_NS}}minorTickMark`;
+const TICK_LBL_POS_TAG = `{${CHART_NS}}tickLblPos`;
+const AUTO_TAG = `{${CHART_NS}}auto`;
+const LBL_ALGN_TAG = `{${CHART_NS}}lblAlgn`;
+const LBL_OFFSET_TAG = `{${CHART_NS}}lblOffset`;
+const NO_MULTI_LVL_LBL_TAG = `{${CHART_NS}}noMultiLvlLbl`;
 const LEGEND_TAG = `{${CHART_NS}}legend`;
 const LEGEND_POS_TAG = `{${CHART_NS}}legendPos`;
 const PLOT_VIS_ONLY_TAG = `{${CHART_NS}}plotVisOnly`;
@@ -1088,7 +1113,52 @@ const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
   throw new OpenXmlSchemaError('parseChartXml: no supported chart kind found inside <plotArea>');
 };
 
-const parseAxis = (
+const VALID_TICK_MARKS: ReadonlyArray<string> = ['cross', 'in', 'none', 'out'];
+const VALID_TICK_LBL_POS: ReadonlyArray<string> = ['high', 'low', 'nextTo', 'none'];
+const VALID_AXIS_CROSSES: ReadonlyArray<string> = ['autoZero', 'max', 'min'];
+const VALID_ORIENTATIONS: ReadonlyArray<string> = ['maxMin', 'minMax'];
+const VALID_CROSS_BETWEEN: ReadonlyArray<string> = ['between', 'midCat'];
+const VALID_CAT_LABEL_ALIGN: ReadonlyArray<string> = ['ctr', 'l', 'r'];
+
+const numberVal = (el: XmlNode | undefined): number | undefined => {
+  if (!el) return undefined;
+  const raw = valAttr(el);
+  if (raw === undefined) return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+const parseScaling = (axEl: XmlNode): AxisScaling | undefined => {
+  const sc = findChild(axEl, SCALING_TAG);
+  if (!sc) return undefined;
+  const orientationRaw = valAttr(findChild(sc, ORIENTATION_TAG));
+  // `minMax` is the implicit ECMA-376 default and the value the serializer
+  // emits when scaling is unset, so treat it as "no user override".
+  const orientation = orientationRaw && VALID_ORIENTATIONS.includes(orientationRaw) && orientationRaw !== 'minMax'
+    ? (orientationRaw as AxisOrientation)
+    : undefined;
+  const min = numberVal(findChild(sc, MIN_TAG));
+  const max = numberVal(findChild(sc, MAX_TAG));
+  const logBase = numberVal(findChild(sc, LOG_BASE_TAG));
+  const out: AxisScaling = {};
+  if (orientation !== undefined) out.orientation = orientation;
+  if (min !== undefined) out.min = min;
+  if (max !== undefined) out.max = max;
+  if (logBase !== undefined) out.logBase = logBase;
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const serializeScaling = (s: AxisScaling | undefined): string => {
+  const parts: string[] = ['<c:scaling>'];
+  parts.push(`<c:orientation val="${s?.orientation ?? 'minMax'}"/>`);
+  if (s?.logBase !== undefined) parts.push(`<c:logBase val="${s.logBase}"/>`);
+  if (s?.max !== undefined) parts.push(`<c:max val="${s.max}"/>`);
+  if (s?.min !== undefined) parts.push(`<c:min val="${s.min}"/>`);
+  parts.push('</c:scaling>');
+  return parts.join('');
+};
+
+const parseAxisCommon = (
   axEl: XmlNode,
 ): {
   axId: number;
@@ -1096,8 +1166,17 @@ const parseAxis = (
   position?: 'b' | 't' | 'l' | 'r';
   delete?: boolean;
   majorGridlines?: boolean;
+  minorGridlines?: boolean;
   spPr?: ShapeProperties;
   txPr?: TextBody;
+  title?: ChartTitle;
+  numFmt?: NumberFormat;
+  majorTickMark?: TickMark;
+  minorTickMark?: TickMark;
+  tickLblPos?: TickLabelPosition;
+  scaling?: AxisScaling;
+  crosses?: AxisCrosses;
+  crossesAt?: number;
 } => {
   const axId = intVal(findChild(axEl, AX_ID_TAG)) ?? 0;
   const crossAx = intVal(findChild(axEl, CROSS_AX_TAG)) ?? 0;
@@ -1105,16 +1184,90 @@ const parseAxis = (
   const validPos = positionRaw === 'b' || positionRaw === 't' || positionRaw === 'l' || positionRaw === 'r';
   const del = boolVal(findChild(axEl, DELETE_TAG));
   const majorGridlines = findChild(axEl, MAJOR_GRIDLINES_TAG) !== undefined ? true : undefined;
+  const minorGridlines = findChild(axEl, MINOR_GRIDLINES_TAG) !== undefined ? true : undefined;
   const spPr = parseSpPrSlot(axEl);
   const txPr = parseTxPrSlot(axEl);
+  const titleEl = findChild(axEl, TITLE_TAG);
+  const title = titleEl ? parseChartTitle(titleEl) : undefined;
+  const numFmt = parseNumberFormat(findChild(axEl, NUM_FMT_TAG));
+  // Excel inserts `<c:numFmt formatCode="General" sourceLinked="1"/>` as a default,
+  // so we treat that exact pair as "no user-provided override" to keep round-trip
+  // output minimal for callers who didn't set numFmt.
+  const userNumFmt = numFmt && (numFmt.formatCode !== 'General' || numFmt.sourceLinked !== true) ? numFmt : undefined;
+  const majorRaw = valAttr(findChild(axEl, MAJOR_TICK_MARK_TAG));
+  const majorTickMark = majorRaw && VALID_TICK_MARKS.includes(majorRaw) && majorRaw !== 'out'
+    ? (majorRaw as TickMark)
+    : undefined;
+  const minorRaw = valAttr(findChild(axEl, MINOR_TICK_MARK_TAG));
+  const minorTickMark = minorRaw && VALID_TICK_MARKS.includes(minorRaw) && minorRaw !== 'none'
+    ? (minorRaw as TickMark)
+    : undefined;
+  const tickLblPosRaw = valAttr(findChild(axEl, TICK_LBL_POS_TAG));
+  const tickLblPos = tickLblPosRaw && VALID_TICK_LBL_POS.includes(tickLblPosRaw) && tickLblPosRaw !== 'nextTo'
+    ? (tickLblPosRaw as TickLabelPosition)
+    : undefined;
+  const crossesRaw = valAttr(findChild(axEl, CROSSES_TAG));
+  const crosses = crossesRaw && VALID_AXIS_CROSSES.includes(crossesRaw) && crossesRaw !== 'autoZero'
+    ? (crossesRaw as AxisCrosses)
+    : undefined;
+  const crossesAt = numberVal(findChild(axEl, CROSSES_AT_TAG));
+  const scaling = parseScaling(axEl);
   return {
     axId,
     crossAx,
     ...(validPos ? { position: positionRaw as 'b' | 't' | 'l' | 'r' } : {}),
     ...(del !== undefined ? { delete: del } : {}),
     ...(majorGridlines !== undefined ? { majorGridlines } : {}),
+    ...(minorGridlines !== undefined ? { minorGridlines } : {}),
     ...(spPr ? { spPr } : {}),
     ...(txPr ? { txPr } : {}),
+    ...(title ? { title } : {}),
+    ...(userNumFmt ? { numFmt: userNumFmt } : {}),
+    ...(majorTickMark ? { majorTickMark } : {}),
+    ...(minorTickMark ? { minorTickMark } : {}),
+    ...(tickLblPos ? { tickLblPos } : {}),
+    ...(scaling ? { scaling } : {}),
+    ...(crosses ? { crosses } : {}),
+    ...(crossesAt !== undefined ? { crossesAt } : {}),
+  };
+};
+
+const parseCategoryAxis = (axEl: XmlNode): CategoryAxis => {
+  const base = parseAxisCommon(axEl);
+  const auto = boolVal(findChild(axEl, AUTO_TAG));
+  // <c:auto val="1"/> is the default Excel emits, so treat the literal "1" as
+  // "no user override" to keep round-trip output minimal.
+  const userAuto = auto === false ? false : undefined;
+  const lblAlgnRaw = valAttr(findChild(axEl, LBL_ALGN_TAG));
+  const lblAlgn = lblAlgnRaw && VALID_CAT_LABEL_ALIGN.includes(lblAlgnRaw) && lblAlgnRaw !== 'ctr'
+    ? (lblAlgnRaw as CategoryLabelAlignment)
+    : undefined;
+  const lblOffsetRaw = intVal(findChild(axEl, LBL_OFFSET_TAG));
+  const lblOffset = lblOffsetRaw !== undefined && lblOffsetRaw !== 100 ? lblOffsetRaw : undefined;
+  const noMultiLvlLbl = boolVal(findChild(axEl, NO_MULTI_LVL_LBL_TAG));
+  const userNoMultiLvlLbl = noMultiLvlLbl === true ? true : undefined;
+  return {
+    ...base,
+    ...(userAuto !== undefined ? { auto: userAuto } : {}),
+    ...(lblAlgn ? { lblAlgn } : {}),
+    ...(lblOffset !== undefined ? { lblOffset } : {}),
+    ...(userNoMultiLvlLbl !== undefined ? { noMultiLvlLbl: userNoMultiLvlLbl } : {}),
+  };
+};
+
+const parseValueAxis = (axEl: XmlNode): ValueAxis => {
+  const base = parseAxisCommon(axEl);
+  const crossBetweenRaw = valAttr(findChild(axEl, CROSS_BETWEEN_TAG));
+  const crossBetween = crossBetweenRaw && VALID_CROSS_BETWEEN.includes(crossBetweenRaw) && crossBetweenRaw !== 'between'
+    ? (crossBetweenRaw as AxisCrossBetween)
+    : undefined;
+  const majorUnit = numberVal(findChild(axEl, MAJOR_UNIT_TAG));
+  const minorUnit = numberVal(findChild(axEl, MINOR_UNIT_TAG));
+  return {
+    ...base,
+    ...(crossBetween ? { crossBetween } : {}),
+    ...(majorUnit !== undefined ? { majorUnit } : {}),
+    ...(minorUnit !== undefined ? { minorUnit } : {}),
   };
 };
 
@@ -1134,8 +1287,8 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
   const plotAreaSpPr = parseSpPrSlot(plotAreaEl);
   const plotArea: PlotArea = {
     chart,
-    ...(catAxEl ? { catAx: parseAxis(catAxEl) as CategoryAxis } : {}),
-    ...(valAxEl ? { valAx: parseAxis(valAxEl) as ValueAxis } : {}),
+    ...(catAxEl ? { catAx: parseCategoryAxis(catAxEl) } : {}),
+    ...(valAxEl ? { valAx: parseValueAxis(valAxEl) } : {}),
     ...(plotAreaSpPr ? { spPr: plotAreaSpPr } : {}),
   };
   const titleEl = findChild(chartEl, TITLE_TAG);
@@ -1490,33 +1643,51 @@ const serializeSurface3DChart = (chart: Surface3DChart): string => {
 };
 
 const serializeAxis = (tag: 'catAx' | 'valAx', ax: CategoryAxis | ValueAxis): string => {
+  // ECMA-376 sequence inside <c:catAx>/<c:valAx>:
+  //   axId, scaling, delete, axPos, majorGridlines?, minorGridlines?, title?,
+  //   numFmt, majorTickMark, minorTickMark, tickLblPos, spPr?, txPr?, crossAx,
+  //   crosses | crossesAt, [catAx: auto, lblAlgn, lblOffset, tickLblSkip,
+  //   tickMarkSkip, noMultiLvlLbl] | [valAx: crossBetween, majorUnit, minorUnit,
+  //   dispUnits]
   const parts: string[] = [
     `<c:${tag}>`,
     `<c:axId val="${ax.axId}"/>`,
-    '<c:scaling><c:orientation val="minMax"/></c:scaling>',
+    serializeScaling(ax.scaling),
     `<c:delete val="${ax.delete ? '1' : '0'}"/>`,
     `<c:axPos val="${ax.position ?? (tag === 'catAx' ? 'b' : 'l')}"/>`,
   ];
-  if (tag === 'valAx' && (ax as ValueAxis).majorGridlines) parts.push('<c:majorGridlines/>');
-  // Excel rejects axes lacking the standard tick / label / cross attrs.
-  // openpyxl serialises the same defaults; older revisions of this writer
-  // skipped them and the chart silently failed to render.
-  parts.push('<c:numFmt formatCode="General" sourceLinked="1"/>');
-  parts.push('<c:majorTickMark val="out"/>');
-  parts.push('<c:minorTickMark val="none"/>');
-  parts.push('<c:tickLblPos val="nextTo"/>');
-  // ECMA-376 element order places spPr / txPr immediately before crossAx.
+  if (ax.majorGridlines) parts.push('<c:majorGridlines/>');
+  if (ax.minorGridlines) parts.push('<c:minorGridlines/>');
+  if (ax.title) parts.push(serializeChartTitle(ax.title));
+  parts.push(
+    ax.numFmt
+      ? serializeNumberFormat(ax.numFmt)
+      : '<c:numFmt formatCode="General" sourceLinked="1"/>',
+  );
+  parts.push(`<c:majorTickMark val="${ax.majorTickMark ?? 'out'}"/>`);
+  parts.push(`<c:minorTickMark val="${ax.minorTickMark ?? 'none'}"/>`);
+  parts.push(`<c:tickLblPos val="${ax.tickLblPos ?? 'nextTo'}"/>`);
   if (ax.spPr) parts.push(serializeShapeProperties(ax.spPr));
   if (ax.txPr) parts.push(serializeTextBody(ax.txPr, 'c:txPr'));
   parts.push(`<c:crossAx val="${ax.crossAx}"/>`);
-  parts.push('<c:crosses val="autoZero"/>');
-  if (tag === 'catAx') {
-    parts.push('<c:auto val="1"/>');
-    parts.push('<c:lblAlgn val="ctr"/>');
-    parts.push('<c:lblOffset val="100"/>');
-    parts.push('<c:noMultiLvlLbl val="0"/>');
+  // crossesAt overrides crosses when both are present (mutually exclusive in
+  // ECMA-376 — Excel ignores <c:crosses> when <c:crossesAt> is set).
+  if (ax.crossesAt !== undefined) {
+    parts.push(`<c:crossesAt val="${ax.crossesAt}"/>`);
   } else {
-    parts.push('<c:crossBetween val="between"/>');
+    parts.push(`<c:crosses val="${ax.crosses ?? 'autoZero'}"/>`);
+  }
+  if (tag === 'catAx') {
+    const cat = ax as CategoryAxis;
+    parts.push(`<c:auto val="${cat.auto === false ? '0' : '1'}"/>`);
+    parts.push(`<c:lblAlgn val="${cat.lblAlgn ?? 'ctr'}"/>`);
+    parts.push(`<c:lblOffset val="${cat.lblOffset ?? 100}"/>`);
+    parts.push(`<c:noMultiLvlLbl val="${cat.noMultiLvlLbl ? '1' : '0'}"/>`);
+  } else {
+    const val = ax as ValueAxis;
+    parts.push(`<c:crossBetween val="${val.crossBetween ?? 'between'}"/>`);
+    if (val.majorUnit !== undefined) parts.push(`<c:majorUnit val="${val.majorUnit}"/>`);
+    if (val.minorUnit !== undefined) parts.push(`<c:minorUnit val="${val.minorUnit}"/>`);
   }
   parts.push(`</c:${tag}>`);
   return parts.join('');
