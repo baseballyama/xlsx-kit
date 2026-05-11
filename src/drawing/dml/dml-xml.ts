@@ -1,5 +1,6 @@
 // DrawingML primitive parse / serialize.
 
+import { OpenXmlSchemaError } from '../../utils/exceptions';
 import { DRAWING_NS, REL_NS } from '../../xml/namespaces';
 import { findChild, findChildren, type XmlNode } from '../../xml/tree';
 import {
@@ -163,7 +164,7 @@ const serializeColorMod = (m: ColorMod): string => {
 };
 
 const serializeColorBase = (c: DmlColorWithMods): string => {
-  const inner = c.mods.map(serializeColorMod).join('');
+  const inner = c.mods?.map(serializeColorMod).join('') ?? '';
   switch (c.base.kind) {
     case 'srgb':
       return `<a:srgbClr val="${c.base.value}">${inner}</a:srgbClr>`;
@@ -528,6 +529,13 @@ export const serializeFill = (f: Fill): string => {
       const fg = f.fgClr ? `<a:fgClr>${serializeColorBase(f.fgClr)}</a:fgClr>` : '';
       const bg = f.bgClr ? `<a:bgClr>${serializeColorBase(f.bgClr)}</a:bgClr>` : '';
       return `<a:pattFill prst="${escapeAttr(f.preset)}">${fg}${bg}</a:pattFill>`;
+    }
+    default: {
+      // Reject a misconstructed Fill at the throw site rather than emitting an
+      // empty wrapper element. Excel happens to accept empty <c:spPr/>, but the
+      // caller's intent is silently dropped and the failure is invisible.
+      const kind = (f as { kind?: unknown }).kind;
+      throw new OpenXmlSchemaError(`serializeFill: unknown Fill.kind ${JSON.stringify(kind)}`);
     }
   }
 };
