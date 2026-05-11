@@ -9,6 +9,7 @@
 
 import type { XlsxSource } from '../io/source';
 import { OpenXmlIoError, OpenXmlNotImplementedError } from '../utils/exceptions';
+import type { DecompressionLimits } from './decompression-guard';
 import { openRandomAccessArchive } from './random-access-reader';
 
 const CFB_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
@@ -44,12 +45,28 @@ export interface ZipArchive {
   close(): void;
 }
 
+/** Options for {@link openZip}. */
+export interface OpenZipOptions {
+  /**
+   * Decompression-bomb safeguards applied while inflating archive entries. The
+   * default limits admit any legitimate xlsx and reject pathological archives
+   * (extreme compression ratios, gigabyte-scale entries). Pass `false` to
+   * disable the guard entirely — only safe when the source is fully trusted.
+   * See {@link DecompressionLimits} for the individual knobs.
+   */
+  decompressionLimits?: DecompressionLimits | false;
+}
+
 /**
- * Open a zip archive from any {@link XlsxSource}. Memory-bounded: the source is
- * fully materialised, then handed to fflate.unzipSync to produce a path → bytes
- * map.
+ * Open a zip archive from any {@link XlsxSource}. The source is fully
+ * materialised in memory, the central directory is parsed once, and each
+ * entry is inflated on demand by {@link openRandomAccessArchive} — peak memory
+ * stays at compressed-archive size plus per-entry inflate scratch rather than
+ * holding every uncompressed entry resident. The fflate `unzipSync` fallback
+ * is preserved internally for ZIP64 / non-standard archives the random-access
+ * reader rejects.
  */
-export async function openZip(source: XlsxSource): Promise<ZipArchive> {
+export async function openZip(source: XlsxSource, opts: OpenZipOptions = {}): Promise<ZipArchive> {
   let bytes: Uint8Array;
   try {
     bytes = await source.toBytes();
@@ -68,5 +85,5 @@ export async function openZip(source: XlsxSource): Promise<ZipArchive> {
     );
   }
 
-  return openRandomAccessArchive(bytes);
+  return openRandomAccessArchive(bytes, opts.decompressionLimits);
 }

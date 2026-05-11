@@ -20,7 +20,7 @@ export class OpenXmlError extends Error {
 
 /** Thrown for ZIP, file system, network or stream-level failures. */
 export class OpenXmlIoError extends OpenXmlError {
-  override readonly name = 'OpenXmlIoError';
+  override readonly name: string = 'OpenXmlIoError';
 }
 
 /** Thrown when an OOXML payload violates structural / schema invariants. */
@@ -36,4 +36,15 @@ export class OpenXmlInvalidWorkbookError extends OpenXmlError {
 /** Thrown for features the port has chosen not to implement (yet). */
 export class OpenXmlNotImplementedError extends OpenXmlError {
   override readonly name = 'OpenXmlNotImplementedError';
+}
+
+/**
+ * Thrown when an archive trips the decompression-bomb safeguards configured on
+ * {@link openZip} / {@link loadWorkbook} / {@link loadWorkbookStream}. Subclass
+ * of {@link OpenXmlIoError} so existing `catch (OpenXmlIoError)` paths still
+ * see it, while letting callers branch on bomb-specific recovery (reject the
+ * upload, log a security event, etc.).
+ */
+export class OpenXmlDecompressionBombError extends OpenXmlIoError {
+  override readonly name = 'OpenXmlDecompressionBombError';
 }

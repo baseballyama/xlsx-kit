@@ -5,6 +5,7 @@
 export {
   loadWorkbookStream,
   type IterRowsOptions,
+  type LoadWorkbookStreamOptions,
   type ReadOnlyCell,
   type ReadOnlyWorkbook,
   type ReadOnlyWorksheet,

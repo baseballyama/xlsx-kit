@@ -1,0 +1,282 @@
+name: Template Compliance
+
+# Auto-close issues and PRs that do not follow the project's templates.
+#
+# How it works:
+#   - Issues and PRs are required to keep the HTML anchor comments shipped with
+#     the templates (`<!-- issue-template:bug:v1 -->`, `<!-- pr-template:v1 -->`,
+#     etc.). The anchors are invisible when rendered, so contributors who use
+#     the template by clicking "New issue" / "New pull request" keep them by
+#     default. Anyone who deletes the entire template loses the anchor and
+#     trips this workflow.
+#   - On submission (and edit), this workflow checks for the anchor and a few
+#     baseline shape checks. If they fail, it posts an explanatory comment and
+#     closes the issue / PR.
+#   - The author can edit the issue / PR to comply with the template; on edit,
+#     the workflow re-runs and reopens if it now passes.
+#
+# Maintainers are exempted from auto-close: anyone with `OWNER`, `MEMBER`, or
+# `COLLABORATOR` association can post issues / PRs without the template (e.g.,
+# release bot, `chore(release): version packages` PR, etc.).
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  pull_request_target:
+    types: [opened, edited, reopened, ready_for_review]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  check-issue:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check issue template compliance
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issue = context.payload.issue;
+            const number = issue.number;
+            const body = issue.body || '';
+            const author = issue.user.login;
+            const association = issue.author_association;
+
+            // Skip maintainers and bots — they may legitimately bypass templates
+            // (release bots, internal triage, etc.).
+            const exempt = ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(association)
+              || author.endsWith('[bot]');
+            if (exempt) {
+              core.info(`Skipping template check for ${author} (${association}).`);
+              return;
+            }
+
+            // The anchor comments are the load-bearing signal. If a contributor
+            // deleted the template wholesale, the anchors are gone too. Issue
+            // templates are .md files (not Issue Forms), so the HTML comments are
+            // preserved in the submitted body.
+            const hasAnchor = /<!--\s*issue-template:(bug|feature)(?::v\d+)?\s*-->/i.test(body);
+            const hasEnd = /<!--\s*issue-template:end\s*-->/i.test(body);
+
+            // Has the contributor kept the confirmation checklist? The template
+            // ships with `- [ ]` items; deleting them is a strong AI-slop signal.
+            const hasChecklist = /^- \[[ xX]\]/m.test(body);
+
+            // Body length sanity check. The shipped templates are ~1.5 KB; under
+            // 300 chars almost certainly means the user pasted something
+            // unrelated.
+            const tooShort = body.trim().length < 300;
+
+            const failures = [];
+            if (!hasAnchor) failures.push(
+              'The issue is missing the template anchor comment ' +
+              '(`<!-- issue-template:bug:v1 -->` or `<!-- issue-template:feature:v1 -->`). ' +
+              'Please open this issue from the **New issue** page so the template is preserved.'
+            );
+            if (hasAnchor && !hasEnd) failures.push(
+              'The closing template anchor (`<!-- issue-template:end -->`) is missing. ' +
+              'Please restore the template structure in full.'
+            );
+            if (!hasChecklist) failures.push(
+              'The confirmation checklist (the `- [ ]` items at the bottom of the template) ' +
+              'has been removed. Please restore it.'
+            );
+            if (tooShort) failures.push(
+              'The issue body is unusually short. Reports without enough detail to act on ' +
+              '(reproduction, expected vs actual, environment) are auto-closed.'
+            );
+
+            const prevState = issue.state;
+
+            if (failures.length === 0) {
+              core.info('Issue passes template compliance.');
+              if (prevState === 'closed') {
+                // If we previously auto-closed and the author has now fixed it,
+                // reopen so a maintainer can triage.
+                const ourComments = await github.paginate(github.rest.issues.listComments, {
+                  owner, repo, issue_number: number, per_page: 100,
+                });
+                const closedByUs = ourComments.some(c =>
+                  c.user.login === 'github-actions[bot]' &&
+                  c.body.includes('<!-- template-compliance:closed -->'));
+                if (closedByUs) {
+                  await github.rest.issues.update({
+                    owner, repo, issue_number: number, state: 'open',
+                  });
+                  await github.rest.issues.createComment({
+                    owner, repo, issue_number: number,
+                    body: '<!-- template-compliance:reopened -->\n' +
+                          'Thanks for updating this — the template now looks valid. ' +
+                          'A maintainer will triage from here.',
+                  });
+                }
+              }
+              return;
+            }
+
+            core.info(`Template compliance failed: ${failures.length} issue(s).`);
+
+            const message = [
+              '<!-- template-compliance:closed -->',
+              `Hi @${author}, thanks for the report.`,
+              '',
+              'This issue does not match the project\'s issue template, so it has been ' +
+              'auto-closed. Specifically:',
+              '',
+              ...failures.map(f => `- ${f}`),
+              '',
+              '### How to fix this',
+              '',
+              'Please **edit this issue** and restore the template structure. Use the ' +
+              '"New issue" page on this repository to start from the official form. ' +
+              'When the template is restored, this workflow will reopen the issue ' +
+              'automatically.',
+              '',
+              '### Why we enforce this',
+              '',
+              'Templates exist so that maintainers can triage efficiently. Issues that ' +
+              'omit the template — including reports generated by AI without verification ' +
+              '— consume scarce maintainer time without producing actionable signal. ' +
+              'Repeated low-effort or AI-slop submissions from the same account may ' +
+              'result in being blocked from this repository.',
+              '',
+              'If you believe this auto-close is in error, please leave a comment ' +
+              'explaining and a maintainer will take a look.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: number, body: message,
+            });
+
+            if (prevState !== 'closed') {
+              await github.rest.issues.update({
+                owner, repo, issue_number: number, state: 'closed', state_reason: 'not_planned',
+              });
+            }
+
+  check-pr:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR template compliance
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            const number = pr.number;
+            const body = pr.body || '';
+            const author = pr.user.login;
+            const association = pr.author_association;
+
+            // Skip maintainers and bots.
+            const exempt = ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(association)
+              || author.endsWith('[bot]');
+            if (exempt) {
+              core.info(`Skipping template check for ${author} (${association}).`);
+              return;
+            }
+
+            // Anchor must be present.
+            const hasAnchor = /<!--\s*pr-template(?::v\d+)?\s*-->/i.test(body);
+            const hasEnd = /<!--\s*pr-template:end\s*-->/i.test(body);
+
+            // Required sections — match by heading text. Order doesn't matter.
+            const requiredSections = ['Summary', 'Motivation', 'Changes', 'Testing', 'Breaking changes'];
+            const missingSections = requiredSections.filter(name => {
+              const re = new RegExp(`^##\\s+${name}\\b`, 'mi');
+              return !re.test(body);
+            });
+
+            // Stripped checklist?
+            const hasChecklist = /^- \[[ xX]\]/m.test(body);
+
+            // Body length sanity check — empty PRs auto-close.
+            const tooShort = body.trim().length < 150;
+
+            const failures = [];
+            if (!hasAnchor) failures.push(
+              'The PR description is missing the template anchor comment ' +
+              '(`<!-- pr-template:v1 -->`). Please use the official PR template.'
+            );
+            if (hasAnchor && !hasEnd) failures.push(
+              'The closing template anchor (`<!-- pr-template:end -->`) is missing.'
+            );
+            if (missingSections.length > 0) failures.push(
+              `The PR description is missing required sections: ${missingSections.map(s => `**${s}**`).join(', ')}.`
+            );
+            if (!hasChecklist) failures.push(
+              'The PR description is missing the contributor checklist.'
+            );
+            if (tooShort) failures.push(
+              'The PR description is unusually short. PRs without a meaningful description are auto-closed.'
+            );
+
+            const prevState = pr.state;
+
+            if (failures.length === 0) {
+              core.info('PR passes template compliance.');
+              if (prevState === 'closed') {
+                const ourComments = await github.paginate(github.rest.issues.listComments, {
+                  owner, repo, issue_number: number, per_page: 100,
+                });
+                const closedByUs = ourComments.some(c =>
+                  c.user.login === 'github-actions[bot]' &&
+                  c.body.includes('<!-- template-compliance:closed -->'));
+                if (closedByUs) {
+                  await github.rest.pulls.update({
+                    owner, repo, pull_number: number, state: 'open',
+                  });
+                  await github.rest.issues.createComment({
+                    owner, repo, issue_number: number,
+                    body: '<!-- template-compliance:reopened -->\n' +
+                          'Thanks for updating the description — the template now looks valid. ' +
+                          'A maintainer will review from here.',
+                  });
+                }
+              }
+              return;
+            }
+
+            core.info(`Template compliance failed: ${failures.length} issue(s).`);
+
+            const message = [
+              '<!-- template-compliance:closed -->',
+              `Hi @${author}, thanks for the contribution.`,
+              '',
+              'This PR description does not match the project\'s PR template, so the PR ' +
+              'has been auto-closed. Specifically:',
+              '',
+              ...failures.map(f => `- ${f}`),
+              '',
+              '### How to fix this',
+              '',
+              'Please **edit the PR description** and restore the template structure. ' +
+              'You can copy the template from `.github/pull_request_template.md` in this ' +
+              'repository. Once the description is valid, this workflow will reopen the PR ' +
+              'automatically.',
+              '',
+              '### Why we enforce this',
+              '',
+              'PR templates exist so reviewers can understand the change without ' +
+              'reverse-engineering the diff. Stripped-out or AI-generated boilerplate ' +
+              'descriptions consume reviewer time without producing actionable signal. ' +
+              'Repeated low-effort or AI-slop submissions from the same account may ' +
+              'result in being blocked from this repository.',
+              '',
+              'If you believe this auto-close is in error, please leave a comment ' +
+              'explaining and a maintainer will take a look.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: number, body: message,
+            });
+
+            if (prevState !== 'closed') {
+              await github.rest.pulls.update({
+                owner, repo, pull_number: number, state: 'closed',
+              });
+            }

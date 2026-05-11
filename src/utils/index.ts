@@ -35,6 +35,7 @@ export { cssRecordToInlineStyle } from './css';
 export { escapeCellString, unescapeCellString } from './escape';
 export type { OpenXmlErrorOptions } from './exceptions';
 export {
+  OpenXmlDecompressionBombError,
   OpenXmlError,
   OpenXmlInvalidWorkbookError,
   OpenXmlIoError,

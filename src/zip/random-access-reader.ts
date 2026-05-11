@@ -15,8 +15,18 @@
 // - Compression methods: STORE (0) and DEFLATE (8). Anything else
 // throws OpenXmlIoError.
 
-import { Inflate, inflateSync, unzipSync } from 'fflate';
-import { OpenXmlIoError } from '../utils/exceptions';
+import { Inflate, unzipSync } from 'fflate';
+import { OpenXmlDecompressionBombError, OpenXmlIoError } from '../utils/exceptions';
+import {
+  checkDeclaredTotals,
+  createBudget,
+  type DecompressionBudget,
+  type DecompressionLimitsInput,
+  entryInflateCap,
+  entryOverflowError,
+  recordInflated,
+  resolveDecompressionLimits,
+} from './decompression-guard';
 import type { ZipArchive } from './reader';
 
 /**
@@ -114,8 +124,15 @@ function readCompressedBytes(b: Uint8Array, entry: CdEntry): Uint8Array {
  * sentinel values (entry count == 0xFFFF or any size field == 0xFFFFFFFF) so
  * external ZIP64 archives still load. xlsx files in the wild fit comfortably in
  * ZIP32; the fallback exists for safety.
+ *
+ * `decompressionLimits` opts the archive into the zip-bomb safeguards
+ * documented on {@link DecompressionLimits}; pass `false` to disable. Defaults
+ * fit any legitimate xlsx.
  */
-export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
+export function openRandomAccessArchive(
+  bytes: Uint8Array,
+  decompressionLimits?: DecompressionLimitsInput,
+): ZipArchive {
   // Quick sanity on min archive size.
   if (bytes.length < 22) {
     throw new OpenXmlIoError('openZip: archive is shorter than the minimum EOCD size (22 bytes)');
@@ -132,9 +149,11 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
   const cdSize = u32(bytes, eocdOff + 12);
   const cdOffset = u32(bytes, eocdOff + 16);
 
+  const resolvedLimits = resolveDecompressionLimits(decompressionLimits);
+
   // ZIP64 fallback — fflate's unzipSync handles the extended record.
   if (totalEntries === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) {
-    return openViaUnzipSync(bytes);
+    return openViaUnzipSync(bytes, resolvedLimits);
   }
 
   let entries: CdEntry[];
@@ -142,11 +161,18 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     entries = parseCentralDirectory(bytes, cdOffset, totalEntries);
   } catch {
     // Malformed CD — fall back to fflate which is more tolerant.
-    return openViaUnzipSync(bytes);
+    return openViaUnzipSync(bytes, resolvedLimits);
   }
 
   const byPath = new Map<string, CdEntry>();
   for (const e of entries) byPath.set(e.path, e);
+
+  const budget: DecompressionBudget | null = resolvedLimits ? createBudget(resolvedLimits) : null;
+  if (budget) {
+    // Declared CD totals are cheap to inspect — reject obvious bombs before
+    // wiring up the inflate state machine.
+    checkDeclaredTotals(budget, entries);
+  }
 
   // Per-entry inflate cache so repeated reads of the same path don't re-inflate
   // — `read(path)` is documented as cheap on the second call (loadWorkbook
@@ -173,15 +199,19 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     const compressed = readCompressedBytes(buf, entry);
     let out: Uint8Array;
     if (entry.compMethod === COMP_STORE) {
+      // STORE has ratio 1, so the only thing left to check is the absolute
+      // size cap (and the running archive total).
+      if (budget) {
+        if (compressed.byteLength > budget.limits.maxEntryUncompressedBytes) {
+          throw entryOverflowError(path, budget.limits.maxEntryUncompressedBytes);
+        }
+        recordInflated(budget, path, compressed.byteLength);
+      }
       // Copy so callers can safely mutate the returned bytes without perturbing
       // the underlying archive view.
       out = compressed.slice();
     } else if (entry.compMethod === COMP_DEFLATE) {
-      try {
-        out = inflateSync(compressed);
-      } catch (cause) {
-        throw new OpenXmlIoError(`openZip: failed to inflate "${path}"`, { cause });
-      }
+      out = inflateBounded(path, compressed, budget);
     } else {
       throw new OpenXmlIoError(`openZip: unsupported compression method ${entry.compMethod} for "${path}"`);
     }
@@ -200,8 +230,17 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     const compressed = readCompressedBytes(buf, entry);
     if (entry.compMethod === COMP_STORE) {
       // STORE means the bytes on disk are the bytes the caller wants; no need
-      // to involve the inflate state machine. Hand them out as a single chunk
-      // — copy because callers may mutate the returned bytes.
+      // to involve the inflate state machine. Run the same caps the sync
+      // `read()` STORE branch applies — otherwise an uncompressed bomb entry
+      // reached via `readStream()` would bypass the per-entry / archive-total
+      // accounting. Ratio is fixed at 1, so only the absolute bounds apply.
+      if (budget) {
+        if (compressed.byteLength > budget.limits.maxEntryUncompressedBytes) {
+          throw entryOverflowError(path, budget.limits.maxEntryUncompressedBytes);
+        }
+        recordInflated(budget, path, compressed.byteLength);
+      }
+      // Copy because callers may mutate the returned bytes.
       return singleChunkStream(compressed.slice());
     }
     if (entry.compMethod !== COMP_DEFLATE) {
@@ -212,12 +251,30 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     // already-buffered inflated chunk or pushes one more block of compressed
     // input — never both — so the ReadableStream internal queue stays at
     // depth 1 and the producer can't race ahead of the consumer.
+    const entryCap = budget ? entryInflateCap(budget, compressed.byteLength) : Number.POSITIVE_INFINITY;
+    let entryEmitted = 0;
     const pending: Uint8Array[] = [];
     let pushedOffset = 0;
     let inflaterFinal = false;
     let inflateError: Error | undefined;
     const inflater = new Inflate((chunk, final) => {
-      if (chunk.byteLength > 0) pending.push(chunk);
+      if (inflateError) return;
+      if (chunk.byteLength > 0) {
+        entryEmitted += chunk.byteLength;
+        if (entryEmitted > entryCap) {
+          inflateError = entryOverflowError(path, entryCap);
+          return;
+        }
+        if (budget) {
+          try {
+            recordInflated(budget, path, chunk.byteLength);
+          } catch (err) {
+            inflateError = err as Error;
+            return;
+          }
+        }
+        pending.push(chunk);
+      }
       if (final) inflaterFinal = true;
     });
     return new ReadableStream<Uint8Array>({
@@ -251,7 +308,17 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
           try {
             inflater.push(slice, isLast);
           } catch (cause) {
-            inflateError = new OpenXmlIoError(`openZip: failed to inflate "${path}"`, { cause });
+            if (!inflateError) {
+              inflateError = new OpenXmlIoError(`openZip: failed to inflate "${path}"`, { cause });
+            }
+            controller.error(inflateError);
+            return;
+          }
+          // The ondata callback may have set inflateError (decompression-bomb
+          // guard tripping mid-inflate). Surface it to the consumer before
+          // continuing — otherwise we'd loop forever on a CD-lying bomb whose
+          // chunks all land beyond the cap and never make it into `pending`.
+          if (inflateError) {
             controller.error(inflateError);
             return;
           }
@@ -304,13 +371,89 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
   };
 }
 
+/**
+ * Inflate `compressed` into a single `Uint8Array`, abort if it crosses the
+ * configured per-entry cap or the archive-wide budget. Uses fflate's streaming
+ * `Inflate` so the abort can fire on any internal block boundary rather than
+ * after fflate has materialised the entire payload.
+ */
+function inflateBounded(
+  path: string,
+  compressed: Uint8Array,
+  budget: DecompressionBudget | null,
+): Uint8Array {
+  const cap = budget ? entryInflateCap(budget, compressed.byteLength) : Number.POSITIVE_INFINITY;
+  const acc: Uint8Array[] = [];
+  let emitted = 0;
+  let aborted: Error | undefined;
+  const inflater = new Inflate((chunk) => {
+    if (aborted) return;
+    if (chunk.byteLength === 0) return;
+    emitted += chunk.byteLength;
+    if (emitted > cap) {
+      aborted = entryOverflowError(path, cap);
+      return;
+    }
+    if (budget) {
+      try {
+        recordInflated(budget, path, chunk.byteLength);
+      } catch (err) {
+        aborted = err as Error;
+        return;
+      }
+    }
+    acc.push(chunk);
+  });
+  let off = 0;
+  while (off < compressed.byteLength) {
+    const end = Math.min(off + INFLATE_CHUNK_BYTES, compressed.byteLength);
+    const isLast = end >= compressed.byteLength;
+    try {
+      inflater.push(compressed.subarray(off, end), isLast);
+    } catch (cause) {
+      if (aborted) throw aborted;
+      throw new OpenXmlIoError(`openZip: failed to inflate "${path}"`, { cause });
+    }
+    if (aborted) throw aborted;
+    off = end;
+  }
+  const out = new Uint8Array(emitted);
+  let cursor = 0;
+  for (const chunk of acc) {
+    out.set(chunk, cursor);
+    cursor += chunk.byteLength;
+  }
+  return out;
+}
+
 /** Fallback: hand the whole archive to fflate when ZIP64 / unsupported features turn up. */
-function openViaUnzipSync(bytes: Uint8Array): ZipArchive {
+function openViaUnzipSync(
+  bytes: Uint8Array,
+  limits: ReturnType<typeof resolveDecompressionLimits>,
+): ZipArchive {
   let entries: Record<string, Uint8Array> | undefined;
   try {
     entries = unzipSync(bytes);
   } catch (cause) {
     throw new OpenXmlIoError('openZip: archive is not a valid zip', { cause });
+  }
+  // fflate's `unzipSync` returns already-inflated bytes — we can't abort the
+  // inflate mid-flight here, but a post-hoc check still rejects a malicious
+  // archive *before* any caller-level code touches the bytes. The peak memory
+  // spike is bounded by what fflate just produced; in practice ZIP64-fallback
+  // archives are rare for xlsx, so this is acceptable.
+  if (limits) {
+    const budget = createBudget(limits);
+    for (const [path, payload] of Object.entries(entries)) {
+      if (payload.byteLength > limits.maxEntryUncompressedBytes) {
+        throw new OpenXmlDecompressionBombError(
+          `openZip: entry "${path}" inflated to ${payload.byteLength} bytes,` +
+            ` exceeding the ${limits.maxEntryUncompressedBytes}-byte per-entry limit` +
+            ` (decompression-bomb guard).`,
+        );
+      }
+      recordInflated(budget, path, payload.byteLength);
+    }
   }
   let live = true;
   return {
