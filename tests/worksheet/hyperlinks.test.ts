@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { fromBuffer } from '../../src/io/node';
 import { loadWorkbook } from '../../src/io/load';
 import { workbookToBytes } from '../../src/io/save';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
 import { addWorksheet, createWorkbook } from '../../src/workbook/workbook';
+import { makeHyperlink } from '../../src/worksheet/hyperlinks';
 import { getHyperlink, removeHyperlink, setCell, setHyperlink, type Worksheet } from '../../src/worksheet/worksheet';
 
 const expectSheet = (ws: Worksheet | import('../../src/chartsheet/chartsheet').Chartsheet | undefined): Worksheet => {
@@ -16,6 +18,10 @@ describe('setHyperlink / getHyperlink / removeHyperlink', () => {
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'H');
     expect(() => setHyperlink(ws, 'A1', {})).toThrowError(/target.*location/);
+  });
+
+  it('makeHyperlink throws OpenXmlSchemaError when ref is empty', () => {
+    expect(() => makeHyperlink({ ref: '', target: 'https://example.com' })).toThrow(OpenXmlSchemaError);
   });
 
   it('stores an external link with target', () => {

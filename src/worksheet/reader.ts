@@ -788,7 +788,7 @@ const parseCustomSheetView = (node: XmlNode): CustomSheetView | undefined => {
   const colorId = intAttr('colorId');
   if (colorId !== undefined) out.colorId = colorId;
 
-  const boolKeys: ReadonlyArray<keyof CustomSheetView> = [
+  const boolKeys = [
     'showPageBreaks',
     'showFormulas',
     'showGridLines',
@@ -803,10 +803,10 @@ const parseCustomSheetView = (node: XmlNode): CustomSheetView | undefined => {
     'hiddenColumns',
     'filterUnique',
     'showRuler',
-  ];
+  ] as const satisfies ReadonlyArray<keyof CustomSheetView>;
   for (const k of boolKeys) {
-    const v = parseBoolXmlAttr(node.attrs[k as string]);
-    if (v !== undefined) (out as unknown as Record<string, unknown>)[k as string] = v;
+    const v = parseBoolXmlAttr(node.attrs[k]);
+    if (v !== undefined) out[k] = v;
   }
   const stateRaw = node.attrs['state'];
   if (stateRaw && CUSTOM_SHEET_VIEW_STATES.includes(stateRaw as CustomSheetViewState)) {

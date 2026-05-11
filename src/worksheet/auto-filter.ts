@@ -5,6 +5,8 @@
 // spreadsheets. customFilters / top10 / dynamicFilter / colorFilter /
 // iconFilter / SortState are reserved for later iterations.
 
+import { OpenXmlSchemaError } from '../utils/exceptions';
+
 export type FilterColumn = {
   kind: 'filters';
   colId: number;
@@ -58,7 +60,7 @@ export const addAutoFilterColumn = (
   opts: { blank?: boolean } = {},
 ): FilterColumn => {
   if (!ws.autoFilter) {
-    throw new Error('addAutoFilterColumn: call addAutoFilter(ws, ref) first');
+    throw new OpenXmlSchemaError('addAutoFilterColumn: call addAutoFilter(ws, ref) first');
   }
   const fc = makeFilterColumn({ colId, values, ...(opts.blank !== undefined ? { blank: opts.blank } : {}) });
   ws.autoFilter.filterColumns.push(fc);

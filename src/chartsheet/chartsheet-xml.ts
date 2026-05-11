@@ -244,7 +244,7 @@ const DRAWING_HF_INT_KEYS = [
   'lff',
   'cff',
   'rff',
-] as const;
+] as const satisfies ReadonlyArray<keyof ChartsheetDrawingHF>;
 
 const parseDrawingHF = (el: XmlNode): ChartsheetDrawingHF | undefined => {
   const rId = el.attrs[`{${REL_NS}}id`];
@@ -254,7 +254,7 @@ const parseDrawingHF = (el: XmlNode): ChartsheetDrawingHF | undefined => {
     const raw = el.attrs[k];
     if (raw === undefined) continue;
     const n = Number.parseInt(raw, 10);
-    if (Number.isInteger(n)) (out as unknown as Record<string, unknown>)[k] = n;
+    if (Number.isInteger(n)) out[k] = n;
   }
   return out;
 };
@@ -364,7 +364,7 @@ const serializeChartsheetCustomSheetViews = (
 const serializeDrawingHF = (dhf: ChartsheetDrawingHF): string => {
   let attrs = ` r:id="${escapeAttr(dhf.rId)}"`;
   for (const k of DRAWING_HF_INT_KEYS) {
-    const v = (dhf as unknown as Record<string, number | undefined>)[k];
+    const v = dhf[k];
     if (v !== undefined) attrs += ` ${k}="${v}"`;
   }
   return `<drawingHF${attrs}/>`;
