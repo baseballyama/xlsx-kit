@@ -64,7 +64,8 @@ paywall.
 - You produce **large** xlsx files (tens of millions of cells) and care
   about heap budget.
 - You need **charts**, conditional formatting, data validation, defined
-  names, tables, ZIP64 — and want them in MIT.
+  names, tables, ZIP64 (entry-count overflow; see "What's supported" for the
+  4 GiB-per-entry caveat) — and want them in MIT.
 - You round-trip xlsx files that contain pivot tables, VBA macros,
   threaded comments, Power Query metadata, or customXml — and need them
   preserved byte-for-byte.
@@ -261,8 +262,14 @@ band queries reuse the cached index.
   extras and per-sheet rels chain are preserved end-to-end.
 - ✅ Encrypted xlsx detection (CFB Compound Document magic): clear error
   pointing at `msoffcrypto-tool` for decryption.
-- ✅ ZIP64 write: workbooks with > 65 535 entries get a ZIP64 EOCD record +
-  locator spliced into the final chunk. Read works too.
+- ✅ ZIP64 write — partial: workbooks with > 65 535 entries get a ZIP64 EOCD
+  record + locator spliced into the final chunk. Read works too. **Limit:**
+  individual entry sizes and the central-directory offset must still fit in
+  32 bits (≤ 4 GiB each); xlsx archives never approach that in practice, but
+  if you genuinely need a single >4 GiB entry the writer will throw. Tracked
+  in [`src/zip/zip64-patch.ts`][zip64-patch].
+
+[zip64-patch]: ./src/zip/zip64-patch.ts
 
 ## Development
 
