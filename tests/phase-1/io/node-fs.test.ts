@@ -99,6 +99,41 @@ describe('toFile', () => {
   it('rejects empty paths', () => {
     expect(() => toFile('')).toThrowError(OpenXmlIoError);
   });
+
+  it('honours writable backpressure: writable.writableLength stays at one chunk at a time', async () => {
+    // Build a custom Writable with a small highWaterMark and a deliberately
+    // slow _write so the sink's per-chunk drain wait is observable. Without
+    // the queued-write change, all N sink.write() calls would call
+    // writable.write() immediately, so the internal buffer would grow to
+    // ~N*chunkSize. With the fix, writableLength never holds more than one
+    // chunk because the next chunk only goes in after drain.
+    const chunkSize = 1024;
+    const chunkCount = 32;
+    const maxLengthSamples: number[] = [];
+    const writes: Uint8Array[] = [];
+    const writable = new Writable({
+      highWaterMark: chunkSize, // small budget — chunkSize exactly matches one write
+      write(chunk, _enc, cb) {
+        writes.push(chunk instanceof Uint8Array ? new Uint8Array(chunk) : new Uint8Array(chunk));
+        // Capture the *post-acceptance* buffer depth: how many additional
+        // chunks are waiting in the writable beyond the one we're processing.
+        maxLengthSamples.push(writable.writableLength);
+        setImmediate(cb);
+      },
+    });
+    const sink = toWritable(writable);
+    const w = sink.toBytes();
+    for (let i = 0; i < chunkCount; i++) {
+      w.write(new Uint8Array(chunkSize).fill(i & 0xff));
+    }
+    await w.finish();
+    expect(writes).toHaveLength(chunkCount);
+    // No more than one chunk should ever be queued in the writable beyond the
+    // one currently being processed. (Allow a small slack to account for the
+    // last chunk landing while the drain handler is still settling.)
+    const maxQueued = Math.max(...maxLengthSamples);
+    expect(maxQueued).toBeLessThanOrEqual(chunkSize);
+  });
 });
 
 describe('fromReadable', () => {
