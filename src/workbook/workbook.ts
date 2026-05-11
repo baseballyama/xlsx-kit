@@ -231,6 +231,9 @@ export const isValidSheetTitle = (title: unknown): title is string => validateSh
  * validateSheetTitle} — if the base+suffix would exceed 31 chars, the base is
  * truncated to fit.
  *
+ * Excel treats sheet names as case-insensitive for uniqueness, so `Data` and
+ * `data` collide; the helper applies the same rule.
+ *
  * Useful for "duplicate sheet" / "import" flows where you want Excel-like
  * automatic uniqueification ("Sheet1 (2)").
  */
@@ -240,25 +243,31 @@ export function pickUniqueSheetTitle(wb: Workbook, base: string): string {
     throw new OpenXmlSchemaError(`pickUniqueSheetTitle: base "${base}" is not a valid sheet title (${reason})`);
   }
   const used = new Set<string>();
-  for (const s of wb.sheets) used.add(s.sheet.title);
-  if (!used.has(base)) return base;
+  for (const s of wb.sheets) used.add(s.sheet.title.toLowerCase());
+  if (!used.has(base.toLowerCase())) return base;
   for (let n = 2; n < 1000; n++) {
     const suffix = ` (${n})`;
     const room = 31 - suffix.length;
     const truncatedBase = base.length > room ? base.slice(0, room) : base;
     const candidate = `${truncatedBase}${suffix}`;
-    if (!used.has(candidate)) return candidate;
+    if (!used.has(candidate.toLowerCase())) return candidate;
   }
   throw new OpenXmlSchemaError(`pickUniqueSheetTitle: exhausted candidates for "${base}"`);
 }
 
-const validateUniqueTitle = (wb: Workbook, title: string): void => {
+// Excel treats sheet names as case-insensitive for uniqueness — "Data" and
+// "data" cannot co-exist in the same workbook. `ignoreIndex` lets renameSheet
+// pass its own slot so a case-only rename ("Data" → "data") still succeeds.
+const validateUniqueTitle = (wb: Workbook, title: string, ignoreIndex?: number): void => {
   const reason = validateSheetTitle(title);
   if (reason) {
     throw new OpenXmlSchemaError(`Worksheet title "${title}": ${reason}`);
   }
-  for (const s of wb.sheets) {
-    if (s.sheet.title === title) {
+  const lower = title.toLowerCase();
+  for (let i = 0; i < wb.sheets.length; i++) {
+    if (i === ignoreIndex) continue;
+    const s = wb.sheets[i];
+    if (s && s.sheet.title.toLowerCase() === lower) {
       throw new OpenXmlSchemaError(`Worksheet title "${title}" is already in use`);
     }
   }
@@ -460,15 +469,12 @@ export function setActiveSheet(wb: Workbook, title: string): void {
  * sheet names to be unique within a workbook).
  */
 export function renameSheet(wb: Workbook, oldTitle: string, newTitle: string): void {
-  if (typeof newTitle !== 'string' || newTitle.length === 0) {
-    throw new OpenXmlSchemaError('renameSheet: newTitle must be a non-empty string');
-  }
   const i = wb.sheets.findIndex((s) => s.sheet.title === oldTitle);
   if (i < 0) throw new OpenXmlSchemaError(`renameSheet: no sheet named "${oldTitle}"`);
   if (oldTitle === newTitle) return;
-  if (wb.sheets.some((s) => s.sheet.title === newTitle)) {
-    throw new OpenXmlSchemaError(`renameSheet: a sheet named "${newTitle}" already exists`);
-  }
+  // Excel allows case-only renames ("Data" → "data"); ignore the current slot
+  // when checking uniqueness so the rename validates against everything else.
+  validateUniqueTitle(wb, newTitle, i);
   const ref = wb.sheets[i];
   if (ref) ref.sheet.title = newTitle;
 }
