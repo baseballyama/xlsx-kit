@@ -1,5 +1,21 @@
 # xlsx-kit
 
+## 0.6.0
+
+### Minor Changes
+
+- [#71](https://github.com/baseballyama/xlsx-kit/pull/71) [`551901c`](https://github.com/baseballyama/xlsx-kit/commit/551901cbbd22952e8b26d5421e9371df08721130) Thanks [@baseballyama](https://github.com/baseballyama)! - Re-export DML colour, fill, and text-body primitives from `xlsx-kit/drawing`. Chart styling reaches `<a:srgbClr>` / `<a:solidFill>` / `<a:bodyPr>…<a:p>…<a:r>` through `ShapeProperties.fill`, `Series.spPr`, `Axis.txPr`, etc., but the building blocks (`DmlColor`, `DmlColorWithMods`, `Fill`, `TextBody`, `TextParagraph`, `RunProperties`, …) and their constructors (`makeColor`, `makeSrgbColor`, `makeSchemeColor`, `makeSolidFill`, `makeTextBody`, `makeParagraph`, `makeRun`, `makeRunProperties`, …) previously had no public home. They now ship as part of `xlsx-kit/drawing` alongside `makeShapeProperties`. Closes [#55](https://github.com/baseballyama/xlsx-kit/issues/55), closes [#56](https://github.com/baseballyama/xlsx-kit/issues/56).
+
+- [#72](https://github.com/baseballyama/xlsx-kit/pull/72) [`80a06bf`](https://github.com/baseballyama/xlsx-kit/commit/80a06bff737d8034ed0e5de89686c0a3f6d953d3) Thanks [@baseballyama](https://github.com/baseballyama)! - `AxisShared.majorGridlines` and `AxisShared.minorGridlines` now accept `boolean | Gridlines` instead of just `boolean`. The `Gridlines` shape carries a `ShapeProperties`, so `<c:majorGridlines><c:spPr><a:ln>…</a:ln></c:spPr></c:majorGridlines>` can be emitted to colour / dash / weight the gridline (e.g. corporate-style light grey `D9D9D9`). The plain `true` form keeps emitting `<c:majorGridlines/>` so all existing call sites stay unchanged. Round-trip through `parseChartXml` is preserved for both forms. Closes [#57](https://github.com/baseballyama/xlsx-kit/issues/57).
+
+### Patch Changes
+
+- [#69](https://github.com/baseballyama/xlsx-kit/pull/69) [`2317545`](https://github.com/baseballyama/xlsx-kit/commit/2317545ae784c772bc65f088a0c0fb9063904c35) Thanks [@baseballyama](https://github.com/baseballyama)! - Rename the chart-internal `NumberFormat` interface to `ChartNumberFormat` and re-export it from `xlsx-kit/chart`. The interface was already part of the public surface through `AxisShared.numFmt` and `DataLabelList.numFmt`, but the type itself was not exported — callers building axis / data-label options had to write the literal inline. The new name also disambiguates from the cell-stylesheet `NumberFormat` exported from `xlsx-kit/styles`, which is a different shape (`{ numFmtId, formatCode }`). Closes [#58](https://github.com/baseballyama/xlsx-kit/issues/58).
+
+- [#68](https://github.com/baseballyama/xlsx-kit/pull/68) [`060f436`](https://github.com/baseballyama/xlsx-kit/commit/060f436b46e79cd6d3ecf9613ce3a04278bb641c) Thanks [@baseballyama](https://github.com/baseballyama)! - Harden DrawingML `Fill` serializer against two natural mis-uses. (1) Passing a colour without `mods` (e.g. `{ base: { kind: 'srgb', value: 'FF0000' } }` instead of `{ base, mods: [] }`) no longer crashes the chart serializer with `Cannot read properties of undefined (reading 'map')`; the missing modifier list is now treated as empty. (2) Passing a `Fill` with an unknown `kind` (e.g. `'solid'` instead of `'solidFill'`) used to silently emit an empty `<c:spPr></c:spPr>` and lose the caller's styling intent; the serializer now throws `OpenXmlSchemaError` so the mistake surfaces immediately.
+
+- [#73](https://github.com/baseballyama/xlsx-kit/pull/73) [`f376354`](https://github.com/baseballyama/xlsx-kit/commit/f376354bf305db80a615a2a5ba9597bd276e167a) Thanks [@baseballyama](https://github.com/baseballyama)! - Document the small set of openpyxl → xlsx-kit defaults that differ, in particular that `createWorkbook()` returns an empty workbook with no sheets (unlike `openpyxl.Workbook()` which creates a default `'Sheet'`). Direct ports of openpyxl code that include a `wb.remove(wb.active)` call after `Workbook()` were translating that into a no-op `removeSheet(wb, 'Sheet')` — the new README "Migrating from openpyxl" subsection calls this out alongside the `setCell` and `makeBorder` / `makeSide` equivalents. Closes [#62](https://github.com/baseballyama/xlsx-kit/issues/62).
+
 ## 0.5.0
 
 ### Minor Changes
