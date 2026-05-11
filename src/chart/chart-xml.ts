@@ -90,11 +90,13 @@ import {
   type StockChart,
   type Surface3DChart,
   type SurfaceChart,
+  type SurfaceFrame,
   type TickLabelPosition,
   type TickMark,
   type Trendline,
   type TrendlineType,
   type ValueAxis,
+  type View3D,
 } from './chart';
 
 const CHART_SPACE_TAG = `{${CHART_NS}}chartSpace`;
@@ -192,6 +194,17 @@ const AUTO_TAG = `{${CHART_NS}}auto`;
 const LBL_ALGN_TAG = `{${CHART_NS}}lblAlgn`;
 const LBL_OFFSET_TAG = `{${CHART_NS}}lblOffset`;
 const NO_MULTI_LVL_LBL_TAG = `{${CHART_NS}}noMultiLvlLbl`;
+const VIEW3D_TAG = `{${CHART_NS}}view3D`;
+const ROT_X_TAG = `{${CHART_NS}}rotX`;
+const ROT_Y_TAG = `{${CHART_NS}}rotY`;
+const H_PERCENT_TAG = `{${CHART_NS}}hPercent`;
+const DEPTH_PERCENT_TAG = `{${CHART_NS}}depthPercent`;
+const R_ANG_AX_TAG = `{${CHART_NS}}rAngAx`;
+const PERSPECTIVE_TAG = `{${CHART_NS}}perspective`;
+const FLOOR_TAG = `{${CHART_NS}}floor`;
+const SIDE_WALL_TAG = `{${CHART_NS}}sideWall`;
+const BACK_WALL_TAG = `{${CHART_NS}}backWall`;
+const THICKNESS_TAG = `{${CHART_NS}}thickness`;
 const LEGEND_TAG = `{${CHART_NS}}legend`;
 const LEGEND_POS_TAG = `{${CHART_NS}}legendPos`;
 const PLOT_VIS_ONLY_TAG = `{${CHART_NS}}plotVisOnly`;
@@ -1119,6 +1132,53 @@ const parsePlotChart = (plotAreaEl: XmlNode): ChartKind => {
   throw new OpenXmlSchemaError('parseChartXml: no supported chart kind found inside <plotArea>');
 };
 
+const parseView3D = (el: XmlNode): View3D | undefined => {
+  const rotX = intVal(findChild(el, ROT_X_TAG));
+  const rotY = intVal(findChild(el, ROT_Y_TAG));
+  const hPercent = intVal(findChild(el, H_PERCENT_TAG));
+  const depthPercent = intVal(findChild(el, DEPTH_PERCENT_TAG));
+  const rAngAx = boolVal(findChild(el, R_ANG_AX_TAG));
+  const perspective = intVal(findChild(el, PERSPECTIVE_TAG));
+  const out: View3D = {};
+  if (rotX !== undefined) out.rotX = rotX;
+  if (rotY !== undefined) out.rotY = rotY;
+  if (depthPercent !== undefined) out.depthPercent = depthPercent;
+  if (hPercent !== undefined) out.hPercent = hPercent;
+  if (rAngAx !== undefined) out.rAngAx = rAngAx;
+  if (perspective !== undefined) out.perspective = perspective;
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const serializeView3D = (v: View3D): string => {
+  // ECMA-376 order: rotX, hPercent, rotY, depthPercent, rAngAx, perspective.
+  const parts: string[] = ['<c:view3D>'];
+  if (v.rotX !== undefined) parts.push(`<c:rotX val="${v.rotX}"/>`);
+  if (v.hPercent !== undefined) parts.push(`<c:hPercent val="${v.hPercent}"/>`);
+  if (v.rotY !== undefined) parts.push(`<c:rotY val="${v.rotY}"/>`);
+  if (v.depthPercent !== undefined) parts.push(`<c:depthPercent val="${v.depthPercent}"/>`);
+  if (v.rAngAx !== undefined) parts.push(`<c:rAngAx val="${v.rAngAx ? '1' : '0'}"/>`);
+  if (v.perspective !== undefined) parts.push(`<c:perspective val="${v.perspective}"/>`);
+  parts.push('</c:view3D>');
+  return parts.join('');
+};
+
+const parseSurfaceFrame = (el: XmlNode): SurfaceFrame | undefined => {
+  const thickness = intVal(findChild(el, THICKNESS_TAG));
+  const spPr = parseSpPrSlot(el);
+  const out: SurfaceFrame = {};
+  if (thickness !== undefined) out.thickness = thickness;
+  if (spPr) out.spPr = spPr;
+  return Object.keys(out).length > 0 ? out : undefined;
+};
+
+const serializeSurfaceFrame = (tag: 'floor' | 'sideWall' | 'backWall', f: SurfaceFrame): string => {
+  const parts: string[] = [`<c:${tag}>`];
+  if (f.thickness !== undefined) parts.push(`<c:thickness val="${f.thickness}"/>`);
+  if (f.spPr) parts.push(serializeShapeProperties(f.spPr));
+  parts.push(`</c:${tag}>`);
+  return parts.join('');
+};
+
 const VALID_TICK_MARKS: ReadonlyArray<string> = ['cross', 'in', 'none', 'out'];
 const VALID_TICK_LBL_POS: ReadonlyArray<string> = ['high', 'low', 'nextTo', 'none'];
 const VALID_AXIS_CROSSES: ReadonlyArray<string> = ['autoZero', 'max', 'min'];
@@ -1316,6 +1376,14 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
   const plotVisOnly = boolVal(findChild(chartEl, PLOT_VIS_ONLY_TAG));
   const dispBlanksAs = valAttr(findChild(chartEl, DISP_BLANKS_AS_TAG)) as ChartSpace['dispBlanksAs'];
   const style = intVal(findChild(root, STYLE_TAG));
+  const view3DEl = findChild(chartEl, VIEW3D_TAG);
+  const view3D = view3DEl ? parseView3D(view3DEl) : undefined;
+  const floorEl = findChild(chartEl, FLOOR_TAG);
+  const floor = floorEl ? parseSurfaceFrame(floorEl) : undefined;
+  const sideWallEl = findChild(chartEl, SIDE_WALL_TAG);
+  const sideWall = sideWallEl ? parseSurfaceFrame(sideWallEl) : undefined;
+  const backWallEl = findChild(chartEl, BACK_WALL_TAG);
+  const backWall = backWallEl ? parseSurfaceFrame(backWallEl) : undefined;
   // Top-level spPr / txPr live on chartSpace (sibling of <c:chart>), not inside
   // <c:chart>.
   const spaceSpPr = parseSpPrSlot(root);
@@ -1325,6 +1393,10 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
     ...(title !== undefined ? { title } : {}),
     ...(legend ? { legend } : {}),
     ...(style !== undefined ? { style } : {}),
+    ...(view3D ? { view3D } : {}),
+    ...(floor ? { floor } : {}),
+    ...(sideWall ? { sideWall } : {}),
+    ...(backWall ? { backWall } : {}),
     ...(plotVisOnly !== undefined ? { plotVisOnly } : {}),
     ...(dispBlanksAs ? { dispBlanksAs } : {}),
     ...(spaceSpPr ? { spPr: spaceSpPr } : {}),
@@ -1863,6 +1935,10 @@ function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptions = {}
   // some Excel versions when a title is set; emit `0` when we have a title and
   // `1` (= no auto-title) otherwise.
   parts.push(`<c:autoTitleDeleted val="${space.title === undefined ? '1' : '0'}"/>`);
+  if (space.view3D) parts.push(serializeView3D(space.view3D));
+  if (space.floor) parts.push(serializeSurfaceFrame('floor', space.floor));
+  if (space.sideWall) parts.push(serializeSurfaceFrame('sideWall', space.sideWall));
+  if (space.backWall) parts.push(serializeSurfaceFrame('backWall', space.backWall));
   parts.push(serializePlotArea(space.plotArea));
   if (space.legend) parts.push(serializeLegend(space.legend));
   parts.push(`<c:plotVisOnly val="${space.plotVisOnly === false ? '0' : '1'}"/>`);

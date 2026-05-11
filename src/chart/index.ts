@@ -53,11 +53,13 @@ export type {
   StockChart,
   Surface3DChart,
   SurfaceChart,
+  SurfaceFrame,
   TickLabelPosition,
   TickMark,
   Trendline,
   TrendlineType,
   ValueAxis,
+  View3D,
 } from './chart';
 export {
   makeArea3DChart,

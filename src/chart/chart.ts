@@ -542,6 +542,29 @@ export interface ChartTitle {
   txPr?: TextBody;
 }
 
+/** 3-D viewing options. Used by `bar3DChart`, `line3DChart`, `pie3DChart`, `area3DChart`, `surface3DChart`. */
+export interface View3D {
+  /** X-axis rotation in degrees, -90..90. */
+  rotX?: number;
+  /** Y-axis rotation in degrees, 0..359. */
+  rotY?: number;
+  /** Depth as a percentage of chart width, 20..2000. */
+  depthPercent?: number;
+  /** Height as a percentage of chart width, 5..500. */
+  hPercent?: number;
+  /** Use right-angle axes (orthographic). When true, perspective is ignored. */
+  rAngAx?: boolean;
+  /** Perspective angle 0..240 (0 = isometric, 30 = Excel default). */
+  perspective?: number;
+}
+
+/** 3-D wall / floor frame. Children of `<c:chart>` for bar3D / line3D / area3D / surface3D / pie3D. */
+export interface SurfaceFrame {
+  /** Wall thickness in % of chart width (0..100). */
+  thickness?: number;
+  spPr?: ShapeProperties;
+}
+
 export interface ChartSpace {
   /** Optional chart title. */
   title?: ChartTitle;
@@ -552,6 +575,14 @@ export interface ChartSpace {
    * `<c:chartSpace>` and selects one entry of Excel's "Chart Styles" gallery.
    */
   style?: number;
+  /** 3-D viewing options (applies to 3-D chart kinds; ignored otherwise by Excel). */
+  view3D?: View3D;
+  /** 3-D chart floor frame. */
+  floor?: SurfaceFrame;
+  /** 3-D chart side wall frame. */
+  sideWall?: SurfaceFrame;
+  /** 3-D chart back wall frame. */
+  backWall?: SurfaceFrame;
   /** Honour the formatting hints in cached numeric data when rendering. */
   plotVisOnly?: boolean;
   /** Display blanks as gap, zero, or span — Excel default is `gap`. */
@@ -607,6 +638,10 @@ export function makeChartSpace(opts: {
   title?: string | ChartTitle;
   legend?: Legend;
   style?: number;
+  view3D?: View3D;
+  floor?: SurfaceFrame;
+  sideWall?: SurfaceFrame;
+  backWall?: SurfaceFrame;
   plotVisOnly?: boolean;
   dispBlanksAs?: ChartSpace['dispBlanksAs'];
   spPr?: ShapeProperties;
@@ -618,6 +653,10 @@ export function makeChartSpace(opts: {
     ...(title !== undefined ? { title } : {}),
     ...(opts.legend ? { legend: opts.legend } : {}),
     ...(opts.style !== undefined ? { style: opts.style } : {}),
+    ...(opts.view3D ? { view3D: opts.view3D } : {}),
+    ...(opts.floor ? { floor: opts.floor } : {}),
+    ...(opts.sideWall ? { sideWall: opts.sideWall } : {}),
+    ...(opts.backWall ? { backWall: opts.backWall } : {}),
     ...(opts.plotVisOnly !== undefined ? { plotVisOnly: opts.plotVisOnly } : {}),
     ...(opts.dispBlanksAs !== undefined ? { dispBlanksAs: opts.dispBlanksAs } : {}),
     ...(opts.spPr ? { spPr: opts.spPr } : {}),
