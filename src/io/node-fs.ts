@@ -75,10 +75,18 @@ export function fromFileSync(path: string): XlsxSource {
 
 /**
  * Filesystem sink. Each `write(chunk)` call streams the bytes to disk via
- * `fs.createWriteStream`, honouring backpressure: when the underlying writable
- * signals it is full, `write` awaits a `drain` event before returning. That
- * keeps peak memory bounded to the writable's `highWaterMark` (default 16 KB)
- * even when the producer races ahead.
+ * `fs.createWriteStream`, honouring backpressure: the actual `writable.write`
+ * for each chunk is queued behind any pending `drain`, so the writable's
+ * internal buffer never grows past its `highWaterMark` (default 16 KB) no
+ * matter how fast the producer hands chunks over.
+ *
+ * Note on the producer-side memory budget: the sink contract is
+ * intentionally synchronous (`write(chunk): void`), so a producer that races
+ * ahead without yielding will let chunk references pile up in the queue.
+ * That keeps `writable`'s buffer bounded but does not bound the queue
+ * itself. Producers that need a hard ceiling should yield between writes
+ * (`await new Promise(setImmediate)` is enough) or use a sink with an async
+ * write contract.
  *
  * `result()` returns the destination path; `finish()` resolves with an empty
  * `Uint8Array` once the stream has flushed. Callers that need the on-disk
@@ -92,10 +100,10 @@ export function toFile(path: string): XlsxSink & { toBytes(): BufferedSinkWriter
   let stream: ReturnType<typeof createWriteStream> | undefined;
   let finalised: Promise<Uint8Array> | undefined;
   let pendingError: Error | undefined;
-  // Backpressure: chain each write off the previous so a slow disk pulls the
-  // producer back. We deliberately don't expose this on the synchronous-style
-  // `write()` API — the writer doesn't await — but every write enqueues a
-  // promise that `finish()` drains before resolving.
+  // Backpressure queue: every chunk's actual `writable.write` call is staged
+  // behind the previous chunk's completion. When a write returns `false` the
+  // queue parks on `drain` before the next chunk goes out, so the writable's
+  // internal buffer stays within its highWaterMark.
   let writeQueue: Promise<void> = Promise.resolve();
 
   const ensureStream = (): NonNullable<typeof stream> => {
@@ -118,13 +126,17 @@ export function toFile(path: string): XlsxSink & { toBytes(): BufferedSinkWriter
           }
           if (pendingError) throw new OpenXmlIoError(`toFile sink: write error on "${path}"`, { cause: pendingError });
           const s = ensureStream();
-          const ok = s.write(chunk);
-          if (!ok) {
-            // Producer is outpacing the disk — chain the next operation behind
-            // a `drain` so subsequent writes stage their chunks instead of
-            // piling up inside the writable's internal buffer.
-            writeQueue = writeQueue.then(() => once(s, 'drain').then(() => undefined));
-          }
+          writeQueue = writeQueue.then(async () => {
+            // Skip remaining work once the stream has errored — the error
+            // surfaces from `finish()` so callers see one consistent failure.
+            if (pendingError) return;
+            const ok = s.write(chunk);
+            if (!ok) {
+              // Writable's internal buffer is over highWaterMark; wait for it
+              // to flush before the next queued chunk runs.
+              await once(s, 'drain');
+            }
+          });
         },
         async finish(): Promise<Uint8Array> {
           if (finalised) return finalised;
@@ -184,12 +196,15 @@ export function fromReadable(readable: Readable): XlsxSource {
 }
 
 /**
- * Wrap a Node.js {@link Writable} as an XlsxSink. Each write streams directly
- * to the underlying writable, honouring backpressure: when the writable's
- * internal buffer is full, the next sink-level write parks behind a `drain`
- * event so memory pressure is bounded by the writable's `highWaterMark`
- * rather than the producer's pace. `result()` returns the writable itself for
- * downstream chaining.
+ * Wrap a Node.js {@link Writable} as an XlsxSink. The actual
+ * `writable.write` for each chunk is queued behind any pending `drain`, so
+ * the writable's internal buffer never exceeds its `highWaterMark` regardless
+ * of how fast the producer is. See {@link toFile} for the same caveat about
+ * producer-side memory: the synchronous `write(chunk)` API does not let
+ * backpressure flow back to the caller, so a tight non-yielding producer can
+ * still let chunk references accumulate in the queue.
+ *
+ * `result()` returns the writable itself for downstream chaining.
  */
 export function toWritable(writable: Writable): XlsxSink & { toBytes(): BufferedSinkWriter; result(): Writable } {
   if (!(writable instanceof Writable)) {
@@ -209,10 +224,13 @@ export function toWritable(writable: Writable): XlsxSink & { toBytes(): Buffered
           if (finalised !== undefined) throw new OpenXmlIoError('toWritable sink: write after finish');
           if (!(chunk instanceof Uint8Array)) throw new OpenXmlIoError('toWritable sink: chunk is not a Uint8Array');
           if (pendingError) throw new OpenXmlIoError('toWritable sink: write error', { cause: pendingError });
-          const ok = writable.write(chunk);
-          if (!ok) {
-            writeQueue = writeQueue.then(() => once(writable, 'drain').then(() => undefined));
-          }
+          writeQueue = writeQueue.then(async () => {
+            if (pendingError) return;
+            const ok = writable.write(chunk);
+            if (!ok) {
+              await once(writable, 'drain');
+            }
+          });
         },
         async finish(): Promise<Uint8Array> {
           if (finalised) return finalised;

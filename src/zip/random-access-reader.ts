@@ -207,31 +207,72 @@ export function openRandomAccessArchive(bytes: Uint8Array): ZipArchive {
     if (entry.compMethod !== COMP_DEFLATE) {
       throw new OpenXmlIoError(`openZip: unsupported compression method ${entry.compMethod} for "${path}"`);
     }
-    // DEFLATE: feed the compressed bytes into fflate's `Inflate` in fixed-size
-    // chunks and forward each inflated chunk to the stream consumer. Peak
-    // memory stays at the chunk size + the inflate state, never the full
-    // uncompressed payload.
+    // DEFLATE: drive fflate's `Inflate` from `pull()` so the consumer's
+    // demand controls how much we inflate. Each `pull()` either emits one
+    // already-buffered inflated chunk or pushes one more block of compressed
+    // input — never both — so the ReadableStream internal queue stays at
+    // depth 1 and the producer can't race ahead of the consumer.
+    const pending: Uint8Array[] = [];
+    let pushedOffset = 0;
+    let inflaterFinal = false;
+    let inflateError: Error | undefined;
+    const inflater = new Inflate((chunk, final) => {
+      if (chunk.byteLength > 0) pending.push(chunk);
+      if (final) inflaterFinal = true;
+    });
     return new ReadableStream<Uint8Array>({
-      start(controller) {
-        let errored = false;
-        const inflater = new Inflate((chunk, final) => {
-          if (errored) return;
-          if (chunk.byteLength > 0) controller.enqueue(chunk);
-          if (final) controller.close();
-        });
-        try {
-          let off = 0;
-          while (off < compressed.byteLength) {
-            const end = Math.min(off + INFLATE_CHUNK_BYTES, compressed.byteLength);
-            const slice = compressed.subarray(off, end);
-            const isLast = end >= compressed.byteLength;
-            inflater.push(slice, isLast);
-            off = end;
-          }
-        } catch (cause) {
-          errored = true;
-          controller.error(new OpenXmlIoError(`openZip: failed to inflate "${path}"`, { cause }));
+      pull(controller) {
+        if (inflateError) {
+          controller.error(inflateError);
+          return;
         }
+        // Emit at most one already-buffered inflated chunk per pull; subsequent
+        // pulls drain the rest. This caps the stream's internal queue at one
+        // chunk regardless of how many ondata callbacks fflate fired off the
+        // most recent push.
+        const buffered = pending.shift();
+        if (buffered) {
+          controller.enqueue(buffered);
+          if (inflaterFinal && pending.length === 0 && pushedOffset >= compressed.byteLength) {
+            controller.close();
+          }
+          return;
+        }
+        // No buffered output: push one block of compressed input and let
+        // inflate's ondata fill `pending`. We stop pushing the moment we have
+        // something to emit so the next pull can return it without racing
+        // further inflation. `inflaterFinal` is set inside the ondata callback
+        // during the same `push` call that sets `isLast`, so reaching
+        // `pushedOffset >= compressed.byteLength` always ends the loop too.
+        while (pending.length === 0 && pushedOffset < compressed.byteLength) {
+          const end = Math.min(pushedOffset + INFLATE_CHUNK_BYTES, compressed.byteLength);
+          const slice = compressed.subarray(pushedOffset, end);
+          const isLast = end >= compressed.byteLength;
+          try {
+            inflater.push(slice, isLast);
+          } catch (cause) {
+            inflateError = new OpenXmlIoError(`openZip: failed to inflate "${path}"`, { cause });
+            controller.error(inflateError);
+            return;
+          }
+          pushedOffset = end;
+        }
+        const next = pending.shift();
+        if (next) {
+          controller.enqueue(next);
+        }
+        if (inflaterFinal && pending.length === 0 && pushedOffset >= compressed.byteLength) {
+          controller.close();
+        }
+      },
+      cancel() {
+        // Consumer abandoned the stream early — drop buffered chunks and
+        // advance the cursor past the end so the inflater and the compressed
+        // slice are eligible for GC. fflate's `Inflate` has no terminate API
+        // but losing the only reference is enough.
+        pending.length = 0;
+        pushedOffset = compressed.byteLength;
+        inflaterFinal = true;
       },
     });
   };
