@@ -19,6 +19,7 @@ export type {
   DataLabel,
   DataLabelList,
   DataLabelPosition,
+  DataPoint,
   DoughnutChart,
   ErrorBarDirection,
   ErrorBars,

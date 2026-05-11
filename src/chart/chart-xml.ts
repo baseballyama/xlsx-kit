@@ -48,6 +48,7 @@ import {
   type LineSeries,
   type Marker,
   type MarkerSymbol,
+  type DataPoint,
   makeArea3DChart,
   makeAreaChart,
   makeBar3DChart,
@@ -129,6 +130,9 @@ const SMOOTH_TAG = `{${CHART_NS}}smooth`;
 const MARKER_TAG = `{${CHART_NS}}marker`;
 const SYMBOL_TAG = `{${CHART_NS}}symbol`;
 const SIZE_TAG = `{${CHART_NS}}size`;
+const D_PT_TAG = `{${CHART_NS}}dPt`;
+const INVERT_IF_NEGATIVE_TAG = `{${CHART_NS}}invertIfNegative`;
+const EXPLOSION_TAG = `{${CHART_NS}}explosion`;
 const HOLE_SIZE_TAG = `{${CHART_NS}}holeSize`;
 const FIRST_SLICE_ANG_TAG = `{${CHART_NS}}firstSliceAng`;
 const SCATTER_STYLE_TAG = `{${CHART_NS}}scatterStyle`;
@@ -454,6 +458,48 @@ const serializeMarker = (m: Marker): string => {
   return parts.join('');
 };
 
+const parseDataPoint = (el: XmlNode): DataPoint | undefined => {
+  const idx = intVal(findChild(el, IDX_TAG));
+  if (idx === undefined) return undefined;
+  const invertIfNegative = boolVal(findChild(el, INVERT_IF_NEGATIVE_TAG));
+  const bubble3D = boolVal(findChild(el, BUBBLE_3D_TAG));
+  const explosion = intVal(findChild(el, EXPLOSION_TAG));
+  const markerEl = findChild(el, MARKER_TAG);
+  const marker = markerEl ? parseMarker(markerEl) : undefined;
+  const spPr = parseSpPrSlot(el);
+  const out: DataPoint = { idx };
+  if (invertIfNegative !== undefined) out.invertIfNegative = invertIfNegative;
+  if (marker) out.marker = marker;
+  if (bubble3D !== undefined) out.bubble3D = bubble3D;
+  if (explosion !== undefined) out.explosion = explosion;
+  if (spPr) out.spPr = spPr;
+  return out;
+};
+
+const serializeDataPoint = (p: DataPoint): string => {
+  // ECMA-376 order inside <c:dPt>: idx → invertIfNegative? → marker? → bubble3D?
+  //   → explosion? → spPr? → pictureOptions?
+  const parts: string[] = ['<c:dPt>', `<c:idx val="${p.idx}"/>`];
+  if (p.invertIfNegative !== undefined) {
+    parts.push(`<c:invertIfNegative val="${p.invertIfNegative ? '1' : '0'}"/>`);
+  }
+  if (p.marker) parts.push(serializeMarker(p.marker));
+  if (p.bubble3D !== undefined) parts.push(`<c:bubble3D val="${p.bubble3D ? '1' : '0'}"/>`);
+  if (p.explosion !== undefined) parts.push(`<c:explosion val="${p.explosion}"/>`);
+  if (p.spPr) parts.push(serializeShapeProperties(p.spPr));
+  parts.push('</c:dPt>');
+  return parts.join('');
+};
+
+const parseDataPointList = (serEl: XmlNode): DataPoint[] | undefined => {
+  const out: DataPoint[] = [];
+  for (const el of findChildren(serEl, D_PT_TAG)) {
+    const p = parseDataPoint(el);
+    if (p) out.push(p);
+  }
+  return out.length > 0 ? out : undefined;
+};
+
 const VALID_TRENDLINE_TYPES: ReadonlyArray<string> = ['exp', 'linear', 'log', 'movingAvg', 'poly', 'power'];
 
 const parseTrendline = (el: XmlNode): Trendline | undefined => {
@@ -667,10 +713,12 @@ const parseSeries = (serEl: XmlNode): BarSeries | undefined => {
   if (cat) opts.cat = cat;
   const base = makeBarSeries(opts);
   const spPr = parseSpPrSlot(serEl);
+  const dPt = parseDataPointList(serEl);
   const deco = parseSeriesDecorations(serEl);
   return {
     ...base,
     ...(spPr ? { spPr } : {}),
+    ...(dPt ? { dPt } : {}),
     ...deco,
   };
 };
@@ -785,10 +833,12 @@ const parseScatterSeries = (serEl: XmlNode): ScatterSeries | undefined => {
   if (marker) opts.marker = marker;
   const base = makeScatterSeries(opts);
   const spPr = parseSpPrSlot(serEl);
+  const dPt = parseDataPointList(serEl);
   const deco = parseSeriesDecorations(serEl);
   return {
     ...base,
     ...(spPr ? { spPr } : {}),
+    ...(dPt ? { dPt } : {}),
     ...deco,
   };
 };
@@ -835,10 +885,12 @@ const parseBubbleSeries = (serEl: XmlNode): BubbleSeries | undefined => {
   if (bubble3D !== undefined) opts.bubble3D = bubble3D;
   const base = makeBubbleSeries(opts);
   const spPr = parseSpPrSlot(serEl);
+  const dPt = parseDataPointList(serEl);
   const deco = parseSeriesDecorations(serEl);
   return {
     ...base,
     ...(spPr ? { spPr } : {}),
+    ...(dPt ? { dPt } : {}),
     ...deco,
   };
 };
@@ -1173,6 +1225,7 @@ const serializeSeries = (s: BarSeries, marker?: Marker): string => {
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
   // <c:marker> follows <c:spPr> per ECMA-376 series content sequence.
   if (marker) parts.push(serializeMarker(marker));
+  if (s.dPt) for (const p of s.dPt) parts.push(serializeDataPoint(p));
   if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
   if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
   if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));
@@ -1263,6 +1316,7 @@ const serializeScatterSeries = (s: ScatterSeries): string => {
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
   if (s.marker) parts.push(serializeMarker(s.marker));
+  if (s.dPt) for (const p of s.dPt) parts.push(serializeDataPoint(p));
   if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
   if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
   if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));
@@ -1309,6 +1363,7 @@ const serializeBubbleSeries = (s: BubbleSeries): string => {
     }
   }
   if (s.spPr) parts.push(serializeShapeProperties(s.spPr));
+  if (s.dPt) for (const p of s.dPt) parts.push(serializeDataPoint(p));
   if (s.dLbls) parts.push(serializeDataLabelList(s.dLbls));
   if (s.trendline) for (const t of s.trendline) parts.push(serializeTrendline(t));
   if (s.errBars) for (const e of s.errBars) parts.push(serializeErrBars(e));

@@ -114,6 +114,25 @@ export interface Marker {
   spPr?: ShapeProperties;
 }
 
+/**
+ * Per-point override on a series (`<c:dPt>` child of `<c:ser>`). Lets each bar
+ * / slice / data point pick up its own colour, marker, explosion, etc.
+ */
+export interface DataPoint {
+  /** 0-based index of the data point within the series. */
+  idx: number;
+  /** Invert fill when the data point's value is negative (bar / area / bubble). */
+  invertIfNegative?: boolean;
+  /** Per-point marker override (line / scatter / radar). */
+  marker?: Marker;
+  /** 3-D bubble flag (bubble series only). */
+  bubble3D?: boolean;
+  /** Slice explosion in % for pie / doughnut points (0..400). */
+  explosion?: number;
+  /** Per-point shape properties (fill / line colour). */
+  spPr?: ShapeProperties;
+}
+
 export type TrendlineType = 'exp' | 'linear' | 'log' | 'movingAvg' | 'poly' | 'power';
 
 export interface Trendline {
@@ -165,6 +184,8 @@ export interface BarSeries {
   tx?: { kind: 'literal'; value: string } | { kind: 'ref'; ref: string };
   /** Per-series shape properties (fill / line / effects). */
   spPr?: ShapeProperties;
+  /** Per-point overrides. Empty / omitted means every point inherits the series defaults. */
+  dPt?: DataPoint[];
   /** Series-wide data labels. */
   dLbls?: DataLabelList;
   /** Trendlines attached to this series. */
@@ -246,6 +267,7 @@ export interface ScatterSeries {
   order: number;
   tx?: BarSeries['tx'];
   spPr?: ShapeProperties;
+  dPt?: DataPoint[];
   dLbls?: DataLabelList;
   trendline?: Trendline[];
   /** Up to 2 entries (one per direction). */
@@ -280,6 +302,7 @@ export interface BubbleSeries {
   order: number;
   tx?: BarSeries['tx'];
   spPr?: ShapeProperties;
+  dPt?: DataPoint[];
   dLbls?: DataLabelList;
   trendline?: Trendline[];
   /** Up to 2 entries (one per direction). */
