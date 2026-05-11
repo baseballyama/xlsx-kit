@@ -12,6 +12,7 @@ import {
   setPrintArea,
   setPrintTitles,
 } from '../../src/workbook/defined-names';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
 
 describe('addDefinedName / getDefinedName / removeDefinedName', () => {
   it('addDefinedName replaces an existing entry with the same name + scope', () => {
@@ -69,10 +70,10 @@ describe('setPrintArea / setPrintTitles', () => {
     expect(dnCols.value).toBe("'A'!$A:$A");
   });
 
-  it('setPrintTitles throws when neither rows nor cols is supplied', () => {
+  it('setPrintTitles throws OpenXmlSchemaError when neither rows nor cols is supplied', () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'A');
-    expect(() => setPrintTitles(wb, 0, { sheetName: 'A' })).toThrow();
+    expect(() => setPrintTitles(wb, 0, { sheetName: 'A' })).toThrow(OpenXmlSchemaError);
   });
 
   it('full save → load round-trip preserves the print-area + titles', async () => {

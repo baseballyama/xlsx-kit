@@ -11,6 +11,7 @@ import {
   addAutoFilterColumn,
   removeAutoFilter,
 } from '../../src/worksheet/auto-filter';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
 import {
   freezeColumns,
   freezePanes,
@@ -102,10 +103,10 @@ describe('addAutoFilter / addAutoFilterColumn / removeAutoFilter', () => {
     expect(ws.autoFilter?.filterColumns[1]?.blank).toBe(true);
   });
 
-  it('addAutoFilterColumn throws if no autoFilter is set', () => {
+  it('addAutoFilterColumn throws OpenXmlSchemaError if no autoFilter is set', () => {
     const wb = createWorkbook();
     const ws = addWorksheet(wb, 'F');
-    expect(() => addAutoFilterColumn(ws, 0, ['x'])).toThrow();
+    expect(() => addAutoFilterColumn(ws, 0, ['x'])).toThrow(OpenXmlSchemaError);
   });
 
   it('removeAutoFilter drops the autoFilter', () => {
