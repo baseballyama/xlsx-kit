@@ -114,6 +114,7 @@ const GROUPING_TAG = `{${CHART_NS}}grouping`;
 const VARY_COLORS_TAG = `{${CHART_NS}}varyColors`;
 const GAP_WIDTH_TAG = `{${CHART_NS}}gapWidth`;
 const OVERLAP_TAG = `{${CHART_NS}}overlap`;
+const STYLE_TAG = `{${CHART_NS}}style`;
 const AX_ID_TAG = `{${CHART_NS}}axId`;
 const DELETE_TAG = `{${CHART_NS}}delete`;
 const LINE_CHART_TAG = `{${CHART_NS}}lineChart`;
@@ -1054,6 +1055,7 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
   }
   const plotVisOnly = boolVal(findChild(chartEl, PLOT_VIS_ONLY_TAG));
   const dispBlanksAs = valAttr(findChild(chartEl, DISP_BLANKS_AS_TAG)) as ChartSpace['dispBlanksAs'];
+  const style = intVal(findChild(root, STYLE_TAG));
   // Top-level spPr / txPr live on chartSpace (sibling of <c:chart>), not inside
   // <c:chart>.
   const spaceSpPr = parseSpPrSlot(root);
@@ -1062,6 +1064,7 @@ export function parseChartXml(bytes: Uint8Array | string): ChartSpace {
     plotArea,
     ...(title !== undefined ? { title } : {}),
     ...(legend ? { legend } : {}),
+    ...(style !== undefined ? { style } : {}),
     ...(plotVisOnly !== undefined ? { plotVisOnly } : {}),
     ...(dispBlanksAs ? { dispBlanksAs } : {}),
     ...(spaceSpPr ? { spPr: spaceSpPr } : {}),
@@ -1555,8 +1558,11 @@ function serializeChartSpace(space: ChartSpace, opts: ChartSerializeOptions = {}
     '<c:date1904 val="0"/>',
     '<c:lang val="en-US"/>',
     '<c:roundedCorners val="0"/>',
-    '<c:chart>',
   ];
+  if (space.style !== undefined) {
+    parts.push(`<c:style val="${space.style}"/>`);
+  }
+  parts.push('<c:chart>');
   if (space.title !== undefined) parts.push(serializeChartTitle(space.title));
   // <c:autoTitleDeleted> follows <c:title> when present, and is required by
   // some Excel versions when a title is set; emit `0` when we have a title and

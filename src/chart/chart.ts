@@ -445,6 +445,11 @@ export interface ChartSpace {
   title?: ChartTitle;
   legend?: Legend;
   plotArea: PlotArea;
+  /**
+   * Built-in Excel chart-style preset (1..48). Mapped to `<c:style val="N"/>` inside
+   * `<c:chartSpace>` and selects one entry of Excel's "Chart Styles" gallery.
+   */
+  style?: number;
   /** Honour the formatting hints in cached numeric data when rendering. */
   plotVisOnly?: boolean;
   /** Display blanks as gap, zero, or span — Excel default is `gap`. */
@@ -499,6 +504,7 @@ export function makeChartSpace(opts: {
   /** Plain string is wrapped in `{ text }`; pass `ChartTitle` for full formatting. */
   title?: string | ChartTitle;
   legend?: Legend;
+  style?: number;
   plotVisOnly?: boolean;
   dispBlanksAs?: ChartSpace['dispBlanksAs'];
   spPr?: ShapeProperties;
@@ -509,6 +515,7 @@ export function makeChartSpace(opts: {
     plotArea: opts.plotArea,
     ...(title !== undefined ? { title } : {}),
     ...(opts.legend ? { legend: opts.legend } : {}),
+    ...(opts.style !== undefined ? { style: opts.style } : {}),
     ...(opts.plotVisOnly !== undefined ? { plotVisOnly: opts.plotVisOnly } : {}),
     ...(opts.dispBlanksAs !== undefined ? { dispBlanksAs: opts.dispBlanksAs } : {}),
     ...(opts.spPr ? { spPr: opts.spPr } : {}),
