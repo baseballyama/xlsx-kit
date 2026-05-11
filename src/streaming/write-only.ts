@@ -32,6 +32,7 @@ import type { Font } from '../styles/fonts';
 import type { Protection } from '../styles/protection';
 import { OpenXmlIoError } from '../utils/exceptions';
 import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-strings';
+import { validateSheetTitle } from '../workbook/workbook';
 import { serializeCell } from '../worksheet/writer';
 import {
   ARC_CONTENT_TYPES,
@@ -84,10 +85,11 @@ export interface WriteOnlyWorkbook {
 }
 
 const validateTitle = (title: string, taken: Set<string>): void => {
-  if (typeof title !== 'string' || title.length === 0 || title.length > 31) {
-    throw new OpenXmlIoError(`Worksheet title must be 1..31 chars; got "${title}"`);
+  const reason = validateSheetTitle(title);
+  if (reason) {
+    throw new OpenXmlIoError(`Worksheet title "${title}": ${reason}`);
   }
-  if (taken.has(title)) {
+  if (taken.has(title.toLowerCase())) {
     throw new OpenXmlIoError(`Worksheet title "${title}" is already in use`);
   }
 };
@@ -284,7 +286,7 @@ const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
         'addWorksheet: previous worksheet still open — call close() before opening the next one',
       );
     }
-    const taken = new Set(state.sheets.map((s) => s.title));
+    const taken = new Set(state.sheets.map((s) => s.title.toLowerCase()));
     validateTitle(title, taken);
     state.hasOpenWorksheet = true;
     const sheetId = state.sheets.length + 1;
