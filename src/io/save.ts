@@ -22,6 +22,7 @@ import type { Drawing, DrawingItem } from '../drawing/drawing';
 import { drawingToBytes } from '../drawing/drawing-xml';
 import { IMAGE_FORMAT_EXTENSION, IMAGE_FORMAT_MIME, type XlsxImageFormat } from '../drawing/image';
 import type { XlsxSink } from '../io/sink';
+import { OpenXmlIoError } from '../utils/exceptions';
 import { corePropsToBytes } from '../packaging/core';
 import { customPropsToBytes } from '../packaging/custom';
 import { extendedPropsToBytes } from '../packaging/extended';
@@ -87,13 +88,56 @@ export interface SaveOptions {
   compressionLevel?: number;
 }
 
-/** Convenience: serialise a Workbook to an in-memory `Uint8Array` xlsx. */
+/** Convenience: serialise a Workbook to an in-memory `Uint8Array` xlsx.
+ *
+ * Browser-safe: this path uses an in-memory `Uint8Array` sink and never
+ * touches Node's `Buffer` global, so it works unchanged in browser bundles.
+ */
 export async function workbookToBytes(wb: Workbook, opts: SaveOptions = {}): Promise<Uint8Array> {
-  const { toBuffer } = await import('../io/node');
-  const sink = toBuffer();
+  const sink = toUint8ArraySink();
   await saveWorkbook(wb, sink, opts);
   return sink.result();
 }
+
+const toUint8ArraySink = (): XlsxSink & { result(): Uint8Array } => {
+  const chunks: Uint8Array[] = [];
+  let finalised: Uint8Array | undefined;
+  const finalise = (): Uint8Array => {
+    if (finalised !== undefined) return finalised;
+    let total = 0;
+    for (const c of chunks) total += c.byteLength;
+    const out = new Uint8Array(total);
+    let off = 0;
+    for (const c of chunks) {
+      out.set(c, off);
+      off += c.byteLength;
+    }
+    finalised = out;
+    chunks.length = 0;
+    return out;
+  };
+  return {
+    toBytes() {
+      return {
+        write(chunk: Uint8Array): void {
+          if (finalised !== undefined) {
+            throw new OpenXmlIoError('workbookToBytes sink: write after finish');
+          }
+          if (!(chunk instanceof Uint8Array)) {
+            throw new OpenXmlIoError('workbookToBytes sink: chunk is not a Uint8Array');
+          }
+          chunks.push(chunk);
+        },
+        async finish(): Promise<Uint8Array> {
+          return finalise();
+        },
+      };
+    },
+    result(): Uint8Array {
+      return finalise();
+    },
+  };
+};
 
 /** Save a workbook through the given sink. Returns once `finalize()` resolves. */
 export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOptions = {}): Promise<void> {
