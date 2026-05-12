@@ -13,7 +13,7 @@
 
 import type { RichText } from '../cell/rich-text';
 import { type Color, colorToHex } from '../styles/colors';
-import { escapeCellString, unescapeCellString } from '../utils/escape';
+import { escapeCellString, escapeXmlAttr, escapeXmlText, unescapeCellString } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { qname, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
@@ -223,14 +223,6 @@ export function serializeSharedStrings(table: SharedStringsTable): string {
   parts.push('</sst>');
   return parts.join('');
 }
-
-const escapeXmlText = (s: string): string =>
-  // Reorder so '&' is replaced first; otherwise we'd double-escape ampersands
-  // introduced by the later substitutions.
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-const escapeXmlAttr = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
 const serializeSi = (value: SharedStringEntry): string => {
   if (typeof value === 'string') {

@@ -7,6 +7,7 @@ import {
   serializeTextBody,
 } from '../drawing/dml/dml-xml';
 import type { PositiveSize2D } from '../drawing/dml/shape-properties';
+import { escapeXmlAttr } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { CHART_DRAWING_NS, DRAWING_NS, REL_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
@@ -45,9 +46,7 @@ const A_BLIP = A('blip');
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
-const escapeText = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escapeAttr = (s: string): string => escapeText(s).replace(/"/g, '&quot;');
+const escapeAttr = escapeXmlAttr;
 
 const parseFloatText = (text: string | undefined): number | undefined => {
   if (text === undefined) return undefined;

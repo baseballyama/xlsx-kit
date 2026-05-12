@@ -17,6 +17,7 @@
 // `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` on its own
 // line, attribute values quoted with `"`.
 
+import { escapeXmlAttr, escapeXmlText } from '../utils/escape';
 import { DEFAULT_PREFIXES, parseQName, XML_NS } from './namespaces';
 import type { XmlNode } from './tree';
 
@@ -152,31 +153,19 @@ const buildAttrPrefix = (name: string, prefixOf: Map<string, string>): string =>
   return `${prefix}:${local}`;
 };
 
-const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-const escapeAttr = (s: string): string =>
-  s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\r/g, '&#13;')
-    .replace(/\n/g, '&#10;')
-    .replace(/\t/g, '&#9;');
-
 const emit = (out: string[], node: XmlNode, allocation: Allocation, isRoot: boolean): void => {
   const tag = buildElementPrefix(node.name, allocation.prefixOf);
   out.push('<', tag);
 
   if (isRoot) {
     for (const { prefix, ns } of allocation.declarations) {
-      out.push(prefix === '' ? ` xmlns="${escapeAttr(ns)}"` : ` xmlns:${prefix}="${escapeAttr(ns)}"`);
+      out.push(prefix === '' ? ` xmlns="${escapeXmlAttr(ns)}"` : ` xmlns:${prefix}="${escapeXmlAttr(ns)}"`);
     }
   }
 
   for (const [name, value] of Object.entries(node.attrs)) {
     const attrName = buildAttrPrefix(name, allocation.prefixOf);
-    out.push(' ', attrName, '="', escapeAttr(value), '"');
+    out.push(' ', attrName, '="', escapeXmlAttr(value), '"');
   }
 
   const text = node.text;
@@ -188,7 +177,7 @@ const emit = (out: string[], node: XmlNode, allocation: Allocation, isRoot: bool
   }
 
   out.push('>');
-  if (hasText) out.push(escapeText(text));
+  if (hasText) out.push(escapeXmlText(text));
   for (const c of node.children) emit(out, c, allocation, /* isRoot */ false);
   out.push('</', tag, '>');
 };

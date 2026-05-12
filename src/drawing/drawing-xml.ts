@@ -2,6 +2,7 @@
 // envelope round-trip for the chart variant; picture / shape / connector /
 // group remain unsupported placeholders for later iterations.
 
+import { escapeXmlAttr } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { DRAWING_NS, REL_NS, SHEET_DRAWING_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
@@ -37,7 +38,7 @@ const PIC_SP_PR_TAG = `{${SHEET_DRAWING_NS}}spPr`;
 const A_BLIP_TAG = `{${DRAWING_NS}}blip`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const escapeAttr = escapeXmlAttr;
 
 const parseIntChild = (parent: XmlNode, tag: string): number | undefined => {
   const child = findChild(parent, tag);

@@ -1,5 +1,6 @@
 // xl/commentsN.xml read/write.
 
+import { escapeXmlAttr, escapeXmlText } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
@@ -19,8 +20,8 @@ const R_TAG = `{${SHEET_MAIN_NS}}r`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
-const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const escapeText = escapeXmlText;
+const escapeAttr = escapeXmlAttr;
 
 /** Concatenate every `<t>` text node found inside a `<text>` body. */
 const collectText = (textEl: XmlNode): string => {

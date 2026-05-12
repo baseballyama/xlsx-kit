@@ -13,6 +13,7 @@ import {
 } from '../drawing/dml/dml-xml';
 import type { ShapeProperties } from '../drawing/dml/shape-properties';
 import type { TextBody } from '../drawing/dml/text';
+import { escapeXmlText } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { CHART_NS, REL_NS, SHEET_DRAWING_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
@@ -271,7 +272,7 @@ const A_T_TAG = '{http://schemas.openxmlformats.org/drawingml/2006/main}t';
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
-const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escapeText = escapeXmlText;
 
 const valAttr = (n: XmlNode | undefined): string | undefined => n?.attrs['val'];
 const intVal = (n: XmlNode | undefined): number | undefined => {

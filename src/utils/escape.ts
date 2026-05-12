@@ -45,3 +45,42 @@ const UNESCAPE_RE = /_x([0-9A-Fa-f]{4})_/g;
 export function unescapeCellString(s: string): string {
   return s.replace(UNESCAPE_RE, (_full, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
 }
+
+// ---- XML escape helpers ----------------------------------------------------
+//
+// One canonical implementation for text-node and attribute escaping. The
+// previous codebase carried three near-identical copies (one each in save.ts,
+// xml/serializer.ts, xml/stream-writer.ts); they disagreed about `>`-in-attribute
+// handling and would have drifted further apart over time. Keeping them in a
+// single place also makes future fixes (e.g. surrogate-pair scrubbing) land
+// once rather than three times.
+
+/**
+ * Escape a string for safe placement in an XML text node. Replaces the three
+ * codepoints that would otherwise terminate the text region or open a markup
+ * sequence (`&`, `<`, `>`); `"` and `'` are not legal markup terminators
+ * inside text and stay verbatim.
+ */
+export function escapeXmlText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Escape a string for safe placement inside a `"`-quoted XML attribute.
+ * Handles `&`, `<`, `>` and the `"` that would otherwise close the value.
+ *
+ * Note: this deliberately does NOT escape `\r` / `\n` / `\t` to numeric
+ * character references. XML 1.0 attribute-value normalisation would
+ * collapse them to spaces in theory, but the parser used on the read side
+ * (fast-xml-parser) does not decode numeric character references, so a
+ * write-then-read round-trip would surface the literal `&#9;` instead of
+ * recovering the original tab. Leaving the whitespace bytes literal keeps
+ * the round-trip stable and matches what Excel itself emits.
+ */
+export function escapeXmlAttr(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}

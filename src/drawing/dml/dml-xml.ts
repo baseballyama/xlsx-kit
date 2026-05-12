@@ -1,5 +1,6 @@
 // DrawingML primitive parse / serialize.
 
+import { escapeXmlAttr, escapeXmlText } from '../../utils/escape';
 import { OpenXmlSchemaError } from '../../utils/exceptions';
 import { DRAWING_NS, REL_NS } from '../../xml/namespaces';
 import { findChild, findChildren, type XmlNode } from '../../xml/tree';
@@ -66,8 +67,8 @@ import type {
 
 const A = (local: string): string => `{${DRAWING_NS}}${local}`;
 
-const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escapeAttr = (s: string): string => escapeText(s).replace(/"/g, '&quot;');
+const escapeText = escapeXmlText;
+const escapeAttr = escapeXmlAttr;
 
 const valAttr = (n: XmlNode | undefined): string | undefined => n?.attrs['val'];
 const intAttr = (n: XmlNode, name: string): number | undefined => {
