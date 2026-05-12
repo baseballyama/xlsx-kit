@@ -151,16 +151,30 @@ function readZip64Extra(
   wantsUncompSize: boolean,
   wantsCompSize: boolean,
   wantsLfhOffset: boolean,
+  entryPath: string,
 ): { uncompSize?: number; compSize?: number; lfhOffset?: number } {
   let p = extraStart;
   const end = extraStart + extraLen;
   while (p + 4 <= end) {
     const id = u16(b, p);
     const size = u16(b, p + 2);
-    const next = p + 4 + size;
+    const dataStart = p + 4;
+    const next = dataStart + size;
     if (next > end) break;
     if (id === ZIP64_EXTRA_HEADER_ID) {
-      let q = p + 4;
+      // Sanity-check that the declared extra-field size actually covers every
+      // u64 the CD asked us to read. A truncated / mis-sized ZIP64 extra
+      // field would otherwise let u64() interpret bytes belonging to the
+      // next extra record (or the next CD entry) as a size/offset, producing
+      // bogus values that downstream bomb checks then trust. Fail closed.
+      const needed = (wantsUncompSize ? 8 : 0) + (wantsCompSize ? 8 : 0) + (wantsLfhOffset ? 8 : 0);
+      if (size < needed) {
+        throw new OpenXmlIoError(
+          `openZip: ZIP64 extended-info field for "${entryPath}" declares ${size} bytes` +
+            ` but the central directory sentinels require ${needed}`,
+        );
+      }
+      let q = dataStart;
       const result: { uncompSize?: number; compSize?: number; lfhOffset?: number } = {};
       if (wantsUncompSize) {
         result.uncompSize = u64(b, q);
@@ -211,7 +225,7 @@ function parseCentralDirectory(b: Uint8Array, cdOffset: number, expectedCount: n
     const wantsComp = compSize === ZIP32_MAX_U32;
     const wantsOffset = lfhOffset === ZIP32_MAX_U32;
     if (wantsUncomp || wantsComp || wantsOffset) {
-      const extra = readZip64Extra(b, p + 46 + nameLen, extraLen, wantsUncomp, wantsComp, wantsOffset);
+      const extra = readZip64Extra(b, p + 46 + nameLen, extraLen, wantsUncomp, wantsComp, wantsOffset, path);
       if (extra.uncompSize !== undefined) uncompSize = extra.uncompSize;
       if (extra.compSize !== undefined) compSize = extra.compSize;
       if (extra.lfhOffset !== undefined) lfhOffset = extra.lfhOffset;
@@ -264,21 +278,44 @@ export function openRandomAccessArchive(
 
   const resolvedLimits = resolveDecompressionLimits(decompressionLimits);
 
+  // Detect ZIP64 up front so a malformed ZIP64 record fails closed instead of
+  // falling back to `unzipSync`. The fallback inflates every entry before any
+  // bomb cap runs; the whole point of the ZIP64 path is to keep the streaming
+  // caps in play, so we must not silently downgrade when ZIP64 is in use.
+  const eocdTotalEntries = u16(bytes, eocdOff + 10);
+  const eocdCdSize = u32(bytes, eocdOff + 12);
+  const eocdCdOffset = u32(bytes, eocdOff + 16);
+  const claimsZip64 =
+    eocdTotalEntries === ZIP32_MAX_U16 ||
+    eocdCdSize === ZIP32_MAX_U32 ||
+    eocdCdOffset === ZIP32_MAX_U32;
+
   let summary: CdSummary;
   try {
     summary = readCdSummary(bytes, eocdOff);
-  } catch {
-    // Malformed EOCD / ZIP64 layout — fall back to fflate, which is more
-    // tolerant about archive quirks. The fallback still pre-checks declared
-    // entry sizes; see openViaUnzipSync.
+  } catch (cause) {
+    if (claimsZip64) {
+      // ZIP64 sentinels are set but the matching record / locator is missing
+      // or invalid. Fail closed — `unzipSync` would inflate every entry.
+      throw cause instanceof OpenXmlIoError
+        ? cause
+        : new OpenXmlIoError('openZip: ZIP64 central directory is malformed', { cause });
+    }
+    // Plain ZIP32 with an unparseable EOCD — fflate's `unzipSync` is more
+    // tolerant of quirky archives; the post-hoc bomb check still applies.
     return openViaUnzipSync(bytes, resolvedLimits);
   }
 
   let entries: CdEntry[];
   try {
     entries = parseCentralDirectory(bytes, summary.cdOffset, summary.totalEntries);
-  } catch {
-    // Malformed CD — fall back to fflate which is more tolerant.
+  } catch (cause) {
+    if (claimsZip64) {
+      throw cause instanceof OpenXmlIoError
+        ? cause
+        : new OpenXmlIoError('openZip: ZIP64 central directory is malformed', { cause });
+    }
+    // Malformed ZIP32 CD — fall back to fflate which is more tolerant.
     return openViaUnzipSync(bytes, resolvedLimits);
   }
 

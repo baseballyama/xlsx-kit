@@ -17,13 +17,22 @@ export function utf8ByteLength(s: string): number {
     } else if (c < 0x800) {
       n += 2;
     } else if (c >= 0xd800 && c <= 0xdbff) {
-      // High surrogate: paired with the next code unit encodes one 4-byte
-      // codepoint. A lone high surrogate at the end of the string still
-      // produces 3 replacement bytes through TextEncoder; treat it as 4 here
-      // so the threshold check stays conservative.
-      n += 4;
-      i++;
+      // High surrogate. Only consume the next code unit when it actually
+      // is a low surrogate — an unpaired high surrogate (followed by a
+      // BMP char or by EOS) would otherwise swallow the next code unit
+      // and undercount the string. TextEncoder replaces a lone high
+      // surrogate with U+FFFD (3 bytes), so use 3 here too. A paired
+      // surrogate encodes one 4-byte codepoint.
+      const next = i + 1 < s.length ? s.charCodeAt(i + 1) : 0;
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        n += 4;
+        i++;
+      } else {
+        n += 3;
+      }
     } else {
+      // Includes unpaired low surrogates (0xDC00-0xDFFF), which encode as
+      // U+FFFD = 3 UTF-8 bytes through TextEncoder.
       n += 3;
     }
   }
