@@ -90,6 +90,12 @@ function normalizePath(path: string): string {
   for (const seg of segments) {
     if (seg === '' || seg === '.') continue;
     if (seg === '..') {
+      // Pop the last accumulated segment when one exists; when `out` is
+      // empty (a relative target with more `..` than ancestors) the pop is
+      // a no-op so the climb is silently absorbed at the package root. The
+      // archive.has() check on the resolved path catches any escape attempt
+      // because the entry simply won't exist outside the package — there's
+      // no filesystem traversal to worry about, only a missing-entry error.
       out.pop();
       continue;
     }

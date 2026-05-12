@@ -561,6 +561,25 @@ export interface CellsByKindCounts {
   formula: number;
 }
 
+/**
+ * Bucket a single CellValue into one of the {@link CellsByKindCounts} keys.
+ * Shared between {@link countCellsByKind} and the workbook-wide overview so
+ * the two never drift in how they classify (e.g. `Date` vs `duration`).
+ */
+export function classifyCellValue(v: import('../cell/cell').CellValue): keyof CellsByKindCounts {
+  if (v === null) return 'null';
+  if (typeof v === 'string') return 'string';
+  if (typeof v === 'number') return 'number';
+  if (typeof v === 'boolean') return 'boolean';
+  if (v instanceof Date) return 'date';
+  const kind = (v as { kind?: string }).kind;
+  if (kind === 'duration') return 'duration';
+  if (kind === 'error') return 'error';
+  if (kind === 'rich-text') return 'rich-text';
+  // Remaining shape is FormulaValue (kind === 'formula').
+  return 'formula';
+}
+
 export function countCellsByKind(ws: Worksheet): CellsByKindCounts {
   const out: CellsByKindCounts = {
     null: 0,
@@ -574,19 +593,7 @@ export function countCellsByKind(ws: Worksheet): CellsByKindCounts {
     formula: 0,
   };
   for (const cell of iterCells(ws)) {
-    const v = cell.value;
-    if (v === null) out.null++;
-    else if (typeof v === 'string') out.string++;
-    else if (typeof v === 'number') out.number++;
-    else if (typeof v === 'boolean') out.boolean++;
-    else if (v instanceof Date) out.date++;
-    else {
-      const kind = (v as { kind?: string }).kind;
-      if (kind === 'duration') out.duration++;
-      else if (kind === 'error') out.error++;
-      else if (kind === 'rich-text') out['rich-text']++;
-      else if (kind === 'formula') out.formula++;
-    }
+    out[classifyCellValue(cell.value)]++;
   }
   return out;
 }
@@ -1386,9 +1393,18 @@ export function getRowValues(
     if (opts.minCol === undefined && opts.maxCol === undefined) return [];
   }
   const minCol = opts.minCol ?? 1;
-  const maxCol =
-    opts.maxCol ??
-    (rowMap ? Math.max(...rowMap.keys()) : 0);
+  // Manual scan avoids `Math.max(...rowMap.keys())`. Spread into a builtin is
+  // limited by the engine's argument-count cap (~125 k on V8), and `getRowValues`
+  // is documented to handle every column up to MAX_COL (16384). For sparse
+  // rows the spread is fine in practice; for dense rows it would silently
+  // throw a stack overflow — surface the cost in a single linear scan instead.
+  let derivedMax = 0;
+  if (rowMap && opts.maxCol === undefined) {
+    for (const c of rowMap.keys()) {
+      if (c > derivedMax) derivedMax = c;
+    }
+  }
+  const maxCol = opts.maxCol ?? derivedMax;
   if (maxCol < minCol) return [];
   const out: (CellValue | null)[] = [];
   for (let c = minCol; c <= maxCol; c++) {
