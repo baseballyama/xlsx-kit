@@ -95,6 +95,17 @@ export function findById(rels: Relationships, id: string): Relationship | undefi
   return undefined;
 }
 
+/**
+ * Build an id → relationship index for callers that look up the same .rels
+ * file many times in a hot loop. Cheaper than repeated {@link findById} once
+ * the rels count crosses a handful of entries.
+ */
+export function indexRelsById(rels: Relationships): Map<string, Relationship> {
+  const out = new Map<string, Relationship>();
+  for (const r of rels.rels) out.set(r.id, r);
+  return out;
+}
+
 export function findByType(rels: Relationships, type: string): Relationship | undefined {
   for (const r of rels.rels) if (r.type === type) return r;
   return undefined;

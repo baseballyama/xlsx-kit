@@ -21,7 +21,7 @@ import { corePropsFromBytes } from '../packaging/core';
 import { customPropsFromBytes } from '../packaging/custom';
 import { extendedPropsFromBytes } from '../packaging/extended';
 import { manifestFromBytes } from '../packaging/manifest';
-import { findById, relsFromBytes } from '../packaging/relationships';
+import { findById, indexRelsById, relsFromBytes } from '../packaging/relationships';
 import { parseStylesheetXml } from '../styles/stylesheet-reader';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { DefinedName } from '../workbook/defined-names';
@@ -349,27 +349,33 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
     }
     const sheetRelsPath = relsPathFor(sheetPath);
     const sheetRels = archive.has(sheetRelsPath) ? relsFromBytes(archive.read(sheetRelsPath)) : undefined;
-    const loadTable = sheetRels
+    // Build an id → rel index once; the loadTable / loadComments / loadDrawing
+    // callbacks are invoked once per cross-reference in the worksheet body and
+    // a linear find() inside each would be O(rels × refs). Sheets with many
+    // hyperlinks / tables / drawings (e.g. dashboard workbooks) make that
+    // accumulation visible.
+    const sheetRelsById = sheetRels ? indexRelsById(sheetRels) : undefined;
+    const loadTable = sheetRelsById
       ? (relId: string) => {
-          const tRel = sheetRels.rels.find((r) => r.id === relId);
+          const tRel = sheetRelsById.get(relId);
           if (!tRel) return undefined;
           const tablePath = resolveRelTarget(sheetPath, tRel.target);
           if (!archive.has(tablePath)) return undefined;
           return parseTableXml(archive.read(tablePath));
         }
       : undefined;
-    const loadComments = sheetRels
+    const loadComments = sheetRelsById
       ? (relId: string) => {
-          const cRel = sheetRels.rels.find((r) => r.id === relId);
+          const cRel = sheetRelsById.get(relId);
           if (!cRel) return undefined;
           const cPath = resolveRelTarget(sheetPath, cRel.target);
           if (!archive.has(cPath)) return undefined;
           return parseCommentsXml(archive.read(cPath));
         }
       : undefined;
-    const loadDrawing = sheetRels
+    const loadDrawing = sheetRelsById
       ? (relId: string) => {
-          const dRel = sheetRels.rels.find((r) => r.id === relId);
+          const dRel = sheetRelsById.get(relId);
           if (!dRel) return undefined;
           const dPath = resolveRelTarget(sheetPath, dRel.target);
           if (!archive.has(dPath)) return undefined;
@@ -378,11 +384,12 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
           const dRelsPath = relsPathFor(dPath);
           if (archive.has(dRelsPath)) {
             const dRels = relsFromBytes(archive.read(dRelsPath));
+            const dRelsById = indexRelsById(dRels);
             for (const item of drawing.items) {
               if (item.content.kind === 'chart') {
                 const chartRId = item.content.chart.rId;
                 if (!chartRId) continue;
-                const chartRel = dRels.rels.find((r) => r.id === chartRId);
+                const chartRel = dRelsById.get(chartRId);
                 if (!chartRel) continue;
                 const chartPath = resolveRelTarget(dPath, chartRel.target);
                 if (archive.has(chartPath)) {
@@ -398,7 +405,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
                       const chartRelsPath = relsPathFor(chartPath);
                       if (archive.has(chartRelsPath)) {
                         const chartRelsObj = relsFromBytes(archive.read(chartRelsPath));
-                        const usRel = chartRelsObj.rels.find((r) => r.id === userShapesRId);
+                        const usRel = indexRelsById(chartRelsObj).get(userShapesRId);
                         if (usRel) {
                           const usPath = resolveRelTarget(chartPath, usRel.target);
                           if (archive.has(usPath)) {
@@ -419,7 +426,7 @@ function loadWorkbookFromArchive(archive: ZipArchive): Workbook {
               } else if (item.content.kind === 'picture') {
                 const picRId = item.content.picture.rId;
                 if (!picRId) continue;
-                const picRel = dRels.rels.find((r) => r.id === picRId);
+                const picRel = dRelsById.get(picRId);
                 if (!picRel) continue;
                 const imgPath = resolveRelTarget(dPath, picRel.target);
                 if (archive.has(imgPath)) {
@@ -1072,28 +1079,19 @@ const PASSTHROUGH_PREFIXES: ReadonlyArray<string> = [
  *  - Without marker → control / OLE / shape VML; capture as
  * passthrough so form controls survive load → save → load.
  */
-const COMMENT_VML_MARKER: ReadonlyArray<number> = (() => {
-  const marker = new TextEncoder().encode('ObjectType="Note"');
-  return Array.from(marker);
-})();
+const COMMENT_VML_MARKER = 'ObjectType="Note"';
+// Latin-1 is a 1-to-1 byte-to-character mapping for the 0–255 range, so a
+// String.indexOf scan on the decoded view returns the same answer as a byte
+// search but takes advantage of V8's native StringPrototypeIndexOf — orders
+// of magnitude faster than the JS loop the previous implementation used on
+// multi-megabyte VML drawings.
+const LATIN1_DECODER = new TextDecoder('latin1');
 
 const isVmlDrawing = (path: string): boolean =>
   path.startsWith('xl/drawings/') && path.endsWith('.vml');
 
-const containsCommentMarker = (bytes: Uint8Array): boolean => {
-  const len = COMMENT_VML_MARKER.length;
-  for (let i = 0; i + len <= bytes.length; i++) {
-    let match = true;
-    for (let j = 0; j < len; j++) {
-      if (bytes[i + j] !== COMMENT_VML_MARKER[j]) {
-        match = false;
-        break;
-      }
-    }
-    if (match) return true;
-  }
-  return false;
-};
+const containsCommentMarker = (bytes: Uint8Array): boolean =>
+  LATIN1_DECODER.decode(bytes).includes(COMMENT_VML_MARKER);
 
 /**
  * Top-level xl/*.xml files that aren't modeled but Excel relies on (or
