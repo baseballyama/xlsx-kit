@@ -28,7 +28,9 @@ describe('createXmlStreamWriter — minimal output', () => {
     w.start('a', { v: 'x"y\nz' });
     w.text('a & b');
     w.end();
-    expect(decode(w.result())).toBe('<a v="x&quot;y&#10;z">a &amp; b</a>');
+    // Whitespace in attribute values stays literal — the parser doesn't
+    // decode `&#10;`, so escaping would break the round-trip.
+    expect(decode(w.result())).toBe('<a v="x&quot;y\nz">a &amp; b</a>');
   });
 
   it('omits standalone when requested', () => {

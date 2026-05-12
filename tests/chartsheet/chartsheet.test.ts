@@ -19,9 +19,9 @@ describe('Chartsheet XML round-trip', () => {
 
   it('preserves sheetPr properties (published / codeName / tabColor)', () => {
     const cs = makeChartsheet('Tinted');
-    cs.properties = { published: false, codeName: 'Sheet42', tabColorRgb: 'FF8800' };
+    cs.properties = { published: false, codeName: 'Sheet42', tabColor: { rgb: 'FF8800' } };
     const back = parseChartsheetXml(chartsheetToBytes(cs), 'Tinted');
-    expect(back.properties).toEqual({ published: false, codeName: 'Sheet42', tabColorRgb: 'FF8800' });
+    expect(back.properties).toEqual({ published: false, codeName: 'Sheet42', tabColor: { rgb: 'FF8800' } });
   });
 
   it('preserves sheetProtection (content + objects + algorithmName)', () => {

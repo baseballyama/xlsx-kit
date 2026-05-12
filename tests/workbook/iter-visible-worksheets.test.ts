@@ -52,6 +52,7 @@ describe('iterWorksheetsByState', () => {
   it('setSheetState updates the iter result', () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'A');
+    addWorksheet(wb, 'B'); // keep one visible so hiding A is allowed
     expect([...iterWorksheetsByState(wb, 'hidden')]).toEqual([]);
     setSheetState(wb, 'A', 'hidden');
     expect([...iterWorksheetsByState(wb, 'hidden')].map((s) => s.title)).toEqual(['A']);

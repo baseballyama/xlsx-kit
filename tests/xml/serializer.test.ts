@@ -35,9 +35,12 @@ describe('serializeXml — minimal cases', () => {
     expect(decode(serializeXml(el('t', {}, [], 'a & b < c > d')))).toContain('<t>a &amp; b &lt; c &gt; d</t>');
   });
 
-  it('escapes attribute values including newlines and tabs', () => {
+  it('escapes attribute values, leaving whitespace literal', () => {
+    // The canonical escapeXmlAttr keeps `\r` / `\n` / `\t` literal so the
+    // parser (which doesn't decode `&#9;` / `&#10;` / `&#13;`) round-trips
+    // them faithfully. See src/utils/escape.ts for the rationale.
     const node = el('a', { v: 'x"y\nz\tw' });
-    expect(decode(serializeXml(node))).toContain('<a v="x&quot;y&#10;z&#9;w"/>');
+    expect(decode(serializeXml(node))).toContain('<a v="x&quot;y\nz\tw"/>');
   });
 
   it('lets the caller suppress the XML declaration', () => {

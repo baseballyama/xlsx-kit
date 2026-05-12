@@ -85,8 +85,12 @@ describe('createZipWriter (basic)', () => {
   });
 
   it('rejects sinks without a buffered toBytes()', () => {
-    const stubSink = {} as Parameters<typeof createZipWriter>[0];
-    expect(() => createZipWriter(stubSink)).toThrowError(OpenXmlIoError);
+    // `XlsxSink.toBytes` is required by the type, so a sink without it can
+    // only be constructed via a cast. The runtime then surfaces the missing
+    // method as a TypeError on the first call.
+    // biome-ignore lint/suspicious/noExplicitAny: deliberate type-erasing cast
+    const stubSink = {} as any;
+    expect(() => createZipWriter(stubSink)).toThrow(TypeError);
   });
 });
 

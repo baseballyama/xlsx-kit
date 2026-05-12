@@ -32,6 +32,7 @@ import type { LegacyComment } from '../worksheet/comments';
 import type { Hyperlink } from '../worksheet/hyperlinks';
 import type { CellsByKindCounts, Worksheet } from '../worksheet/worksheet';
 import {
+  classifyCellValue,
   countCellsByKind,
   getCell,
   getCellComment,
@@ -480,14 +481,32 @@ export function renameSheet(wb: Workbook, oldTitle: string, newTitle: string): v
 }
 
 /**
- * Set the visibility state on a sheet by title. Throws on unknown title. Note:
- * Excel forbids hiding the active sheet when it's the only visible one — this
- * helper does NOT check that constraint; callers should ensure at least one
- * sheet stays visible.
+ * Set the visibility state on a sheet by title. Throws on unknown title.
+ * Refuses to hide the last visible sheet: an .xlsx with every sheet hidden
+ * fails to open in Excel ("Excel cannot use the object linking and embedding
+ * features because no sheet is visible"). Catching it here keeps the
+ * workbook recoverable instead of producing a save Excel will reject.
  */
 export function setSheetState(wb: Workbook, title: string, state: SheetState): void {
   const ref = wb.sheets.find((s) => s.sheet.title === title);
   if (!ref) throw new OpenXmlSchemaError(`setSheetState: no sheet named "${title}"`);
+  if (ref.state === state) return;
+  if (state !== 'visible' && ref.state === 'visible') {
+    let otherVisible = false;
+    for (const candidate of wb.sheets) {
+      if (candidate !== ref && candidate.state === 'visible') {
+        otherVisible = true;
+        break;
+      }
+    }
+    if (!otherVisible) {
+      throw new OpenXmlSchemaError(
+        `setSheetState: cannot hide "${title}" — it's the last visible sheet,` +
+          ' and Excel refuses to open a workbook with every sheet hidden. Make another sheet' +
+          ' visible first (or call showSheet()).',
+      );
+    }
+  }
   ref.state = state;
 }
 
@@ -863,40 +882,84 @@ export interface WorkbookOverview {
 }
 
 export function describeWorkbook(wb: Workbook): WorkbookOverview {
-  const stats = getWorkbookStats(wb);
-  const cellsByKind = getWorkbookCellsByKind(wb);
+  // Single-pass aggregation: a cell-by-cell walk dominates this function's
+  // cost on million-cell workbooks, so we compute the workbook stats, the
+  // value-kind histogram, AND each sheet's cell/formula counts in one sweep
+  // instead of triple-scanning.
+  let worksheetCount = 0;
+  let chartsheetCount = 0;
+  let cellCount = 0;
+  let formulaCount = 0;
+  let commentCount = 0;
+  let hyperlinkCount = 0;
+  let mergedRangeCount = 0;
+  let tableCount = 0;
+  const cellsByKind: CellsByKindCounts = {
+    null: 0,
+    string: 0,
+    number: 0,
+    boolean: 0,
+    date: 0,
+    duration: 0,
+    error: 0,
+    'rich-text': 0,
+    formula: 0,
+  };
   const sheets: WorkbookSheetOverview[] = wb.sheets.map((ref) => {
-    if (ref.kind === 'worksheet') {
-      const ws = ref.sheet;
-      let formulaCount = 0;
-      let cellCount = 0;
-      for (const rowMap of ws.rows.values()) {
-        for (const cell of rowMap.values()) {
-          cellCount++;
-          if (isFormulaValue(cell.value)) formulaCount++;
-        }
-      }
+    if (ref.kind === 'chartsheet') {
+      chartsheetCount++;
       return {
-        title: ws.title,
-        kind: 'worksheet',
+        title: ref.sheet.title,
+        kind: 'chartsheet',
         state: ref.state,
-        cellCount,
-        formulaCount,
-        tableCount: ws.tables.length,
-        drawingItemCount: ws.drawing?.items.length ?? 0,
+        cellCount: 0,
+        formulaCount: 0,
+        tableCount: 0,
+        drawingItemCount: ref.sheet.drawing?.items.length ?? 0,
       };
     }
+    worksheetCount++;
+    const ws = ref.sheet;
+    let sheetCellCount = 0;
+    let sheetFormulaCount = 0;
+    for (const rowMap of ws.rows.values()) {
+      for (const cell of rowMap.values()) {
+        sheetCellCount++;
+        const bucket = classifyCellValue(cell.value);
+        cellsByKind[bucket]++;
+        if (isFormulaValue(cell.value)) sheetFormulaCount++;
+      }
+    }
+    cellCount += sheetCellCount;
+    formulaCount += sheetFormulaCount;
+    commentCount += ws.legacyComments.length;
+    hyperlinkCount += ws.hyperlinks.length;
+    mergedRangeCount += ws.mergedCells.length;
+    tableCount += ws.tables.length;
     return {
-      title: ref.sheet.title,
-      kind: 'chartsheet',
+      title: ws.title,
+      kind: 'worksheet',
       state: ref.state,
-      cellCount: 0,
-      formulaCount: 0,
-      tableCount: 0,
-      drawingItemCount: ref.sheet.drawing?.items.length ?? 0,
+      cellCount: sheetCellCount,
+      formulaCount: sheetFormulaCount,
+      tableCount: ws.tables.length,
+      drawingItemCount: ws.drawing?.items.length ?? 0,
     };
   });
-  return { ...stats, cellsByKind, sheets };
+  return {
+    worksheetCount,
+    chartsheetCount,
+    cellCount,
+    formulaCount,
+    commentCount,
+    hyperlinkCount,
+    mergedRangeCount,
+    tableCount,
+    definedNameCount: wb.definedNames.length,
+    customPropertyCount: wb.customProperties?.properties.length ?? 0,
+    cellsByKind,
+    sheets,
+  };
 }
 
 /**

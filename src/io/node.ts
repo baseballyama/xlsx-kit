@@ -75,6 +75,11 @@ export function toBuffer(): XlsxSink & { toBytes(): BufferedSinkWriter; result()
         async finish(): Promise<Uint8Array> {
           return finalise();
         },
+        abort(): void {
+          if (finalised !== undefined) return;
+          finalised = new Uint8Array(0);
+          chunks.length = 0;
+        },
       };
     },
     result(): Buffer {

@@ -30,7 +30,9 @@ import type { Border } from '../styles/borders';
 import type { Fill } from '../styles/fills';
 import type { Font } from '../styles/fonts';
 import type { Protection } from '../styles/protection';
+import { escapeXmlAttr } from '../utils/escape';
 import { OpenXmlIoError } from '../utils/exceptions';
+import { utf8ByteLength } from '../utils/utf8';
 import { makeSharedStrings, sharedStringsToBytes } from '../workbook/shared-strings';
 import { validateSheetTitle } from '../workbook/workbook';
 import { serializeCell } from '../worksheet/writer';
@@ -51,8 +53,7 @@ import {
 } from '../xml/namespaces';
 import { createZipWriter } from '../zip/writer';
 
-const escapeAttr = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const escapeAttr = escapeXmlAttr;
 
 export interface WriteOnlyOptions {
   /** Reserved — currently ignored (the buffered backend doesn't honour it). */
@@ -82,6 +83,16 @@ export interface WriteOnlyWorkbook {
   addWorksheet(title: string): Promise<WriteOnlyWorksheet>;
   /** Finalise the archive: emits styles / sharedStrings / workbook / manifest / rels. */
   finalize(): Promise<void>;
+  /**
+   * Release the sink without finalising the archive. Call this from a
+   * surrounding catch block when the producer pipeline throws before
+   * `finalize()` — without it, streaming destinations (`toFile` /
+   * `toWritable`) keep the file descriptor / Writable open and the partial
+   * xlsx looks valid on disk.
+   *
+   * Idempotent. Subsequent `addWorksheet` / `finalize` calls throw.
+   */
+  abort(cause?: unknown): void;
 }
 
 const validateTitle = (title: string, taken: Set<string>): void => {
@@ -171,7 +182,11 @@ const makeWriteOnlyWorksheet = (state: WorkbookState, title: string, sheetId: nu
 
   const writeText = (text: string): void => {
     pendingText += text;
-    pendingBytes += text.length; // chars approximate bytes; UTF-8 may be larger.
+    // UTF-8 byte length, computed without a full encode: scan once and add the
+    // exact codepoint cost. `text.length` would undercount CJK by ~3× and let
+    // the buffer balloon past FLUSH_THRESHOLD_BYTES on Japanese / Chinese
+    // workloads.
+    pendingBytes += utf8ByteLength(text);
     if (pendingBytes >= FLUSH_THRESHOLD_BYTES) {
       stream.write(encoder.encode(pendingText));
       pendingText = '';
@@ -302,77 +317,93 @@ const makeWriteOnlyWorkbook = (sink: XlsxSink): WriteOnlyWorkbook => {
     }
     state.finalised = true;
     const writer = state.writer;
-
-    // 1. Worksheets — already streamed through writer.addStreamingEntry
-    // during each WriteOnlyWorksheet's appendRow / close cycle.
-
-    // 2. Stylesheet.
-    await writer.addEntry(ARC_STYLE, stylesheetToBytes(state.styles));
-
-    // 3. SharedStrings (only when non-empty).
-    if (state.sst.entries.length > 0) {
-      await writer.addEntry(ARC_SHARED_STRINGS, sharedStringsToBytes(state.sst));
+    try {
+      await finalizeImpl(state, writer);
+    } catch (err) {
+      // Release the sink so the half-emitted archive doesn't linger as a
+      // valid-looking file on disk. abort() is idempotent.
+      writer.abort(err);
+      throw err;
     }
-
-    // 4. workbook.xml.
-    const workbookXml = serializeWorkbookXml(state.sheets);
-    await writer.addEntry(ARC_WORKBOOK, new TextEncoder().encode(workbookXml));
-
-    // 5. workbook.xml.rels.
-    const wbRels = makeRelationships();
-    state.sheets.forEach((s, i) => {
-      wbRels.rels.push({
-        id: `rId${i + 1}`,
-        type: `${REL_NS}/worksheet`,
-        target: `worksheets/sheet${s.sheetId}.xml`,
-      });
-    });
-    if (state.sst.entries.length > 0) {
-      wbRels.rels.push({
-        id: `rId${wbRels.rels.length + 1}`,
-        type: `${REL_NS}/sharedStrings`,
-        target: 'sharedStrings.xml',
-      });
-    }
-    wbRels.rels.push({
-      id: `rId${wbRels.rels.length + 1}`,
-      type: `${REL_NS}/styles`,
-      target: 'styles.xml',
-    });
-    await writer.addEntry(ARC_WORKBOOK_RELS, relsToBytes(wbRels));
-
-    // 6. root rels.
-    const rootRels = makeRelationships();
-    rootRels.rels.push({
-      id: 'rId1',
-      type: `${REL_NS}/officeDocument`,
-      target: 'xl/workbook.xml',
-    });
-    await writer.addEntry(ARC_ROOT_RELS, relsToBytes(rootRels));
-    void PKG_REL_NS; // imported for future docProps support
-
-    // 7. [Content_Types].xml.
-    const manifest = makeManifest();
-    // Excel rejects packages whose [Content_Types].xml is missing the Default
-    // entries for `rels` / `xml` — without them the package relationships file
-    // can't be classified and Excel refuses to open.
-    addDefault(manifest, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
-    addDefault(manifest, 'xml', 'application/xml');
-    addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
-    for (const s of state.sheets) {
-      addOverride(manifest, `/xl/worksheets/sheet${s.sheetId}.xml`, WORKSHEET_TYPE);
-    }
-    addOverride(manifest, `/${ARC_STYLE}`, STYLES_TYPE);
-    if (state.sst.entries.length > 0) {
-      addOverride(manifest, `/${ARC_SHARED_STRINGS}`, SHARED_STRINGS_TYPE);
-    }
-    await writer.addEntry(ARC_CONTENT_TYPES, manifestToBytes(manifest));
-
-    await writer.finalize();
   };
 
-  return { addWorksheet, finalize };
+  const abort = (cause?: unknown): void => {
+    if (state.finalised) return;
+    state.finalised = true;
+    state.writer.abort(cause);
+  };
+
+  return { addWorksheet, finalize, abort };
 };
+
+async function finalizeImpl(state: WorkbookState, writer: WorkbookState['writer']): Promise<void> {
+  // 1. Worksheets — already streamed through writer.addStreamingEntry
+  // during each WriteOnlyWorksheet's appendRow / close cycle.
+
+  // 2. Stylesheet.
+  await writer.addEntry(ARC_STYLE, stylesheetToBytes(state.styles));
+
+  // 3. SharedStrings (only when non-empty).
+  if (state.sst.entries.length > 0) {
+    await writer.addEntry(ARC_SHARED_STRINGS, sharedStringsToBytes(state.sst));
+  }
+
+  // 4. workbook.xml.
+  const workbookXml = serializeWorkbookXml(state.sheets);
+  await writer.addEntry(ARC_WORKBOOK, new TextEncoder().encode(workbookXml));
+
+  // 5. workbook.xml.rels.
+  const wbRels = makeRelationships();
+  state.sheets.forEach((s, i) => {
+    wbRels.rels.push({
+      id: `rId${i + 1}`,
+      type: `${REL_NS}/worksheet`,
+      target: `worksheets/sheet${s.sheetId}.xml`,
+    });
+  });
+  if (state.sst.entries.length > 0) {
+    wbRels.rels.push({
+      id: `rId${wbRels.rels.length + 1}`,
+      type: `${REL_NS}/sharedStrings`,
+      target: 'sharedStrings.xml',
+    });
+  }
+  wbRels.rels.push({
+    id: `rId${wbRels.rels.length + 1}`,
+    type: `${REL_NS}/styles`,
+    target: 'styles.xml',
+  });
+  await writer.addEntry(ARC_WORKBOOK_RELS, relsToBytes(wbRels));
+
+  // 6. root rels.
+  const rootRels = makeRelationships();
+  rootRels.rels.push({
+    id: 'rId1',
+    type: `${REL_NS}/officeDocument`,
+    target: 'xl/workbook.xml',
+  });
+  await writer.addEntry(ARC_ROOT_RELS, relsToBytes(rootRels));
+  void PKG_REL_NS; // imported for future docProps support
+
+  // 7. [Content_Types].xml.
+  const manifest = makeManifest();
+  // Excel rejects packages whose [Content_Types].xml is missing the Default
+  // entries for `rels` / `xml` — without them the package relationships file
+  // can't be classified and Excel refuses to open.
+  addDefault(manifest, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
+  addDefault(manifest, 'xml', 'application/xml');
+  addOverride(manifest, `/${ARC_WORKBOOK}`, XLSX_TYPE);
+  for (const s of state.sheets) {
+    addOverride(manifest, `/xl/worksheets/sheet${s.sheetId}.xml`, WORKSHEET_TYPE);
+  }
+  addOverride(manifest, `/${ARC_STYLE}`, STYLES_TYPE);
+  if (state.sst.entries.length > 0) {
+    addOverride(manifest, `/${ARC_SHARED_STRINGS}`, SHARED_STRINGS_TYPE);
+  }
+  await writer.addEntry(ARC_CONTENT_TYPES, manifestToBytes(manifest));
+
+  await writer.finalize();
+}
 
 const serializeWorkbookXml = (
   sheets: ReadonlyArray<{ title: string; sheetId: number }>,
@@ -396,10 +427,10 @@ export async function createWriteOnlyWorkbook(
   sink: XlsxSink,
   _opts: WriteOnlyOptions = {},
 ): Promise<WriteOnlyWorkbook> {
-  // The streaming-deflate ZIP writer is created lazily inside finalize() so the
-  // caller can compose multiple sheets without an early commit. Worksheet bytes
-  // accumulate in `state.sheets` until finalize streams them through fflate's
-  // `Zip` + `ZipDeflate` (see src/zip/writer.ts).
+  // The streaming-deflate ZIP writer is constructed eagerly here: each
+  // addWorksheet opens an entry on it and flushes row chunks through fflate's
+  // `Zip` + `ZipDeflate` immediately, so peak memory stays at one pending row
+  // buffer plus deflate scratch (no all-sheets accumulation).
   return makeWriteOnlyWorkbook(sink);
 }
 

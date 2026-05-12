@@ -8,6 +8,7 @@ import {
 } from '../../drawing/dml/dml-xml';
 import type { ShapeProperties } from '../../drawing/dml/shape-properties';
 import type { TextBody } from '../../drawing/dml/text';
+import { escapeXmlAttr, escapeXmlText } from '../../utils/escape';
 import { OpenXmlSchemaError } from '../../utils/exceptions';
 import { CX_NS, REL_NS } from '../../xml/namespaces';
 import { parseXml } from '../../xml/parser';
@@ -86,8 +87,8 @@ const parseTxPrSlot = (parent: XmlNode): TextBody | undefined => {
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
-const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escapeAttr = (s: string): string => escapeText(s).replace(/"/g, '&quot;');
+const escapeText = escapeXmlText;
+const escapeAttr = escapeXmlAttr;
 
 const valAttr = (n: XmlNode | undefined): string | undefined => n?.attrs['val'];
 const intAttr = (n: XmlNode, name: string): number | undefined => {

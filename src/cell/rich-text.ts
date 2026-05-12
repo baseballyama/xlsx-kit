@@ -8,6 +8,7 @@
 // renaming.
 
 import type { Color } from '../styles/colors';
+import { OpenXmlSchemaError } from '../utils/exceptions';
 
 /** Underline styles per openpyxl's cell-level NestedNoneSet. */
 export type InlineUnderline = 'single' | 'double' | 'singleAccounting' | 'doubleAccounting';
@@ -42,7 +43,7 @@ export type RichText = ReadonlyArray<TextRun>;
 
 export function makeTextRun(text: string, font?: InlineFont): TextRun {
   if (typeof text !== 'string') {
-    throw new TypeError('makeTextRun: text must be a string');
+    throw new OpenXmlSchemaError('makeTextRun: text must be a string');
   }
   return Object.freeze(font !== undefined ? { text, font } : { text });
 }

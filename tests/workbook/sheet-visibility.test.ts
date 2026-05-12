@@ -24,6 +24,7 @@ describe('sheet visibility helpers', () => {
   it('hideSheet / showSheet flip back and forth', () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'A');
+    addWorksheet(wb, 'B'); // keep one visible so hiding A doesn't trigger the last-visible guard
     hideSheet(wb, 'A');
     expect(getSheetState(wb, 'A')).toBe('hidden');
     showSheet(wb, 'A');
@@ -33,6 +34,7 @@ describe('sheet visibility helpers', () => {
   it('veryHideSheet sets veryHidden state', () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'A');
+    addWorksheet(wb, 'B'); // keep one visible
     veryHideSheet(wb, 'A');
     expect(getSheetState(wb, 'A')).toBe('veryHidden');
   });
@@ -40,6 +42,7 @@ describe('sheet visibility helpers', () => {
   it('setSheetState writes the requested state', () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'A');
+    addWorksheet(wb, 'B'); // keep one visible
     setSheetState(wb, 'A', 'hidden');
     expect(getSheetState(wb, 'A')).toBe('hidden');
   });
@@ -47,9 +50,21 @@ describe('sheet visibility helpers', () => {
   it('throws on unknown sheet title', () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'A');
+    addWorksheet(wb, 'B');
     expect(() => hideSheet(wb, 'Missing')).toThrow();
     expect(() => getSheetState(wb, 'Missing')).toThrow();
     expect(() => setSheetState(wb, 'Missing', 'hidden')).toThrow();
+  });
+
+  it('refuses to hide the last visible sheet', () => {
+    const wb = createWorkbook();
+    addWorksheet(wb, 'A');
+    addWorksheet(wb, 'B');
+    hideSheet(wb, 'B');
+    expect(() => hideSheet(wb, 'A')).toThrow(/last visible sheet/);
+    // Excel would refuse to open the workbook if both were hidden; the guard
+    // keeps the original state intact.
+    expect(getSheetState(wb, 'A')).toBe('visible');
   });
 
   it('round-trips state through save / load', async () => {

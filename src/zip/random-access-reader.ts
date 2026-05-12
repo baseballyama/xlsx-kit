@@ -47,6 +47,12 @@ const singleChunkStream = (bytes: Uint8Array): ReadableStream<Uint8Array> =>
 const SIG_EOCD = 0x06054b50;
 const SIG_CD = 0x02014b50;
 const SIG_LFH = 0x04034b50;
+const SIG_ZIP64_EOCD = 0x06064b50;
+const SIG_ZIP64_EOCD_LOCATOR = 0x07064b50;
+const ZIP32_MAX_U16 = 0xffff;
+const ZIP32_MAX_U32 = 0xffffffff;
+const ZIP64_LOCATOR_SIZE = 20;
+const ZIP64_EXTRA_HEADER_ID = 0x0001;
 const COMP_STORE = 0;
 const COMP_DEFLATE = 8;
 
@@ -69,6 +75,20 @@ const u32 = (b: Uint8Array, off: number): number => {
   return (v0 | (v1 << 8) | (v2 << 16) | (v3 << 24)) >>> 0;
 };
 
+// Read a little-endian 64-bit value as a JS Number. Safe for values up to
+// 2^53-1 (Number.MAX_SAFE_INTEGER ~ 9 PiB), which is well past any realistic
+// xlsx archive — we throw if a parsed value exceeds the safe-integer range.
+const u64 = (b: Uint8Array, off: number): number => {
+  const lo = u32(b, off);
+  const hi = u32(b, off + 4);
+  if (hi > 0x1fffff) {
+    throw new OpenXmlIoError(
+      `openZip: ZIP64 field at byte ${off} exceeds the safe-integer range (${hi}*2^32 + ${lo})`,
+    );
+  }
+  return hi * 0x100000000 + lo;
+};
+
 /** Find the End-of-Central-Directory record by scanning backwards from EOF. */
 function findEocd(b: Uint8Array): number {
   const minStart = Math.max(0, b.length - 22 - 0xffff);
@@ -76,6 +96,103 @@ function findEocd(b: Uint8Array): number {
     if (u32(b, i) === SIG_EOCD) return i;
   }
   throw new OpenXmlIoError('openZip: no End-of-Central-Directory signature found');
+}
+
+interface CdSummary {
+  totalEntries: number;
+  cdSize: number;
+  cdOffset: number;
+}
+
+/**
+ * Resolve the central-directory totals. When the EOCD carries ZIP64 sentinel
+ * values (0xFFFF / 0xFFFFFFFF) the real totals live in a ZIP64 EOCD record
+ * located via the ZIP64 EOCD locator just before the regular EOCD. ECMA-376
+ * xlsx archives stay in ZIP32 territory; the ZIP64 path exists so the
+ * decompression-bomb guards still apply to large external archives instead of
+ * falling all the way back to `unzipSync` (which produces every entry's bytes
+ * before any cap can fire).
+ */
+function readCdSummary(b: Uint8Array, eocdOff: number): CdSummary {
+  let totalEntries = u16(b, eocdOff + 10);
+  let cdSize = u32(b, eocdOff + 12);
+  let cdOffset = u32(b, eocdOff + 16);
+
+  const usesZip64Eocd =
+    totalEntries === ZIP32_MAX_U16 || cdSize === ZIP32_MAX_U32 || cdOffset === ZIP32_MAX_U32;
+  if (!usesZip64Eocd) {
+    return { totalEntries, cdSize, cdOffset };
+  }
+
+  // Locate the ZIP64 EOCD locator. It sits immediately before the regular
+  // EOCD when one is present.
+  const locatorOff = eocdOff - ZIP64_LOCATOR_SIZE;
+  if (locatorOff < 0 || u32(b, locatorOff) !== SIG_ZIP64_EOCD_LOCATOR) {
+    throw new OpenXmlIoError('openZip: ZIP64 EOCD locator missing despite EOCD sentinel values');
+  }
+  const zip64EocdOff = u64(b, locatorOff + 8);
+  if (zip64EocdOff < 0 || zip64EocdOff + 56 > b.length) {
+    throw new OpenXmlIoError(`openZip: ZIP64 EOCD offset ${zip64EocdOff} out of bounds`);
+  }
+  if (u32(b, zip64EocdOff) !== SIG_ZIP64_EOCD) {
+    throw new OpenXmlIoError(`openZip: ZIP64 EOCD signature missing at byte ${zip64EocdOff}`);
+  }
+  totalEntries = u64(b, zip64EocdOff + 32);
+  cdSize = u64(b, zip64EocdOff + 40);
+  cdOffset = u64(b, zip64EocdOff + 48);
+  return { totalEntries, cdSize, cdOffset };
+}
+
+/** Walk the ZIP64 Extended Information extra field for sentinel-valued sizes/offset. */
+function readZip64Extra(
+  b: Uint8Array,
+  extraStart: number,
+  extraLen: number,
+  wantsUncompSize: boolean,
+  wantsCompSize: boolean,
+  wantsLfhOffset: boolean,
+  entryPath: string,
+): { uncompSize?: number; compSize?: number; lfhOffset?: number } {
+  let p = extraStart;
+  const end = extraStart + extraLen;
+  while (p + 4 <= end) {
+    const id = u16(b, p);
+    const size = u16(b, p + 2);
+    const dataStart = p + 4;
+    const next = dataStart + size;
+    if (next > end) break;
+    if (id === ZIP64_EXTRA_HEADER_ID) {
+      // Sanity-check that the declared extra-field size actually covers every
+      // u64 the CD asked us to read. A truncated / mis-sized ZIP64 extra
+      // field would otherwise let u64() interpret bytes belonging to the
+      // next extra record (or the next CD entry) as a size/offset, producing
+      // bogus values that downstream bomb checks then trust. Fail closed.
+      const needed = (wantsUncompSize ? 8 : 0) + (wantsCompSize ? 8 : 0) + (wantsLfhOffset ? 8 : 0);
+      if (size < needed) {
+        throw new OpenXmlIoError(
+          `openZip: ZIP64 extended-info field for "${entryPath}" declares ${size} bytes` +
+            ` but the central directory sentinels require ${needed}`,
+        );
+      }
+      let q = dataStart;
+      const result: { uncompSize?: number; compSize?: number; lfhOffset?: number } = {};
+      if (wantsUncompSize) {
+        result.uncompSize = u64(b, q);
+        q += 8;
+      }
+      if (wantsCompSize) {
+        result.compSize = u64(b, q);
+        q += 8;
+      }
+      if (wantsLfhOffset) {
+        result.lfhOffset = u64(b, q);
+        q += 8;
+      }
+      return result;
+    }
+    p = next;
+  }
+  return {};
 }
 
 /** Parse the central directory into an array of entry descriptors. */
@@ -88,17 +205,31 @@ function parseCentralDirectory(b: Uint8Array, cdOffset: number, expectedCount: n
     }
     const gpFlag = u16(b, p + 8);
     const compMethod = u16(b, p + 10);
-    const compSize = u32(b, p + 20);
-    const uncompSize = u32(b, p + 24);
+    let compSize = u32(b, p + 20);
+    let uncompSize = u32(b, p + 24);
     const nameLen = u16(b, p + 28);
     const extraLen = u16(b, p + 30);
     const commentLen = u16(b, p + 32);
-    const lfhOffset = u32(b, p + 42);
+    let lfhOffset = u32(b, p + 42);
     const nameBytes = b.subarray(p + 46, p + 46 + nameLen);
     // Bit 11 (0x0800) signals UTF-8 filename. xlsx archives are almost always
     // UTF-8 already; treat bit-0 as UTF-8 too since CP437 ⊃ ASCII and xlsx uses
     // ASCII paths.
     const path = new TextDecoder('utf-8').decode(nameBytes);
+
+    // ZIP64 Extended Information rewrites whichever of {uncompSize, compSize,
+    // lfhOffset} are 0xFFFFFFFF sentinels in the canonical fields. The extra
+    // field stores them in the order listed in the spec (and omits any that
+    // weren't sentinels), so we have to track which slots to read.
+    const wantsUncomp = uncompSize === ZIP32_MAX_U32;
+    const wantsComp = compSize === ZIP32_MAX_U32;
+    const wantsOffset = lfhOffset === ZIP32_MAX_U32;
+    if (wantsUncomp || wantsComp || wantsOffset) {
+      const extra = readZip64Extra(b, p + 46 + nameLen, extraLen, wantsUncomp, wantsComp, wantsOffset, path);
+      if (extra.uncompSize !== undefined) uncompSize = extra.uncompSize;
+      if (extra.compSize !== undefined) compSize = extra.compSize;
+      if (extra.lfhOffset !== undefined) lfhOffset = extra.lfhOffset;
+    }
     entries.push({ path, lfhOffset, compMethod, compSize, uncompSize, gpFlag });
     p += 46 + nameLen + extraLen + commentLen;
   }
@@ -145,22 +276,46 @@ export function openRandomAccessArchive(
     throw new OpenXmlIoError('openZip: archive is not a valid zip', { cause });
   }
 
-  const totalEntries = u16(bytes, eocdOff + 10);
-  const cdSize = u32(bytes, eocdOff + 12);
-  const cdOffset = u32(bytes, eocdOff + 16);
-
   const resolvedLimits = resolveDecompressionLimits(decompressionLimits);
 
-  // ZIP64 fallback — fflate's unzipSync handles the extended record.
-  if (totalEntries === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) {
+  // Detect ZIP64 up front so a malformed ZIP64 record fails closed instead of
+  // falling back to `unzipSync`. The fallback inflates every entry before any
+  // bomb cap runs; the whole point of the ZIP64 path is to keep the streaming
+  // caps in play, so we must not silently downgrade when ZIP64 is in use.
+  const eocdTotalEntries = u16(bytes, eocdOff + 10);
+  const eocdCdSize = u32(bytes, eocdOff + 12);
+  const eocdCdOffset = u32(bytes, eocdOff + 16);
+  const claimsZip64 =
+    eocdTotalEntries === ZIP32_MAX_U16 ||
+    eocdCdSize === ZIP32_MAX_U32 ||
+    eocdCdOffset === ZIP32_MAX_U32;
+
+  let summary: CdSummary;
+  try {
+    summary = readCdSummary(bytes, eocdOff);
+  } catch (cause) {
+    if (claimsZip64) {
+      // ZIP64 sentinels are set but the matching record / locator is missing
+      // or invalid. Fail closed — `unzipSync` would inflate every entry.
+      throw cause instanceof OpenXmlIoError
+        ? cause
+        : new OpenXmlIoError('openZip: ZIP64 central directory is malformed', { cause });
+    }
+    // Plain ZIP32 with an unparseable EOCD — fflate's `unzipSync` is more
+    // tolerant of quirky archives; the post-hoc bomb check still applies.
     return openViaUnzipSync(bytes, resolvedLimits);
   }
 
   let entries: CdEntry[];
   try {
-    entries = parseCentralDirectory(bytes, cdOffset, totalEntries);
-  } catch {
-    // Malformed CD — fall back to fflate which is more tolerant.
+    entries = parseCentralDirectory(bytes, summary.cdOffset, summary.totalEntries);
+  } catch (cause) {
+    if (claimsZip64) {
+      throw cause instanceof OpenXmlIoError
+        ? cause
+        : new OpenXmlIoError('openZip: ZIP64 central directory is malformed', { cause });
+    }
+    // Malformed ZIP32 CD — fall back to fflate which is more tolerant.
     return openViaUnzipSync(bytes, resolvedLimits);
   }
 
@@ -426,7 +581,14 @@ function inflateBounded(
   return out;
 }
 
-/** Fallback: hand the whole archive to fflate when ZIP64 / unsupported features turn up. */
+/**
+ * Fallback for archives we can't parse ourselves. The random-access reader
+ * now understands ZIP64 EOCD + the Zip64 Extended Information extra field, so
+ * the only way to reach this path is a malformed central directory. fflate's
+ * `unzipSync` is more forgiving but inflates every entry up front; for
+ * adversarial archives we still rely on a post-hoc cap check (the only one
+ * available without our own streaming decoder).
+ */
 function openViaUnzipSync(
   bytes: Uint8Array,
   limits: ReturnType<typeof resolveDecompressionLimits>,
@@ -440,8 +602,8 @@ function openViaUnzipSync(
   // fflate's `unzipSync` returns already-inflated bytes — we can't abort the
   // inflate mid-flight here, but a post-hoc check still rejects a malicious
   // archive *before* any caller-level code touches the bytes. The peak memory
-  // spike is bounded by what fflate just produced; in practice ZIP64-fallback
-  // archives are rare for xlsx, so this is acceptable.
+  // spike is bounded by what fflate just produced; the random-access path
+  // catches the common cases (ZIP64 + malformed-but-parseable CDs) up front.
   if (limits) {
     const budget = createBudget(limits);
     for (const [path, payload] of Object.entries(entries)) {

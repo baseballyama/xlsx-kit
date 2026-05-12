@@ -85,7 +85,14 @@ export async function* iterParse(input: SaxInput): AsyncIterableIterator<SaxEven
   // every open / close tag and on every attribute.
   const parser = new SaxesParser({ xmlns: true, fragment: false });
 
-  const queue: SaxEvent[] = [];
+  // Head-pointer ring instead of Array#shift: each saxes write() can produce
+  // hundreds of events in a single synchronous batch (a `<row>` with dozens of
+  // cells flushes one opentag + one text + one closetag per cell). `shift()`
+  // is O(n) per element in V8, so a single-batch drain of N events would be
+  // O(N²) before iteration. The head advances on yield; the queue is reset
+  // (head + length) once it drains so memory stays bounded.
+  let queue: SaxEvent[] = [];
+  let head = 0;
   let pending: Error | undefined;
 
   parser.on('error', (err: Error) => {
@@ -106,8 +113,14 @@ export async function* iterParse(input: SaxInput): AsyncIterableIterator<SaxEven
 
   const drain = function* (): IterableIterator<SaxEvent> {
     for (;;) {
-      const ev = queue.shift();
-      if (ev === undefined) return;
+      const ev = head < queue.length ? queue[head] : undefined;
+      if (ev === undefined) {
+        // Reset rather than grow forever; the next batch starts at index 0.
+        queue = [];
+        head = 0;
+        return;
+      }
+      head++;
       yield ev;
     }
   };
@@ -136,9 +149,12 @@ export async function* iterParse(input: SaxInput): AsyncIterableIterator<SaxEven
       const chunk = td.decode(value, { stream: true });
       if (!firstChunkChecked) {
         // We need to see enough of the prologue to be sure no DOCTYPE is
-        // hiding. Buffer until we have ~256 chars or the stream ends.
+        // hiding. Buffer until we have ~256 chars; if the stream ends before
+        // we reach the threshold the tail handler below runs `checkDoctype`
+        // on the accumulated prologue. (The previous `|| done` here was dead:
+        // a true `done` short-circuits at the top of the loop.)
         firstChunkBuffer += chunk;
-        if (firstChunkBuffer.length >= 256 || done) {
+        if (firstChunkBuffer.length >= 256) {
           checkDoctype(firstChunkBuffer);
           firstChunkChecked = true;
           feed(firstChunkBuffer);

@@ -12,7 +12,7 @@
 import { type Cell, type CellValue, type ExcelErrorCode, type FormulaValue, getCoordinate } from '../cell/cell';
 import type { Relationships } from '../packaging/relationships';
 import { dateToExcel, durationToExcel } from '../utils/datetime';
-import { escapeCellString } from '../utils/escape';
+import { escapeCellString, escapeXmlAttr as escapeXmlAttrShared, escapeXmlText as escapeXmlTextShared } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import type { SharedStringsTable } from '../workbook/shared-strings';
 import { addSharedString, serializeRichTextRuns } from '../workbook/shared-strings';
@@ -238,9 +238,8 @@ function serializeWorksheet(ws: Worksheet, ctx: WorksheetWriteContext): string {
   return parts.join('');
 }
 
-const escapeXmlText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-const escapeXmlAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const escapeXmlText = escapeXmlTextShared;
+const escapeXmlAttr = escapeXmlAttrShared;
 
 const serializeDimension = (ws: Worksheet): string => {
   let minRow = Infinity;
@@ -953,32 +952,37 @@ const serializeIgnoredErrors = (errs: ReadonlyArray<IgnoredError>): string => {
 
 const serializeHyperlinks = (links: ReadonlyArray<Hyperlink>, rels: Relationships | undefined): string => {
   const parts: string[] = ['<hyperlinks>'];
+  // Index existing rels once so the per-hyperlink rId allocation + dedup checks
+  // don't degrade to O(N²) on worksheets with many hyperlinks (dashboard /
+  // index sheets routinely carry hundreds).
+  const claimedIds = rels ? new Set<string>(rels.rels.map((r) => r.id)) : undefined;
+  let rIdCursor = rels ? rels.rels.length + 1 : 1;
   for (const link of links) {
     let attrs = ` ref="${escapeXmlAttr(link.ref)}"`;
     if (link.target !== undefined) {
       // Allocate or reuse a rels entry. We need rels to host external URLs;
       // when ctx.rels is missing we fall back to inlining via location only.
-      if (rels) {
+      if (rels && claimedIds) {
         let rId = link.rId;
         if (!rId) {
-          // Find the next free rIdN that doesn't already exist on this sheet's
-          // rels. Pre-loaded relsExtras can occupy low-numbered ids; a naive
-          // `rId${len+1}` would collide.
-          let n = rels.rels.length + 1;
-          rId = `rId${n}`;
-          while (rels.rels.some((r) => r.id === rId)) {
-            n++;
-            rId = `rId${n}`;
+          // Find the next free rIdN. Pre-loaded relsExtras can occupy
+          // low-numbered ids; advance the cursor past anything already in use.
+          rId = `rId${rIdCursor}`;
+          while (claimedIds.has(rId)) {
+            rIdCursor++;
+            rId = `rId${rIdCursor}`;
           }
+          rIdCursor++;
         }
         // Add rel only if no entry already targets this URL (conservative).
-        if (!rels.rels.some((r) => r.id === rId)) {
+        if (!claimedIds.has(rId)) {
           rels.rels.push({
             id: rId,
             type: HYPERLINK_REL_TYPE,
             target: link.target,
             targetMode: 'External',
           });
+          claimedIds.add(rId);
         }
         attrs += ` r:id="${escapeXmlAttr(rId)}"`;
       }

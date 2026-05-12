@@ -58,6 +58,15 @@ export interface ZipWriter {
    * Idempotent; subsequent calls resolve to the same payload.
    */
   finalize(): Promise<Uint8Array>;
+
+  /**
+   * Release the sink and underlying writer without producing a valid archive.
+   * Use this from a surrounding catch block when serialization fails part-way
+   * through — without it, streaming sinks (`toFile` / `toWritable`) keep their
+   * file descriptors / writables open and the half-written xlsx looks valid on
+   * disk. Idempotent; safe to call after `finalize()`.
+   */
+  abort(cause?: unknown): void;
 }
 
 /** Writer handle for a single streaming entry. */
@@ -82,9 +91,6 @@ export interface StreamingEntryWriter {
  * without ever holding the full archive resident. Either kind plugs in here.
  */
 export function createZipWriter(sink: XlsxSink): ZipWriter {
-  if (!sink.toBytes) {
-    throw new OpenXmlIoError('createZipWriter: sink does not expose a chunked toBytes() writer');
-  }
   const writer = sink.toBytes();
   let finalised: Promise<Uint8Array> | undefined;
   let endCalled = false;
@@ -234,6 +240,18 @@ export function createZipWriter(sink: XlsxSink): ZipWriter {
         return writer.finish();
       })();
       return finalised;
+    },
+
+    abort(cause?: unknown): void {
+      if (finalised !== undefined) return;
+      // Mark finalised so any subsequent addEntry / finalize short-circuits.
+      finalised = Promise.resolve(new Uint8Array(0));
+      // Drop fflate's listener — we don't care about further `ondata` callbacks.
+      if (zipFinishResolve) {
+        zipFinishResolve();
+        zipFinishResolve = undefined;
+      }
+      writer.abort?.(cause);
     },
   };
 }

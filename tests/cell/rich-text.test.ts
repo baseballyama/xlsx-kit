@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeRichText, makeTextRun, richTextToString } from '../../src/cell/rich-text';
 import { makeColor } from '../../src/styles/colors';
+import { OpenXmlSchemaError } from '../../src/utils/exceptions';
 
 describe('makeTextRun', () => {
   it('builds a frozen run with text-only', () => {
@@ -18,7 +19,7 @@ describe('makeTextRun', () => {
 
   it('rejects non-string text', () => {
     // biome-ignore lint/suspicious/noExplicitAny: deliberate bad input
-    expect(() => makeTextRun(42 as any)).toThrowError(TypeError);
+    expect(() => makeTextRun(42 as any)).toThrowError(OpenXmlSchemaError);
   });
 });
 

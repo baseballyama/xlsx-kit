@@ -7,6 +7,7 @@
 // survives a save / load cycle without our needing to model cfvo / colors /
 // iconSets fully.
 
+import { escapeXmlAttr } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { type MultiCellRange, parseMultiCellRange } from './cell-range';
 
@@ -333,8 +334,7 @@ export type IconSetStyle =
   | '5Quarters'
   | '5Rating';
 
-const escapeAttr = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const escapeAttr = escapeXmlAttr;
 
 const renderCfvo = (c: Cfvo): string => {
   if (c.type === 'min' || c.type === 'max') {
