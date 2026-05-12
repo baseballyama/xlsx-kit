@@ -14,6 +14,7 @@
 // docProps / theme / VBA / drawings / charts are reserved for later iterations
 // — load tolerates their absence.
 
+import { escapeXmlAttr, escapeXmlText } from '../utils/escape';
 import { chartToBytes } from '../chart/chart-xml';
 import { chartExToBytes } from '../chart/cx/chartex-xml';
 import { userShapesToBytes } from '../chart/user-shapes-xml';
@@ -131,6 +132,11 @@ const toUint8ArraySink = (): XlsxSink & { result(): Uint8Array } => {
         async finish(): Promise<Uint8Array> {
           return finalise();
         },
+        abort(): void {
+          if (finalised !== undefined) return;
+          finalised = new Uint8Array(0);
+          chunks.length = 0;
+        },
       };
     },
     result(): Uint8Array {
@@ -175,7 +181,18 @@ const validateSheetTitles = (wb: Workbook): void => {
 export async function saveWorkbook(wb: Workbook, sink: XlsxSink, _opts: SaveOptions = {}): Promise<void> {
   validateSheetTitles(wb);
   const writer = createZipWriter(sink);
+  try {
+    await saveWorkbookImpl(wb, writer);
+  } catch (err) {
+    // Release the sink so streaming destinations (`toFile` / `toWritable`)
+    // don't leave a half-written file looking valid. abort() is idempotent so
+    // a successful finalize() above is a no-op here.
+    writer.abort(err);
+    throw err;
+  }
+}
 
+async function saveWorkbookImpl(wb: Workbook, writer: ReturnType<typeof createZipWriter>): Promise<void> {
   // ---- 1. assemble the per-sheet rels + serialise each worksheet ----------
   const sst = makeSharedStrings();
   interface SheetEmit {
@@ -1030,9 +1047,12 @@ function serializeWorkbookProtection(
   return `<workbookProtection${attrs}/>`;
 }
 
-const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-const escapeAttr = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+// Local aliases keep the dense call sites below readable. Canonical
+// implementations live in utils/escape.ts so all three writers (this file,
+// xml/serializer, xml/stream-writer) agree on how `>` / whitespace are
+// handled.
+const escapeText = escapeXmlText;
+const escapeAttr = escapeXmlAttr;
 
 /**
  * Serialise an XmlNode child of `<workbook>` for inline injection back into the

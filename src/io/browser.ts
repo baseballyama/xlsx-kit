@@ -196,6 +196,11 @@ export function toBlob(
         async finish(): Promise<Uint8Array> {
           return finalise();
         },
+        abort(): void {
+          if (finalised !== undefined) return;
+          finalised = new Uint8Array(0);
+          chunks.length = 0;
+        },
       };
     },
     result(): Blob {
@@ -229,6 +234,11 @@ export function toArrayBuffer(): XlsxSink & { toBytes(): BufferedSinkWriter; res
         },
         async finish(): Promise<Uint8Array> {
           return finalise();
+        },
+        abort(): void {
+          if (finalised !== undefined) return;
+          finalised = new Uint8Array(0);
+          chunks.length = 0;
         },
       };
     },

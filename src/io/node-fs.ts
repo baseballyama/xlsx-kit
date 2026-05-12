@@ -8,7 +8,7 @@
 // that subpath lands).
 
 import { createReadStream, createWriteStream, readFileSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, unlink } from 'node:fs/promises';
 import { once } from 'node:events';
 import { Readable, Writable } from 'node:stream';
 import { OpenXmlIoError } from '../utils/exceptions';
@@ -98,6 +98,7 @@ export function toFile(path: string): XlsxSink & { toBytes(): BufferedSinkWriter
     throw new OpenXmlIoError('toFile expects a non-empty path string');
   }
   let stream: ReturnType<typeof createWriteStream> | undefined;
+  let streamCreated = false;
   let finalised: Promise<Uint8Array> | undefined;
   let pendingError: Error | undefined;
   // Backpressure queue: every chunk's actual `writable.write` call is staged
@@ -109,11 +110,25 @@ export function toFile(path: string): XlsxSink & { toBytes(): BufferedSinkWriter
   const ensureStream = (): NonNullable<typeof stream> => {
     if (!stream) {
       stream = createWriteStream(path);
+      streamCreated = true;
       stream.on('error', (err) => {
         pendingError = err instanceof Error ? err : new Error(String(err));
       });
     }
     return stream;
+  };
+
+  // Best-effort: remove a half-written file when finish() fails so callers
+  // don't mistake a corrupt artefact for a successful save. Swallows unlink
+  // errors because we're already in a failure path and the original cause
+  // is what the caller needs to see.
+  const cleanupOnFailure = async (): Promise<void> => {
+    if (!streamCreated) return;
+    try {
+      await unlink(path);
+    } catch {
+      // ignore — file may be gone, path may be on a read-only fs, etc.
+    }
   };
 
   return {
@@ -142,14 +157,34 @@ export function toFile(path: string): XlsxSink & { toBytes(): BufferedSinkWriter
           if (finalised) return finalised;
           finalised = (async () => {
             const s = ensureStream();
-            await writeQueue;
-            await new Promise<void>((resolve, reject) => {
-              s.end((err?: Error | null) => (err ? reject(err) : resolve()));
-            });
-            if (pendingError) throw new OpenXmlIoError(`toFile sink: write error on "${path}"`, { cause: pendingError });
+            try {
+              await writeQueue;
+              await new Promise<void>((resolve, reject) => {
+                s.end((err?: Error | null) => (err ? reject(err) : resolve()));
+              });
+              if (pendingError) {
+                throw new OpenXmlIoError(`toFile sink: write error on "${path}"`, { cause: pendingError });
+              }
+            } catch (err) {
+              await cleanupOnFailure();
+              throw err;
+            }
             return EMPTY_BYTES;
           })();
           return finalised;
+        },
+        abort(): void {
+          // Idempotent: subsequent finish() / abort() calls become no-ops.
+          if (finalised) return;
+          finalised = Promise.resolve(EMPTY_BYTES);
+          if (stream) {
+            // destroy() releases the fd synchronously without flushing the
+            // pending buffer — exactly what we want for an aborted save.
+            stream.destroy();
+          }
+          // Fire-and-forget unlink — abort() is sync (void), and the caller
+          // is already on a failure path so any unlink error is noise.
+          void cleanupOnFailure();
         },
       };
     },
@@ -243,6 +278,13 @@ export function toWritable(writable: Writable): XlsxSink & { toBytes(): Buffered
             return EMPTY_BYTES;
           })();
           return finalised;
+        },
+        abort(cause?: unknown): void {
+          if (finalised) return;
+          finalised = Promise.resolve(EMPTY_BYTES);
+          // Pass the cause to destroy() so downstream `error` listeners can
+          // distinguish a deliberate abort from spontaneous fs/network errors.
+          writable.destroy(cause instanceof Error ? cause : undefined);
         },
       };
     },

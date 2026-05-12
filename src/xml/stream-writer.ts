@@ -11,7 +11,9 @@
 // this writer's start / end / writeNode methods. Use `writeRaw` to splice those
 // in.
 
+import { escapeXmlAttr, escapeXmlText } from '../utils/escape';
 import { OpenXmlIoError } from '../utils/exceptions';
+import { utf8ByteLength } from '../utils/utf8';
 import { DEFAULT_PREFIXES, parseQName, XML_NS } from './namespaces';
 import type { XmlNode } from './tree';
 
@@ -57,17 +59,6 @@ export interface XmlStreamWriter {
 const DEFAULT_FLUSH_BYTES = 64 * 1024;
 const encoder = new TextEncoder();
 
-const escapeText = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escapeAttr = (s: string): string =>
-  s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\r/g, '&#13;')
-    .replace(/\n/g, '&#10;')
-    .replace(/\t/g, '&#9;');
-
 const buildPrefixMap = (user: Readonly<Record<string, string>> | undefined): Map<string, string> => {
   const out = new Map<string, string>();
   for (const [ns, prefix] of Object.entries(DEFAULT_PREFIXES)) out.set(ns, prefix);
@@ -85,9 +76,18 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
 
   const chunks: Uint8Array[] = [];
   let buf = '';
+  // Running UTF-8 byte count of `buf`, maintained incrementally via `append()`.
+  // Without this the flush threshold compares UTF-16 code units against a
+  // byte budget — non-ASCII payloads then balloon past the configured limit.
+  let bufBytes = 0;
   let openStartTag = false;
   let finalised = false;
   const stack: string[] = [];
+
+  const append = (s: string): void => {
+    buf += s;
+    bufBytes += utf8ByteLength(s);
+  };
 
   const elementName = (name: string): string => {
     const { ns, local } = parseQName(name);
@@ -108,22 +108,23 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
     if (buf.length === 0) return;
     chunks.push(encoder.encode(buf));
     buf = '';
+    bufBytes = 0;
   };
 
   const maybeFlush = (): void => {
-    if (buf.length >= flushBytes) flushImpl();
+    if (bufBytes >= flushBytes) flushImpl();
   };
 
   const closeStartTagIfOpen = (): void => {
     if (!openStartTag) return;
-    buf += '>';
+    append('>');
     openStartTag = false;
   };
 
   if (xmlDeclaration) {
-    buf += '<?xml version="1.0" encoding="UTF-8"';
-    if (standalone !== 'omit') buf += ` standalone="${standalone}"`;
-    buf += '?>\n';
+    append('<?xml version="1.0" encoding="UTF-8"');
+    if (standalone !== 'omit') append(` standalone="${standalone}"`);
+    append('?>\n');
   }
 
   // ---- writeNode internals
@@ -131,21 +132,21 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
 
   const emitNodeInline = (n: XmlNode): void => {
     const tag = elementName(n.name);
-    buf += `<${tag}`;
+    append(`<${tag}`);
     for (const [name, value] of Object.entries(n.attrs)) {
-      buf += ` ${attributeName(name)}="${escapeAttr(value)}"`;
+      append(` ${attributeName(name)}="${escapeXmlAttr(value)}"`);
     }
     const text = n.text;
     const hasText = text !== undefined && text !== '';
     const hasChildren = n.children.length > 0;
     if (!hasText && !hasChildren) {
-      buf += '/>';
+      append('/>');
       return;
     }
-    buf += '>';
-    if (hasText) buf += escapeText(text);
+    append('>');
+    if (hasText) append(escapeXmlText(text));
     for (const c of n.children) emitNodeInline(c);
-    buf += `</${tag}>`;
+    append(`</${tag}>`);
   };
 
   // ---- public surface
@@ -156,10 +157,10 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
       if (finalised) throw new OpenXmlIoError('XmlStreamWriter: start() after result()');
       closeStartTagIfOpen();
       const tag = elementName(name);
-      buf += `<${tag}`;
+      append(`<${tag}`);
       if (attrs !== undefined) {
         for (const [k, v] of Object.entries(attrs)) {
-          buf += ` ${attributeName(k)}="${escapeAttr(v)}"`;
+          append(` ${attributeName(k)}="${escapeXmlAttr(v)}"`);
         }
       }
       stack.push(tag);
@@ -169,7 +170,7 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
     text(s) {
       if (finalised) throw new OpenXmlIoError('XmlStreamWriter: text() after result()');
       closeStartTagIfOpen();
-      buf += escapeText(s);
+      append(escapeXmlText(s));
       maybeFlush();
     },
     writeNode(n) {
@@ -181,7 +182,7 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
     writeRaw(s) {
       if (finalised) throw new OpenXmlIoError('XmlStreamWriter: writeRaw() after result()');
       closeStartTagIfOpen();
-      buf += s;
+      append(s);
       maybeFlush();
     },
     end() {
@@ -189,10 +190,10 @@ export function createXmlStreamWriter(opts: XmlStreamWriterOptions = {}): XmlStr
       const tag = stack.pop();
       if (tag === undefined) throw new OpenXmlIoError('XmlStreamWriter: end() with no open element');
       if (openStartTag) {
-        buf += '/>';
+        append('/>');
         openStartTag = false;
       } else {
-        buf += `</${tag}>`;
+        append(`</${tag}>`);
       }
       maybeFlush();
     },
