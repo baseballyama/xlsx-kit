@@ -38,14 +38,17 @@ jobs:
       # (docs/plan/06-streaming.md §3.4 acceptance).
       - run: pnpm size
 
-  # Multi-version test matrix. Active LTS lines + Current. Node 18 / 20 are
-  # past EOL and intentionally dropped.
+  # Multi-version, multi-OS test matrix. Active LTS lines + Current; Node 18 /
+  # 20 are past EOL and intentionally dropped. macOS / Windows runs flush out
+  # path-separator and TextDecoder / line-ending assumptions that ubuntu-only
+  # CI would silently miss.
   test:
     needs: static
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         node-version: ['22', '24', '26']
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -57,8 +60,36 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
       # ECMA-376 conformance tests shell out to xmllint (libxml2-utils).
-      # ubuntu-latest usually ships it, but install explicitly so the gate
-      # never silently degrades to "no schema validation ran".
-      - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+      # Install explicitly on each OS so the gate never silently degrades to
+      # "no schema validation ran" — macOS / Windows runners don't ship it.
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+      - if: runner.os == 'macOS'
+        run: brew install libxml2
+      - if: runner.os == 'Windows'
+        run: choco install xsltproc --no-progress -y
+        shell: pwsh
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+
+  # Performance regression gate. Runs the dedicated perf-test config with
+  # PERF_GATE=1 so the throughput thresholds in tests/perf/ fail the run on
+  # regressions instead of skipping silently.
+  perf:
+    needs: static
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          submodules: recursive
+      - uses: pnpm/action-setup@91ab88e2619ed1f46221f0ba42d1492c02baf788 # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # PERF_GATE=1 promotes the throughput / heap regressions in tests/perf/
+      # from informational to fatal. CI runners are noisy compared to the M1
+      # baseline the gates are calibrated against; revisit the thresholds in
+      # the perf config if this turns flaky on a specific Node minor.
+      - run: PERF_GATE=1 pnpm test:perf

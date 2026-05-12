@@ -65,8 +65,10 @@ export type ElementDef =
       key: string;
       name?: string;
       xmlNs?: string;
-      // biome-ignore lint/suspicious/noExplicitAny: Schema is contravariant in
-      // T at the element boundary; named types come back via T anyway
+      // Schema is contravariant in T at the element boundary; named types
+      // come back via T anyway. The `any` is intentional — `unknown` would
+      // force a cast in every concrete schema definition with no extra safety.
+      // oxlint-disable-next-line typescript/no-explicit-any
       schema: () => Schema<any>;
       optional?: boolean;
     }
@@ -76,8 +78,8 @@ export type ElementDef =
       /** Local name of the repeated child element. */
       itemName: string;
       itemNs?: string;
-      // biome-ignore lint/suspicious/noExplicitAny: see ElementDef.kind ===
-      // 'object'
+      // See ElementDef.kind === 'object' for why `any` survives here.
+      // oxlint-disable-next-line typescript/no-explicit-any
       itemSchema: () => Schema<any>;
       /** Optional wrapper element holding the items. */
       container?: { name: string; xmlNs?: string; count?: boolean };
