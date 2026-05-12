@@ -1,5 +1,87 @@
 # xlsx-kit
 
+## 0.8.0
+
+### Minor Changes
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - **Breaking**: `Chartsheet.properties.tabColor` replaces `tabColorRgb`.
+
+  Worksheets already expose `SheetProperties.tabColor` as a full `Color` (rgb / indexed / theme / auto / tint). Chartsheets carried a stringly-typed `tabColorRgb` instead, which forced callers to special-case the two sheet kinds and silently dropped every non-RGB colour attribute Excel produces.
+
+  The new field is a `Color` object so both sheet kinds share one tab-colour model. Migration:
+
+  ```ts
+  // Before
+  cs.properties = { tabColorRgb: "FF8800" };
+
+  // After
+  cs.properties = { tabColor: { rgb: "FF8800" } };
+  ```
+
+  Reads recover the additional `indexed` / `theme` / `auto` / `tint` attributes that the old shape discarded.
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - fix: release streaming sinks when serialization fails, and bound the streaming write-only buffer against CJK payloads.
+
+  When `saveWorkbook` or `createWriteOnlyWorkbook().finalize()` threw partway through serialization, the underlying sink stayed open — `toFile` would leave a half-written `.xlsx` on disk that callers could mistake for a successful save. `BufferedSinkWriter` now exposes an optional `abort(cause?)` hook; the ZIP writer + workbook writers call it from a surrounding `catch` so streaming destinations (`toFile` / `toWritable`) are released and the partial file is best-effort removed. The write-only workbook also exposes its own `abort(cause?)` for callers driving it from a custom pipeline.
+
+  The streaming write-only worksheet's pending-byte counter and the XML stream writer's flush threshold now use an accurate UTF-8 length (`utf8ByteLength`) instead of `string.length`. The previous accounting undercounted CJK text by ~3×, letting the in-flight buffer grow well past the configured flush threshold; Japanese / Chinese workloads now flush at the documented ~64 KB ceiling.
+
+  API:
+
+  - `BufferedSinkWriter.abort(cause?)` is optional. Custom sinks don't need to implement it, but doing so lets `saveWorkbook` clean up streaming destinations on failure.
+  - `WriteOnlyWorkbook.abort(cause?)` is the matching escape hatch on the write-only API.
+  - `XlsxSink.toBytes` is now required at the type level. It was already required in practice — the writer threw at runtime when it was missing — and built-in sinks (`toBuffer` / `toBlob` / `toArrayBuffer` / `toFile` / `toWritable`) already implement it.
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - fix: tighten three worksheet / cell mutation paths that previously produced silently-bad workbooks.
+
+  - `copyRange` / `moveRange` no longer carry `hyperlinkId` / `commentId` across worksheets. Those fields are indexes into the source sheet's `hyperlinks` / `legacyComments` arrays and would point at unrelated records (or out of bounds) on the destination. Same-sheet copy / move still preserves them.
+
+  - `setSheetState` refuses to hide the last visible sheet. Excel rejects workbooks with every sheet hidden ("Excel cannot use the object linking and embedding features…"); raising at mutation time keeps the workbook recoverable instead of producing a save Excel will reject.
+
+  - `makeTextRun` throws `OpenXmlSchemaError` instead of `TypeError` so every public error path uses the documented `OpenXmlError` subclass hierarchy.
+
+### Patch Changes
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - chore(ci): tighten the CI gate and surface CLAUDE.md hard rules in the linter.
+
+  - The test matrix now runs on macOS and Windows alongside Ubuntu. Path-separator and TextDecoder differences that ubuntu-only CI would silently miss are now exercised on every PR. Each OS installs `libxml2-utils` / `libxml2` so the ECMA-376 conformance gate never silently degrades to "no schema validation ran".
+
+  - A dedicated `perf` job runs `pnpm test:perf` with `PERF_GATE=1`, promoting the throughput / heap thresholds in `tests/perf/` from informational to fatal. CI runners are noisier than the M1 baseline the gates target — if a specific Node minor turns flaky, retune the thresholds in `vitest.perf.config.ts` rather than reverting this gate.
+
+  - `typescript/no-explicit-any` is `error` in `src/` and `off` in `tests/` (where `as any` is a legitimate way to exercise error paths). The remaining intentional `any` in `src/schema/core.ts` is annotated with `// oxlint-disable-next-line typescript/no-explicit-any` and an explanation comment.
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - refactor: route every XML writer through one canonical `escapeXmlAttr` / `escapeXmlText` pair in `src/utils/escape.ts`.
+
+  Before, twelve files each carried their own near-identical escape regex — `src/io/save.ts` deliberately skipped `>` while the rest escaped it, and three of them also escaped `\r` / `\n` / `\t` via numeric character references. The discrepancies were quiet correctness bugs (attribute values containing `]]>` rendered differently across writers) and a maintenance hazard.
+
+  The unified helpers escape `&`, `<`, `>`, and `"`; whitespace bytes stay literal because our parser (`fast-xml-parser`) does not decode numeric character references and would otherwise break the round-trip.
+
+  No user-visible behaviour change beyond consistent attribute escaping across every writer.
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - perf: drop quadratic / linear-scan patterns on four read/write hot paths.
+
+  - The `loadWorkbook` resolver indexes each sheet's rels file once via the new `indexRelsById` helper instead of running a fresh `Array.find(r => r.id === relId)` per table / comments / drawing / chart / picture cross-reference. Worksheets with many drawings or pivot tables load in O(refs) instead of O(refs × rels).
+
+  - `containsCommentMarker` in the VML drawing classifier replaces a byte-by-byte JS loop with a single latin1 `String.indexOf` — multi-megabyte legacy VML drawings load noticeably faster.
+
+  - The streaming `iterParse` queue uses a head pointer instead of `Array#shift()`. A single SAX batch with hundreds of events (typical for a wide `<row>`) is now O(N) instead of O(N²); a stale dead-code branch in the prologue gate is gone too.
+
+  - `serializeHyperlinks` allocates rIds via a `Set` index instead of nested `Array.some()` calls. Worksheets with hundreds of hyperlinks (dashboards / link-heavy index sheets) finish save in O(N) rather than O(N²).
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - refactor: collapse `describeWorkbook` into a single pass, harden `getRowValues`, and document `normalizePath`'s `..` handling.
+
+  `describeWorkbook` used to walk every cell three times — once for `getWorkbookStats`, once for `getWorkbookCellsByKind`, and once again for the per-sheet counts. The new implementation fuses all three into one pass and shares the value-kind classifier with `countCellsByKind` via the newly exported `classifyCellValue` (so the two never drift on edge cases like `Date` vs `duration`).
+
+  `getRowValues` no longer derives `maxCol` via `Math.max(...rowMap.keys())`. The spread is limited by V8's argument-count cap (~125 k), which `getRowValues` would silently blow past on a dense row near MAX_COL — the call now uses a linear scan to derive the max.
+
+  `normalizePath` picks up an explanatory comment for the `..`-when-`out`-is-empty case, so the next reader doesn't have to second-guess whether path-traversal is possible (it isn't — the archive lookup catches escape attempts naturally).
+
+- [#78](https://github.com/baseballyama/xlsx-kit/pull/78) [`2a46931`](https://github.com/baseballyama/xlsx-kit/commit/2a469317466508c8f18fd6f8181f70bacf42b051) Thanks [@baseballyama](https://github.com/baseballyama)! - fix: harden the ZIP64 read path against decompression bombs.
+
+  Previously, archives whose End-of-Central-Directory carried ZIP64 sentinel values fell back to `fflate.unzipSync`, which inflates every entry up front. A crafted ZIP64-shaped xlsx could exhaust memory before the per-entry / archive-total caps ran. The random-access reader now parses ZIP64 EOCD + the Zip64 Extended Information extra field directly, so the existing decompression-bomb guards apply to ZIP64 archives the same way they apply to ZIP32.
+
+  `loadWorkbook(decompressionLimits)` defaults are unchanged; only the underlying enforcement path is stricter.
+
 ## 0.7.1
 
 ### Patch Changes
