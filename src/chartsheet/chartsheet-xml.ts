@@ -1,5 +1,7 @@
 // `xl/chartsheets/sheetN.xml` reader / writer.
 
+import type { Color } from '../styles/colors';
+import { escapeXmlAttr } from '../utils/escape';
 import { OpenXmlSchemaError } from '../utils/exceptions';
 import { REL_NS, SHEET_MAIN_NS } from '../xml/namespaces';
 import { parseXml } from '../xml/parser';
@@ -47,8 +49,7 @@ const CUSTOM_SHEET_VIEW_TAG = `{${SHEET_MAIN_NS}}customSheetView`;
 
 const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
-const escapeAttr = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const escapeAttr = escapeXmlAttr;
 
 const parseBool = (v: string | undefined): boolean | undefined => {
   if (v === undefined) return undefined;
@@ -70,8 +71,21 @@ const parseSheetPr = (el: XmlNode): ChartsheetProperties | undefined => {
   if (el.attrs['codeName'] !== undefined) out.codeName = el.attrs['codeName'];
   const tab = findChild(el, TAB_COLOR_TAG);
   if (tab) {
-    const rgb = tab.attrs['rgb'];
-    if (rgb) out.tabColorRgb = rgb.toUpperCase();
+    const rgbRaw = tab.attrs['rgb'];
+    const indexed = parseInt10(tab.attrs['indexed']);
+    const theme = parseInt10(tab.attrs['theme']);
+    const auto = parseBool(tab.attrs['auto']);
+    const tintRaw = tab.attrs['tint'];
+    const tintNum = tintRaw !== undefined ? Number.parseFloat(tintRaw) : undefined;
+    const tint = tintNum !== undefined && Number.isFinite(tintNum) ? tintNum : undefined;
+    const color: Color = {
+      ...(rgbRaw !== undefined ? { rgb: rgbRaw.toUpperCase() } : {}),
+      ...(indexed !== undefined ? { indexed } : {}),
+      ...(theme !== undefined ? { theme } : {}),
+      ...(auto !== undefined ? { auto } : {}),
+      ...(tint !== undefined ? { tint } : {}),
+    };
+    if (Object.keys(color).length > 0) out.tabColor = color;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 };
@@ -272,7 +286,17 @@ const serializeSheetPr = (p: ChartsheetProperties): string => {
   const attrs: string[] = [];
   if (p.published !== undefined) attrs.push(`published="${p.published ? '1' : '0'}"`);
   if (p.codeName !== undefined) attrs.push(`codeName="${escapeAttr(p.codeName)}"`);
-  const tab = p.tabColorRgb ? `<tabColor rgb="${p.tabColorRgb}"/>` : '';
+  let tab = '';
+  if (p.tabColor) {
+    const c = p.tabColor;
+    let tcAttrs = '';
+    if (c.rgb !== undefined) tcAttrs += ` rgb="${escapeAttr(c.rgb)}"`;
+    if (c.indexed !== undefined) tcAttrs += ` indexed="${c.indexed}"`;
+    if (c.theme !== undefined) tcAttrs += ` theme="${c.theme}"`;
+    if (c.auto !== undefined) tcAttrs += ` auto="${c.auto ? '1' : '0'}"`;
+    if (c.tint !== undefined) tcAttrs += ` tint="${c.tint}"`;
+    tab = `<tabColor${tcAttrs}/>`;
+  }
   return tab === ''
     ? `<sheetPr${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}/>`
     : `<sheetPr${attrs.length > 0 ? ` ${attrs.join(' ')}` : ''}>${tab}</sheetPr>`;

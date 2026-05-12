@@ -7,6 +7,7 @@
 // with the chart.
 
 import type { Drawing } from '../drawing/drawing';
+import type { Color } from '../styles/colors';
 import type { HeaderFooter, PageMargins, PageSetup } from '../worksheet/page-setup';
 import type { WebPublishItem } from '../worksheet/web-publish';
 
@@ -22,8 +23,12 @@ export interface ChartsheetView {
 export interface ChartsheetProperties {
   published?: boolean;
   codeName?: string;
-  /** Tab color as RRGGBB (no alpha). */
-  tabColorRgb?: string;
+  /**
+   * Tab strip colour. Mirrors `SheetProperties.tabColor` on worksheets so the
+   * two sheet kinds expose the same colour model (rgb / indexed / theme /
+   * auto / tint) instead of forcing callers to special-case chartsheets.
+   */
+  tabColor?: Color;
 }
 
 /** Subset of `<sheetProtection>` fields we round-trip on chartsheets. */
