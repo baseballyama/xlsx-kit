@@ -480,14 +480,32 @@ export function renameSheet(wb: Workbook, oldTitle: string, newTitle: string): v
 }
 
 /**
- * Set the visibility state on a sheet by title. Throws on unknown title. Note:
- * Excel forbids hiding the active sheet when it's the only visible one — this
- * helper does NOT check that constraint; callers should ensure at least one
- * sheet stays visible.
+ * Set the visibility state on a sheet by title. Throws on unknown title.
+ * Refuses to hide the last visible sheet: an .xlsx with every sheet hidden
+ * fails to open in Excel ("Excel cannot use the object linking and embedding
+ * features because no sheet is visible"). Catching it here keeps the
+ * workbook recoverable instead of producing a save Excel will reject.
  */
 export function setSheetState(wb: Workbook, title: string, state: SheetState): void {
   const ref = wb.sheets.find((s) => s.sheet.title === title);
   if (!ref) throw new OpenXmlSchemaError(`setSheetState: no sheet named "${title}"`);
+  if (ref.state === state) return;
+  if (state !== 'visible' && ref.state === 'visible') {
+    let otherVisible = false;
+    for (const candidate of wb.sheets) {
+      if (candidate !== ref && candidate.state === 'visible') {
+        otherVisible = true;
+        break;
+      }
+    }
+    if (!otherVisible) {
+      throw new OpenXmlSchemaError(
+        `setSheetState: cannot hide "${title}" — it's the last visible sheet,` +
+          ' and Excel refuses to open a workbook with every sheet hidden. Make another sheet' +
+          ' visible first (or call showSheet()).',
+      );
+    }
+  }
   ref.state = state;
 }
 

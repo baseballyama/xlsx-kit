@@ -26,6 +26,7 @@ describe('setSheetStates', () => {
   it('throws when a title is missing', () => {
     const wb = createWorkbook();
     addWorksheet(wb, 'A');
+    addWorksheet(wb, 'B'); // keep a visible companion so hiding A doesn't trip the last-visible guard
     expect(() => setSheetStates(wb, { A: 'hidden', Missing: 'hidden' })).toThrow(/no sheet named/);
   });
 });

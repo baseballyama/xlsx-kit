@@ -1256,6 +1256,7 @@ export function copyRange(
   opts: { targetWs?: Worksheet } = {},
 ): number {
   const dest = opts.targetWs ?? ws;
+  const sameSheet = dest === ws;
   const src = parseRange(source);
   const dst = parseRange(target);
   const dr = dst.minRow - src.minRow;
@@ -1272,8 +1273,16 @@ export function copyRange(
       const dstRow = src.minRow + i + dr;
       const dstCol = src.minCol + j + dc;
       const newCell = setCell(dest, dstRow, dstCol, srcCell.value, srcCell.styleId);
-      if (srcCell.hyperlinkId !== undefined) newCell.hyperlinkId = srcCell.hyperlinkId;
-      if (srcCell.commentId !== undefined) newCell.commentId = srcCell.commentId;
+      // hyperlinkId / commentId index into the *source* worksheet's
+      // `hyperlinks` / `legacyComments` arrays. Carrying them across sheets
+      // would point at unrelated entries on the destination (or a missing
+      // slot), so we keep them only on a same-sheet copy. The actual link /
+      // comment records aren't part of the copied range — callers needing
+      // cross-sheet link semantics should re-issue setHyperlink on the dest.
+      if (sameSheet) {
+        if (srcCell.hyperlinkId !== undefined) newCell.hyperlinkId = srcCell.hyperlinkId;
+        if (srcCell.commentId !== undefined) newCell.commentId = srcCell.commentId;
+      }
       n++;
     }
   }
@@ -1295,6 +1304,7 @@ export function moveRange(
   opts: { targetWs?: Worksheet } = {},
 ): number {
   const dest = opts.targetWs ?? ws;
+  const sameSheet = dest === ws;
   const src = parseRange(source);
   const dst = parseRange(target);
   const dr = dst.minRow - src.minRow;
@@ -1322,15 +1332,19 @@ export function moveRange(
     for (let j = 0; j <= maxColOffset; j++) srcRow.delete(src.minCol + j);
     if (srcRow.size === 0) ws.rows.delete(rowIdx);
   }
-  // Replay the snapshot into the destination — value, styleId, and optional
-  // hyperlinkId / commentId.
+  // Replay the snapshot into the destination — value, styleId, and (only on
+  // a same-sheet move) hyperlinkId / commentId. See copyRange for the
+  // cross-sheet rationale: those indexes are scoped to the source sheet's
+  // own hyperlink / comment arrays and don't translate.
   for (const entry of snap) {
     const { row, col, cell } = entry;
     const dstRow = row + dr;
     const dstCol = col + dc;
     const newCell = setCell(dest, dstRow, dstCol, cell.value, cell.styleId);
-    if (cell.hyperlinkId !== undefined) newCell.hyperlinkId = cell.hyperlinkId;
-    if (cell.commentId !== undefined) newCell.commentId = cell.commentId;
+    if (sameSheet) {
+      if (cell.hyperlinkId !== undefined) newCell.hyperlinkId = cell.hyperlinkId;
+      if (cell.commentId !== undefined) newCell.commentId = cell.commentId;
+    }
   }
   return snap.length;
 }
