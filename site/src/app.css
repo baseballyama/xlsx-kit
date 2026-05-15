@@ -23,11 +23,13 @@
   --fg-muted: #d4cdb8;
   --fg-faint: #a39b85;
 
-  /* Accents — Svelte orange recontextualized; brass as quiet co-accent. */
-  --accent: #ff3e00;
-  --accent-hot: #ff5a26;
-  --accent-soft: rgba(255, 62, 0, 0.13);
-  --accent-glow: rgba(255, 62, 0, 0.28);
+  /* Accents — ember (softened Svelte orange). Less neon at rest, still
+   * recognisably warm. Brass remains a quiet sibling co-accent shared
+   * with word-kit so the kit suite reads as one family. */
+  --accent: #e8501c;
+  --accent-hot: #ff6a36;
+  --accent-soft: rgba(232, 80, 28, 0.12);
+  --accent-glow: rgba(232, 80, 28, 0.22);
   --brass: #d4a544;
   --brass-soft: rgba(212, 165, 68, 0.12);
 
