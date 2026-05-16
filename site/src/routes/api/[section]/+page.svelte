@@ -87,7 +87,6 @@
     overflow-y: auto;
     font-size: 13px;
     padding-left: 1rem;
-    border-left: 1px solid var(--border);
   }
 
   h1 {
@@ -137,7 +136,6 @@
     list-style: none;
     padding: 0 0 0 0.7rem;
     margin: 0;
-    border-left: 1px solid var(--border);
   }
 
   .toc li {
@@ -235,7 +233,6 @@
     .toc {
       position: static;
       max-height: none;
-      border-left: none;
       padding-left: 0;
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);

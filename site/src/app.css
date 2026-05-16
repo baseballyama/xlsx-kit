@@ -207,14 +207,8 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
   padding: 0.55rem 0.85rem;
   text-align: left;
-}
-
-th:last-child,
-td:last-child {
-  border-right: none;
 }
 
 tr:last-child td {

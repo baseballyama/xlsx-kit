@@ -47,7 +47,6 @@
     width: 268px;
     flex: 0 0 268px;
     padding: 2rem 0.75rem 4rem 1.5rem;
-    border-right: 1px solid var(--border);
     height: calc(100vh - var(--header-h));
     position: sticky;
     top: var(--header-h);
@@ -130,7 +129,6 @@
       flex: none;
       position: static;
       height: auto;
-      border-right: none;
       border-bottom: 1px solid var(--border);
       padding: 1rem;
     }

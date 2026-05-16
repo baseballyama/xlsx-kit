@@ -62,7 +62,6 @@
     display: block;
     padding: 1.15rem 1.25rem 1.25rem;
     background: var(--bg-elev);
-    border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     color: var(--fg);
     transition: background 140ms ease;
