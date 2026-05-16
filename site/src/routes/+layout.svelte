@@ -1,6 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import { base } from '$app/paths';
+  import CodeCopyEnhancer from '$lib/components/CodeCopyEnhancer.svelte';
   import SiteHeader from '$lib/components/SiteHeader.svelte';
 
   type Props = {
@@ -15,6 +16,8 @@
 <main>
   {@render children?.()}
 </main>
+
+<CodeCopyEnhancer />
 
 <footer>
   <div class="footer-inner">
