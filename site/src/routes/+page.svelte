@@ -372,12 +372,7 @@
     flex-direction: column;
     gap: 0.1rem;
     padding: 1rem 1.1rem;
-    border-right: 1px solid var(--border);
     position: relative;
-  }
-
-  .stat:last-child {
-    border-right: none;
   }
 
   .stat::before {
@@ -467,7 +462,6 @@
   .feature {
     position: relative;
     padding: 1.35rem 1.4rem 1.5rem;
-    border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     background: var(--bg-elev);
     transition: background 160ms ease;
@@ -481,17 +475,7 @@
     border-bottom: none;
   }
 
-  .feature:last-child,
-  .feature:nth-child(2n) {
-    border-right: none;
-  }
-
-  /* Re-add right border for cases when grid wraps to single column. */
   @media (max-width: 580px) {
-    .feature {
-      border-right: none;
-    }
-
     .feature:nth-last-child(-n + 2) {
       border-bottom: 1px solid var(--border);
     }

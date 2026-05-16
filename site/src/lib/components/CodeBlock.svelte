@@ -10,6 +10,7 @@
 
   const { html, title, coord }: Props = $props();
 
+  // eslint-disable-next-line prefer-const -- reassigned by `bind:this` in template
   let bodyEl = $state<HTMLDivElement | undefined>();
   let status = $state<'idle' | 'copied' | 'failed'>('idle');
   let timer: ReturnType<typeof setTimeout> | undefined;

@@ -76,13 +76,8 @@
     flex-direction: column;
     gap: 0.35rem;
     padding: 0.95rem 1.1rem;
-    border-right: 1px solid var(--border);
     font-size: 0.92rem;
     color: var(--fg);
-  }
-
-  .cell:last-child {
-    border-right: none;
   }
 
   .label {
@@ -137,7 +132,6 @@
 
   @media (max-width: 600px) {
     .cell {
-      border-right: none;
       border-bottom: 1px solid var(--border);
     }
 
