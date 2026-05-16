@@ -4,223 +4,227 @@
   import type { PageProps } from './$types';
 
   const { data }: PageProps = $props();
+
+  // Flatten groups so we can stamp a continuous "01, 02, …" coordinate
+  // across the whole page (matches word-kit's recipes layout).
+  const flat = $derived(
+    data.groups.flatMap((g) => g.recipes.map((r) => ({ ...r, group: g.title }))),
+  );
+
+  function indexOf(slug: string): number {
+    return flat.findIndex((r) => r.slug === slug);
+  }
 </script>
 
 <svelte:head>
-  <title>Recipes — xlsx-kit</title>
+  <title>Recipes · xlsx-kit</title>
 </svelte:head>
 
-<div class="content">
-  <header class="page-head">
-    <p class="eyebrow">Cookbook</p>
-    <h1>Recipes</h1>
-    <p class="lede">
-      Working code for the things people actually want to do — open a workbook, build one
-      from scratch, style cells, add a chart, stream millions of rows. Every snippet on
-      this page is a real <code>.ts</code> file in the repo, type-checked against the
-      live <code>xlsx-kit</code> on every build, so what you see compiles.
-    </p>
-    <p class="meta">
-      {data.groups.flatMap((g) => g.recipes).length} recipes across {data.groups.length}
-      categories. Just need the import line for one task? See the
-      <a href="{base}/docs/cheatsheet">Cheatsheet</a>. Looking up a specific function?
-      Jump to the <a href="{base}/api">API reference</a>.
-    </p>
-  </header>
+<article class="prose">
+  <p class="eyebrow">§ 02 · Recipes</p>
+  <h1>Common scenarios, type-checked snippets.</h1>
 
-  <nav class="toc" aria-label="Recipes index" data-pagefind-ignore>
-    <h4>Recipes</h4>
-    {#each data.groups as group (group.title)}
-      <div class="toc-group">
-        <span class="toc-group-label">{group.title}</span>
-        <ul>
-          {#each group.recipes as r (r.slug)}
-            <li>
-              <a href="#{r.slug}">{r.title}</a>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/each}
-  </nav>
+  <p class="lede">
+    Every snippet below lives under <code>site/src/lib/examples/</code> and is type-checked by
+    <code>svelte-check</code> against the live <code>xlsx-kit</code> surface on every build —
+    an API rename breaks this page before anything ships. Need a one-line lookup? See the
+    <a href="{base}/docs/cheatsheet">Cheatsheet</a>. Looking up a specific function? Jump to
+    the <a href="{base}/api">API reference</a>.
+  </p>
 
-  <div class="recipes">
-    {#each data.groups as group (group.title)}
-      <section class="group" id={'group-' + group.title.toLowerCase().replace(/\s+/g, '-')}>
-        <h2>{group.title}</h2>
-        {#each group.recipes as r (r.slug)}
-          <article class="recipe" id={r.slug}>
-            <header>
+  {#each data.groups as group (group.title)}
+    <section
+      class="group"
+      id={'group-' + group.title.toLowerCase().replace(/\s+/g, '-')}
+    >
+      <h2>{group.title}</h2>
+
+      {#each group.recipes as r (r.slug)}
+        {@const i = indexOf(r.slug)}
+        <section class="recipe" id={r.slug}>
+          <header class="r-head">
+            <span class="r-num">{String(i + 1).padStart(2, '0')}</span>
+            <div class="r-text">
               <h3>
                 <a href="#{r.slug}" class="hash" aria-label="Permalink">#</a>
                 {r.title}
               </h3>
-              <p class="teaser">{r.teaser}</p>
-            </header>
-            <CodeBlock html={r.html} title={r.path} />
-            {#if r.notes?.length}
-              <ul class="notes">
-                {#each r.notes as n (n)}
-                  <li>{n}</li>
-                {/each}
-              </ul>
-            {/if}
-            {#if r.relatedApi?.length}
-              <p class="related">
-                <span class="related-label">Related API:</span>
-                {#each r.relatedApi as name, i (name)}
-                  <code>{name}</code>{#if i < r.relatedApi.length - 1}, {/if}
-                {/each}
+              <p>{r.teaser}</p>
+              <p class="r-pointer">
+                <span class="label">where:</span>
+                <code>{r.path}</code>
               </p>
-            {/if}
-          </article>
-        {/each}
-      </section>
-    {/each}
-  </div>
-</div>
+            </div>
+          </header>
+          <CodeBlock
+            html={r.html}
+            title={r.path}
+            coord={String.fromCharCode(64 + ((i % 26) + 1)) + '1'}
+          />
+          {#if r.notes?.length}
+            <ul class="notes">
+              {#each r.notes as n (n)}
+                <li>{n}</li>
+              {/each}
+            </ul>
+          {/if}
+          {#if r.relatedApi?.length}
+            <p class="related">
+              <span class="related-label">Related API:</span>
+              {#each r.relatedApi as name, k (name)}
+                <code>{name}</code>{#if k < r.relatedApi.length - 1}, {/if}
+              {/each}
+            </p>
+          {/if}
+        </section>
+      {/each}
+    </section>
+  {/each}
+
+  <p class="more">
+    Want to drive a workbook end-to-end? Walk the
+    <a href="{base}/docs/getting-started">Getting started</a> page, then open
+    <a href="{base}/playground">the playground</a> to inspect a real file.
+  </p>
+</article>
 
 <style>
-  .content {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
-    grid-template-areas:
-      'head head'
-      'recipes toc';
-    column-gap: 2rem;
-    max-width: 1280px;
-    padding: 2rem 1.5rem 5rem;
+  .prose {
+    max-width: var(--max-content);
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
   }
 
-  .page-head {
-    grid-area: head;
-    margin-bottom: 1.5rem;
-  }
-
-  .recipes {
-    grid-area: recipes;
-    min-width: 0;
-  }
-
-  .toc {
-    grid-area: toc;
-    position: sticky;
-    top: calc(var(--header-h) + 1.5rem);
-    align-self: start;
-    max-height: calc(100vh - var(--header-h) - 3rem);
-    overflow-y: auto;
-    font-size: 13px;
-    padding-left: 1rem;
-    border-left: 1px solid var(--border);
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin: 0 0 0.85rem;
   }
 
   h1 {
-    margin: 0 0 0.4rem;
+    font-family: var(--display);
+    font-weight: 460;
+    font-size: clamp(2rem, 4.6vw, 2.95rem);
+    line-height: 1.05;
+    letter-spacing: -0.026em;
+    margin: 0 0 1rem;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+    max-width: 22ch;
+    border: none;
+    padding: 0;
   }
 
   .lede {
     color: var(--fg-soft);
-    margin: 0;
-    max-width: 720px;
+    font-size: 1.06rem;
+    line-height: 1.55;
+    max-width: 64ch;
+    margin: 0 0 2rem;
   }
 
-  .meta {
-    color: var(--fg-muted);
-    font-size: 0.9rem;
-    margin: 0.8rem 0 0;
+  .group {
+    margin-top: 3rem;
   }
 
-  .toc h4 {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--fg-muted);
-    margin: 0 0 0.6rem;
-    border: none;
-  }
-
-  .toc-group {
-    margin-bottom: 1rem;
-  }
-
-  .toc-group-label {
-    display: block;
-    font-weight: 600;
-    color: var(--fg);
-    padding: 0.2rem 0.4rem;
-    margin-bottom: 0.2rem;
-    font-size: 13px;
-  }
-
-  .toc ul {
-    list-style: none;
-    padding: 0 0 0 0.7rem;
-    margin: 0;
-    border-left: 1px solid var(--border);
-  }
-
-  .toc li a {
-    display: block;
-    padding: 0.18rem 0.4rem;
-    color: var(--fg-soft);
-    line-height: 1.35;
-    font-size: 13px;
-    border-radius: 4px;
-  }
-
-  .toc li a:hover {
-    color: var(--fg);
-    background: var(--bg-soft);
-    text-decoration: none;
-  }
-
-  h2 {
-    border-bottom: 2px solid var(--accent);
-    padding-bottom: 0.4rem;
-    margin-top: 2.5rem;
+  .group > h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.55rem;
+    letter-spacing: -0.015em;
+    margin: 0 0 0.5rem;
+    padding: 0 0 0.5rem;
+    border-bottom: 1px solid var(--border);
+    font-variation-settings: 'opsz' 96, 'SOFT' 25;
   }
 
   .recipe {
+    margin: 2.25rem 0 2.75rem;
+    padding-top: 1.75rem;
     border-top: 1px solid var(--border);
-    padding: 1.6rem 0 0.8rem;
     scroll-margin-top: calc(var(--header-h) + 1rem);
   }
 
-  .recipe h3 {
-    margin: 0 0 0.3rem;
-    font-size: 1.2rem;
+  .group > h2 + .recipe {
+    border-top: none;
+    padding-top: 1.25rem;
+  }
+
+  .r-head {
+    display: grid;
+    grid-template-columns: 4ch 1fr;
+    gap: 1.25rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .r-num {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    margin-top: 0.55rem;
+  }
+
+  .r-text h3 {
+    margin: 0 0 0.5rem;
+    border: none;
+    padding: 0;
+    font-family: var(--display);
+    font-size: 1.4rem;
+    font-weight: 540;
+    line-height: 1.2;
+    font-variation-settings: 'opsz' 64, 'SOFT' 25;
   }
 
   .hash {
     color: var(--fg-muted);
     font-weight: 400;
-    margin-right: 0.3rem;
+    margin-right: 0.25rem;
     text-decoration: none;
     visibility: hidden;
   }
 
-  .recipe h3:hover .hash {
+  .r-text h3:hover .hash {
     visibility: visible;
   }
 
-  .teaser {
+  .r-text > p {
+    margin: 0;
     color: var(--fg-soft);
-    margin: 0.2rem 0 0.6rem;
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .r-pointer {
+    margin-top: 0.55rem !important;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-muted) !important;
+  }
+
+  .r-pointer .label {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-right: 0.4rem;
+    color: var(--fg-faint);
   }
 
   .notes {
-    margin: 0.8rem 0 0.4rem;
+    margin: 1rem 0 0.4rem;
     padding-left: 1.2rem;
     color: var(--fg-soft);
     font-size: 0.92rem;
   }
 
   .notes li {
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.35rem;
   }
 
   .related {
-    margin: 0.8rem 0 0;
+    margin: 0.9rem 0 0;
     color: var(--fg-muted);
     font-size: 0.85rem;
   }
@@ -234,22 +238,11 @@
     margin-right: 0.15rem;
   }
 
-  @media (max-width: 1000px) {
-    .content {
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        'head'
-        'toc'
-        'recipes';
-    }
-    .toc {
-      position: static;
-      max-height: none;
-      border-left: none;
-      padding-left: 0;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 0.8rem 0;
-    }
+  .more {
+    margin-top: 3rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+    color: var(--fg-soft);
+    font-size: 0.95rem;
   }
 </style>

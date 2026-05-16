@@ -40,18 +40,9 @@
 </svelte:head>
 
 <section class="hero">
-  <div class="hero-bg" aria-hidden="true">
-    <div class="hero-glow"></div>
-  </div>
+  <div class="hero-bg" aria-hidden="true"></div>
 
   <div class="hero-inner">
-    <div class="hero-meta">
-      <span class="meta-dot"></span>
-      <span class="meta-tag">v0 · MIT · stable</span>
-      <span class="meta-sep">/</span>
-      <span class="meta-tag">Node 22+ · browsers</span>
-    </div>
-
     <h1 class="display">
       <span class="line">
         Read &amp; write
@@ -175,55 +166,10 @@
       radial-gradient(circle at 100% 30%, var(--brass-soft), transparent 50%);
   }
 
-  .hero-glow {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(
-        90deg,
-        transparent 0,
-        transparent calc(100% / 12 - 1px),
-        var(--rule) calc(100% / 12 - 1px),
-        var(--rule) calc(100% / 12),
-        transparent calc(100% / 12)
-      );
-    background-size: calc(100% / 12) 100%;
-    opacity: 0.6;
-    mask-image: radial-gradient(circle at 30% 40%, black 0%, transparent 65%);
-  }
-
   .hero-inner {
     position: relative;
     max-width: var(--max-wide);
     margin: 0 auto;
-  }
-
-  .hero-meta {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin-bottom: 1.5rem;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--fg);
-    letter-spacing: 0.04em;
-    flex-wrap: wrap;
-  }
-
-  .meta-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
-  }
-
-  .meta-sep {
-    color: var(--fg-faint);
-  }
-
-  .meta-tag {
-    color: var(--fg-soft);
   }
 
   .display {
